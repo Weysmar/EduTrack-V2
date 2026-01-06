@@ -99,6 +99,15 @@ export function ItemView() {
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
 
+    // File Type Detection (Lifted to Component Scope)
+    const filename = item?.fileName || '';
+    const ext = filename.split('.').pop()?.toLowerCase() ||
+        (item?.fileType ? item.fileType.split('/')[1] : '') ||
+        (item?.fileData ? item.fileData.split('.').pop()?.toLowerCase() : '') || '';
+
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+    const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+
     if (isItemLoading) return <div className="p-8">Loading...</div>
     // If deleting, show loading to prevent "File not found" glitches
     if (isDeleting) {
@@ -581,16 +590,8 @@ export function ItemView() {
 
                                     {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
                                     {(() => {
-                                        // Prioritize fileName for extension, fallback to fileType, then url
-                                        const filename = item.fileName || '';
-                                        const ext = filename.split('.').pop()?.toLowerCase() ||
-                                            (item.fileType ? item.fileType.split('/')[1] : '') ||
-                                            (item.fileData ? item.fileData.split('.').pop()?.toLowerCase() : '') || ''; // Fallback
-
-                                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
-                                        const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
-
-                                        console.log("Detected file type:", { ext, isImage, isOffice, filename }); // Debug log
+                                        // Variables are now defined at component scope (lines ~100)
+                                        // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
 
                                         if (isImage) {
                                             return <ImageViewer url={pdfUrl} alt={item.title} className="h-[80vh]" />;
