@@ -22,7 +22,10 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP for PDF iFrame support (simplest fix for now)
+    crossOriginEmbedderPolicy: false
+}));
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)

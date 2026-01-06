@@ -27,14 +27,19 @@ export const getCourses = async (req: AuthRequest, res: Response) => {
 // GET /api/courses/:id
 export const getCourse = async (req: AuthRequest, res: Response) => {
     try {
+        console.log(`[DEBUG] GetCourse: ${req.params.id} for user ${req.user?.id}`);
         const course = await prisma.course.findFirst({
             where: { id: req.params.id, profileId: req.user!.id },
             include: { folder: true, items: true }
         });
 
-        if (!course) return res.status(404).json({ message: 'Course not found' });
+        if (!course) {
+            console.log(`[DEBUG] Course not found: ${req.params.id}`);
+            return res.status(404).json({ message: 'Course not found' });
+        }
         res.json(course);
     } catch (error) {
+        console.error('[DEBUG] Error fetching course:', error);
         res.status(500).json({ message: 'Error fetching course', error });
     }
 };
