@@ -601,17 +601,33 @@ export function ItemView() {
                                                     <div className="hidden sm:block">
                                                         <OfficeViewer url={pdfUrl} className="h-[80vh]" />
                                                     </div>
-                                                    {/* Mobile Fallback for Office */}
+
+                                                    {/* Mobile Fallback (Shared Logic Below) */}
+                                                    {/* We return null here for mobile to fall through? No, we need to return something or restructure. */}
+                                                    {/* Better approach: Return the Desktop/Tablet OfficeViewer here, but for MOBILE, render the shared card. */}
+                                                    {/* Actually, let's just render the OfficeViewer for sm+ and use the shared mobile view below for everyone? */}
+                                                    {/* No, this is an IIFE. We must return the content. */}
+
+                                                    {/* Mobile View for Office */}
                                                     <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg border">
                                                         <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
                                                             <FileText className="h-10 w-10 text-blue-500" />
                                                         </div>
                                                         <div>
-                                                            <h3 className="font-semibold text-lg mb-2">Document Office</h3>
-                                                            <p className="text-sm text-muted-foreground">Ouvrez ce fichier pour le consulter</p>
+                                                            <h3 className="font-semibold text-lg mb-2">{item.fileName || 'Document Office'}</h3>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Pour un meilleur confort, téléchargez ce document.
+                                                            </p>
                                                         </div>
-                                                        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm">
-                                                            Télécharger le fichier
+                                                        <a
+                                                            href={pdfUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            download
+                                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
+                                                        >
+                                                            <Download className="h-5 w-5" />
+                                                            Télécharger l'original
                                                         </a>
                                                     </div>
                                                 </>
@@ -649,24 +665,16 @@ export function ItemView() {
                                                             Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
                                                         </p>
                                                     </div>
-                                                    {/* DEBUG PANEL - TO REMOVE AFTER FIX */}
-                                                    <div className="mt-4 p-2 bg-black/80 text-green-400 text-xs text-left rounded overflow-auto max-w-full">
-                                                        <p>DEBUG INFO:</p>
-                                                        <p>Ext: {ext}</p>
-                                                        <p>IsOffice: {String(isOffice)}</p>
-                                                        <p>Filename: {filename}</p>
-                                                        <p>URL: {pdfUrl?.substring(0, 30)}...</p>
-                                                    </div>
+
                                                     {/* Open External/Download Button */}
                                                     <a
                                                         href={pdfUrl}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        download={isOffice ? true : undefined}
                                                         className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
                                                     >
-                                                        {isOffice ? <Download className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
-                                                        {isOffice ? 'Télécharger l\'original' : 'Ouvrir le PDF'}
+                                                        <ExternalLink className="h-5 w-5" />
+                                                        Ouvrir le PDF
                                                     </a>
                                                 </div>
 
