@@ -206,7 +206,7 @@ export function CourseView() {
                 <div className="flex gap-2">
                     {['all', 'exercise', 'note', 'resource'].map((tab) => (
                         <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-4 py-2 text-sm font-medium border-b-2 capitalize", activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
-                            {tab}
+                            {t(`tab.${tab}`) || tab}
                         </button>
                     ))}
                 </div>
@@ -218,7 +218,7 @@ export function CourseView() {
                     {filteredItems?.map((item: any) => (
                         <div key={item.id} onClick={() => navigate(`/course/${id}/item/${item.id}`)} className="p-4 border rounded-lg bg-card cursor-pointer hover:shadow-md">
                             <h3 className="font-bold">{item.title}</h3>
-                            <p className="text-xs text-muted-foreground">{item.type}</p>
+                            <p className="text-xs text-muted-foreground">{t(`type.${item.type}`) || item.type}</p>
                         </div>
                     ))}
                 </div>
