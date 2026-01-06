@@ -1,7 +1,8 @@
 FROM node:20-alpine as build
 WORKDIR /app
 COPY package*.json ./
-RUN echo "Cache Buster: $(date +%s)"
+# Force Rebuild: 2026-01-06-18-49
+RUN echo "Cache Buster: 123456789"
 RUN npm install --legacy-peer-deps
 COPY . .
 ARG VITE_GOOGLE_CLIENT_ID
