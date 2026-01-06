@@ -637,10 +637,6 @@ export function ItemView() {
                                             );
                                         }
 
-                                        import { GenericFileViewer } from '@/components/GenericFileViewer'
-                                        // ... imports
-
-                                        // (In component body)
                                         // Explicitly check for PDF
                                         const isPdf = ext === 'pdf';
 
