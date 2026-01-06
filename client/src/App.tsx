@@ -10,7 +10,7 @@ import { StudySession } from '@/pages/StudySession'
 import { QuizStudy } from '@/pages/QuizStudy'
 import { CalendarPage } from '@/pages/CalendarPage'
 import { ProfileManager } from '@/pages/ProfileManager'
-const KnowledgeGraph = lazy(() => import('@/components/KnowledgeGraph').then(module => ({ default: module.KnowledgeGraph })))
+
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { ThemeProvider } from "@/components/theme-provider"
@@ -44,10 +44,7 @@ const router = createBrowserRouter([
                         path: 'settings',
                         element: <SettingsPage />,
                     },
-                    {
-                        path: 'graph',
-                        element: <Suspense fallback={<div className="flex items-center justify-center h-full">Loading 3D Engine...</div>}><KnowledgeGraph /></Suspense>,
-                    },
+
                     {
                         path: 'course/:courseId',
                         element: <CourseView />,
