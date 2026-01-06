@@ -647,6 +647,14 @@ export function ItemView() {
                                                             Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
                                                         </p>
                                                     </div>
+                                                    {/* DEBUG PANEL - TO REMOVE AFTER FIX */}
+                                                    <div className="mt-4 p-2 bg-black/80 text-green-400 text-xs text-left rounded overflow-auto max-w-full">
+                                                        <p>DEBUG INFO:</p>
+                                                        <p>Ext: {ext}</p>
+                                                        <p>IsOffice: {String(isOffice)}</p>
+                                                        <p>Filename: {filename}</p>
+                                                        <p>URL: {pdfUrl?.substring(0, 30)}...</p>
+                                                    </div>
                                                     <a
                                                         href={pdfUrl}
                                                         target="_blank"

@@ -7,13 +7,15 @@ interface OfficeViewerProps {
 
 export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
     // Encode the URL to ensure special characters are handled correctly
-    const encodedUrl = encodeURIComponent(url);
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+    // Google Docs Viewer requires HTTPS (or inconsistent behavior with HTTP)
+    // We force HTTPS if the url is http, assuming the server is accessible via HTTPS (common with Traefik/Reverse Proxy)
+    const secureUrl = url.replace(/^http:\/\//, 'https://');
+    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(secureUrl)}&embedded=true`;
 
     return (
         <div className={`w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative ${className}`}>
             <iframe
-                src={googleDocsUrl}
+                src={viewerUrl}
                 title="Office Document Viewer"
                 className="w-full h-full border-0"
                 allowFullScreen
