@@ -90,6 +90,7 @@ const router = createBrowserRouter([
 
 
 import { LanguageProvider } from "@/components/language-provider"
+import { Toaster } from "sonner"
 
 function App() {
     return (
@@ -97,6 +98,7 @@ function App() {
             <LanguageProvider defaultLanguage="en" storageKey="vite-ui-language">
                 <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                     <RouterProvider router={router} />
+                    <Toaster richColors position="top-right" />
                 </ThemeProvider>
             </LanguageProvider>
         </QueryClientProvider>
