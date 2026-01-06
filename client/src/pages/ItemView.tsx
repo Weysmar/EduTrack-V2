@@ -680,7 +680,7 @@ export function ItemView() {
                                                     </a>
                                                 </div>
 
-                                                {/* PDF Fullscreen Modal */}
+                                                {/* PDF/Office Fullscreen Modal */}
                                                 {isPdfFullscreen && (
                                                     <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
                                                         <div className="absolute top-4 right-6 z-10 flex gap-2">
@@ -693,17 +693,25 @@ export function ItemView() {
                                                             </button>
                                                         </div>
                                                         <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                            {/* Desktop: Iframe */}
-                                                            <iframe
-                                                                src={`${pdfUrl}#view=FitH`}
-                                                                title="PDF Document Fullscreen"
-                                                                className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
-                                                                allowFullScreen
-                                                            />
-                                                            {/* Tablet: React-PDF */}
-                                                            <div className="w-full h-full hidden sm:block lg:hidden">
-                                                                <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
-                                                            </div>
+                                                            {isOffice ? (
+                                                                <div className="w-full h-full bg-white dark:bg-slate-950 rounded-lg overflow-auto">
+                                                                    <OfficeViewer url={pdfUrl} className="min-h-full" />
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    {/* Desktop: Iframe */}
+                                                                    <iframe
+                                                                        src={`${pdfUrl}#view=FitH`}
+                                                                        title="PDF Document Fullscreen"
+                                                                        className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                                        allowFullScreen
+                                                                    />
+                                                                    {/* Tablet: React-PDF */}
+                                                                    <div className="w-full h-full hidden sm:block lg:hidden">
+                                                                        <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
