@@ -305,10 +305,11 @@ export function ItemView() {
                                 href={pdfUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                download={isOffice ? true : undefined}
                                 className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                title="Ouvrir dans un nouvel onglet"
+                                title={isOffice ? "Télécharger l'original" : "Ouvrir dans un nouvel onglet"}
                             >
-                                <ExternalLink className="h-5 w-5" />
+                                {isOffice ? <Download className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
                             </a>
                             <button
                                 onClick={() => setIsPdfFullscreen(true)}
