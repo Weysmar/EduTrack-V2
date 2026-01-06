@@ -1,36 +1,37 @@
-import { AlertCircle } from 'lucide-react'
+import { FileText, Download, ExternalLink } from 'lucide-react';
+import { DocxViewer } from './DocxViewer';
 
 interface OfficeViewerProps {
-    url: string
-    className?: string
+    url: string;
+    className?: string;
 }
 
 export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
-    // Encode the URL to ensure special characters are handled correctly
-    // Google Docs Viewer requires HTTPS (or inconsistent behavior with HTTP)
-    // We force HTTPS if the url is http, assuming the server is accessible via HTTPS (common with Traefik/Reverse Proxy)
-    const secureUrl = url.replace(/^http:\/\//, 'https://');
-    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(secureUrl)}&embedded=true`;
+    // Determine extension from URL (approximation, but usually works if filename is in path or query)
+    // A better way would be passing the filename prop, but for now we parse the URL or try to guess.
+    // However, the cleanest way since we might have /proxy/UUID is to rely on what ItemView detects, 
+    // BUT ItemView renders this.
+    // Let's assume URL ends with .docx OR we can try to detect.
 
+    // Actually, ItemView knows the type. But here we only have URL.
+    // Let's check if the URL contains .docx (case insensitive)
+    const isDocx = /\.docx($|\?)/i.test(url) || url.toLowerCase().includes('docx');
+
+    if (isDocx) {
+        return <DocxViewer url={url} className={className} />;
+    }
+
+    // For other Office files (XLS, PPT), simplistic Google Viewer won't work on localhost.
+    // We provide a clean "Download/Open" card instead of a broken iframe.
     return (
-        <div className={`w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative ${className}`}>
-            <iframe
-                src={viewerUrl}
-                title="Office Document Viewer"
-                className="w-full h-full border-0"
-                allowFullScreen
-            />
-            {/* Fallback link if viewer fails or for convenience */}
-            <div className="absolute bottom-2 right-2 opacity-50 hover:opacity-100 transition-opacity">
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs bg-white/80 dark:bg-black/50 px-2 py-1 rounded shadow"
-                >
-                    Ouvrir l'original
-                </a>
-            </div>
-        </div>
+        href = { url }
+                    target = "_blank"
+    rel = "noopener noreferrer"
+    className = "text-xs bg-white/80 dark:bg-black/50 px-2 py-1 rounded shadow"
+        >
+        Ouvrir l'original
+                </a >
+            </div >
+        </div >
     )
 }
