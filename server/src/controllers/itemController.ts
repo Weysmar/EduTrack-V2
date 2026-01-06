@@ -35,6 +35,7 @@ export const getItems = async (req: AuthRequest, res: Response) => {
 // POST /api/items
 export const createItem = async (req: AuthRequest, res: Response) => {
     try {
+        console.log('Creating item with body:', req.body);
         const { courseId, type, title, content, status, difficulty, tags } = req.body;
         let fileUrl = null;
         let storageKey = null;
@@ -70,7 +71,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
 
         res.status(201).json(item);
     } catch (error) {
-        console.error(error);
+        console.error('Error creating item:', error);
         res.status(500).json({ message: 'Error creating item', error });
     }
 };

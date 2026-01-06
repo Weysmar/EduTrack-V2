@@ -23,6 +23,31 @@ export const getFolders = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// GET /api/folders/:id
+export const getFolder = async (req: AuthRequest, res: Response) => {
+    try {
+        const folder = await prisma.folder.findFirst({
+            where: {
+                id: req.params.id,
+                profileId: req.user!.id
+            },
+            include: {
+                children: true,
+                courses: true
+            }
+        });
+
+        if (!folder) {
+            return res.status(404).json({ message: 'Folder not found' });
+        }
+
+        res.json(folder);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching folder', error });
+    }
+};
+
+
 // POST /api/folders
 export const createFolder = async (req: AuthRequest, res: Response) => {
     try {
