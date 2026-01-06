@@ -94,24 +94,34 @@ export function DocxViewer({ url, className = "" }: DocxViewerProps) {
 
     return (
         <div className={`bg-white dark:bg-slate-950 p-8 sm:p-12 rounded-lg shadow-sm border overflow-auto ${className}`}>
-            {/* Manual CSS for prose since tailwindcss/typography might be missing */}
+            {/* Manual CSS for prose matching user request */}
             <style>{`
-                .docx-content h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
-                .docx-content h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
-                .docx-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-                .docx-content p { margin-bottom: 1rem; line-height: 1.6; text-align: justify; }
-                .docx-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-                .docx-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-                .docx-content li { margin-bottom: 0.25rem; }
-                .docx-content img { max-width: 100%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem; }
-                .docx-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-                .docx-content td, .docx-content th { border: 1px solid #e2e8f0; padding: 0.5rem; }
-                .dark .docx-content td, .dark .docx-content th { border-color: #334155; }
+                .docx-content h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem; color: #f8fafc; line-height: 1.2; }
+                .docx-content .dark h1 { color: #f8fafc; } /* Explicit for dark mode */
+                
+                .docx-content h2 { font-size: 1.4rem; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; color: #94a3b8; }
+                
+                .docx-content h3 { font-size: 1.2rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #93c5fd; } /* Light blue as requested */
+                
+                .docx-content p { margin-bottom: 1rem; line-height: 1.7; text-align: justify; color: #e2e8f0; }
+                
+                .docx-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #e2e8f0; }
+                .docx-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #e2e8f0; }
+                .docx-content li { margin-bottom: 0.5rem; padding-left: 0.5rem; }
+                
+                .docx-content img { max-width: 100%; height: auto; margin: 1.5rem auto; display: block; border-radius: 0.5rem; }
+                
+                /* Light Mode Overrides (if needed in future, currently focused on dark mode matching) */
+                .light .docx-content h1 { color: #0f172a; }
+                .light .docx-content h2 { color: #475569; }
+                .light .docx-content h3 { color: #2563eb; }
+                .light .docx-content p { color: #334155; }
+                .light .docx-content li { color: #334155; }
             `}</style>
 
-            {/* Render the HTML content with custom class */}
+            {/* Render the HTML content */}
             <div
-                className="docx-content text-slate-900 dark:text-slate-100"
+                className="docx-content"
                 dangerouslySetInnerHTML={{ __html: content || '' }}
             />
         </div>
