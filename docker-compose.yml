@@ -45,7 +45,7 @@ services:
     volumes:
       - uploads:/app/uploads
     ports:
-      - "4000:3000" # Changed to 4000 to avoid conflict with Dokploy (3000)
+      - "3000" # Expose 3000 internally to Dokploy network only
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
     environment:
       VITE_API_URL: ${VITE_API_URL:-/api}
     ports:
-      - "8080:80" # Changed to 8080 to avoid conflict with System/Dokploy (80)
+      - "80" # Expose 80 internally to Dokploy network only
     depends_on:
       - backend
     networks:
