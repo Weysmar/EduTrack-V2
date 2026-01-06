@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useProfileStore } from '@/store/profileStore'
@@ -36,36 +37,40 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
     const [description, setDescription] = useState('')
     const [color, setColor] = useState(COLORS[0])
     const [icon, setIcon] = useState('') // Default empty, use user selection
-    const [isLoading, setIsLoading] = useState(false)
+    const queryClient = useQueryClient()
 
-    if (!isOpen) return null
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!title.trim()) return
-        if (!activeProfile) return
-
-        setIsLoading(true)
-        try {
+    const createCourseMutation = useMutation({
+        mutationFn: async (data: any) => {
             const { courseQueries } = await import('@/lib/api/queries')
-            await courseQueries.create({
-                profileId: activeProfile.id,
-                title,
-                description,
-                color,
-                icon,
-                folderId: initialFolderId,
-            })
+            return courseQueries.create(data)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['courses'] })
+            queryClient.invalidateQueries({ queryKey: ['folders'] }) // In case folder counts update
             onClose()
             setTitle('')
             setDescription('')
             setIcon('')
             setColor(COLORS[0])
-            // Optional: invalidate queries if using React Query hooks in parent
-        } catch (error) {
+        },
+        onError: (error) => {
             console.error('Failed to create course:', error)
-        } finally {
-            setIsLoading(false)
         }
+    })
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!title.trim()) return
+        if (!activeProfile) return
+
+        createCourseMutation.mutate({
+            profileId: activeProfile.id,
+            title,
+            description,
+            color,
+            icon,
+            folderId: initialFolderId,
+        })
     }
 
     return (
@@ -160,10 +165,10 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                         </button>
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={createCourseMutation.isPending}
                             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50"
                         >
-                            {isLoading ? t('course.create.loading') : t('course.create.submit')}
+                            {createCourseMutation.isPending ? t('course.create.loading') : t('course.create.submit')}
                         </button>
                     </div>
                 </form>
