@@ -110,7 +110,7 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                 fileType={item.fileType || ''}
             />
 
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                 <div className="w-full max-w-3xl bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
                     <div className="flex items-center justify-between p-6 border-b">
                         <div className="flex items-center gap-3">

@@ -24,7 +24,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="w-full max-w-md bg-card rounded-xl shadow-2xl border animate-in zoom-in-95">
                 <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="font-bold flex items-center gap-2">
