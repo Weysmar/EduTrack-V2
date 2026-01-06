@@ -1,6 +1,8 @@
 
 import { SummaryOptions } from "../summary/types";
 import { useProfileStore } from "@/store/profileStore";
+import { useAuthStore } from "@/store/authStore"; // Auth token
+import { API_URL } from "@/config";
 
 export interface GoogleGeminiOptions {
     compressionLevel: '20' | '30' | '40' | '50';
@@ -34,9 +36,8 @@ export class GoogleGeminiService {
         // GET KEY FROM STORE
         const API_KEY = useProfileStore.getState().getApiKey('google_gemini_summaries');
 
-        if (!API_KEY) {
-            throw new Error("Clé API Google Gemini (Résumés) manquante. Veuillez l'ajouter dans les paramètres du profil.");
-        }
+        // Optional: If no key, maybe backend has one? For now, proceed.
+        // if (!API_KEY) throw new Error("Key missing...");
 
         const systemPrompt = `Tu es un expert en synthèse académique structurée et pédagogique.
 Ton objectif est de produire des résumés PROFESSIONNELS, LISIBLES et PRÊTS À L'EMPLOI pour des étudiants.
@@ -74,209 +75,77 @@ INSTRUCTIONS DE CONTENU :
 -   Vérifie qu'aucun caractère Markdown brut (#, *) ne reste visible s'il n'est pas interprété par le rendu final.
 `;
 
-        const modelsToTry = geminiOptions.model
-            ? [geminiOptions.model]
-            : [
-                'gemini-2.0-flash',
-                'gemini-2.5-flash',
-                'gemini-flash-latest',
-                'gemini-pro-latest',
-                'gemini-2.0-flash-lite'
-            ];
+        const model = geminiOptions.model || 'gemini-1.5-flash';
 
-        let errors: string[] = [];
+        try {
+            const token = useAuthStore.getState().token;
+            // Use the /api URL, checking if it ends in /api or not. Config usually returns base URL.
+            // If API_URL is http://localhost:3000/api, then just /ai/generate.
+            // If API_URL is http://localhost:3000, then /api/ai/generate.
+            // Wait, import says getApiUrl() returns location.origin or VITE_API_URL.
+            // Usually VITE_API_URL includes /api suffix? Or not?
+            // "edutrack.../api/items" suggested /api is NOT in the domain root but mounted.
+            // config.ts says window.location.origin.
+            // I should use `/api/ai/generate` relative if same origin, or construct it.
+            // Assuming API_URL does NOT contain /api suffix based on typical usage, BUT `ItemView.tsx` uses `${API_URL}/storage/proxy`.
+            // Check `config.ts` again... It returns `window.location.origin`.
+            // So `API_URL` is `http://...`.
+            // So I need `${API_URL}/api/ai/generate`.
 
-        for (const model of modelsToTry) {
-            let attempt = 0;
-            const maxAttempts = 3;
+            const response = await fetch(`${API_URL}/api/ai/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    prompt: text,
+                    systemPrompt: systemPrompt,
+                    provider: 'google',
+                    model: model,
+                    apiKey: API_KEY
+                })
+            });
 
-            while (attempt < maxAttempts) {
-                try {
-                    const apiVersion = 'v1';
-                    const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${API_KEY}`;
-
-                    if (attempt === 0) console.log(`[Gemini-AutoFix] Fetching: ${url}`);
-                    else console.log(`[Gemini-AutoFix] Retry attempt ${attempt}/${maxAttempts} for ${model}...`);
-
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            contents: [
-                                {
-                                    parts: [
-                                        { text: systemPrompt + "\n\nVoici le texte à résumer :\n" + text }
-                                    ]
-                                }
-                            ],
-                            generationConfig: {
-                                temperature: 0.1,
-                                maxOutputTokens: 8192,
-                            }
-                        })
-                    });
-
-                    if (response.status === 429) {
-                        attempt++;
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMessage = errorData.error?.message || await response.text();
-                        console.warn(`[Gemini-AutoFix] Quota exceeded for ${model} (Attempt ${attempt}). Details: ${errorMessage}`);
-
-                        if (attempt >= maxAttempts) {
-                            errors.push(`${model}: Quota exceeded after ${maxAttempts} retries`);
-                            break; // Exit retry loop, try next model
-                        }
-
-                        // Extract wait time OR default to 10s
-                        let waitTime = 10;
-                        const match = errorMessage.match(/retry in\s+([0-9.]+)\s*s/);
-                        if (match && match[1]) {
-                            waitTime = Math.ceil(parseFloat(match[1]));
-                        }
-
-                        // Safety cap for wait time (e.g. don't wait more than 120s automatically)
-                        if (waitTime > 120) waitTime = 120;
-
-                        console.log(`[Gemini-AutoFix] Waiting ${waitTime}s before retry...`);
-                        await new Promise(resolve => setTimeout(resolve, (waitTime + 2) * 1000));
-                        continue; // Retry loop
-                    }
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.error?.message || response.statusText;
-                        console.warn(`[Gemini-AutoFix] Model ${model} failed: ${errorMessage}`);
-                        errors.push(`${model}: ${errorMessage}`);
-                        break; // Fatal error for this model, try next model
-                    }
-
-                    const data = await response.json();
-                    const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (result) {
-                        console.log(`[Gemini-AutoFix] Success with model: ${model}`);
-                        return result;
-                    }
-
-                    errors.push(`${model}: No content returned`);
-                    break; // No content, try next model
-
-                } catch (error: any) {
-                    console.error(`[Gemini-AutoFix] Critical error with ${model}:`, error);
-                    errors.push(`${model}: ${error.message}`);
-                    break; // Exception, try next model
-                }
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || response.statusText);
             }
-        }
 
-        // Final breakdown
-        throw new Error(`[FINAL_TRY_FAILED] All models rejected the request. Details: ${errors.join(' | ')}`);
+            const data = await response.json();
+            return data.text;
+
+        } catch (error: any) {
+            console.error("Gemini Backend Error:", error);
+            throw error;
+        }
     }
 }
 
 export async function generateWithGoogle(prompt: string, systemPrompt?: string, model?: string): Promise<string> {
     const API_KEY = useProfileStore.getState().getApiKey('google_gemini_exercises');
+    const token = useAuthStore.getState().token;
 
-    if (!API_KEY) {
-        throw new Error("Clé API Google Gemini (Exercices) manquante.");
+    const response = await fetch(`${API_URL}/api/ai/generate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            provider: 'google',
+            model: model || 'gemini-1.5-flash',
+            apiKey: API_KEY
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to generate content via Backend");
     }
 
-    const finalPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
-
-    const modelsToTry = model
-        ? [model]
-        : [
-            'gemini-2.0-flash',
-            'gemini-2.5-flash',
-            'gemini-flash-latest',
-            'gemini-pro-latest'
-        ];
-
-    let errors: string[] = [];
-
-    for (const model of modelsToTry) {
-        let attempt = 0;
-        const maxAttempts = 3;
-
-        while (attempt < maxAttempts) {
-            try {
-                const apiVersion = 'v1';
-                const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${API_KEY}`;
-
-                if (attempt === 0) console.log(`[Gemini-AutoFix] Fetching (Exercise): ${url}`);
-                else console.log(`[Gemini-AutoFix] Retry attempt ${attempt}/${maxAttempts} (Exercise) for ${model}...`);
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                parts: [
-                                    { text: finalPrompt }
-                                ]
-                            }
-                        ],
-                        generationConfig: {
-                            temperature: 0.3,
-                            maxOutputTokens: 8192,
-                        }
-                    })
-                });
-
-                if (response.status === 429) {
-                    attempt++;
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.error?.message || await response.text();
-                    console.warn(`[Gemini-AutoFix] Quota exceeded for ${model}. Details: ${errorMessage}`);
-
-                    if (attempt >= maxAttempts) {
-                        errors.push(`${model}: Quota exceeded after ${maxAttempts} retries`);
-                        break;
-                    }
-
-                    // Extract wait time OR default to 10s
-                    let waitTime = 10;
-                    const match = errorMessage.match(/retry in\s+([0-9.]+)\s*s/);
-                    if (match && match[1]) {
-                        waitTime = Math.ceil(parseFloat(match[1]));
-                    }
-
-                    if (waitTime > 120) waitTime = 120; // Cap at 2 mins
-
-                    console.log(`[Gemini-AutoFix] Waiting ${waitTime}s before retry...`);
-                    await new Promise(resolve => setTimeout(resolve, (waitTime + 2) * 1000)); // +2s buffer
-                    continue;
-                }
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMessage = errorData.error?.message || response.statusText;
-                    console.warn(`[Gemini-AutoFix] Model ${model} failed (Exercise): ${errorMessage}`);
-                    errors.push(`${model}: ${errorMessage}`);
-                    break;
-                }
-
-                const data = await response.json();
-                const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (result) {
-                    console.log(`[Gemini-AutoFix] Success (Exercise) with model: ${model}`);
-                    return result;
-                }
-
-                errors.push(`${model}: No content returned`);
-                break;
-
-            } catch (error: any) {
-                console.error(`[Gemini-AutoFix] Critical error (Exercise) with ${model}:`, error);
-                errors.push(`${model}: ${error.message}`);
-                break;
-            }
-        }
-    }
-
-    throw new Error(`[FINAL_TRY_FAILED] All models rejected the request. Details: ${errors.join(' | ')}`);
+    const data = await response.json();
+    return data.text;
 }

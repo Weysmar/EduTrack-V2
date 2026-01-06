@@ -67,6 +67,29 @@ export const createFolder = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// PUT /api/folders/:id
+export const updateFolder = async (req: AuthRequest, res: Response) => {
+    try {
+        const { name, parentId } = req.body;
+
+        const folder = await prisma.folder.updateMany({
+            where: { id: req.params.id, profileId: req.user!.id },
+            data: {
+                name,
+                parentId
+            }
+        });
+
+        if (folder.count === 0) return res.status(404).json({ message: 'Folder not found' });
+
+        // Fetch updated to return
+        const updated = await prisma.folder.findFirst({ where: { id: req.params.id } });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating folder', error });
+    }
+};
+
 // DELETE /api/folders/:id
 export const deleteFolder = async (req: AuthRequest, res: Response) => {
     try {

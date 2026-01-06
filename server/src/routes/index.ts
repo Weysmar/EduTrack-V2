@@ -6,6 +6,8 @@ import folderRoutes from './folderRoutes';
 import flashcardRoutes from './flashcardRoutes';
 import quizRoutes from './quizRoutes';
 import summaryRoutes from './summaryRoutes';
+import storageRoutes from './storageRoutes';
+import aiRoutes from './aiRoutes';
 
 import profileRoutes from './profileRoutes';
 
@@ -19,5 +21,7 @@ router.use('/folders', folderRoutes);
 router.use('/flashcards', flashcardRoutes);
 router.use('/summaries', summaryRoutes);
 router.use('/quizzes', quizRoutes);
+router.use('/storage', storageRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;
