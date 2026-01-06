@@ -576,74 +576,116 @@ export function ItemView() {
                             {pdfUrl ? (
                                 <div className="border rounded-lg overflow-hidden bg-card shadow-sm relative">
 
-                                    <>
-                                        {/* Desktop View: Native Iframe (lg+) */}
-                                        <div className="hidden lg:block">
-                                            <iframe
-                                                src={`${pdfUrl}#view=FitH`}
-                                                title="PDF Document"
-                                                className="w-full h-[80vh] border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
-                                                allowFullScreen
-                                            />
-                                        </div>
+                                    {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
+                                    {(() => {
+                                        // Prioritize fileName for extension, fallback to fileType, then url
+                                        const filename = item.fileName || '';
+                                        const ext = filename.split('.').pop()?.toLowerCase() ||
+                                            (item.fileType ? item.fileType.split('/')[1] : '') ||
+                                            (item.fileData ? item.fileData.split('.').pop()?.toLowerCase() : '') || ''; // Fallback
 
-                                        {/* Tablet View: React-PDF Viewer (sm to lg) */}
-                                        <div className="hidden sm:block lg:hidden">
-                                            <PDFViewer url={pdfUrl} className="h-[80vh]" />
-                                        </div>
+                                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+                                        const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
 
-                                        {/* Smartphone View: Card Actions */}
-                                        <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                                            <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
-                                                <FileText className="h-10 w-10 text-red-500" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <h3 className="font-semibold text-lg max-w-[250px] mx-auto truncate">
-                                                    {item.fileName || 'Document PDF'}
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
-                                                </p>
-                                            </div>
-                                            <a
-                                                href={pdfUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
-                                            >
-                                                <ExternalLink className="h-5 w-5" />
-                                                Ouvrir le PDF
-                                            </a>
-                                        </div>
+                                        console.log("Detected file type:", { ext, isImage, isOffice, filename }); // Debug log
 
-                                        {/* PDF Fullscreen Modal */}
-                                        {isPdfFullscreen && (
-                                            <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
-                                                <div className="absolute top-4 right-6 z-10 flex gap-2">
-                                                    <button
-                                                        onClick={() => setIsPdfFullscreen(false)}
-                                                        className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
-                                                    >
-                                                        <Minimize className="h-4 w-4" />
-                                                        <span className="text-sm font-medium hidden sm:inline">Fermer</span>
-                                                    </button>
-                                                </div>
-                                                <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                    {/* Desktop: Iframe */}
+                                        if (isImage) {
+                                            return <ImageViewer url={pdfUrl} alt={item.title} className="h-[80vh]" />;
+                                        }
+
+                                        if (isOffice) {
+                                            return (
+                                                <>
+                                                    <div className="hidden sm:block">
+                                                        <OfficeViewer url={pdfUrl} className="h-[80vh]" />
+                                                    </div>
+                                                    {/* Mobile Fallback for Office */}
+                                                    <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg border">
+                                                        <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
+                                                            <FileText className="h-10 w-10 text-blue-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-semibold text-lg mb-2">Document Office</h3>
+                                                            <p className="text-sm text-muted-foreground">Ouvrez ce fichier pour le consulter</p>
+                                                        </div>
+                                                        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm">
+                                                            Télécharger le fichier
+                                                        </a>
+                                                    </div>
+                                                </>
+                                            );
+                                        }
+
+                                        // Default to PDF Viewer Logic (Original Hybrid Approach)
+                                        return (
+                                            <>
+                                                {/* Desktop View: Native Iframe (lg+) */}
+                                                <div className="hidden lg:block">
                                                     <iframe
                                                         src={`${pdfUrl}#view=FitH`}
-                                                        title="PDF Document Fullscreen"
-                                                        className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                        title="PDF Document"
+                                                        className="w-full h-[80vh] border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
                                                         allowFullScreen
                                                     />
-                                                    {/* Tablet: React-PDF */}
-                                                    <div className="w-full h-full hidden sm:block lg:hidden">
-                                                        <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
-                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </>
+
+                                                {/* Tablet View: React-PDF Viewer (sm to lg) */}
+                                                <div className="hidden sm:block lg:hidden">
+                                                    <PDFViewer url={pdfUrl} className="h-[80vh]" />
+                                                </div>
+
+                                                {/* Smartphone View: Card Actions */}
+                                                <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                                    <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
+                                                        <FileText className="h-10 w-10 text-red-500" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h3 className="font-semibold text-lg max-w-[250px] mx-auto truncate">
+                                                            {item.fileName || 'Document PDF'}
+                                                        </h3>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
+                                                        </p>
+                                                    </div>
+                                                    <a
+                                                        href={pdfUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
+                                                    >
+                                                        <ExternalLink className="h-5 w-5" />
+                                                        Ouvrir le PDF
+                                                    </a>
+                                                </div>
+
+                                                {/* PDF Fullscreen Modal */}
+                                                {isPdfFullscreen && (
+                                                    <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
+                                                        <div className="absolute top-4 right-6 z-10 flex gap-2">
+                                                            <button
+                                                                onClick={() => setIsPdfFullscreen(false)}
+                                                                className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
+                                                            >
+                                                                <Minimize className="h-4 w-4" />
+                                                                <span className="text-sm font-medium hidden sm:inline">Fermer</span>
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
+                                                            {/* Desktop: Iframe */}
+                                                            <iframe
+                                                                src={`${pdfUrl}#view=FitH`}
+                                                                title="PDF Document Fullscreen"
+                                                                className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                                allowFullScreen
+                                                            />
+                                                            {/* Tablet: React-PDF */}
+                                                            <div className="w-full h-full hidden sm:block lg:hidden">
+                                                                <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                 </div>
 
                             ) : item.content ? (
