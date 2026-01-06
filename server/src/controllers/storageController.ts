@@ -17,6 +17,9 @@ export const proxyFile = async (req: Request, res: Response) => {
         if (STORAGE_TYPE === 'local') {
             const filePath = path.join(process.cwd(), UPLOAD_DIR, key);
             if (fs.existsSync(filePath)) {
+                // Explicitly allow framing for PDF viewer
+                res.removeHeader('X-Frame-Options');
+                res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
                 return res.sendFile(filePath);
             } else {
                 return res.status(404).json({ message: 'File not found' });
