@@ -24,7 +24,8 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet({
     contentSecurityPolicy: false, // Disable CSP for PDF iFrame support (simplest fix for now)
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    frameguard: false // Disable X-Frame-Options to allow embedding
 }));
 app.use(cors({
     origin: (origin, callback) => {
