@@ -66,7 +66,7 @@ export function SearchModal() {
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] px-4">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[20vh] px-4">
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
@@ -74,7 +74,7 @@ export function SearchModal() {
             />
 
             {/* Modal */}
-            <div className="w-full max-w-xl bg-card border rounded-xl shadow-2xl relative z-50 overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-xl bg-card border rounded-xl shadow-2xl relative z-[100] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 {/* Header / Input */}
                 <div className="flex items-center gap-3 p-4 border-b">
                     <Search className="h-5 w-5 text-muted-foreground" />

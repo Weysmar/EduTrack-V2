@@ -12,26 +12,8 @@ export function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'apparence' | 'raccourcis' | 'api'>('api')
     const { theme, setTheme } = useTheme()
     const { t } = useLanguage()
-    const navigate = useNavigate()
-
-    const { activeProfile, deleteProfile } = useProfileStore()
-    const { deleteAccount } = useAuthStore()
-
-    const handleDeleteAccount = async () => {
-        if (!activeProfile) return
-
-        if (confirm(t('settings.danger.deleteConfirm') || "Are you sure? This action is irreversible.")) {
-            try {
-                // Delete from Server
-                await deleteAccount();
-                await deleteProfile(activeProfile.id);
-                navigate('/auth')
-            } catch (e) {
-                alert("Failed to delete account on server.");
-                console.error(e);
-            }
-        }
-    }
+    const useNavigateCallback = useNavigate()
+    const { activeProfile } = useProfileStore()
 
     const tabs = [
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
@@ -165,29 +147,6 @@ export function SettingsPage() {
                             </div>
                         )}
 
-                        {/* Danger Zone */}
-                        <div className="mt-12 pt-8 border-t border-red-200 dark:border-red-900/30">
-                            <h3 className="text-red-600 font-bold mb-4 flex items-center gap-2">
-                                <AlertCircle className="h-5 w-5" />
-                                {t('settings.danger.title') || "Zone de Danger"}
-                            </h3>
-
-                            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/20 flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-red-900 dark:text-red-200">{t('settings.danger.deleteAccount') || "Supprimer le compte"}</p>
-                                    <p className="text-sm text-red-700 dark:text-red-300">
-                                        {t('settings.danger.deleteDesc') || "Cette action est irréversible. Toutes vos données seront perdues."}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleDeleteAccount}
-                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    {t('settings.danger.deleteBtn') || "Supprimer définitivement"}
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </main>
             </div >

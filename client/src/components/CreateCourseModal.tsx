@@ -92,7 +92,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
             >
                 <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-lg font-semibold">{t('course.create.title')}</h2>
-                    <button onClick={handleClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer relative z-50 pointer-events-auto">
+                    <button onClick={handleClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer relative z-[100] pointer-events-auto">
                         <X className="h-4 w-4" />
                     </button>
                 </div>

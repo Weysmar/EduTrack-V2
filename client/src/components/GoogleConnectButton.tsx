@@ -28,7 +28,7 @@ export function GoogleConnectButton() {
         <button
             onClick={handleConnect}
             disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-3 bg-white border shadow-sm hover:shadow hover:bg-gray-50 rounded-lg transition-all text-gray-700 font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-white border shadow-sm hover:shadow hover:bg-gray-50 rounded-lg transition-all text-sm text-gray-700 font-medium"
         >
             <Calendar className="h-5 w-5 text-blue-500" />
             {isLoading ? 'Connecting...' : 'Connect Google Calendar'}
