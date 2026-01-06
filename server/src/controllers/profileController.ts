@@ -36,14 +36,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
-        const { name, theme, language } = req.body;
+        const { name, theme, language, settings } = req.body;
 
         const updatedProfile = await prisma.profile.update({
             where: { id },
             data: {
                 name,
                 theme,
-                language
+                language,
+                settings: settings as any
             }
         });
 

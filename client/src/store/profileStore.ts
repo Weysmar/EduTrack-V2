@@ -9,6 +9,7 @@ interface Profile {
     avatar?: string;
     theme: 'light' | 'dark' | 'system';
     language: 'fr' | 'en';
+    settings?: any;
 }
 
 interface ApiKeyMap {
@@ -34,6 +35,7 @@ interface ProfileState {
 
     // API Keys
     setApiKey: (service: keyof ApiKeyMap, key: string) => Promise<void>;
+    updateApiKeys: (keys: ApiKeyMap) => Promise<void>;
     getApiKey: (service: keyof ApiKeyMap) => string | null;
 }
 
@@ -54,13 +56,17 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true });
                 try {
                     const response = await apiClient.get('/auth/me');
-                    // Assuming response.data returns the profile including apiKeys or we fetch them separately
-                    // For now, let's assume auth/me returns profile details.
-                    // We might need a separate endpoint for keys if they are sensitive or just send them down.
-                    // Let's assume keys are fetched via /profiles/keys or included.
-                    // For simplicty in this migration, let's stick to core profile.
+                    const profile = response.data;
 
-                    set({ activeProfile: response.data, isLoading: false });
+                    // Load settings/keys from profile if available
+                    let keys = get().apiKeys;
+                    if (profile.settings) {
+                        // Merge or replace? Let's merge for safety, or replace if we trust server fully.
+                        // Since server is source of truth for sync, we use server values if present.
+                        keys = { ...keys, ...profile.settings };
+                    }
+
+                    set({ activeProfile: profile, apiKeys: keys, isLoading: false });
                 } catch (e) {
                     console.error("Failed to load profile", e);
                     set({ isLoading: false });
@@ -72,7 +78,7 @@ export const useProfileStore = create<ProfileState>()(
                 if (!activeProfile) return;
 
                 await apiClient.put(`/profiles/${activeProfile.id}`, data);
-                // Optimistic update or refetch
+                // Optimistic update
                 set({ activeProfile: { ...activeProfile, ...data } });
             },
 
@@ -93,9 +99,33 @@ export const useProfileStore = create<ProfileState>()(
             },
 
             setApiKey: async (service: keyof ApiKeyMap, key: string) => {
+                // Legacy single-setter, still useful for partial updates. 
+                // We should sync this too? Or keep it local until explicit save?
+                // The UI calls this on save, but 5 times. 
+                // Let's rely on the new updateApiKeys for save.
                 set(state => ({
                     apiKeys: { ...state.apiKeys, [service]: key }
                 }));
+            },
+
+            updateApiKeys: async (newKeys: ApiKeyMap) => {
+                const { activeProfile } = get();
+                // 1. Update local state
+                set({ apiKeys: newKeys });
+
+                // 2. Sync to backend if logged in
+                if (activeProfile) {
+                    try {
+                        await apiClient.put(`/profiles/${activeProfile.id}`, {
+                            settings: newKeys
+                        });
+                        // Update active profile settings reference too
+                        set({ activeProfile: { ...activeProfile, settings: newKeys } as any });
+                    } catch (e) {
+                        console.error("Failed to sync API keys to server", e);
+                        throw e;
+                    }
+                }
             },
 
             getApiKey: (service: keyof ApiKeyMap) => {
