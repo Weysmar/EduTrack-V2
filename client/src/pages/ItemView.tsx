@@ -18,6 +18,8 @@ import { Menu, Transition } from '@headlessui/react'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { PDFViewer } from '@/components/PDFViewer'
+import { OfficeViewer } from '@/components/OfficeViewer'
+import { ImageViewer } from '@/components/ImageViewer'
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 
 export function ItemView() {
