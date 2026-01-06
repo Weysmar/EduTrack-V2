@@ -204,23 +204,40 @@ export function CourseView() {
             {/* Tabs */}
             <div className="flex gap-2 border-b items-center justify-between">
                 <div className="flex gap-2">
-                    {['all', 'exercise', 'note', 'resource'].map((tab) => (
-                        <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-4 py-2 text-sm font-medium border-b-2 capitalize", activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
-                            {t(`tab.${tab}`) || tab}
-                        </button>
-                    ))}
+                    {['all', 'exercise', 'note', 'resource'].map((tab) => {
+                        const tabKey = {
+                            all: 'course.tabs.all',
+                            exercise: 'course.tabs.exercises',
+                            note: 'course.tabs.notes',
+                            resource: 'course.tabs.resources'
+                        }[tab] || `course.tabs.${tab}`;
+
+                        return (
+                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-4 py-2 text-sm font-medium border-b-2 capitalize", activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+                                {t(tabKey)}
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
 
             {/* List */}
             <div className="flex-1 overflow-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredItems?.map((item: any) => (
-                        <div key={item.id} onClick={() => navigate(`/course/${id}/item/${item.id}`)} className="p-4 border rounded-lg bg-card cursor-pointer hover:shadow-md">
-                            <h3 className="font-bold">{item.title}</h3>
-                            <p className="text-xs text-muted-foreground">{t(`type.${item.type}`) || item.type}</p>
-                        </div>
-                    ))}
+                    {filteredItems?.map((item: any) => {
+                        const typeKey = {
+                            note: 'item.create.type.note',
+                            exercise: 'item.create.type.exercise',
+                            resource: 'item.create.type.resource'
+                        }[item.type] || item.type;
+
+                        return (
+                            <div key={item.id} onClick={() => navigate(`/course/${id}/item/${item.id}`)} className="p-4 border rounded-lg bg-card cursor-pointer hover:shadow-md">
+                                <h3 className="font-bold">{item.title}</h3>
+                                <p className="text-xs text-muted-foreground">{t(typeKey)}</p>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
