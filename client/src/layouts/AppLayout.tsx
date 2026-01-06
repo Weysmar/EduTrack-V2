@@ -26,8 +26,8 @@ export function AppLayout() {
     const { activeProfile, switchProfile } = useProfileStore()
 
     useEffect(() => {
-        if (isAuthenticated && user?.profileId && !activeProfile) {
-            switchProfile(user.profileId).catch(console.error)
+        if (isAuthenticated && user?.id && !activeProfile) {
+            switchProfile(user.id).catch(console.error)
         }
     }, [isAuthenticated, user, activeProfile, switchProfile])
 
