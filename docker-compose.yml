@@ -12,8 +12,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432" # Commented out for security. Uncomment to allow external access (e.g. DBeaver).
     networks:
       - edutrack-network
     healthcheck:
