@@ -97,6 +97,16 @@ export function ItemView() {
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
 
     if (isItemLoading) return <div className="p-8">Loading...</div>
+    // If deleting, show loading to prevent "File not found" glitches
+    if (isDeleting) {
+        return (
+            <div className="flex items-center justify-center h-full p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Suppression en cours...</span>
+            </div>
+        )
+    }
+
     if (!item) return <div className="p-8">Item not found...</div>
 
     // ... Handlers ...
@@ -125,11 +135,21 @@ export function ItemView() {
         document.body.removeChild(a)
     }
 
+    const [isDeleting, setIsDeleting] = useState(false)
+
     const handleDelete = async () => {
         if (confirm(t('item.delete.confirm'))) {
+            setIsDeleting(true)
             if (item && item.id) {
-                await itemQueries.delete(item.id)
-                navigate(`/course/${courseId}`)
+                try {
+                    await itemQueries.delete(item.id)
+                    // Prefetch/Wait slightly to ensure backend consistency if needed, but navigate should handle it
+                    navigate(`/course/${courseId}`)
+                } catch (error) {
+                    console.error("Deletion failed", error)
+                    setIsDeleting(false)
+                    alert("Erreur lors de la suppression")
+                }
             }
         }
     }
