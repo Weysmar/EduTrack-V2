@@ -242,7 +242,17 @@ export function ItemView() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{item.title}</h1>
-                        {course && <p className="text-xs text-muted-foreground">{course.title}</p>}
+                        <div className="flex flex-col">
+                            {course && <p className="text-xs text-muted-foreground">{course.title}</p>}
+                            {item.type === 'resource' && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    <span className="font-semibold text-primary">
+                                        Ressource {item.fileName?.toLowerCase().endsWith('.pdf') ? 'PDF' : ''}
+                                    </span>
+                                    {item.fileName && <span className="opacity-75"> • {item.fileName}</span>}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
