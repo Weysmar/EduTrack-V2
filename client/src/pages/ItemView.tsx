@@ -248,11 +248,28 @@ export function ItemView() {
                         <div className="flex flex-col">
                             {course && <p className="text-xs text-muted-foreground truncate">{course.title}</p>}
                             {item.type === 'resource' && (
-                                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                                    <span className="font-semibold text-primary">
-                                        Ressource {item.fileName?.toLowerCase().endsWith('.pdf') ? 'PDF' : ''}
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-primary uppercase">
+                                        {item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF'}
                                     </span>
-                                    {item.fileName && <span className="opacity-75 hidden md:inline"> • {item.fileName}</span>}
+                                    {item.fileName && (
+                                        <>
+                                            <span className="opacity-50">•</span>
+                                            <span className="opacity-75">{item.fileName}</span>
+                                        </>
+                                    )}
+                                    {item.createdAt && (
+                                        <>
+                                            <span className="opacity-50">•</span>
+                                            <span className="opacity-75">
+                                                {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                })}
+                                            </span>
+                                        </>
+                                    )}
                                 </p>
                             )}
                         </div>
