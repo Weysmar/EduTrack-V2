@@ -135,8 +135,6 @@ export function ItemView() {
         document.body.removeChild(a)
     }
 
-    const [isDeleting, setIsDeleting] = useState(false)
-
     const handleDelete = async () => {
         if (confirm(t('item.delete.confirm'))) {
             setIsDeleting(true)
