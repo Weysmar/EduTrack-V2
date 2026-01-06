@@ -589,8 +589,18 @@ export function ItemView() {
                                         </>
                                     ) : (
                                         <>
-                                            {/* Tablet/Desktop View: React-PDF Viewer */}
-                                            <div className="hidden sm:block">
+                                            {/* Desktop View: Native Iframe (lg+) */}
+                                            <div className="hidden lg:block">
+                                                <iframe
+                                                    src={`${pdfUrl}#view=FitH`}
+                                                    title="PDF Document"
+                                                    className="w-full h-[80vh] border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
+                                                    allowFullScreen
+                                                />
+                                            </div>
+
+                                            {/* Tablet View: React-PDF Viewer (sm to lg) */}
+                                            <div className="hidden sm:block lg:hidden">
                                                 <PDFViewer url={pdfUrl} className="h-[80vh]" />
                                             </div>
 
@@ -630,7 +640,19 @@ export function ItemView() {
                                                             <span className="text-sm font-medium hidden sm:inline">Fermer</span>
                                                         </button>
                                                     </div>
-                                                    <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                    <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
+                                                        {/* Desktop: Iframe */}
+                                                        <iframe
+                                                            src={`${pdfUrl}#view=FitH`}
+                                                            title="PDF Document Fullscreen"
+                                                            className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                            allowFullScreen
+                                                        />
+                                                        {/* Tablet: React-PDF */}
+                                                        <div className="w-full h-full hidden sm:block lg:hidden">
+                                                            <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </>
