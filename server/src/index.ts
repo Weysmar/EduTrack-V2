@@ -24,7 +24,13 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        // Allow all origins dynamically (reflect request origin)
+        // In production, you might want to restrict this to specific domains
+        return callback(null, true);
+    },
     credentials: true
 }));
 app.use(morgan('dev'));
