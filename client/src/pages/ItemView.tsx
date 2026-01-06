@@ -589,13 +589,13 @@ export function ItemView() {
                                         </>
                                     ) : (
                                         <>
-                                            {/* Desktop View: Iframe */}
-                                            <div className="hidden md:block">
+                                            {/* Tablet/Desktop View: React-PDF Viewer */}
+                                            <div className="hidden sm:block">
                                                 <PDFViewer url={pdfUrl} className="h-[80vh]" />
                                             </div>
 
-                                            {/* Mobile View: Card Actions */}
-                                            <div className="md:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                            {/* Smartphone View: Card Actions */}
+                                            <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                                                 <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
                                                     <FileText className="h-10 w-10 text-red-500" />
                                                 </div>
@@ -620,7 +620,7 @@ export function ItemView() {
 
                                             {/* PDF Fullscreen Modal */}
                                             {isPdfFullscreen && (
-                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden md:flex">
+                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
                                                     <div className="absolute top-4 right-6 z-10 flex gap-2">
                                                         <button
                                                             onClick={() => setIsPdfFullscreen(false)}
