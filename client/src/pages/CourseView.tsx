@@ -232,9 +232,43 @@ export function CourseView() {
                         }[item.type] || item.type;
 
                         return (
-                            <div key={item.id} onClick={() => navigate(`/course/${id}/item/${item.id}`)} className="p-4 border rounded-lg bg-card cursor-pointer hover:shadow-md">
-                                <h3 className="font-bold">{item.title}</h3>
-                                <p className="text-xs text-muted-foreground">{t(typeKey)}</p>
+                            <div key={item.id} onClick={() => navigate(`/course/${id}/item/${item.id}`)} className="p-4 border rounded-lg bg-card cursor-pointer hover:shadow-md transition-all group">
+                                <div className="flex items-start justify-between">
+                                    <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">{item.title}</h3>
+                                    {item.type === 'resource' && <FolderOpen className="h-5 w-5 text-muted-foreground/50" />}
+                                    {item.type === 'note' && <FileText className="h-5 w-5 text-muted-foreground/50" />}
+                                    {item.type === 'exercise' && <Dumbbell className="h-5 w-5 text-muted-foreground/50" />}
+                                </div>
+
+                                <div className="text-xs text-muted-foreground flex flex-wrap gap-2 items-center mt-2">
+                                    <span className={cn(
+                                        "px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-medium",
+                                        item.type === 'resource' && "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30",
+                                        item.type === 'note' && "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30",
+                                        item.type === 'exercise' && "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30"
+                                    )}>
+                                        {t(typeKey)}
+                                    </span>
+
+                                    {item.type === 'resource' && (
+                                        <>
+                                            <span className="w-px h-3 bg-border mx-1 hidden sm:block" />
+                                            <span className="uppercase font-semibold text-[10px] tracking-wider opacity-70">
+                                                {item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF'}
+                                            </span>
+                                            {item.fileName && <span className="opacity-50 truncate max-w-[100px] hidden sm:block" title={item.fileName}>{item.fileName}</span>}
+                                        </>
+                                    )}
+
+                                    <span className="w-px h-3 bg-border mx-1 hidden sm:block" />
+                                    <span className="opacity-70 flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                                            day: '2-digit',
+                                            month: 'short'
+                                        })}
+                                    </span>
+                                </div>
                             </div>
                         )
                     })}
