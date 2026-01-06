@@ -94,13 +94,24 @@ export function DocxViewer({ url, className = "" }: DocxViewerProps) {
 
     return (
         <div className={`bg-white dark:bg-slate-950 p-8 sm:p-12 rounded-lg shadow-sm border overflow-auto ${className}`}>
-            {/* Render the HTML content with improved Typography */}
+            {/* Manual CSS for prose since tailwindcss/typography might be missing */}
+            <style>{`
+                .docx-content h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
+                .docx-content h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+                .docx-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+                .docx-content p { margin-bottom: 1rem; line-height: 1.6; text-align: justify; }
+                .docx-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+                .docx-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+                .docx-content li { margin-bottom: 0.25rem; }
+                .docx-content img { max-width: 100%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem; }
+                .docx-content table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+                .docx-content td, .docx-content th { border: 1px solid #e2e8f0; padding: 0.5rem; }
+                .dark .docx-content td, .dark .docx-content th { border-color: #334155; }
+            `}</style>
+
+            {/* Render the HTML content with custom class */}
             <div
-                className="prose dark:prose-invert max-w-none 
-                prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl 
-                prose-p:leading-relaxed prose-p:text-justify prose-li:my-1
-                prose-ul:list-disc prose-ol:list-decimal prose-ul:pl-5
-                prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto"
+                className="docx-content text-slate-900 dark:text-slate-100"
                 dangerouslySetInnerHTML={{ __html: content || '' }}
             />
         </div>
