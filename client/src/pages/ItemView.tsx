@@ -222,17 +222,17 @@ export function ItemView() {
             )}
 
             {/* Header */}
-            <div className="h-16 border-b flex items-center justify-between px-6 bg-card sticky top-0 z-40">
-                <div className="flex items-center gap-4">
+            <div className="h-16 border-b flex items-center justify-between px-3 md:px-6 bg-card sticky top-0 z-40">
+                <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                     <button
                         onClick={() => navigate(`/course/${courseId}`)}
-                        className="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                        className="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground flex-shrink-0"
                     >
                         <ArrowLeft className="h-5 w-5" />
                         <span className="font-medium hidden sm:inline">{t('course.return')}</span>
                     </button>
-                    <div className="h-6 w-px bg-border text-muted-foreground" />
-                    <div className={cn("p-2 rounded-md",
+                    <div className="h-6 w-px bg-border text-muted-foreground hidden sm:block" />
+                    <div className={cn("p-2 rounded-md flex-shrink-0",
                         item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                         item.type === 'resource' && "bg-green-100 text-green-600 dark:bg-green-900/20",
@@ -243,16 +243,16 @@ export function ItemView() {
                         {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
 
                     </div>
-                    <div>
-                        <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">{item.title}</h1>
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-base md:text-xl font-bold truncate">{item.title}</h1>
                         <div className="flex flex-col">
-                            {course && <p className="text-xs text-muted-foreground">{course.title}</p>}
+                            {course && <p className="text-xs text-muted-foreground truncate">{course.title}</p>}
                             {item.type === 'resource' && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate">
                                     <span className="font-semibold text-primary">
                                         Ressource {item.fileName?.toLowerCase().endsWith('.pdf') ? 'PDF' : ''}
                                     </span>
-                                    {item.fileName && <span className="opacity-75"> • {item.fileName}</span>}
+                                    {item.fileName && <span className="opacity-75 hidden md:inline"> • {item.fileName}</span>}
                                 </p>
                             )}
                         </div>
@@ -607,24 +607,15 @@ export function ItemView() {
                                                         Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
                                                     </p>
                                                 </div>
-                                                <div className="flex flex-col gap-3 w-full max-w-xs">
-                                                    <a
-                                                        href={pdfUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
-                                                    >
-                                                        <ExternalLink className="h-5 w-5" />
-                                                        Ouvrir le PDF
-                                                    </a>
-                                                    <button
-                                                        onClick={handleDownload}
-                                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
-                                                    >
-                                                        <Download className="h-5 w-5" />
-                                                        Télécharger
-                                                    </button>
-                                                </div>
+                                                <a
+                                                    href={pdfUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
+                                                >
+                                                    <ExternalLink className="h-5 w-5" />
+                                                    Ouvrir le PDF
+                                                </a>
                                             </div>
 
                                             {/* PDF Fullscreen Modal */}

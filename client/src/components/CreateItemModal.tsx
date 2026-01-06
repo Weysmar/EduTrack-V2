@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Dumbbell, FileText, FolderOpen } from 'lucide-react'
 import { Editor } from './Editor'
@@ -39,6 +39,18 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
             // Keep type maybe?
         }
     })
+
+    // Handle ESC key to close modal
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose()
+            }
+        }
+
+        window.addEventListener('keydown', handleEscape)
+        return () => window.removeEventListener('keydown', handleEscape)
+    }, [isOpen, onClose])
 
     if (!isOpen) return null
 

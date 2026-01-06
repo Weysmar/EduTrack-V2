@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
-import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, AlertCircle, Trash2 } from "lucide-react"
+import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History } from "lucide-react"
 import { useTheme } from '@/components/theme-provider'
 import { useLanguage } from '@/components/language-provider'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
-import { useAuthStore } from '@/store/authStore'
+import { ChangelogModal } from '@/components/ChangelogModal'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'apparence' | 'raccourcis' | 'api'>('api')
+    const [activeTab, setActiveTab] = useState<'apparence' | 'raccourcis' | 'api' | 'changelog'>('api')
+    const [isChangelogOpen, setIsChangelogOpen] = useState(false)
     const { theme, setTheme } = useTheme()
     const { t } = useLanguage()
     const useNavigateCallback = useNavigate()
@@ -19,6 +20,7 @@ export function SettingsPage() {
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
         { id: 'apparence', label: t('settings.tabs.appearance'), icon: Sun },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
+        { id: 'changelog', label: t('changelog.title'), icon: History },
     ] as const
 
     return (
@@ -147,9 +149,26 @@ export function SettingsPage() {
                             </div>
                         )}
 
+                        {activeTab === 'changelog' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">{t('changelog.title')}</h2>
+                                    <p className="text-sm text-muted-foreground mb-6">Consultez l'historique des mises à jour</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsChangelogOpen(true)}
+                                    className="w-full px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium shadow-sm flex items-center justify-center gap-2"
+                                >
+                                    <History className="h-5 w-5" />
+                                    {t('changelog.view')}
+                                </button>
+                            </div>
+                        )}
+
                     </div>
                 </main>
             </div >
+            <ChangelogModal isOpen={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
         </div >
     )
 }
