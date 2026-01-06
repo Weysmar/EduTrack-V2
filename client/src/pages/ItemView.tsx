@@ -657,14 +657,16 @@ export function ItemView() {
                                                         <p>Filename: {filename}</p>
                                                         <p>URL: {pdfUrl?.substring(0, 30)}...</p>
                                                     </div>
+                                                    {/* Open External/Download Button */}
                                                     <a
                                                         href={pdfUrl}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
+                                                        download={isOffice ? true : undefined}
                                                         className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
                                                     >
-                                                        <ExternalLink className="h-5 w-5" />
-                                                        Ouvrir le PDF
+                                                        {isOffice ? <Download className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
+                                                        {isOffice ? 'Télécharger l\'original' : 'Ouvrir le PDF'}
                                                     </a>
                                                 </div>
 
