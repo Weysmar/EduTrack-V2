@@ -1,3 +1,14 @@
+// Polyfill for URL.parse (required by newer pdfjs-dist versions)
+if (typeof URL.parse === 'undefined') {
+    URL.parse = (url: string, base?: string) => {
+        try {
+            return new URL(url, base);
+        } catch (e) {
+            return null;
+        }
+    };
+}
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
