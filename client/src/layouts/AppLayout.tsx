@@ -5,7 +5,6 @@ import { Sidebar } from '@/components/Sidebar'
 import { Menu } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageToggle } from '@/components/language-toggle'
-import { Network } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
@@ -35,15 +34,7 @@ export function AppLayout() {
     const { setIsOpen } = useSearchStore()
     const [isChangelogOpen, setIsChangelogOpen] = useState(false)
     const location = useLocation()
-    const isGraphView = location.pathname === '/graph'
-    const [returnPath, setReturnPath] = useState("/")
     const navigate = useNavigate()
-
-    useEffect(() => {
-        if (!isGraphView) {
-            setReturnPath(location.pathname)
-        }
-    }, [location.pathname, isGraphView])
 
     // Auto-close sidebar on mobile on initial load
     useEffect(() => {
@@ -119,38 +110,13 @@ export function AppLayout() {
                         </div>
                     </button>
 
+
+
                     <div className="flex items-center gap-2">
                         {/* Hide Drive Button on very small screens if needed, or keep it */}
                         <div className="hidden sm:block">
                             <GoogleConnectButton />
                         </div>
-
-                        <button
-                            onClick={() => {
-                                if (!isGraphView) {
-                                    navigate('/graph');
-                                } else {
-                                    const mode = new URLSearchParams(location.search).get('mode');
-                                    if (mode !== '2d') {
-                                        navigate('/graph?mode=2d');
-                                    } else {
-                                        navigate(returnPath || '/');
-                                    }
-                                }
-                            }}
-                            className={cn(
-                                "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
-                                isGraphView ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"
-                            )}
-                            title={isGraphView ? (location.search.includes('mode=2d') ? "Close Graph" : "Switch to 2D") : "Open Graph View (3D)"}
-                        >
-                            <Network className="h-5 w-5" />
-                            <span className="text-sm font-medium hidden sm:inline-block">
-                                {isGraphView
-                                    ? (location.search.includes('mode=2d') ? "Close" : "2D")
-                                    : "Graph"}
-                            </span>
-                        </button>
 
                         <LanguageToggle />
                         <ModeToggle />
@@ -162,12 +128,12 @@ export function AppLayout() {
                             <History className="h-5 w-5" />
                         </button>
                     </div>
-                </header>
+                </header >
 
                 <div className="flex-1 overflow-auto p-4 lg:p-6">
                     <Outlet />
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     )
 }
