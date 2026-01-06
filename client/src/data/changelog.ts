@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 
 export const changelogs: ChangelogEntry[] = [
     {
+        version: "0.4.1",
+        date: "2026-01-06",
+        title: "Resource Hub Upgrade 📂",
+        changes: [
+            { type: 'new', description: "Multi-Format Viewer: Native support for PDF, Office documents (Word, Excel, PowerPoint), and Images directly in the app." },
+            { type: 'improvement', description: "Metadata Display: Clearer resource cards showing file format, full date, and filename at a glance." },
+            { type: 'fix', description: "Secure Deletion: Fixed 'File not found' errors when deleting resources; added visual feedback during deletion." },
+            { type: 'fix', description: "Document Detection: Robust file type detection ensures Office docs always open in the correct viewer." }
+        ]
+    },
+    {
         version: "0.4.0",
         date: "2026-01-04",
         title: "Cloud Sync Overhaul 🔄",
