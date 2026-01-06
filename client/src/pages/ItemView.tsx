@@ -10,7 +10,7 @@ import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
@@ -44,6 +44,7 @@ export function ItemView() {
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
     const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
+    const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
     const [showSummaryModal, setShowSummaryModal] = useState(false)
