@@ -21,18 +21,19 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
         return <DocxViewer url={url} className={className} />;
     }
 
-    // For other Office files (XLS, PPT), use Microsoft Office Online Viewer
-    // Note: This requires the file URL to be public facing. Localhost will fail.
+    // For other Office files (XLS, PPT), use Google Docs Viewer (often more robust for simple embedding)
     const encodedUrl = encodeURIComponent(url);
-    const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+    // Microsoft fallback just in case
+    const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
 
     return (
         <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden ${className}`}>
 
             {/* Toolbar / Fallback Header */}
             <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b text-sm">
-                <span className="font-medium text-muted-foreground">
-                    Aperçu Office Online
+                <span className="font-medium text-muted-foreground flex items-center gap-2">
+                    Aperçu du document
                 </span>
                 <div className="flex gap-2">
                     <a
@@ -45,11 +46,11 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
                         <span className="hidden sm:inline">Télécharger</span>
                     </a>
                     <a
-                        href={viewerUrl}
+                        href={googleViewerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
-                        title="Ouvrir dans une nouvelle fenêtre"
+                        title="Ouvrir dans Google Viewer"
                     >
                         <ExternalLink className="h-4 w-4" />
                         <span className="hidden sm:inline">Ouvrir</span>
@@ -57,26 +58,20 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
                 </div>
             </div>
 
-            {/* Viewer Iframe */}
+            {/* Viewer Iframe (Google Docs Viewer) */}
             <div className="flex-1 relative bg-white">
                 <iframe
-                    src={viewerUrl}
-                    title="Office Viewer"
+                    src={googleViewerUrl}
+                    title="Document Viewer"
                     className="absolute inset-0 w-full h-full border-0"
                     allowFullScreen
-                    onError={(e) => {
-                        // Very hard to catch iframe errors due to CORS, but good to have the structure
-                        console.error("Office viewer error", e);
-                    }}
+                    onError={(e) => console.error("Viewer error", e)}
                 />
-
-                {/* Overlay for Loading State (Optional optimization) */}
-                {/* Since we can't easily detect load state of cross-origin iframe, we rely on the iframe itself showing a loader */}
             </div>
 
-            {/* Disclaimer for Localhost/Private Networks */}
+            {/* Disclaimer */}
             <div className="px-4 py-1 text-xs text-center text-muted-foreground bg-slate-100 dark:bg-slate-950 border-t">
-                Si l'aperçu ne s'affiche pas, le fichier est peut-être privé ou inaccessible par Microsoft. Utilisez le bouton "Télécharger".
+                Si le document ne s'affiche pas, il est peut-être protégé. Cliquez sur "Ouvrir" ou "Télécharger".
             </div>
         </div>
     );
