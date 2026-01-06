@@ -15,10 +15,21 @@ import { useSearchStore } from '@/store/searchStore'
 import { Search, History } from 'lucide-react'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
+import { useAuthStore } from '@/store/authStore'
+import { useProfileStore } from '@/store/profileStore'
 
 export function AppLayout() {
     // Initialize Socket Connection
     useSocket()
+
+    const { user, isAuthenticated } = useAuthStore()
+    const { activeProfile, switchProfile } = useProfileStore()
+
+    useEffect(() => {
+        if (isAuthenticated && user?.profileId && !activeProfile) {
+            switchProfile(user.profileId).catch(console.error)
+        }
+    }, [isAuthenticated, user, activeProfile, switchProfile])
 
     const { isSidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
     const { setIsOpen } = useSearchStore()
