@@ -74,12 +74,25 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
         })
     }
 
+    const handleClose = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        console.log('❌ [CreateCourseModal] Close clicked!');
+        onClose();
+    }
+
+    if (!isOpen) return null
+
+    console.log('🔍 [CreateCourseModal] Rendered with z-[9999]');
+
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={handleClose}>
+            <div
+                className="w-full max-w-md bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 pointer-events-auto"
+                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+            >
                 <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-lg font-semibold">{t('course.create.title')}</h2>
-                    <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors">
+                    <button onClick={handleClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer relative z-50 pointer-events-auto">
                         <X className="h-4 w-4" />
                     </button>
                 </div>
@@ -90,7 +103,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                         <input
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 pointer-events-auto"
                             placeholder="e.g. Advanced Calculus"
                             autoFocus
                             required
@@ -102,7 +115,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px]"
+                            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px] pointer-events-auto"
                             placeholder="Brief summary of the course..."
                         />
                     </div>
@@ -116,7 +129,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                                     type="button"
                                     onClick={() => { setColor(c); setIcon('') }} // prioritizing color resets icon if desired, or keep both. Pattern matches SettingsModal.
                                     className={cn(
-                                        "w-6 h-6 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background",
+                                        "w-6 h-6 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background pointer-events-auto",
                                         color === c && !icon && "ring-2 ring-offset-2 ring-primary scale-110"
                                     )}
                                     style={{ backgroundColor: c }}
@@ -134,7 +147,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                                     type="button"
                                     onClick={() => setIcon(emoji)}
                                     className={cn(
-                                        "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-lg transition-colors",
+                                        "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-lg transition-colors pointer-events-auto",
                                         icon === emoji && "bg-primary/20 ring-1 ring-primary"
                                     )}
                                 >
@@ -146,7 +159,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                                 type="button"
                                 onClick={() => setIcon('')}
                                 className={cn(
-                                    "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-xs text-muted-foreground border border-dashed",
+                                    "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-xs text-muted-foreground border border-dashed pointer-events-auto",
                                     !icon && "bg-muted/50"
                                 )}
                                 title="No Icon"
@@ -159,15 +172,15 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                     <div className="flex justify-end gap-2 pt-4">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                            onClick={handleClose}
+                            className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors pointer-events-auto"
                         >
                             {t('course.create.cancel')}
                         </button>
                         <button
                             type="submit"
                             disabled={createCourseMutation.isPending}
-                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50"
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 pointer-events-auto"
                         >
                             {createCourseMutation.isPending ? t('course.create.loading') : t('course.create.submit')}
                         </button>
