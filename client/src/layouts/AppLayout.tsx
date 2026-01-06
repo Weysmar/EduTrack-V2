@@ -9,9 +9,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
 import { SearchModal } from '@/components/SearchModal'
-import { ChangelogModal } from '@/components/ChangelogModal'
 import { useSearchStore } from '@/store/searchStore'
-import { Search, History } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
@@ -32,7 +31,6 @@ export function AppLayout() {
 
     const { isSidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
     const { setIsOpen } = useSearchStore()
-    const [isChangelogOpen, setIsChangelogOpen] = useState(false)
     const location = useLocation()
     const navigate = useNavigate()
 
@@ -62,7 +60,6 @@ export function AppLayout() {
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background relative">
             <SearchModal />
-            <ChangelogModal isOpen={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -120,13 +117,6 @@ export function AppLayout() {
 
                         <LanguageToggle />
                         <ModeToggle />
-                        <button
-                            onClick={() => setIsChangelogOpen(true)}
-                            className="p-2 hover:bg-accent rounded-md transition-colors"
-                            title="Changelog"
-                        >
-                            <History className="h-5 w-5" />
-                        </button>
                     </div>
                 </header >
 
