@@ -32,6 +32,21 @@ export const getItems = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// GET /api/items/:id
+export const getItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        res.json(item);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching item', error });
+    }
+};
+
 // POST /api/items
 export const createItem = async (req: AuthRequest, res: Response) => {
     try {
