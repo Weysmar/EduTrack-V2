@@ -790,57 +790,52 @@ export function ItemView() {
                                                                 </div>
                                                             </>
                                                         )}
+                                    })()}
                                                     </div>
+
+                                                    ) : item.content ? (
+                                                    <div className="prose dark:prose-invert max-w-none prose-lg">
+                                                        {item.type === 'note' ? (
+                                                            <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                                        ) : (
+                                                            <p className="whitespace-pre-wrap">{item.content}</p>
+                                                        )}
+                                                    </div>
+                                                    ) : (
+                                                    <div className="text-center py-20 text-muted-foreground italic">
+                                                        {t('item.noContent')}
+                                                    </div>
+                            )}
+
+                                                    {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
+                                                    {(item.fileData || item.type === 'resource') && (
+                                                        <div className="mt-8 border-t pt-6">
+                                                            <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-3 bg-background rounded-md border">
+                                                                        <FolderOpen className="h-8 w-8 text-primary" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
+                                                                        <p className="text-sm text-muted-foreground">
+                                                                            {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    onClick={handleDownload}
+                                                                    className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
+                                                                >
+                                                                    <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+                                                                    <span>{t('file.download')}</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
-                                        </>
-                                        );
-                                    })()}
-                                </div>
-
-                            ) : item.content ? (
-                                <div className="prose dark:prose-invert max-w-none prose-lg">
-                                    {item.type === 'note' ? (
-                                        <div dangerouslySetInnerHTML={{ __html: item.content }} />
-                                    ) : (
-                                        <p className="whitespace-pre-wrap">{item.content}</p>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="text-center py-20 text-muted-foreground italic">
-                                    {t('item.noContent')}
-                                </div>
-                            )}
-
-                            {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
-                            {(item.fileData || item.type === 'resource') && (
-                                <div className="mt-8 border-t pt-6">
-                                    <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-3 bg-background rounded-md border">
-                                                <FolderOpen className="h-8 w-8 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={handleDownload}
-                                            className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
-                                        >
-                                            <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-                                            <span>{t('file.download')}</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                        </div >
             </div>
         </div>
-    )
-}
+                    )
+                    }
