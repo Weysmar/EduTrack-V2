@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: edutrack_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-edutrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: ${POSTGRES_DB:-edutrack_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    networks:
+      - edutrack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-edutrack}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Service
+  backend:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: edutrack_backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-edutrack}:${POSTGRES_PASSWORD:-securepassword}@postgres:5432/${POSTGRES_DB:-edutrack_db}
+      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeytochangeinprod}
+      # CORS setup for dokploy domain or local network
+      CORS_ORIGIN: "*" 
+      # Storage configuration (S3 or Local)
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_BUCKET_NAME: ${AWS_BUCKET_NAME}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edutrack-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    container_name: edutrack_frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-/api}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - edutrack-network
+    restart: unless-stopped
+
+  # MinIO Service (Optional S3 simplified for Dokploy)
+  minio:
+    image: minio/minio
+    container_name: edutrack_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadminpassword}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - edutrack-network
+    restart: unless-stopped
+
+networks:
+  edutrack-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  uploads:
+  minio_data:
