@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderQueries, courseQueries, itemQueries } from '@/lib/api/queries'
 import { useState } from 'react'
@@ -49,6 +50,10 @@ export function FolderView() {
         mutationFn: folderQueries.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['folders'] })
+            toast.success(t('folder.create.success') || "Folder created")
+        },
+        onError: () => {
+            toast.error(t('folder.create.error') || "Failed to create folder")
         }
     })
 
@@ -56,7 +61,11 @@ export function FolderView() {
         mutationFn: folderQueries.delete,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['folders'] })
+            toast.success(t('folder.delete.success') || "Folder deleted")
             navigate(-1)
+        },
+        onError: () => {
+            toast.error(t('folder.delete.error') || "Failed to delete folder")
         }
     })
 
@@ -73,7 +82,7 @@ export function FolderView() {
 
     const handleOpenGeneration = async () => {
         if (!courses || courses.length === 0) {
-            alert("No courses in this folder to generate from.")
+            toast.error("No courses in this folder to generate from.")
             return
         }
 
@@ -98,14 +107,14 @@ export function FolderView() {
 
             const content = itemsToProcess.join(' ')
             if (!content.trim()) {
-                alert("No content available in these courses to generate exercises.")
+                toast.warning("No content available in these courses to generate exercises.")
             } else {
                 setAggregatedContent(content)
                 setIsGenerateModalOpen(true)
             }
         } catch (e) {
             console.error(e)
-            alert("Failed to aggregate content.")
+            toast.error("Failed to aggregate content.")
         } finally {
             setIsAggregating(false)
         }

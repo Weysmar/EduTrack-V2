@@ -1,4 +1,5 @@
 import { Plus, FolderPlus, Settings, Trash2 } from 'lucide-react'
+import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { courseQueries, folderQueries } from '@/lib/api/queries'
@@ -33,11 +34,15 @@ export function Sidebar() {
         mutationFn: folderQueries.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['folders'] })
+            toast.success(t('folder.create.success') || "Folder created")
+        },
+        onError: () => {
+            toast.error(t('folder.create.error') || "Failed to create folder")
         }
     })
 
     const handleCreateFolder = async () => {
-        if (!activeProfile) return alert(t('nav.selectProfile'))
+        if (!activeProfile) return toast.error(t('nav.selectProfile'))
 
         const name = prompt(t('folder.create.prompt') || "Folder Name:")
         if (name) {

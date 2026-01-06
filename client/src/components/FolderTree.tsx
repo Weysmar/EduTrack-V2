@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from "sonner"
 import { Course, Folder } from '@/lib/types';
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -58,9 +59,14 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
             const idToUpdate = String(courseId);
 
             console.log(`[FolderTree] Dropping course ${idToUpdate} into folder ${folder.id}`);
-            const { courseQueries } = await import('@/lib/api/queries')
-            await courseQueries.update(String(idToUpdate), { folderId: folder.id })
-            console.log(`[FolderTree] Update complete.`);
+            try {
+                const { courseQueries } = await import('@/lib/api/queries')
+                await courseQueries.update(String(idToUpdate), { folderId: folder.id })
+                toast.success("Course moved successfully")
+            } catch (error) {
+                console.error("Failed to move course:", error)
+                toast.error("Failed to move course")
+            }
         }
     }
 

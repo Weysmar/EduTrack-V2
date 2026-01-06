@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -73,8 +74,8 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
         })
     }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="w-full max-w-md bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between p-4 border-b">
                     <h2 className="text-lg font-semibold">{t('course.create.title')}</h2>
@@ -173,6 +174,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }
