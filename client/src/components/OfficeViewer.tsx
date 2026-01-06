@@ -21,39 +21,62 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
         return <DocxViewer url={url} className={className} />;
     }
 
-    // For other Office files (XLS, PPT), simplistic Google Viewer won't work on localhost.
-    // We provide a clean "Download/Open" card instead of a broken iframe.
+    // For other Office files (XLS, PPT), use Microsoft Office Online Viewer
+    // Note: This requires the file URL to be public facing. Localhost will fail.
+    const encodedUrl = encodeURIComponent(url);
+    const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+
     return (
-        <div className={`flex flex-col items-center justify-center p-12 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed ${className}`}>
-            <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm mb-6">
-                <FileText className="h-12 w-12 text-blue-500" />
+        <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden ${className}`}>
+
+            {/* Toolbar / Fallback Header */}
+            <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b text-sm">
+                <span className="font-medium text-muted-foreground">
+                    Aperçu Office Online
+                </span>
+                <div className="flex gap-2">
+                    <a
+                        href={url}
+                        download
+                        className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
+                        title="Télécharger le fichier"
+                    >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">Télécharger</span>
+                    </a>
+                    <a
+                        href={viewerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
+                        title="Ouvrir dans une nouvelle fenêtre"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="hidden sm:inline">Ouvrir</span>
+                    </a>
+                </div>
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">Aperçu non disponible</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-8">
-                Ce format de fichier ne peut pas être visualisé directement dans l'application pour le moment.
-            </p>
+            {/* Viewer Iframe */}
+            <div className="flex-1 relative bg-white">
+                <iframe
+                    src={viewerUrl}
+                    title="Office Viewer"
+                    className="absolute inset-0 w-full h-full border-0"
+                    allowFullScreen
+                    onError={(e) => {
+                        // Very hard to catch iframe errors due to CORS, but good to have the structure
+                        console.error("Office viewer error", e);
+                    }}
+                />
 
-            <div className="flex gap-4">
-                <a
-                    href={url}
-                    download
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm hover:bg-primary/90 transition-colors"
-                >
-                    <Download className="h-5 w-5" />
-                    Télécharger
-                </a>
+                {/* Overlay for Loading State (Optional optimization) */}
+                {/* Since we can't easily detect load state of cross-origin iframe, we rely on the iframe itself showing a loader */}
+            </div>
 
-                {/* Fallback link to Google Viewer just in case they ARE public (rare but possible) */}
-                <a
-                    href={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
-                >
-                    <ExternalLink className="h-5 w-5" />
-                    Essayer Google Viewer
-                </a>
+            {/* Disclaimer for Localhost/Private Networks */}
+            <div className="px-4 py-1 text-xs text-center text-muted-foreground bg-slate-100 dark:bg-slate-950 border-t">
+                Si l'aperçu ne s'affiche pas, le fichier est peut-être privé ou inaccessible par Microsoft. Utilisez le bouton "Télécharger".
             </div>
         </div>
     );
