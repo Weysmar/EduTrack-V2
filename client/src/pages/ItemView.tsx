@@ -716,121 +716,52 @@ export function ItemView() {
 
                                         // Fallback for Unknown Types
                                         return <GenericFileViewer url={pdfUrl} filename={item.fileName} className="h-[80vh]" />;
-                                        <>
-                                            {/* Desktop View: Native Iframe (lg+) */}
-                                            <div className="hidden lg:block">
-                                                <iframe
-                                                    src={`${pdfUrl}#view=FitH`}
-                                                    title="PDF Document"
-                                                    className="w-full h-[80vh] border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
-                                                    allowFullScreen
-                                                />
-                                            </div>
-
-                                            {/* Tablet View: React-PDF Viewer (sm to lg) */}
-                                            <div className="hidden sm:block lg:hidden">
-                                                <PDFViewer url={pdfUrl} className="h-[80vh]" />
-                                            </div>
-
-                                            {/* Smartphone View: Card Actions */}
-                                            <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                                                <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
-                                                    <FileText className="h-10 w-10 text-red-500" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h3 className="font-semibold text-lg max-w-[250px] mx-auto truncate">
-                                                        {item.fileName || 'Document PDF'}
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
-                                                    </p>
-                                                </div>
-
-                                                {/* Open External/Download Button */}
-                                                <a
-                                                    href={pdfUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
-                                                >
-                                                    <ExternalLink className="h-5 w-5" />
-                                                    Ouvrir le PDF
-                                                </a>
-                                            </div>
-
-                                            {/* PDF/Office Fullscreen Modal */}
-                                            {isPdfFullscreen && (
-                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
-                                                    <div className="absolute top-4 right-6 z-10 flex gap-2">
-                                                        <button
-                                                            onClick={() => setIsPdfFullscreen(false)}
-                                                            className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
-                                                        >
-                                                            <Minimize className="h-4 w-4" />
-                                                            <span className="text-sm font-medium hidden sm:inline">Fermer</span>
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                        {isOffice ? (
-                                                            <div className="w-full h-full bg-white dark:bg-slate-950 rounded-lg overflow-auto">
-                                                                <OfficeViewer url={pdfUrl} className="min-h-full" />
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {/* Desktop: Iframe */}
-                                                                <iframe
-                                                                    src={`${pdfUrl}#view=FitH`}
-                                                                    title="PDF Document Fullscreen"
-                                                                    className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
-                                                                    allowFullScreen
-                                                                />
-                                                                {/* Tablet: React-PDF */}
                                     })()}
-                                                            </div>
+                                </div>
 
-                                                        ) : item.content ? (
-                                                        <div className="prose dark:prose-invert max-w-none prose-lg">
-                                                            {item.type === 'note' ? (
-                                                                <div dangerouslySetInnerHTML={{ __html: item.content }} />
-                                                            ) : (
-                                                                <p className="whitespace-pre-wrap">{item.content}</p>
-                                                            )}
-                                                        </div>
-                                                        ) : (
-                                                        <div className="text-center py-20 text-muted-foreground italic">
-                                                            {t('item.noContent')}
-                                                        </div>
+                            ) : item.content ? (
+                                <div className="prose dark:prose-invert max-w-none prose-lg">
+                                    {item.type === 'note' ? (
+                                        <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                    ) : (
+                                        <p className="whitespace-pre-wrap">{item.content}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-muted-foreground italic">
+                                    {t('item.noContent')}
+                                </div>
                             )}
 
-                                                        {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
-                                                        {(item.fileData || item.type === 'resource') && (
-                                                            <div className="mt-8 border-t pt-6">
-                                                                <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="p-3 bg-background rounded-md border">
-                                                                            <FolderOpen className="h-8 w-8 text-primary" />
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
-                                                                            <p className="text-sm text-muted-foreground">
-                                                                                {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={handleDownload}
-                                                                        className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
-                                                                    >
-                                                                        <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-                                                                        <span>{t('file.download')}</span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                            )}
-                                                </div >
+                            {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
+                            {(item.fileData || item.type === 'resource') && (
+                                <div className="mt-8 border-t pt-6">
+                                    <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 bg-background rounded-md border">
+                                                <FolderOpen className="h-8 w-8 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleDownload}
+                                            className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
+                                        >
+                                            <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+                                            <span>{t('file.download')}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div >
             </div >
         </div>
-                            )
-                    }
+    )
+}
