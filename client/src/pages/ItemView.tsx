@@ -49,6 +49,7 @@ export function ItemView() {
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+    const [isPdfFullscreen, setIsPdfFullscreen] = useState(false)
 
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
@@ -78,6 +79,8 @@ export function ItemView() {
             if (e.key === 'Escape') {
                 if (isImageFullscreen) {
                     setIsImageFullscreen(false)
+                } else if (isPdfFullscreen) {
+                    setIsPdfFullscreen(false)
                 } else {
                     setIsFocusMode(false)
                 }
@@ -85,7 +88,7 @@ export function ItemView() {
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isImageFullscreen])
+    }, [isImageFullscreen, isPdfFullscreen])
 
     // Summary Hook
     const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(id, item?.type || 'note')
@@ -257,6 +260,29 @@ export function ItemView() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* PDF Controls - Moved here */}
+                    {pdfUrl && !showSummary && item.type === 'resource' && (
+                        <>
+                            <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                title="Ouvrir dans un nouvel onglet"
+                            >
+                                <ExternalLink className="h-5 w-5" />
+                            </a>
+                            <button
+                                onClick={() => setIsPdfFullscreen(true)}
+                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                title="Plein écran"
+                            >
+                                <Maximize className="h-5 w-5" />
+                            </button>
+                            <div className="h-6 w-px bg-border mx-1" />
+                        </>
+                    )}
+
                     {/* Unified Generation Menu */}
                     <Menu as="div" className="relative">
                         <Menu.Button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm">
@@ -562,7 +588,25 @@ export function ItemView() {
                                             )}
                                         </>
                                     ) : (
-                                        <PDFViewer url={pdfUrl} />
+                                        <>
+                                            <PDFViewer url={pdfUrl} className="h-[80vh]" />
+
+                                            {/* PDF Fullscreen Modal */}
+                                            {isPdfFullscreen && (
+                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
+                                                    <div className="absolute top-4 right-6 z-10 flex gap-2">
+                                                        <button
+                                                            onClick={() => setIsPdfFullscreen(false)}
+                                                            className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
+                                                        >
+                                                            <Minimize className="h-4 w-4" />
+                                                            <span className="text-sm font-medium hidden sm:inline">Fermer</span>
+                                                        </button>
+                                                    </div>
+                                                    <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
