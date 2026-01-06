@@ -686,6 +686,8 @@ export function ItemView() {
                                                     </div>
                                                 )}
                                             </>
+                                        );
+                                    })()}
                                 </div>
 
                             ) : item.content ? (
