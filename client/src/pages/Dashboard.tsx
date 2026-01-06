@@ -141,7 +141,12 @@ export function Dashboard() {
                                 <Link
                                     key={course.id}
                                     to={`/course/${course.id}`}
-                                    className="snap-start bg-card border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 block h-40 group relative"
+                                    draggable
+                                    onDragStart={(e) => {
+                                        e.dataTransfer.setData('courseId', course.id.toString())
+                                        e.dataTransfer.effectAllowed = 'move'
+                                    }}
+                                    className="snap-start bg-card border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 block h-40 group relative cursor-grab active:cursor-grabbing"
                                 >
                                     <div
                                         className="absolute left-0 top-0 bottom-0 w-2 transition-all group-hover:w-full opacity-5"
