@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 
 export function ApiKeySettings() {
-    const { activeProfile, getApiKey, setApiKey } = useProfileStore()
+    const { activeProfile, getApiKey, updateApiKeys } = useProfileStore()
     const { t } = useLanguage()
     const [keys, setKeys] = useState<{
         perplexity_summaries: string;
@@ -42,11 +42,7 @@ export function ApiKeySettings() {
         setIsSaving(true)
         setMessage(null)
         try {
-            await setApiKey('perplexity_summaries', keys.perplexity_summaries)
-            await setApiKey('perplexity_exercises', keys.perplexity_exercises)
-            await setApiKey('google_calendar', keys.google_calendar)
-            await setApiKey('google_gemini_summaries', keys.google_gemini_summaries)
-            await setApiKey('google_gemini_exercises', keys.google_gemini_exercises)
+            await updateApiKeys(keys)
 
             setMessage({ type: 'success', text: t('settings.save.success') })
 

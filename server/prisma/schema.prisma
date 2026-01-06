@@ -18,6 +18,7 @@ model Profile {
   language     String   @default("fr")
   createdAt    DateTime @default(now())
   lastAccessed DateTime @updatedAt
+  settings     Json?    // Stores API keys, preferences, etc.
   
   courses    Course[]
   folders    Folder[]
