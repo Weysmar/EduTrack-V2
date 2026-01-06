@@ -17,14 +17,14 @@ services:
     networks:
       - edutrack-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-edutrack}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-edutrack}" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # Backend Service
   backend:
-    build: 
+    build:
       context: ./server
       dockerfile: Dockerfile
     container_name: edutrack_backend
@@ -34,7 +34,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-edutrack}:${POSTGRES_PASSWORD:-securepassword}@postgres:5432/${POSTGRES_DB:-edutrack_db}
       JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeytochangeinprod}
       # CORS setup for dokploy domain or local network
-      CORS_ORIGIN: "*" 
+      CORS_ORIGIN: "*"
       # Storage configuration (S3 or Local)
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -45,7 +45,7 @@ services:
     volumes:
       - uploads:/app/uploads
     ports:
-      - "3000:3000"
+      - "4000:3000" # Changed to 4000 to avoid conflict with Dokploy (3000)
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,7 +55,7 @@ services:
 
   # Frontend Service
   frontend:
-    build: 
+    build:
       context: ./client
       dockerfile: Dockerfile
       args:
@@ -64,7 +64,7 @@ services:
     environment:
       VITE_API_URL: ${VITE_API_URL:-/api}
     ports:
-      - "80:80"
+      - "8080:80" # Changed to 8080 to avoid conflict with System/Dokploy (80)
     depends_on:
       - backend
     networks:
@@ -78,12 +78,12 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadminpassword}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadminpassword}
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9005:9000" # Changed to avoid potential conflicts
+      - "9006:9001"
     networks:
       - edutrack-network
     restart: unless-stopped
