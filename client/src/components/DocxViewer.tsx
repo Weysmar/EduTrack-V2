@@ -93,10 +93,14 @@ export function DocxViewer({ url, className = "" }: DocxViewerProps) {
     }
 
     return (
-        <div className={`bg-white dark:bg-slate-950 p-8 rounded-lg shadow-sm border overflow-auto ${className}`}>
-            {/* Render the HTML content */}
+        <div className={`bg-white dark:bg-slate-950 p-8 sm:p-12 rounded-lg shadow-sm border overflow-auto ${className}`}>
+            {/* Render the HTML content with improved Typography */}
             <div
-                className="prose dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-p:leading-relaxed prose-img:rounded-lg prose-img:shadow-md"
+                className="prose dark:prose-invert max-w-none 
+                prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl 
+                prose-p:leading-relaxed prose-p:text-justify prose-li:my-1
+                prose-ul:list-disc prose-ol:list-decimal prose-ul:pl-5
+                prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto"
                 dangerouslySetInnerHTML={{ __html: content || '' }}
             />
         </div>
