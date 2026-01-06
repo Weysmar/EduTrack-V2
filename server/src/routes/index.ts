@@ -7,9 +7,12 @@ import flashcardRoutes from './flashcardRoutes';
 import quizRoutes from './quizRoutes';
 import summaryRoutes from './summaryRoutes';
 
+import profileRoutes from './profileRoutes';
+
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/profiles', profileRoutes);
 router.use('/courses', courseRoutes);
 router.use('/items', itemRoutes);
 router.use('/folders', folderRoutes);
