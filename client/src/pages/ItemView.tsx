@@ -589,11 +589,47 @@ export function ItemView() {
                                         </>
                                     ) : (
                                         <>
-                                            <PDFViewer url={pdfUrl} className="h-[80vh]" />
+                                            {/* Desktop View: Iframe */}
+                                            <div className="hidden md:block">
+                                                <PDFViewer url={pdfUrl} className="h-[80vh]" />
+                                            </div>
+
+                                            {/* Mobile View: Card Actions */}
+                                            <div className="md:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                                <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
+                                                    <FileText className="h-10 w-10 text-red-500" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h3 className="font-semibold text-lg max-w-[250px] mx-auto truncate">
+                                                        {item.fileName || 'Document PDF'}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col gap-3 w-full max-w-xs">
+                                                    <a
+                                                        href={pdfUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
+                                                    >
+                                                        <ExternalLink className="h-5 w-5" />
+                                                        Ouvrir le PDF
+                                                    </a>
+                                                    <button
+                                                        onClick={handleDownload}
+                                                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
+                                                    >
+                                                        <Download className="h-5 w-5" />
+                                                        Télécharger
+                                                    </button>
+                                                </div>
+                                            </div>
 
                                             {/* PDF Fullscreen Modal */}
                                             {isPdfFullscreen && (
-                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
+                                                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden md:flex">
                                                     <div className="absolute top-4 right-6 z-10 flex gap-2">
                                                         <button
                                                             onClick={() => setIsPdfFullscreen(false)}
