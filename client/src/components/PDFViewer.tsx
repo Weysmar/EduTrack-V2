@@ -80,8 +80,8 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                                 key={`page_${index + 1}`}
                                 pageNumber={index + 1}
                                 scale={scale}
-                                renderTextLayer={true}
-                                renderAnnotationLayer={true}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
                                 className="shadow-lg bg-white"
                                 loading={
                                     <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" style={{ width: `${scale * 600}px` }} />
