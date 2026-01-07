@@ -113,7 +113,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                         </button>
                     )}
                     <button
-                        onClick={onRegenerate}
+                        onClick={() => onRegenerate()}
                         disabled={isLoading}
                         className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                         title={t('summary.regenerate')}
