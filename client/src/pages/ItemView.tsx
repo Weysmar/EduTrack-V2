@@ -228,7 +228,12 @@ export function ItemView() {
                     alert("Attention : Le texte extrait semble vide ou très court. La génération peut échouer.");
                 }
 
-                if (item.id) await itemQueries.update(item.id, { extractedContent: textContent })
+                try {
+                    if (item.id) await itemQueries.update(item.id, { extractedContent: textContent });
+                } catch (saveError) {
+                    console.warn("Could not save extracted content (non-fatal):", saveError);
+                }
+
                 effectiveContent = textContent;
 
             } catch (e: any) {
