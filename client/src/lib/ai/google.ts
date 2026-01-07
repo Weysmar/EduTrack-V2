@@ -86,6 +86,14 @@ INSTRUCTIONS DE CONTENU :
 
         } catch (error: any) {
             console.error("Gemini Backend Error:", error);
+
+            // Handle Axios error structure
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown error";
+
+            if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
+                throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 1.5 Flash) ou réessayer plus tard.");
+            }
+
             throw error;
         }
     }
@@ -94,13 +102,25 @@ INSTRUCTIONS DE CONTENU :
 export async function generateWithGoogle(prompt: string, systemPrompt?: string, model?: string): Promise<string> {
     const API_KEY = useProfileStore.getState().getApiKey('google_gemini_exercises');
 
-    const { data } = await apiClient.post('/ai/generate', {
-        prompt: prompt,
-        systemPrompt: systemPrompt,
-        provider: 'google',
-        model: model || 'gemini-1.5-flash',
-        apiKey: API_KEY
-    });
+    try {
+        const { data } = await apiClient.post('/ai/generate', {
+            prompt: prompt,
+            systemPrompt: systemPrompt,
+            provider: 'google',
+            model: model || 'gemini-1.5-flash',
+            apiKey: API_KEY
+        });
+        return data.text;
+    } catch (error: any) {
+        console.error("AI Error", error);
 
-    return data.text;
+        // Handle Axios error structure
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown error";
+
+        if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
+            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 1.5 Flash) ou réessayer plus tard.");
+        }
+
+        throw error;
+    }
 }
