@@ -88,6 +88,8 @@ export const getMe = async (req: any, res: Response) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
+        console.log(`[DEBUG] getMe for ${user.email} - Settings:`, JSON.stringify(user.settings));
+
         const { passwordHash, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
     } catch (error) {
