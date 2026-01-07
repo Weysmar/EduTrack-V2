@@ -132,7 +132,7 @@ async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<string>
             canvas.width = viewport.width;
             canvas.height = viewport.height;
 
-            await page.render({ canvasContext: context, viewport }).promise;
+            await page.render({ canvas, viewport }).promise;
 
             // Convert canvas to blob for Tesseract
             const blob = await new Promise<Blob>((resolve) => {
