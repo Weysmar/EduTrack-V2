@@ -36,7 +36,7 @@ export function ApiKeySettings() {
                 google_gemini_exercises: getApiKey('google_gemini_exercises') || ''
             })
         }
-    }, [activeProfile, getApiKey])
+    }, [activeProfile?.id]) // Only update if profile changes, not on every refresh
 
     const handleSave = async () => {
         setIsSaving(true)
