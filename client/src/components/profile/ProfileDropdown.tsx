@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { User, Settings, LogOut, Plus, Users, Check } from 'lucide-react'
 import { useProfileStore } from '@/store/profileStore'
+import { useAuthStore } from '@/store/authStore'
 
 import { cn } from '@/lib/utils'
 import { CreateProfileModal } from './CreateProfileModal'
@@ -9,9 +10,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLanguage } from '@/components/language-provider'
 
 export function ProfileDropdown() {
-    const { activeProfile, logout } = useProfileStore()
+    const { activeProfile } = useProfileStore()
+    const { logout: authLogout } = useAuthStore()
     const { t } = useLanguage()
     const navigate = useNavigate()
+
+    const handleLogout = () => {
+        authLogout() // Clears token and user state
+        useProfileStore.getState().logout() // Clears profile state and keys
+        navigate('/') // Redirect to home/login
+    }
 
     return (
         <>
@@ -62,7 +70,7 @@ export function ProfileDropdown() {
                                 <Menu.Item>
                                     {({ active }) => (
                                         <button
-                                            onClick={logout}
+                                            onClick={handleLogout}
                                             className={cn(
                                                 "group flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-destructive",
                                                 active ? "bg-destructive/10" : ""
