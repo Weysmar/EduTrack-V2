@@ -153,7 +153,7 @@ export function SettingsPage() {
                             <div className="space-y-6">
                                 <div>
                                     <h2 className="text-xl font-semibold mb-1">{t('changelog.title')}</h2>
-                                    <p className="text-sm text-muted-foreground mb-6">Consultez l'historique des mises à jour</p>
+                                    <p className="text-sm text-muted-foreground mb-6">{t('changelog.desc')}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsChangelogOpen(true)}
