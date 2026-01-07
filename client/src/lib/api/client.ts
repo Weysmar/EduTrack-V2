@@ -25,8 +25,18 @@ apiClient.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             // Token expired or invalid
+            // Circular dependency avoidance: Import store dynamically or use window dispatch?
+            // Safer: Just clear storage and let the store sync eventually, or redirect.
+            // Best practice: useAuthStore.getState().logout() if possible.
+            // Since client.ts is used by store, importing store here causes cycle.
+            // Workaround: Manually clear storage and redirect.
+            // BUT with our fix in authStore, re-initializing from localStorage is key.
+
             localStorage.removeItem('jwt_token');
-            window.location.href = '/auth';
+            // Force reload/redirect to ensure store re-initializes correctly
+            if (window.location.pathname !== '/auth') {
+                window.location.href = '/auth';
+            }
         }
         return Promise.reject(error);
     }

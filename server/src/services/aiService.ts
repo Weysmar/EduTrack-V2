@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash-latest', apiKey?: string): Promise<string> {
         try {
             // Validate API key
             const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
@@ -15,6 +15,7 @@ export const aiService = {
             }
 
             const client = new GoogleGenerativeAI(effectiveKey);
+            // Use specific model version for stability or catch 404
             const modelInstance = client.getGenerativeModel({ model });
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
@@ -27,7 +28,10 @@ export const aiService = {
         } catch (error: any) {
             console.error('AI Generation Error:', error);
             // Return more helpful error message
-            const message = error.message || 'Failed to generate content from AI';
+            let message = error.message || 'Failed to generate content from AI';
+            if (message.includes('404') && message.includes('not found')) {
+                message = `Modèle IA introuvable ou indisponible (${model}). Vérifiez votre clé API ou changez de modèle.`;
+            }
             throw new Error(message);
         }
     },

@@ -25,8 +25,8 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
             user: null,
-            token: null,
-            isAuthenticated: false,
+            token: localStorage.getItem('jwt_token'), // Init from localStorage
+            isAuthenticated: !!localStorage.getItem('jwt_token'), // Init auth state based on token existence
             login: async (email, password) => {
                 try {
                     const response = await apiClient.post('/auth/login', { email, password });
@@ -68,6 +68,10 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'auth-storage',
+            // Only persist user object, not token/auth state to avoid desync
+            // Or persist everything but rely on rehydration logic?
+            // Safer to let token be the single source of truth for auth state
+            partialize: (state) => ({ user: state.user }),
         }
     )
 );
