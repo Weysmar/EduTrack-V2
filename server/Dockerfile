@@ -1,7 +1,13 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-# Install OpenSSL for Prisma
-RUN apk update && apk add --no-cache openssl
+# Install system dependencies for LibreOffice and Prisma
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libreoffice-writer \
+    libreoffice-impress \
+    libreoffice-calc \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
