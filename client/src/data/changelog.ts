@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 
 export const changelogs: ChangelogEntry[] = [
     {
+        version: "0.5.0",
+        date: "2026-01-07",
+        title: "Stability & Intelligence 🧠",
+        changes: [
+            { type: 'fix', description: "API Key Persistence: Solved a critical bug where API keys vanished upon saving. Credentials are now securely locked in your profile." },
+            { type: 'fix', description: "Authentication Hygiene: 'Log Out' now properly clears your session token, unrelated to browser tabs or refresh." },
+            { type: 'fix', description: "AI Reliability: Fixed 404/500 errors during flashcard generation and improved quota limit handling for Google Gemini." },
+            { type: 'improvement', description: "Localization Polish: Corrected French translations and ensured the 'Minecraft' theme applies correctly across all UI elements." }
+        ]
+    },
+    {
         version: "0.4.1",
         date: "2026-01-06",
         title: "Resource Hub Upgrade 📂",
