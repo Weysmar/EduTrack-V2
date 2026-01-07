@@ -3,23 +3,36 @@ import { aiService } from '../services/aiService';
 
 export const generateContent = async (req: Request, res: Response) => {
     try {
+        console.log('=== AI Generate Request ===');
+        console.log('Body:', JSON.stringify(req.body, null, 2));
+
         const { prompt, systemPrompt, provider, model, apiKey } = req.body;
 
-        // Simplify: forcing Gemini for now as installed SDK is Gemini
-        // If Provider is Perplexity, we might need a fetch call, but let's stick to Gemini for Backend v1
-        // or implement fetch for Perplexity here.
-
-        // For this fix: Handle generic generation
-        if (provider === 'perplexity') {
-            // Fallback to Gemini if no Perplexity backend logic implemented yet?
-            // Or implement fetch. implementing fetch is better.
-            // But for speed, let's prioritize Gemini (Native SDK) and add TODO for Perplexity.
+        // Validate required fields
+        if (!prompt) {
+            return res.status(400).json({ message: 'Prompt is required' });
         }
 
+        console.log('Provider:', provider);
+        console.log('Model:', model);
+        console.log('Has API Key:', !!apiKey);
+        console.log('Prompt length:', prompt?.length);
+
+        // Simplify: forcing Gemini for now as installed SDK is Gemini
+        if (provider === 'perplexity') {
+            console.warn('Perplexity provider not yet implemented, using Gemini fallback');
+        }
+
+        console.log('Calling aiService.generateText...');
         const response = await aiService.generateText(prompt, systemPrompt, model, apiKey);
+        console.log('Generation successful, response length:', response?.length);
+
         res.json({ text: response });
-    } catch (error) {
-        res.status(500).json({ message: 'Generation failed', error: (error as Error).message });
+    } catch (error: any) {
+        console.error('=== AI Generate Error ===');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ message: 'Generation failed', error: error.message || 'Unknown error' });
     }
 };
 
