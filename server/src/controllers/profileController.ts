@@ -36,6 +36,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
+        console.log('Update Profile Request Body:', req.body);
         const { name, theme, language, settings } = req.body;
 
         const updatedProfile = await prisma.profile.update({
@@ -44,9 +45,11 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
                 name,
                 theme,
                 language,
-                settings: settings as any
+                settings: settings ? settings : undefined
             }
         });
+
+        console.log('Updated Profile Settings:', updatedProfile.settings);
 
         const { passwordHash, ...profileData } = updatedProfile;
         res.json(profileData);

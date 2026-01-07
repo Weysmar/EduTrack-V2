@@ -143,7 +143,15 @@ export const useProfileStore = create<ProfileState>()(
                 // If the backend handles session switching, we might need an endpoint.
                 // But let's assume we just set it as active if we have it, or fetch it.
                 const response = await apiClient.get(`/profiles/${id}`);
-                set({ activeProfile: response.data });
+                const profile = response.data;
+
+                // Sync API keys from the switched profile
+                let keys = get().apiKeys;
+                if (profile.settings) {
+                    keys = { ...keys, ...profile.settings };
+                }
+
+                set({ activeProfile: profile, apiKeys: keys });
             }
         }),
         {
