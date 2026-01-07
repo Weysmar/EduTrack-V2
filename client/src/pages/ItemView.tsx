@@ -698,15 +698,24 @@ export function ItemView() {
                                                                 </button>
                                                             </div>
                                                             <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                                <iframe
-                                                                    src={`${pdfUrl}#view=FitH`}
-                                                                    title="PDF Document Fullscreen"
-                                                                    className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
-                                                                    allowFullScreen
-                                                                />
-                                                                <div className="w-full h-full hidden sm:block lg:hidden">
-                                                                    <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
-                                                                </div>
+                                                                {/* Fullscreen Modal Content */}
+                                                                {isOffice ? (
+                                                                    <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
+                                                                        <OfficeViewer url={pdfUrl} className="h-full w-full shadow-2xl" />
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <iframe
+                                                                            src={`${pdfUrl}#view=FitH`}
+                                                                            title="PDF Document Fullscreen"
+                                                                            className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                                            allowFullScreen
+                                                                        />
+                                                                        <div className="w-full h-full hidden sm:block lg:hidden">
+                                                                            <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                                        </div>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )}
