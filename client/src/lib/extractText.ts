@@ -1,22 +1,54 @@
 
-import * as pdfjsLib from 'pdfjs-dist';
 import { createWorker } from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist';
+// @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import mammoth from 'mammoth';
 
 // Configure PDF.js worker
-// Use local worker to avoid "Message port closed" and Mixed Content errors
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export async function extractText(file: File): Promise<string> {
+    console.log(`Starting extraction for file: ${file.name} (${file.type})`);
     const fileType = file.type;
+    const fileName = file.name.toLowerCase();
 
-    if (fileType === 'application/pdf') {
-        return extractPdfText(file);
-    } else if (fileType.startsWith('image/')) {
-        return extractImageText(file);
+    try {
+        if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+            console.log('Detected PDF');
+            return await extractPdfText(file);
+        } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(fileName)) {
+            console.log('Detected Image');
+            return await extractImageText(file);
+        } else if (
+            fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            fileName.endsWith('.docx')
+        ) {
+            console.log('Detected DOCX');
+            return await extractDocxText(file);
+        }
+    } catch (e) {
+        console.error("Extraction routing error:", e);
+        throw e;
     }
 
-    throw new Error(`Unsupported file type: ${fileType}`);
+    throw new Error(`Unsupported file type: ${fileType} / ${fileName}`);
+}
+
+async function extractDocxText(file: File): Promise<string> {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        // mammoth might differ in import style depending on bundler, handling both
+        // @ts-ignore
+        const lib = mammoth.default || mammoth;
+        const result = await lib.extractRawText({ arrayBuffer });
+
+        if (!result.value) console.warn("Mammoth returned empty text");
+        return result.value.trim();
+    } catch (error) {
+        console.error('DOCX Extraction Error:', error);
+        throw new Error('Failed to extract text from DOCX.');
+    }
 }
 
 async function extractPdfText(file: File): Promise<string> {
