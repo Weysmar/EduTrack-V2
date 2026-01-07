@@ -25,11 +25,20 @@ export interface ExtractionResult {
 export async function extractText(file: File): Promise<ExtractionResult> {
     const startTime = Date.now();
     console.log(`Starting extraction for file: ${file.name} (${file.type})`);
-    const fileType = file.type;
+
+    // Fix: Prioritize extension over MIME type for DOCX/PPT
+    // Some browsers/environments might report incorrect MIME types or generic 'application/pdf'
+    let fileType = file.type;
     const fileName = file.name.toLowerCase();
 
+    if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    } else if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) {
+        fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    }
+
     try {
-        if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+        if ((fileType === 'application/pdf' || fileName.endsWith('.pdf')) && !fileName.endsWith('.docx')) {
             console.log('Detected PDF');
             const result = await extractPdfText(file);
             return {
