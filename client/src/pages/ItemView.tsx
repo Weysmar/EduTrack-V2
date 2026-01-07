@@ -319,9 +319,37 @@ export function ItemView() {
                             {course && <p className="text-xs text-muted-foreground truncate">{course.title}</p>}
                             {item.type === 'resource' && (
                                 <p className="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-primary uppercase">
-                                        {item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF'}
-                                    </span>
+                                    {(() => {
+                                        const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
+                                        const isWord = ['DOC', 'DOCX'].includes(ext);
+                                        const isPPT = ['PPT', 'PPTX'].includes(ext);
+                                        const isPDF = ['PDF'].includes(ext);
+                                        const isExcel = ['XLS', 'XLSX', 'CSV'].includes(ext);
+
+                                        let badgeClass = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+                                        let Icon = FileText;
+
+                                        if (isWord) {
+                                            badgeClass = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+                                            Icon = FileText;
+                                        } else if (isPPT) {
+                                            badgeClass = "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+                                            Icon = MonitorPlay;
+                                        } else if (isPDF) {
+                                            badgeClass = "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+                                            Icon = FileText;
+                                        } else if (isExcel) {
+                                            badgeClass = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+                                            Icon = FileText;
+                                        }
+
+                                        return (
+                                            <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent self-start", badgeClass)}>
+                                                <Icon className="h-3 w-3" />
+                                                {ext}
+                                            </span>
+                                        );
+                                    })()}
                                     {item.fileName && (
                                         <>
                                             <span className="opacity-50">•</span>
