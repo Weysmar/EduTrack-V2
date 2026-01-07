@@ -185,7 +185,8 @@ export function ItemView() {
                             const res = await fetch(pdfUrl);
                             const blob = await res.blob();
                             const file = new File([blob], item.fileName || 'file', { type: item.fileType || 'application/pdf' })
-                            textContent = await extractText(file)
+                            const extractionResult = await extractText(file)
+                            textContent = extractionResult.text
                             if (item.id) await itemQueries.update(item.id, { extractedContent: textContent })
                         } catch (extractionErr: any) {
                             console.error("Extraction error:", extractionErr)
@@ -222,7 +223,8 @@ export function ItemView() {
                 const safeName = item.fileName || (item.fileType?.includes('pdf') ? 'doc.pdf' : 'doc.docx');
                 const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
 
-                const textContent = await extractText(file)
+                const extractionResult = await extractText(file)
+                const textContent = extractionResult.text
 
                 if (!textContent || textContent.length < 50) {
                     alert("Attention : Le texte extrait semble vide ou très court. La génération peut échouer.");
