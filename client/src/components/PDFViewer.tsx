@@ -84,7 +84,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                                 renderAnnotationLayer={false}
                                 className="shadow-lg bg-white"
                                 loading={
-                                    <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" style={{ width: `${scale * 600}px` }} />
+                                    <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
                                 }
                             />
                         ))}
