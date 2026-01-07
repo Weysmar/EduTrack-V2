@@ -208,19 +208,42 @@ export function ItemView() {
 
     const handleOpenExercise = async (mode: 'flashcards' | 'quiz') => {
         // Ensure text is extracted if it's a file
-        if (item.type === 'resource' && !item.extractedContent && !item.content && pdfUrl) {
+        let effectiveContent = item.content || item.extractedContent || '';
+
+        if (item.type === 'resource' && !effectiveContent && pdfUrl) {
             setIsExtracting(true)
             try {
+                console.log("Auto-extracting content for exercise generation...");
                 const res = await fetch(pdfUrl);
+                if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+
                 const blob = await res.blob();
-                const file = new File([blob], item.fileName || 'file', { type: item.fileType || 'application/pdf' })
+                // Ensure we pass a filename with extension for type detection fallback
+                const safeName = item.fileName || (item.fileType?.includes('pdf') ? 'doc.pdf' : 'doc.docx');
+                const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
+
                 const textContent = await extractText(file)
+
+                if (!textContent || textContent.length < 50) {
+                    alert("Attention : Le texte extrait semble vide ou très court. La génération peut échouer.");
+                }
+
                 if (item.id) await itemQueries.update(item.id, { extractedContent: textContent })
-            } catch (e) {
-                console.warn("Auto-extraction failed before exercise generation", e);
+                effectiveContent = textContent;
+
+            } catch (e: any) {
+                console.error("Auto-extraction failed:", e);
+                alert(`Erreur d'analyse du document : ${e.message || "Impossible d'extraire le texte"}.`);
+                setIsExtracting(false);
+                return; // Stop here, don't open modal if extraction failed completely
             } finally {
                 setIsExtracting(false)
             }
+        }
+
+        if (!effectiveContent) {
+            alert("Aucun contenu n'est disponible pour la génération. Veuillez vérifier que le document contient du texte sélectionnable.");
+            return;
         }
 
         setExerciseMode(mode)
