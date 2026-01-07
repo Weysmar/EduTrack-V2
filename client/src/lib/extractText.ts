@@ -4,9 +4,12 @@ import * as pdfjsLib from 'pdfjs-dist';
 // @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
+import { apiClient } from '@/lib/api/client';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Note: Verbosity control not available in this pdfjs-dist version
+// Warnings will still appear but are non-blocking
 
 export async function extractText(file: File): Promise<string> {
     console.log(`Starting extraction for file: ${file.name} (${file.type})`);
@@ -26,6 +29,12 @@ export async function extractText(file: File): Promise<string> {
         ) {
             console.log('Detected DOCX');
             return await extractDocxText(file);
+        } else if (
+            /\.pptx?$/i.test(fileName) ||
+            fileType.includes('presentation')
+        ) {
+            console.log('Detected PPT/PPTX - using backend extraction');
+            return await extractViaBackend(file);
         }
     } catch (e) {
         console.error("Extraction routing error:", e);
@@ -85,5 +94,30 @@ async function extractImageText(file: File): Promise<string> {
     } catch (error) {
         console.error('OCR Error:', error);
         throw new Error('Failed to extract text from Image.');
+    }
+}
+
+/**
+ * Extract text using backend API (for PPT and complex documents)
+ */
+async function extractViaBackend(file: File): Promise<string> {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const { data } = await apiClient.post('/extract', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 120000 // 2min timeout for large files
+        });
+
+        if (!data.text) {
+            throw new Error('Backend returned empty text');
+        }
+
+        console.log(`Backend extraction stats:`, data.stats);
+        return data.text;
+    } catch (error: any) {
+        console.error('Backend extraction error:', error);
+        throw new Error(`Backend extraction failed: ${error.response?.data?.message || error.message}`);
     }
 }
