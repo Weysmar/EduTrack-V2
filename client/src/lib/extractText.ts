@@ -67,6 +67,7 @@ async function extractPdfText(file: File): Promise<string> {
 
         let fullText = '';
 
+        // Extract text from all pages
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
@@ -78,10 +79,74 @@ async function extractPdfText(file: File): Promise<string> {
             fullText += `\n\n--- Page ${i} ---\n${pageText}`;
         }
 
-        return fullText.trim();
+        const extractedText = fullText.trim();
+
+        // Detect if PDF is likely scanned (very little extractable text)
+        const charCount = extractedText.replace(/\s+/g, '').length;
+        const avgCharsPerPage = charCount / pdf.numPages;
+
+        if (avgCharsPerPage < 50 && pdf.numPages > 2) {
+            console.warn(`PDF appears to be scanned (${charCount} chars for ${pdf.numPages} pages)`);
+
+            // Ask user if they want OCR (UI will handle this via confirmation)
+            const shouldOCR = confirm(
+                `Ce PDF semble être un scan (${pdf.numPages} pages, très peu de texte détectable).\n\n` +
+                `Voulez-vous lancer l'OCR ? Cela peut prendre quelques minutes pour les gros documents.`
+            );
+
+            if (shouldOCR) {
+                console.log('User opted for OCR. Rendering pages as images...');
+                return await extractPdfViaOCR(pdf);
+            }
+        }
+
+        if (!extractedText) {
+            throw new Error('Le PDF ne contient aucun texte extrait.');
+        }
+
+        return extractedText;
     } catch (error: any) {
         console.error('PDF Extraction Error:', error);
         throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
+    }
+}
+
+/**
+ * Extract text from PDF using OCR (for scanned documents)
+ * Renders each page as canvas and uses Tesseract.js
+ */
+async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<string> {
+    const worker = await createWorker('eng+fra');
+    let fullText = '';
+
+    try {
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            console.log(`OCR Progress: Page ${pageNum}/${pdf.numPages}`);
+
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+
+            // Create canvas to render page
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d')!;
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            await page.render({ canvasContext: context, viewport }).promise;
+
+            // Convert canvas to blob for Tesseract
+            const blob = await new Promise<Blob>((resolve) => {
+                canvas.toBlob((b) => resolve(b!), 'image/png');
+            });
+
+            // Run OCR on this page
+            const { data } = await worker.recognize(blob);
+            fullText += `\n\n--- Page ${pageNum} (OCR) ---\n${data.text}`;
+        }
+
+        return fullText.trim();
+    } finally {
+        await worker.terminate();
     }
 }
 
