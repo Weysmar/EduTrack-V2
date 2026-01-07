@@ -11,7 +11,19 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 // Note: Verbosity control not available in this pdfjs-dist version
 // Warnings will still appear but are non-blocking
 
-export async function extractText(file: File): Promise<string> {
+export interface ExtractionResult {
+    text: string;
+    stats: {
+        words: number;
+        pages?: number;
+        timeMs: number;
+        warnings?: string[];
+        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image';
+    };
+}
+
+export async function extractText(file: File): Promise<ExtractionResult> {
+    const startTime = Date.now();
     console.log(`Starting extraction for file: ${file.name} (${file.type})`);
     const fileType = file.type;
     const fileName = file.name.toLowerCase();
@@ -19,22 +31,46 @@ export async function extractText(file: File): Promise<string> {
     try {
         if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
             console.log('Detected PDF');
-            return await extractPdfText(file);
+            const result = await extractPdfText(file);
+            return {
+                ...result,
+                stats: { ...result.stats, timeMs: Date.now() - startTime }
+            };
         } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(fileName)) {
             console.log('Detected Image');
-            return await extractImageText(file);
+            const text = await extractImageText(file);
+            return {
+                text,
+                stats: {
+                    words: countWords(text),
+                    timeMs: Date.now() - startTime,
+                    method: 'image'
+                }
+            };
         } else if (
             fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
             fileName.endsWith('.docx')
         ) {
             console.log('Detected DOCX');
-            return await extractDocxText(file);
+            const text = await extractDocxText(file);
+            return {
+                text,
+                stats: {
+                    words: countWords(text),
+                    timeMs: Date.now() - startTime,
+                    method: 'docx'
+                }
+            };
         } else if (
             /\.pptx?$/i.test(fileName) ||
             fileType.includes('presentation')
         ) {
             console.log('Detected PPT/PPTX - using backend extraction');
-            return await extractViaBackend(file);
+            const result = await extractViaBackend(file);
+            return {
+                ...result,
+                stats: { ...result.stats, timeMs: Date.now() - startTime }
+            };
         }
     } catch (e) {
         console.error("Extraction routing error:", e);
@@ -42,6 +78,10 @@ export async function extractText(file: File): Promise<string> {
     }
 
     throw new Error(`Unsupported file type: ${fileType} / ${fileName}`);
+}
+
+function countWords(text: string): number {
+    return text.split(/\s+/).filter(w => w.length > 0).length;
 }
 
 async function extractDocxText(file: File): Promise<string> {
@@ -60,7 +100,8 @@ async function extractDocxText(file: File): Promise<string> {
     }
 }
 
-async function extractPdfText(file: File): Promise<string> {
+async function extractPdfText(file: File): Promise<ExtractionResult> {
+    const warnings: string[] = [];
     try {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -87,6 +128,7 @@ async function extractPdfText(file: File): Promise<string> {
 
         if (avgCharsPerPage < 50 && pdf.numPages > 2) {
             console.warn(`PDF appears to be scanned (${charCount} chars for ${pdf.numPages} pages)`);
+            warnings.push(`PDF semble être un scan (${Math.round(avgCharsPerPage)} chars/page)`);
 
             // Ask user if they want OCR (UI will handle this via confirmation)
             const shouldOCR = confirm(
@@ -104,7 +146,16 @@ async function extractPdfText(file: File): Promise<string> {
             throw new Error('Le PDF ne contient aucun texte extrait.');
         }
 
-        return extractedText;
+        return {
+            text: extractedText,
+            stats: {
+                words: countWords(extractedText),
+                pages: pdf.numPages,
+                timeMs: 0, // Will be set by caller
+                warnings: warnings.length > 0 ? warnings : undefined,
+                method: 'pdf'
+            }
+        };
     } catch (error: any) {
         console.error('PDF Extraction Error:', error);
         throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
@@ -115,7 +166,7 @@ async function extractPdfText(file: File): Promise<string> {
  * Extract text from PDF using OCR (for scanned documents)
  * Renders each page as canvas and uses Tesseract.js
  */
-async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<string> {
+async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<ExtractionResult> {
     const worker = await createWorker('eng+fra');
     let fullText = '';
 
@@ -144,7 +195,17 @@ async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<string>
             fullText += `\n\n--- Page ${pageNum} (OCR) ---\n${data.text}`;
         }
 
-        return fullText.trim();
+        const text = fullText.trim();
+        return {
+            text,
+            stats: {
+                words: countWords(text),
+                pages: pdf.numPages,
+                timeMs: 0, // Will be set by caller
+                warnings: ['Extraction via OCR (scan détecté)'],
+                method: 'ocr'
+            }
+        };
     } finally {
         await worker.terminate();
     }
@@ -165,7 +226,7 @@ async function extractImageText(file: File): Promise<string> {
 /**
  * Extract text using backend API (for PPT and complex documents)
  */
-async function extractViaBackend(file: File): Promise<string> {
+async function extractViaBackend(file: File): Promise<ExtractionResult> {
     try {
         const formData = new FormData();
         formData.append('file', file);
@@ -180,7 +241,14 @@ async function extractViaBackend(file: File): Promise<string> {
         }
 
         console.log(`Backend extraction stats:`, data.stats);
-        return data.text;
+        return {
+            text: data.text,
+            stats: {
+                words: data.stats?.words || countWords(data.text),
+                timeMs: 0, // Will be set by caller
+                method: 'ppt'
+            }
+        };
     } catch (error: any) {
         console.error('Backend extraction error:', error);
         throw new Error(`Backend extraction failed: ${error.response?.data?.message || error.message}`);
