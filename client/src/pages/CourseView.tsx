@@ -268,12 +268,41 @@ export function CourseView() {
 
                                     {/* Line 2: Format & Filename (Only for resources) */}
                                     {item.type === 'resource' && (
-                                        <div className="flex items-center gap-2 pl-1">
-                                            <span className="uppercase font-bold text-[10px] tracking-wider text-muted-foreground/80">
-                                                {item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF'}
-                                            </span>
+                                        <div className="flex items-center gap-2 pl-1 mt-1">
+                                            {(() => {
+                                                const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
+                                                const isWord = ['DOC', 'DOCX'].includes(ext);
+                                                const isPPT = ['PPT', 'PPTX'].includes(ext);
+                                                const isPDF = ['PDF'].includes(ext);
+                                                const isExcel = ['XLS', 'XLSX', 'CSV'].includes(ext);
+
+                                                let badgeClass = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+                                                let Icon = FileText;
+
+                                                if (isWord) {
+                                                    badgeClass = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+                                                    Icon = FileText;
+                                                } else if (isPPT) {
+                                                    badgeClass = "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+                                                    Icon = MonitorPlay; // Best approximation for presentation
+                                                } else if (isPDF) {
+                                                    badgeClass = "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+                                                    Icon = FileText; // Or a specific PDF icon if imported, but generic FileText is fine or maybe "File"
+                                                } else if (isExcel) {
+                                                    badgeClass = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+                                                    Icon = FileText;
+                                                }
+
+                                                return (
+                                                    <span className={cn("flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent min-w-[3.5rem] justify-center", badgeClass)}>
+                                                        <Icon className="h-3 w-3" />
+                                                        {ext}
+                                                    </span>
+                                                );
+                                            })()}
+
                                             {item.fileName && (
-                                                <span className="truncate opacity-80" title={item.fileName}>
+                                                <span className="truncate opacity-80 text-sm" title={item.fileName}>
                                                     {item.fileName}
                                                 </span>
                                             )}
