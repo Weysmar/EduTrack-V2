@@ -8,8 +8,13 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 export const aiService = {
     async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string): Promise<string> {
         try {
-            // If user provided a specific key (e.g. from settings), use it
-            const client = apiKey ? new GoogleGenerativeAI(apiKey) : genAI;
+            // Validate API key
+            const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
+            if (!effectiveKey) {
+                throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
+            }
+
+            const client = new GoogleGenerativeAI(effectiveKey);
             const modelInstance = client.getGenerativeModel({ model });
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
@@ -19,9 +24,11 @@ export const aiService = {
             const result = await modelInstance.generateContent(fullPrompt);
             const response = await result.response;
             return response.text();
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Generation Error:', error);
-            throw new Error('Failed to generate content from AI');
+            // Return more helpful error message
+            const message = error.message || 'Failed to generate content from AI';
+            throw new Error(message);
         }
     },
 
