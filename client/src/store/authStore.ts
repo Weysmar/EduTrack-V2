@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
             }
         }),
         {
-            name: 'auth-storage',
+            name: 'auth-storage-v2', // Version bump to invalidate old cache
             // Only persist user object, not token/auth state to avoid desync
             // Or persist everything but rely on rehydration logic?
             // Safer to let token be the single source of truth for auth state
