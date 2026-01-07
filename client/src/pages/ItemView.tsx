@@ -490,12 +490,16 @@ export function ItemView() {
                                     </div>
                                     {summary && (
                                         <div className="flex gap-2 text-xs">
-                                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                                                {summary.options.compression * 100}%
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                {summary.stats.summaryWordCount} {t('summary.stats.words')}
-                                            </span>
+                                            {summary.options?.compression && (
+                                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                                    {Math.round(summary.options.compression * 100)}%
+                                                </span>
+                                            )}
+                                            {summary.stats?.summaryWordCount && (
+                                                <span className="text-muted-foreground">
+                                                    {summary.stats.summaryWordCount} {t('summary.stats.words')}
+                                                </span>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -576,22 +580,31 @@ export function ItemView() {
                                                 {isExtracting ? "Lecture du document en cours..." : t('summary.generating')}
                                             </p>
                                         </div>
-                                    ) : summary ? (
+                                    ) : (summary && summary.content) ? (
                                         <div ref={contentRef} className="w-full max-w-4xl bg-white dark:bg-zinc-950 p-8 rounded-lg">
                                             <ReactMarkdown
                                                 components={{
-                                                    h1: ({ node, ...props }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2" {...props} />,
-                                                    h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4" {...props} />,
-                                                    h3: ({ node, ...props }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3" {...props} />,
-                                                    p: ({ node, ...props }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="text-lg text-slate-700 dark:text-slate-300" {...props} />,
-                                                    strong: ({ node, ...props }) => <strong className="font-bold text-slate-900 dark:text-slate-100" {...props} />,
-                                                    input: ({ node, ...props }) => {
+                                                    h1: ({ children }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
+                                                    h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
+                                                    h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
+                                                    p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}</p>,
+                                                    ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+                                                    li: ({ children }) => <li className="text-lg text-slate-700 dark:text-slate-300">{children}</li>,
+                                                    strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
+                                                    input: (props) => {
+                                                        // Ensure safe boolean for checked
+                                                        const isChecked = !!props.checked;
                                                         return (
                                                             <div className="flex items-center gap-2 my-1">
-                                                                <input type="checkbox" checked={props.checked} readOnly className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                                <span className="text-lg text-slate-700 dark:text-slate-300">{props.children}</span>
+                                                                <input type="checkbox" checked={isChecked} readOnly className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                                                <span className="text-lg text-slate-700 dark:text-slate-300">
+                                                                    {/* Render children safely if exists? */}
+                                                                    {/* props.children is usually null for checkbox inputs in MD, text follows? 
+                                                                        Actually in GFM usually [x] text -> text is a sibling node or part of li. 
+                                                                        ReactMarkdown might pass text as children to input? UNLIKELY. 
+                                                                        Usually input is void. list item contains input then text.
+                                                                        Let's just return the input. */ }
+                                                                </span>
                                                             </div>
                                                         )
                                                     }
