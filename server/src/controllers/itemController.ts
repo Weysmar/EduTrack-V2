@@ -91,6 +91,28 @@ export const createItem = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// PUT /api/items/:id
+export const updateItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        const updatedItem = await prisma.item.update({
+            where: { id: req.params.id },
+            data: req.body
+        });
+
+        socketService.emitToProfile(req.user!.id, 'item:updated', updatedItem);
+
+        res.json(updatedItem);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating item', error });
+    }
+};
+
 // DELETE /api/items/:id
 export const deleteItem = async (req: AuthRequest, res: Response) => {
     try {

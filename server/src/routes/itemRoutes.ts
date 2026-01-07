@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { getItems, getItem, createItem, deleteItem, uploadItemFile } from '../controllers/itemController';
+import { getItems, getItem, createItem, updateItem, deleteItem, uploadItemFile } from '../controllers/itemController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -11,6 +11,7 @@ router.use(authenticate);
 router.get('/', getItems);
 router.get('/:id', getItem);
 router.post('/', upload.single('file'), createItem);
+router.put('/:id', updateItem);
 router.delete('/:id', deleteItem);
 router.post('/:id/upload', upload.single('file'), uploadItemFile);
 
