@@ -38,7 +38,7 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
                     src={url}
                     alt={alt}
                     style={{
-                        transform: `scale(${scale}) rotate(${rotation}deg)`,
+                        transform: `scale(${Number.isFinite(scale) ? scale : 1}) rotate(${Number.isFinite(rotation) ? rotation : 0}deg)`,
                         transition: 'transform 0.2s ease-out'
                     }}
                     className="max-w-full max-h-full object-contain shadow-lg"

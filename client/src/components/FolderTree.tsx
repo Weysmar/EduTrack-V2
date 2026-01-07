@@ -77,7 +77,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                     "group flex items-center justify-between px-2 py-1.5 rounded-md transition-colors select-none",
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
-                style={{ paddingLeft: `${Math.max(8, level * 12 + 8)}px` }}
+                style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 8)}px` }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
             >
@@ -127,14 +127,14 @@ function CourseItem({ course, level }: { course: Course, level: number }) {
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
-            style={{ paddingLeft: `${Math.max(8, level * 12 + 24)}px` }}
+            style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 24)}px` }}
         >
             {course.icon ? (
                 <span className="w-5 h-5 flex items-center justify-center text-lg leading-none">{course.icon}</span>
             ) : (
                 <span
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: course.color }}
+                    style={{ backgroundColor: typeof course.color === 'string' ? course.color : '#666' }}
                 />
             )}
             <span className="truncate">{course.title}</span>
