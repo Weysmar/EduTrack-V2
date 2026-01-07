@@ -39,15 +39,15 @@ export function DocxViewer({ url, className = "" }: DocxViewerProps) {
                 await renderAsync(blob, containerRef.current, undefined, {
                     className: "docx-wrapper",
                     inWrapper: true,
-                    ignoreWidth: false,
+                    ignoreWidth: false, // Keep original width for fidelity
                     breakPages: true,
-                    experimental: true,
+                    experimental: true, // Needed for advanced features
                     trimXmlDeclaration: true,
                     useBase64URL: true,
                     renderHeaders: true,
                     renderFooters: true,
                     renderFootnotes: true,
-                    renderChanges: false,
+                    renderChanges: false, // Don't show tracked changes
                     debug: false,
                 });
 
