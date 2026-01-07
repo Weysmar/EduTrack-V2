@@ -100,6 +100,13 @@ export function ItemView() {
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
 
+    // Auto-open summary when loaded (Moved here to avoid Hooks Rule violation)
+    useEffect(() => {
+        if (summary && !showSummary && !isExtracting) {
+            setShowSummary(true);
+        }
+    }, [summary]);
+
     // File Type Detection (Lifted to Component Scope)
     const filename = item?.fileName || '';
     const ext = filename.split('.').pop()?.toLowerCase() ||
@@ -148,15 +155,7 @@ export function ItemView() {
         document.body.removeChild(a)
     }
 
-    // Auto-open summary when loaded
-    useEffect(() => {
-        if (summary && !showSummary && !isExtracting) {
-            // Only auto-open if it wasn't explicitly closed? 
-            // For now, simpler: auto-open on initial load.
-            // We can check if 'isGenerating' is false to imply it was loaded from DB.
-            setShowSummary(true);
-        }
-    }, [summary]); // Depend on summary change
+
 
     const handleDelete = async () => {
         if (confirm(t('item.delete.confirm'))) {
