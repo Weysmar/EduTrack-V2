@@ -30,9 +30,14 @@ export const generateContent = async (req: Request, res: Response) => {
         res.json({ text: response });
     } catch (error: any) {
         console.error('=== AI Generate Error ===');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ message: 'Generation failed', error: error.message || 'Unknown error' });
+        // Prevent circular structure limit
+        const safeError = {
+            message: error?.message || 'Unknown error',
+            name: error?.name || 'Error',
+            stack: error?.stack
+        };
+        console.error('Error detail:', JSON.stringify(safeError, null, 2));
+        res.status(500).json({ message: 'Generation failed', error: safeError.message });
     }
 };
 

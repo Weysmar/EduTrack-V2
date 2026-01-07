@@ -71,6 +71,17 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 // Start server
+// Global Error Handlers to prevent crash loops
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+    // Keep process alive if possible, or let supervisor restart it clearly
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { summaryQueries } from '@/lib/api/queries'
 import { SummaryOptions, SummaryResult, SummaryType, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
+import { toast } from "sonner"
 
 export function useSummary(itemId: string | number, itemType: SummaryType, initialText?: string) {
     const [summary, setSummary] = useState<SummaryResult | null>(null)
@@ -70,8 +71,10 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
     const saveSummary = async (result: SummaryResult) => {
         try {
             await summaryQueries.save(result);
+            toast.success("Résumé sauvegardé avec succès")
         } catch (dbErr) {
             console.error("Failed to save summary", dbErr)
+            toast.error("Erreur lors de la sauvegarde du résumé")
         }
     }
 

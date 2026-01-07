@@ -148,6 +148,16 @@ export function ItemView() {
         document.body.removeChild(a)
     }
 
+    // Auto-open summary when loaded
+    useEffect(() => {
+        if (summary && !showSummary && !isExtracting) {
+            // Only auto-open if it wasn't explicitly closed? 
+            // For now, simpler: auto-open on initial load.
+            // We can check if 'isGenerating' is false to imply it was loaded from DB.
+            setShowSummary(true);
+        }
+    }, [summary]); // Depend on summary change
+
     const handleDelete = async () => {
         if (confirm(t('item.delete.confirm'))) {
             setIsDeleting(true)
