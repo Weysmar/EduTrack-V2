@@ -80,14 +80,6 @@ export function Sidebar() {
                     <FolderPlus className="h-3.5 w-3.5" />
                     <span className="font-medium hidden md:block">{t('folder.new')}</span>
                 </button>
-
-                <Link
-                    to="/settings"
-                    className="w-full flex items-center justify-center gap-2 py-1.5 px-4 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-muted-foreground border border-transparent hover:border-border"
-                >
-                    <Settings className="h-3.5 w-3.5" />
-                    <span className="font-medium hidden md:block">{t('nav.settings') || "Paramètres"}</span>
-                </Link>
             </div>
 
             <div className="flex-1 overflow-y-auto py-4">
@@ -109,10 +101,17 @@ export function Sidebar() {
                 </nav>
             </div>
 
-            <div className="p-4 border-t mt-auto flex items-center">
-                <div className="w-full">
+            <div className="p-4 border-t mt-auto flex items-center gap-2">
+                <div className="flex-1 min-w-0">
                     <ProfileDropdown />
                 </div>
+                <Link
+                    to="/settings"
+                    className="flex items-center justify-center p-2 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors border border-transparent hover:border-border"
+                    title={t('nav.settings')}
+                >
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                </Link>
             </div>
 
             <CreateCourseModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />

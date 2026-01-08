@@ -22,14 +22,14 @@ export function LanguageToggle() {
 
     const languages: { code: Language; label: string; icon: React.ReactNode }[] = [
         {
-            code: "en",
-            label: "English",
-            icon: <img src="https://flagcdn.com/w40/gb.png" alt="UK" className="w-5 h-3.5 object-cover rounded-[1px]" />
-        },
-        {
             code: "fr",
             label: "Français",
             icon: <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-5 h-3.5 object-cover rounded-[1px]" />
+        },
+        {
+            code: "en",
+            label: "English",
+            icon: <img src="https://flagcdn.com/w40/gb.png" alt="UK" className="w-5 h-3.5 object-cover rounded-[1px]" />
         },
         {
             code: "mc",

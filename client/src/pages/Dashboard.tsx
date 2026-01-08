@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle } from 'lucide-react'
+import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar, Sparkles } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { useState } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
+import { RevisionProgramModal } from '@/components/RevisionProgramModal'
 import { CalendarWidget } from '@/components/CalendarWidget'
 import { useProfileStore } from '@/store/profileStore'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
@@ -12,6 +13,7 @@ import { courseQueries, itemQueries } from '@/lib/api/queries'
 export function Dashboard() {
     const { t } = useLanguage()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false)
     const { activeProfile } = useProfileStore()
 
     // Queries
@@ -72,10 +74,21 @@ export function Dashboard() {
 
     return (
         <div className="p-8 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
-            <header className="space-y-2">
-                <h1 className="text-4xl font-bold tracking-tight">{t('welcome.title')}</h1>
-                <p className="text-muted-foreground text-lg">{t('welcome.subtitle')}</p>
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-bold tracking-tight">{t('welcome.title')}</h1>
+                    <p className="text-muted-foreground text-lg">{t('welcome.subtitle')}</p>
+                </div>
+                <button
+                    onClick={() => setIsRevisionModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
+                >
+                    <Calendar className="h-5 w-5" />
+                    <span>{t('revision.generate')}</span>
+                </button>
             </header>
+
+            <RevisionProgramModal isOpen={isRevisionModalOpen} onClose={() => setIsRevisionModalOpen(false)} />
 
             {!hasCourses ? (
                 <div className="bg-gradient-to-r from-primary/20 to-primary/10 border-primary/20 border rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">

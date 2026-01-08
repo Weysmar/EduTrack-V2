@@ -10,7 +10,7 @@ import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2 } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
@@ -22,6 +22,7 @@ import { OfficeViewer } from '@/components/OfficeViewer'
 import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
+import { EditItemModal } from '@/components/EditItemModal'
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 
 export function ItemView() {
@@ -46,6 +47,7 @@ export function ItemView() {
 
     // Derived States
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
     const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
@@ -401,6 +403,15 @@ export function ItemView() {
                             <div className="h-6 w-px bg-border mx-1" />
                         </>
                     )}
+
+                    {/* Edit Button */}
+                    <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                        title={t('item.edit')}
+                    >
+                        <Edit className="h-5 w-5" />
+                    </button>
 
                     {/* Unified Generation Menu */}
                     <Menu as="div" className="relative">
@@ -866,6 +877,12 @@ export function ItemView() {
                     )}
                 </div >
             </div >
+            <EditItemModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                item={item}
+                courseId={courseId || ""}
+            />
         </div>
     )
 }
