@@ -380,28 +380,47 @@ export function ItemView() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* PDF Controls - Moved here */}
-                    {pdfUrl && !showSummary && item.type === 'resource' && (
-                        <>
-                            <a
-                                href={pdfUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={isOffice ? true : undefined}
-                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                title={isOffice ? "Télécharger l'original" : "Ouvrir dans un nouvel onglet"}
-                            >
-                                {isOffice ? <Download className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
-                            </a>
-                            <button
-                                onClick={() => setIsPdfFullscreen(true)}
-                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                title="Plein écran"
-                            >
-                                <Maximize className="h-5 w-5" />
-                            </button>
-                            <div className="h-6 w-px bg-border mx-1" />
-                        </>
+                    {/* Universal View/Download Button */}
+                    {item.type === 'resource' && item.storageKey && (
+                        (() => {
+                            // Construct Public URL (Option 3)
+                            const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+                            const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+                            const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
+                            const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
+
+                            // Determine Target URL for "View in New Tab"
+                            let targetUrl = publicRawUrl;
+                            if (isOffice) {
+                                // For Office, View in New Tab = Google Viewer
+                                targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+                            }
+
+                            return (
+                                <>
+                                    <a
+                                        href={targetUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                        title="Ouvrir dans un nouvel onglet"
+                                    >
+                                        <ExternalLink className="h-5 w-5" />
+                                    </a>
+                                    {/* Original PDF Fullscreen Button */}
+                                    {pdfUrl && !isOffice && (
+                                        <button
+                                            onClick={() => setIsPdfFullscreen(true)}
+                                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                            title="Plein écran (Local)"
+                                        >
+                                            <Maximize className="h-5 w-5" />
+                                        </button>
+                                    )}
+                                    <div className="h-6 w-px bg-border mx-1" />
+                                </>
+                            );
+                        })()
                     )}
 
                     {/* Edit Button */}
@@ -694,42 +713,14 @@ export function ItemView() {
 
                                         if (isOffice) {
                                             return (
-                                                <>
-                                                    <div className="hidden sm:block">
-                                                        <OfficeViewer url={pdfUrl} storageKey={item.storageKey} className="h-[80vh]" />
-                                                    </div>
-
-                                                    {/* Mobile Fallback (Shared Logic Below) */}
-                                                    {/* We return null here for mobile to fall through? No, we need to return something or restructure. */}
-                                                    {/* Better approach: Return the Desktop/Tablet OfficeViewer here, but for MOBILE, render the shared card. */}
-                                                    {/* Actually, let's just render the OfficeViewer for sm+ and use the shared mobile view below for everyone? */}
-                                                    {/* No, this is an IIFE. We must return the content. */}
-
-                                                    {/* Mobile View for Office */}
-                                                    <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg border">
-                                                        <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
-                                                            <FileText className="h-10 w-10 text-blue-500" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-semibold text-lg mb-2">{item.fileName || 'Document Office'}</h3>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Pour un meilleur confort, téléchargez ce document.
-                                                            </p>
-                                                        </div>
-                                                        <a
-                                                            href={pdfUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            download
-                                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
-                                                        >
-                                                            <Download className="h-5 w-5" />
-                                                            Télécharger l'original
-                                                        </a>
-                                                    </div>
-                                                </>
+                                                <OfficeViewer
+                                                    url={pdfUrl}
+                                                    storageKey={item.storageKey}
+                                                    className="h-[60vh] md:h-[80vh]"
+                                                />
                                             );
                                         }
+                                        // Office logic ends here, continue to next check
 
                                         // Text/Markdown files
                                         if (isText || isMarkdown) {
@@ -747,53 +738,26 @@ export function ItemView() {
                                         const isPdf = ext === 'pdf';
 
                                         if (isPdf) {
-                                            // Default to PDF Viewer Logic (Original Hybrid Approach)
                                             return (
                                                 <>
-                                                    {/* Desktop View: Native Iframe (lg+) */}
-                                                    <div className="hidden lg:block">
+                                                    {/* Desktop: Native Iframe for best performance */}
+                                                    <div className="hidden lg:block h-[80vh]">
                                                         <iframe
                                                             src={`${pdfUrl}#view=FitH`}
                                                             title="PDF Document"
-                                                            className="w-full h-[80vh] border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
+                                                            className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
                                                             allowFullScreen
                                                         />
                                                     </div>
 
-                                                    {/* Tablet View: React-PDF Viewer (sm to lg) */}
-                                                    <div className="hidden sm:block lg:hidden">
-                                                        <PDFViewer url={pdfUrl} className="h-[80vh]" />
+                                                    {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
+                                                    <div className="block lg:hidden">
+                                                        <PDFViewer url={pdfUrl} className="h-[60vh] md:h-[80vh]" />
                                                     </div>
 
-                                                    {/* Smartphone View: Card Actions */}
-                                                    <div className="sm:hidden flex flex-col items-center justify-center p-8 text-center space-y-6 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                                                        <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm">
-                                                            <FileText className="h-10 w-10 text-red-500" />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <h3 className="font-semibold text-lg max-w-[250px] mx-auto truncate">
-                                                                {item.fileName || 'Document PDF'}
-                                                            </h3>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Pour un meilleur confort de lecture sur mobile, ouvrez le fichier directement.
-                                                            </p>
-                                                        </div>
-
-                                                        <a
-                                                            href={pdfUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm active:scale-95 transition-transform"
-                                                        >
-                                                            <ExternalLink className="h-5 w-5" />
-                                                            Ouvrir le PDF
-                                                        </a>
-                                                    </div>
-
-                                                    {/* PDF Fullscreen Modal */}
+                                                    {/* PDF Fullscreen Modal (Logic remains) */}
                                                     {isPdfFullscreen && (
-                                                        // ... (Existing modal logic)
-                                                        <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200 hidden sm:flex">
+                                                        <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
                                                             <div className="absolute top-4 right-6 z-10 flex gap-2">
                                                                 <button
                                                                     onClick={() => setIsPdfFullscreen(false)}
@@ -804,23 +768,23 @@ export function ItemView() {
                                                                 </button>
                                                             </div>
                                                             <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                                {/* Fullscreen Modal Content */}
                                                                 {isOffice ? (
                                                                     <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
-                                                                        <OfficeViewer url={pdfUrl} className="h-full w-full shadow-2xl" />
+                                                                        <OfficeViewer url={pdfUrl} storageKey={item.storageKey} className="h-full w-full shadow-2xl" />
                                                                     </div>
                                                                 ) : (
-                                                                    <>
+                                                                    <div className="w-full h-full">
+                                                                        {/* Fullscreen PDF: Iframe on Desktop, Viewer on Mobile */}
                                                                         <iframe
                                                                             src={`${pdfUrl}#view=FitH`}
                                                                             title="PDF Document Fullscreen"
                                                                             className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
                                                                             allowFullScreen
                                                                         />
-                                                                        <div className="w-full h-full hidden sm:block lg:hidden">
-                                                                            <PDFViewer url={pdfUrl} className="h-full rounded-none border-0" />
+                                                                        <div className="block lg:hidden w-full h-full bg-slate-100 dark:bg-slate-900 overflow-auto">
+                                                                            <PDFViewer url={pdfUrl} className="min-h-full" />
                                                                         </div>
-                                                                    </>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
