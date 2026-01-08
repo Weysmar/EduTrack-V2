@@ -175,8 +175,12 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
 
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
-                {/* Scaled Iframe Container */}
-                <div className="w-[400%] h-[400%] absolute top-0 left-0 origin-top-left transform scale-25 pointer-events-none select-none">
+                {/* Scaled Iframe Container - Simulated Object Cover
+                    w-[600%] * scale(0.25) = 150% Width. 
+                    Centered (-translate-x-1/2) -> Crops 25% from left (Sidebar) and 25% from right.
+                    h-[600%] * scale(0.25) = 150% Height. Crops bottom.
+                */}
+                <div className="w-[600%] h-[600%] absolute top-0 left-1/2 origin-top -translate-x-1/2 transform scale-25 pointer-events-none select-none">
                     <iframe
                         src={viewerUrl}
                         className="w-full h-full border-0 bg-white"
@@ -187,7 +191,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
                     />
                 </div>
 
-                {/* Interactivity/Click Shield (since pointer-events-none is on container, but let's be safe) */}
+                {/* Interactivity/Click Shield */}
                 <div className="absolute inset-0 z-10 bg-transparent" />
 
                 {/* Type Label Overlay */}
