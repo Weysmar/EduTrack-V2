@@ -180,7 +180,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
                     Centered both ways -> Shows center of document, crops UI/margins
                     h-[500%] * scale(0.25) = 125% Height.
                 */}
-                <div className="w-[500%] h-[500%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform scale-25 pointer-events-none select-none">
+                <div className="w-[500%] h-[500%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.25] pointer-events-none select-none">
                     <iframe
                         src={viewerUrl}
                         className="w-full h-full border-0 bg-white"
