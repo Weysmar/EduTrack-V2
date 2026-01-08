@@ -32,6 +32,8 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     const isWord = ['doc', 'docx'].includes(ext);
     const isPPT = ['ppt', 'pptx'].includes(ext);
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
+    const isText = ext === 'txt';
+    const isMarkdown = ext === 'md';
 
     useEffect(() => {
         let isMounted = true;
@@ -164,7 +166,17 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     let Icon = FileIcon;
     let label = ext.toUpperCase();
 
-    if (isWord) {
+    if (isText) {
+        bgColor = "bg-gray-50 dark:bg-gray-900/20";
+        textColor = "text-gray-600 dark:text-gray-400";
+        Icon = FileText;
+        label = "TXT";
+    } else if (isMarkdown) {
+        bgColor = "bg-purple-50 dark:bg-purple-900/20";
+        textColor = "text-purple-600 dark:text-purple-400";
+        Icon = FileText;
+        label = "MD";
+    } else if (isWord) {
         bgColor = "bg-blue-50 dark:bg-blue-900/20";
         textColor = "text-blue-600 dark:text-blue-400";
         Icon = FileText;
