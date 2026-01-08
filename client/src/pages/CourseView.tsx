@@ -273,7 +273,7 @@ export function CourseView() {
 
             {/* List */}
             <div className="flex-1 overflow-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
                     {filteredItems?.map((item: any) => {
                         const typeKey = {
                             note: 'item.create.type.note',
@@ -285,21 +285,18 @@ export function CourseView() {
                             <div
                                 key={item.id}
                                 className={cn(
-                                    "group flex items-start p-3 bg-card border rounded-lg hover:shadow-md transition-all cursor-pointer relative",
-                                    selectedItems.has(item.id) && "ring-2 ring-primary border-primary bg-primary/5"
+                                    "group flex flex-col p-0 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer relative overflow-hidden",
+                                    selectedItems.has(item.id) && "ring-2 ring-primary border-primary"
                                 )}
-                                // onClick={() => navigate(`/courses/${id}/items/${item.id}`)}
                                 onClick={(e) => {
-                                    // If clicking the checkbox, don't navigate (handled by propagation stop on checkbox)
-                                    // If selection mode is active (items selected), toggle instead of navigating?
-                                    // Let's keep it simple: click card = navigate, unless clicking selection area
+                                    // Navigate unless selecting
                                     navigate(`/courses/${id}/items/${item.id}`)
                                 }}
                             >
                                 {/* Selection Checkbox (Visible on hover or if selected) */}
                                 <div
                                     className={cn(
-                                        "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity",
+                                        "absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity",
                                         selectedItems.has(item.id) && "opacity-100"
                                     )}
                                     onClick={(e) => e.stopPropagation()}
@@ -307,102 +304,70 @@ export function CourseView() {
                                     <button
                                         onClick={() => toggleSelection(item.id)}
                                         className={cn(
-                                            "w-5 h-5 rounded border flex items-center justify-center transition-colors",
+                                            "w-6 h-6 rounded-md border shadow-sm flex items-center justify-center transition-colors backdrop-blur-sm",
                                             selectedItems.has(item.id)
                                                 ? "bg-primary border-primary text-primary-foreground"
-                                                : "bg-background border-muted-foreground/30 hover:border-primary"
+                                                : "bg-background/80 border-muted-foreground/30 hover:border-primary"
                                         )}
                                     >
-                                        {selectedItems.has(item.id) && <CheckSquare className="h-3.5 w-3.5" />}
+                                        {selectedItems.has(item.id) && <CheckSquare className="h-4 w-4" />}
                                     </button>
                                 </div>
 
-                                {/* LEFT: File Preview (Only for resources) */}
-                                {item.type === 'resource' && (
-                                    <div className="mr-4 w-16 h-16 rounded-md overflow-hidden border shrink-0 bg-muted/30">
+                                {/* TOP: File Preview / Header Area */}
+                                <div className="w-full aspect-video bg-muted border-b relative group-hover:opacity-95 transition-opacity">
+                                    {item.type === 'resource' ? (
                                         <FilePreview
                                             url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
                                             fileName={item.fileName}
                                             fileType={item.fileType}
                                         />
-                                    </div>
-                                )}
-
-                                <div className="flex-1"> {/* Wrap content to push checkbox to the right */}
-                                    <div className="flex items-start justify-between">
-                                        <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">{item.title}</h3>
-                                        {item.type === 'resource' && <FolderOpen className="h-5 w-5 text-muted-foreground/50" />}
-                                        {item.type === 'note' && <FileText className="h-5 w-5 text-muted-foreground/50" />}
-                                        {item.type === 'exercise' && <Dumbbell className="h-5 w-5 text-muted-foreground/50" />}
-                                    </div>
-
-                                    <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                                        {/* Line 1: Type & Date */}
-                                        <div className="flex items-center gap-2">
-                                            <span className={cn(
-                                                "px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-medium",
-                                                item.type === 'resource' && "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30",
-                                                item.type === 'note' && "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30",
-                                                item.type === 'exercise' && "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30"
-                                            )}>
-                                                {t(typeKey)}
-                                            </span>
-
-                                            <span className="text-muted-foreground/60 flex items-center gap-1">
-                                                {new Date(item.createdAt).toLocaleDateString('fr-FR', {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    year: 'numeric'
-                                                })}
-                                                {' '}
-                                                {new Date(item.createdAt).toLocaleTimeString('fr-FR', {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                }).replace(':', 'H')}
-                                            </span>
+                                    ) : (
+                                        <div className={cn(
+                                            "w-full h-full flex items-center justify-center",
+                                            item.type === 'note' && "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
+                                            item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500"
+                                        )}>
+                                            {item.type === 'note' && <FileText className="h-12 w-12 opacity-50" />}
+                                            {item.type === 'exercise' && <Dumbbell className="h-12 w-12 opacity-50" />}
                                         </div>
+                                    )}
 
-                                        {/* Line 2: Format & Filename (Only for resources) */}
-                                        {item.type === 'resource' && (
-                                            <div className="flex items-center gap-2 pl-1 mt-1">
-                                                {(() => {
-                                                    const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
-                                                    const isWord = ['DOC', 'DOCX'].includes(ext);
-                                                    const isPPT = ['PPT', 'PPTX'].includes(ext);
-                                                    const isPDF = ['PDF'].includes(ext);
-                                                    const isExcel = ['XLS', 'XLSX', 'CSV'].includes(ext);
+                                    {/* Type Badge Overlay */}
+                                    <div className="absolute bottom-2 left-2 z-10">
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md border border-white/10",
+                                            item.type === 'resource' && "bg-blue-500/90 text-white",
+                                            item.type === 'note' && "bg-yellow-500/90 text-white",
+                                            item.type === 'exercise' && "bg-green-500/90 text-white"
+                                        )}>
+                                            {t(typeKey)}
+                                        </span>
+                                    </div>
+                                </div>
 
-                                                    let badgeClass = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
-                                                    let Icon = FileText;
+                                {/* CONTENT: Text Info */}
+                                <div className="p-3 flex flex-col gap-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors" title={item.title}>
+                                            {item.title}
+                                        </h3>
+                                    </div>
 
-                                                    if (isWord) {
-                                                        badgeClass = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-                                                        Icon = FileText;
-                                                    } else if (isPPT) {
-                                                        badgeClass = "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-                                                        Icon = MonitorPlay; // Best approximation for presentation
-                                                    } else if (isPDF) {
-                                                        badgeClass = "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-                                                        Icon = FileText; // Or a specific PDF icon if imported, but generic FileText is fine or maybe "File"
-                                                    } else if (isExcel) {
-                                                        badgeClass = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-                                                        Icon = FileText;
-                                                    }
+                                    <div className="text-xs text-muted-foreground/70 mt-1 flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                                            day: 'numeric',
+                                            month: 'short'
+                                        })}
 
-                                                    return (
-                                                        <span className={cn("flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent min-w-[3.5rem] justify-center", badgeClass)}>
-                                                            <Icon className="h-3 w-3" />
-                                                            {ext}
-                                                        </span>
-                                                    );
-                                                })()}
-
-                                                {item.fileName && (
-                                                    <span className="truncate opacity-80 text-sm" title={item.fileName}>
-                                                        {item.fileName}
-                                                    </span>
-                                                )}
-                                            </div>
+                                        {item.fileName && (
+                                            <>
+                                                <span className="mx-1">•</span>
+                                                <span className="truncate max-w-[80px]" title={item.fileName}>
+                                                    {item.fileName}
+                                                </span>
+                                            </>
                                         )}
                                     </div>
                                 </div>
