@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
-import { FileText, MonitorPlay, File as FileIcon, Loader2 } from 'lucide-react';
+import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 
@@ -117,8 +117,8 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
                         />
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <FileIcon className="h-8 w-8 mb-2" />
+                    <div className="flex flex-col items-center justify-center h-full w-full bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400">
+                        <ImageIcon className="h-8 w-8 mb-2" />
                         <span className="text-xs uppercase font-bold">{ext}</span>
                     </div>
                 )}
@@ -243,6 +243,11 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
         textColor = "text-green-600 dark:text-green-400";
         Icon = FileText;
         label = "EXCEL";
+    } else if (isImage) {
+        bgColor = "bg-yellow-50 dark:bg-yellow-900/20";
+        textColor = "text-yellow-600 dark:text-yellow-400";
+        Icon = ImageIcon;
+        label = ext.toUpperCase();
     }
 
     return (

@@ -276,7 +276,9 @@ export function CourseView() {
             case 'gif':
             case 'svg':
             case 'webp':
-                return 'bg-purple-500/90 text-white'
+            case 'avif':
+            case 'bmp':
+                return 'bg-yellow-500/90 text-white'
             case 'mp4':
             case 'avi':
             case 'mov':
@@ -294,6 +296,20 @@ export function CourseView() {
         }
     }
 
+    // Helper to get styling for List View Icons (mimicking FilePreview/Generic)
+    const getFileIconStyle = (fileName: string | undefined) => {
+        const ext = fileName?.split('.').pop()?.toLowerCase() || '';
+
+        if (['pdf'].includes(ext)) return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'PDF' };
+        if (['doc', 'docx'].includes(ext)) return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'WORD' };
+        if (['xls', 'xlsx', 'csv'].includes(ext)) return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-400', label: 'EXCEL' };
+        if (['ppt', 'pptx'].includes(ext)) return { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400', label: 'PPT' };
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp'].includes(ext)) return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-600 dark:text-yellow-400', label: ext.toUpperCase() };
+        if (['txt', 'md'].includes(ext)) return { bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-600 dark:text-gray-400', label: ext.toUpperCase() };
+
+        return { bg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400', label: null }; // Default
+    }
+
     // Rendering Helper for List View
     const renderListViewItem = (item: any, isSelected: boolean) => {
         const typeKey = {
@@ -301,6 +317,8 @@ export function CourseView() {
             exercise: 'item.create.type.exercise',
             resource: 'item.create.type.resource'
         }[item.type] || item.type;
+
+        const fileStyle = item.type === 'resource' ? getFileIconStyle(item.fileName) : null;
 
         return (
             <div
@@ -321,14 +339,24 @@ export function CourseView() {
                         {isSelected && <CheckSquare className="h-3 w-3" />}
                     </div>
 
-                    <div className={cn("w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 shadow-inner",
+                    <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-inner relative overflow-hidden",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
                         item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
-                        item.type === 'resource' && "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
+                        item.type === 'resource' && (fileStyle?.bg || "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400")
                     )}>
                         {item.type === 'note' && <FileText className="h-6 w-6" />}
                         {item.type === 'exercise' && <Dumbbell className="h-6 w-6" />}
-                        {item.type === 'resource' && <FolderOpen className="h-6 w-6" />}
+                        {item.type === 'resource' && (
+                            fileStyle?.label ? (
+                                <div className="flex flex-col items-center justify-center w-full h-full">
+                                    <span className={cn("text-[8px] font-bold tracking-widest", fileStyle.text)}>{fileStyle.label.substring(0, 4)}</span>
+                                    {/* Optional: Add a subtle corner fold like FilePreview */}
+                                    <div className={cn("absolute top-0 right-0 w-3 h-3 bg-black/5 dark:bg-white/5 rounded-bl-md")} />
+                                </div>
+                            ) : (
+                                <FolderOpen className="h-6 w-6" />
+                            )
+                        )}
                     </div>
 
                     <div className="flex flex-col min-w-0 flex-1 px-1">
