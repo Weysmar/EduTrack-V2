@@ -21,6 +21,7 @@ import { PDFViewer } from '@/components/PDFViewer'
 import { OfficeViewer } from '@/components/OfficeViewer'
 import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
+import { TextViewer } from '@/components/TextViewer'
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 
 export function ItemView() {
@@ -115,6 +116,8 @@ export function ItemView() {
 
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
     const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+    const isText = ext === 'txt';
+    const isMarkdown = ext === 'md';
 
     if (isItemLoading) return <div className="p-8">Loading...</div>
     // If deleting, show loading to prevent "File not found" glitches
@@ -714,6 +717,18 @@ export function ItemView() {
                                                         </a>
                                                     </div>
                                                 </>
+                                            );
+                                        }
+
+                                        // Text/Markdown files
+                                        if (isText || isMarkdown) {
+                                            return (
+                                                <TextViewer
+                                                    url={pdfUrl}
+                                                    fileName={item.fileName}
+                                                    isMarkdown={isMarkdown}
+                                                    className="h-[80vh]"
+                                                />
                                             );
                                         }
 
