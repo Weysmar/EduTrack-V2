@@ -176,15 +176,19 @@ export function CourseView() {
     }, [])
 
     // Aggregated Content Logic
-    const getAggregatedContent = async () => {
+    const getAggregatedContent = async (itemIds?: string[]) => {
         if (!items) return ''
-        const itemsToProcess: string[] = []
-        for (const i of items) {
+        const itemsToProcess = itemIds
+            ? items.filter(i => itemIds.includes(i.id))
+            : items
+
+        const content: string[] = []
+        for (const i of itemsToProcess) {
             // simplified extraction logic for now
             let itemText = i.content || i.extractedContent || ''
-            itemsToProcess.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
+            content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
         }
-        return itemsToProcess.join(' ')
+        return content.join(' ')
     }
 
     const handleOpenGeneration = async (mode: 'flashcards' | 'quiz') => {
@@ -199,6 +203,23 @@ export function CourseView() {
         const content = await getAggregatedContent()
         setShowSummary(true)
         generateSummary(options, content)
+    }
+
+    // Bulk Generation Handler
+    const handleBulkGeneration = async (mode: 'flashcards' | 'quiz' | 'summary') => {
+        if (selectedItems.size === 0) return
+
+        const selectedItemIds = Array.from(selectedItems)
+        const content = await getAggregatedContent(selectedItemIds)
+        setAggregatedContent(content)
+
+        if (mode === 'summary') {
+            setShowSummary(true)
+            generateSummary(DEFAULT_SUMMARY_OPTIONS, content)
+        } else {
+            setGenerationMode(mode)
+            setIsGenerateModalOpen(true)
+        }
     }
 
     const handleDrag = (e: React.DragEvent) => {
@@ -539,6 +560,7 @@ export function CourseView() {
                 selectedCount={selectedItems.size}
                 onClearSelection={clearSelection}
                 onDelete={handleBulkDelete}
+                onGenerate={handleBulkGeneration}
                 isDeleting={isBulkDeleting}
             />
             {/* Other modals... */}
