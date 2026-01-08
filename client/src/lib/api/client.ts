@@ -23,18 +23,17 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            // Token expired or invalid
-            // Circular dependency avoidance: Import store dynamically or use window dispatch?
-            // Safer: Just clear storage and let the store sync eventually, or redirect.
-            // Best practice: useAuthStore.getState().logout() if possible.
-            // Since client.ts is used by store, importing store here causes cycle.
-            // Workaround: Manually clear storage and redirect.
-            // BUT with our fix in authStore, re-initializing from localStorage is key.
+        console.error(`[API Client] Error ${error.response?.status} on ${error.config?.url}:`, error.response?.data || error.message);
 
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            console.warn('[API Client] Unauthorized/Forbidden. Clearing session and redirecting to login...');
+
+            // Clean up
             localStorage.removeItem('jwt_token');
-            // Force reload/redirect to ensure store re-initializes correctly
-            if (window.location.pathname !== '/auth') {
+
+            // If we're not already on the auth page, force a reload to auth
+            // This ensures all stores (authStore, profileStore) are reset
+            if (!window.location.pathname.startsWith('/auth')) {
                 window.location.href = '/auth';
             }
         }
