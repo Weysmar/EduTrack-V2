@@ -348,24 +348,27 @@ export function CourseView() {
                                 </div>
 
                                 {/* CONTENT: Text Info */}
-                                <div className="p-3 flex flex-col gap-1">
+                                <div className="p-4 flex flex-col gap-2">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors" title={item.title}>
+                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
                                             {item.title}
                                         </h3>
                                     </div>
 
-                                    <div className="text-xs text-muted-foreground/70 mt-1 flex items-center gap-1">
-                                        <Calendar className="h-3 w-3" />
-                                        {new Date(item.createdAt).toLocaleDateString('fr-FR', {
-                                            day: 'numeric',
-                                            month: 'short'
-                                        })}
+                                    <div className="text-xs text-muted-foreground/70 mt-2 flex items-center gap-2 overflow-hidden">
+                                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                                        <span className="flex-shrink-0">
+                                            {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}
+                                        </span>
 
                                         {item.fileName && (
                                             <>
-                                                <span className="mx-1">•</span>
-                                                <span className="truncate max-w-[80px]" title={item.fileName}>
+                                                <span className="opacity-50 flex-shrink-0">•</span>
+                                                <span className="truncate" title={item.fileName}>
                                                     {item.fileName}
                                                 </span>
                                             </>
