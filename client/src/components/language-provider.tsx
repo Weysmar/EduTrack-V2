@@ -164,6 +164,15 @@ const translations: Translations = {
         "settings.theme.light": "Light",
         "settings.theme.dark": "Dark",
         "settings.theme.system": "System",
+
+        // Sort & View
+        'sort.by': 'Sort by',
+        'sort.alpha': 'Alphabetical',
+        'sort.date': 'Date added',
+        'view.grid': 'Grid',
+        'view.list': 'List',
+        'action.selectAll': 'Select All',
+        'grid.columns': 'Columns',
         "settings.save.button": "Save Keys",
         "settings.save.saving": "Saving...",
         "settings.save.success": "API Keys saved successfully!",
@@ -353,6 +362,15 @@ const translations: Translations = {
         "settings.theme.light": "Clair",
         "settings.theme.dark": "Sombre",
         "settings.theme.system": "Système",
+
+        // Trier & Vue
+        'sort.by': 'Trier par',
+        'sort.alpha': 'Ordre alphabétique',
+        'sort.date': 'Date d\'ajout',
+        'view.grid': 'Grille',
+        'view.list': 'Liste',
+        'action.selectAll': 'Tout sélectionner',
+        'grid.columns': 'Colonnes',
         "settings.save.button": "Sauvegarder les clés",
         "settings.save.saving": "Sauvegarde...",
         "settings.save.success": "Clés API sauvegardées avec succès !",
