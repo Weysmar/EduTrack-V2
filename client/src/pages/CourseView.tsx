@@ -10,7 +10,7 @@ import { ExportConfigModal } from '@/components/ExportConfigModal'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { usePdfExport } from '@/hooks/usePdfExport'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, Settings, FileText, Dumbbell, FolderOpen, Plus, FileDown, MonitorPlay, Brain, Play, ChevronDown, Layers, CheckSquare, Calendar, Pencil, LayoutGrid, List, ArrowUpDown } from 'lucide-react'
+import { Trash2, Settings, FileText, Dumbbell, FolderOpen, Plus, FileDown, MonitorPlay, Brain, Play, ChevronDown, Layers, CheckSquare, Calendar, Pencil, LayoutGrid, List, ArrowUpDown, Image as ImageIcon } from 'lucide-react'
 import { StudyPlanView } from '@/components/StudyPlanView'
 import { GeneratePlanModal } from '@/components/GeneratePlanModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
@@ -58,6 +58,7 @@ export function CourseView() {
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false)
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+    const [showThumbnails, setShowThumbnails] = useState(true) // Thumbnail toggle state
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
     // View Options State
@@ -448,6 +449,13 @@ export function CourseView() {
                     <div className="flex items-center gap-2">
                         {viewMode === 'grid' && (
                             <div className="flex items-center gap-2 mr-2">
+                                <button
+                                    onClick={() => setShowThumbnails(!showThumbnails)}
+                                    className={cn("p-1.5 rounded transition-all mr-2", showThumbnails ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400" : "text-muted-foreground hover:bg-muted")}
+                                    title={showThumbnails ? t('view.thumbnails_on') || "Masquer aperçus" : t('view.thumbnails_off') || "Afficher aperçus"}
+                                >
+                                    <ImageIcon className="h-4 w-4" />
+                                </button>
                                 <span className="text-xs text-muted-foreground">{t('grid.columns')}:</span>
                                 <select
                                     value={gridColumns}
@@ -543,6 +551,7 @@ export function CourseView() {
                                             url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
                                             fileName={item.fileName}
                                             fileType={item.fileType}
+                                            showThumbnails={showThumbnails}
                                         />
                                     ) : (
                                         <div className={cn(

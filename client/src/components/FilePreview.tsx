@@ -15,9 +15,10 @@ interface FilePreviewProps {
     fileName?: string;
     fileType?: string;
     className?: string;
+    showThumbnails?: boolean;
 }
 
-export function FilePreview({ url, fileName, fileType, className }: FilePreviewProps) {
+export function FilePreview({ url, fileName, fileType, className, showThumbnails = true }: FilePreviewProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -101,7 +102,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     // --- RENDERERS ---
 
     // 1. Image
-    if (isImage || isHeic) {
+    if ((isImage || isHeic) && showThumbnails) {
         if (loading && isHeic) return <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
         return (
@@ -124,7 +125,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     }
 
     // 2. PDF
-    if (isPDF && url) {
+    if (isPDF && url && showThumbnails) {
         return (
             <div
                 ref={containerRef}
@@ -163,7 +164,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     // 3. Office Live Thumbnails (PPTX, Excel, Word)
     // Word: Use local rendering if possible, otherwise fallback to iframe
     // PPT/Excel: Use Google Viewer iframe as thumbnail
-    if ((isWord || isPPT || isExcel) && url) {
+    if ((isWord || isPPT || isExcel) && url && showThumbnails) {
         // Construct absolute URL for external viewers
         const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
 
