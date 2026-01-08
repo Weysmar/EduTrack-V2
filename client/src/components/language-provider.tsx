@@ -143,9 +143,10 @@ const translations: Translations = {
         "export.defaultTitle": "Summary",
         "export.generatedOn": "Generated on:",
         "export.contentComplex": "Complex content",
-        "bulk.selected.singular": "item selected",
-        "bulk.selected.plural": "items selected",
-        "bulk.delete_confirm": "Delete items?",
+        "bulk.selected_singular": "item selected",
+        "bulk.selected_plural": "items selected",
+        "common.delete": "Delete",
+        "common.cancel": "Cancel",
         // Settings Page
         "settings.page.title": "Settings",
         "settings.page.subtitle": "Manage your global preferences and configurations.",
@@ -331,9 +332,10 @@ const translations: Translations = {
         "export.defaultTitle": "Résumé",
         "export.generatedOn": "Généré le :",
         "export.contentComplex": "Contenu complexe",
-        "bulk.selected.singular": "élément sélectionné",
-        "bulk.selected.plural": "éléments sélectionnés",
-        "bulk.delete_confirm": "Supprimer les éléments ?",
+        "bulk.selected_singular": "élément sélectionné",
+        "bulk.selected_plural": "éléments sélectionnés",
+        "common.delete": "Supprimer", // Added because BulkBar uses it
+        "common.cancel": "Annuler",
         // Settings Page
         "settings.page.title": "Paramètres",
         "settings.page.subtitle": "Gérez vos préférences et configurations globales.",

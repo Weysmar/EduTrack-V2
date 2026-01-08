@@ -17,7 +17,7 @@ export function SettingsPage() {
 
     const tabs = [
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
-        { id: 'apparence', label: t('settings.tabs.appearance'), icon: Sun },
+        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Sun },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
         { id: 'changelog', label: t('changelog.title'), icon: History },
     ] as const
