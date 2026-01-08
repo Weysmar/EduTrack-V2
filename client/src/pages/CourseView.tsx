@@ -259,16 +259,19 @@ export function CourseView() {
                         {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
                     </div>
 
-                    <div className="flex flex-col min-w-0">
-                        <span className="font-medium truncate">{item.title}</span>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{t(typeKey)}</span>
+                    <div className="flex flex-col min-w-0 flex-1 px-1">
+                        <span className="font-medium truncate text-sm sm:text-base">{item.title}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground mt-1">
+                            <span className="uppercase tracking-wider font-bold text-primary/80">{t(typeKey)}</span>
                             <span>•</span>
-                            <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                             {item.fileName && (
                                 <>
                                     <span>•</span>
-                                    <span className="truncate max-w-[200px]">{item.fileName}</span>
+                                    <span className="px-1.5 py-0.5 bg-muted border rounded font-mono text-[9px] sm:text-[10px] uppercase text-foreground/80">
+                                        {item.fileName.split('.').pop()}
+                                    </span>
+                                    <span className="truncate max-w-[120px] sm:max-w-md opacity-60 italic">{item.fileName}</span>
                                 </>
                             )}
                         </div>

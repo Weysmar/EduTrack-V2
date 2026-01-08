@@ -18,8 +18,7 @@ export const changelogs: ChangelogEntry[] = [
             { type: 'improvement', description: "changelog.v051.folders" },
             { type: 'new', description: "changelog.v051.office" },
             { type: 'fix', description: "changelog.v051.api" },
-            { type: 'fix', description: "changelog.v051.deps" },
-            { type: 'fix', description: "changelog.v051.prisma" }
+            { type: 'improvement', description: "changelog.v051.polish" }
         ]
     },
     {
