@@ -1,15 +1,12 @@
 import { Router } from 'express';
-import { proxyFile, getSignedUrl, servePublicFile } from '../controllers/storageController';
+import { proxyFile, servePublicFile } from '../controllers/storageController';
 
 const router = Router();
 
 // /api/storage/proxy/:key
 router.get('/proxy/:key', proxyFile);
 
-// /api/storage/sign/:key
-router.get('/sign/:key', getSignedUrl);
-
-// /api/storage/public/:key (No auth required, uses signature)
-router.get('/public/:key', servePublicFile);
+// /api/storage/public/* (No auth required, public read-only)
+router.get('/public/*', servePublicFile);
 
 export default router;
