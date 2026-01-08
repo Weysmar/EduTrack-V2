@@ -696,7 +696,7 @@ export function ItemView() {
                                             return (
                                                 <>
                                                     <div className="hidden sm:block">
-                                                        <OfficeViewer url={pdfUrl} className="h-[80vh]" />
+                                                        <OfficeViewer url={pdfUrl} storageKey={item.storageKey} className="h-[80vh]" />
                                                     </div>
 
                                                     {/* Mobile Fallback (Shared Logic Below) */}
