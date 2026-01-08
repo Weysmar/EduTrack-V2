@@ -108,12 +108,14 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative", className)}>
                 {previewUrl ? (
-                    <img
-                        src={previewUrl}
-                        alt={fileName}
-                        className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
-                        loading="lazy"
-                    />
+                    <div className="w-[500%] h-[500%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.25] pointer-events-none select-none">
+                        <img
+                            src={previewUrl}
+                            alt={fileName}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                        />
+                    </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                         <FileIcon className="h-8 w-8 mb-2" />
