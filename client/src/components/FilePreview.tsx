@@ -160,6 +160,47 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
         );
     }
 
+    // 3. Office Live Thumbnails (PPTX, Excel, Word)
+    // Word: Use local rendering if possible, otherwise fallback to iframe
+    // PPT/Excel: Use Google Viewer iframe as thumbnail
+    if ((isWord || isPPT || isExcel) && url) {
+        // Construct absolute URL for external viewers
+        const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+
+        // For thumbnails, Google Viewer is usually lighter/cleaner than Microsoft's for embedding in small box
+        // But for Word we might want client-side? 
+        // Let's stick to Iframe for consistency and robustness for now, standardizing the "Live Thumbnail" approach.
+        // It avoids the complex 'docx-preview' state management here.
+
+        const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+
+        return (
+            <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
+                {/* Scaled Iframe Container */}
+                <div className="w-[400%] h-[400%] absolute top-0 left-0 origin-top-left transform scale-25 pointer-events-none select-none">
+                    <iframe
+                        src={viewerUrl}
+                        className="w-full h-full border-0 bg-white"
+                        title="File Thumbnail"
+                        scrolling="no"
+                        loading="lazy"
+                        tabIndex={-1}
+                    />
+                </div>
+
+                {/* Interactivity/Click Shield (since pointer-events-none is on container, but let's be safe) */}
+                <div className="absolute inset-0 z-10 bg-transparent" />
+
+                {/* Type Label Overlay */}
+                <div className={cn("absolute top-2 left-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90 z-20",
+                    isWord ? "bg-blue-600" : isExcel ? "bg-green-600" : "bg-orange-600"
+                )}>
+                    {isWord ? "WORD" : isExcel ? "EXCEL" : "PPT"}
+                </div>
+            </div>
+        );
+    }
+
     // 3. Generic / Other Formats (Word, PPT, etc.)
     let bgColor = "bg-slate-100 dark:bg-slate-800";
     let textColor = "text-slate-500";

@@ -8,11 +8,24 @@ interface OfficeViewerProps {
     url: string;
     storageKey?: string;
     className?: string;
+    engine?: 'google' | 'microsoft';
+    onEngineChange?: (engine: 'google' | 'microsoft') => void;
 }
 
-export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: OfficeViewerProps) {
+export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange }: OfficeViewerProps) {
     // Viewer Engine State: 'google' | 'microsoft'
-    const [engine, setEngine] = useState<'google' | 'microsoft'>('google');
+    // Use controlled state if provided, otherwise internal
+    const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft'>('google');
+
+    const engine = controlledEngine || internalEngine;
+    const setEngine = (newEngine: 'google' | 'microsoft') => {
+        if (onEngineChange) {
+            onEngineChange(newEngine);
+        } else {
+            setInternalEngine(newEngine);
+        }
+    };
+
     const [hasError, setHasError] = useState(false);
     // Construct direct public URL (Option 3 - No Signature)
     const getPublicUrl = () => {

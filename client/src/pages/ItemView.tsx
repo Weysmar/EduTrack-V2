@@ -53,6 +53,7 @@ export function ItemView() {
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
+    const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft'>('google') // Lifted state
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
@@ -392,8 +393,12 @@ export function ItemView() {
                             // Determine Target URL for "View in New Tab"
                             let targetUrl = publicRawUrl;
                             if (isOffice) {
-                                // For Office, View in New Tab = Google Viewer
-                                targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+                                // Dynamic Engine Link
+                                if (officeEngine === 'microsoft') {
+                                    targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
+                                } else {
+                                    targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+                                }
                             }
 
                             return (
@@ -717,6 +722,8 @@ export function ItemView() {
                                                     url={pdfUrl}
                                                     storageKey={item.storageKey}
                                                     className="h-[60vh] md:h-[80vh]"
+                                                    engine={officeEngine}
+                                                    onEngineChange={setOfficeEngine}
                                                 />
                                             );
                                         }
@@ -770,7 +777,13 @@ export function ItemView() {
                                                             <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
                                                                 {isOffice ? (
                                                                     <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
-                                                                        <OfficeViewer url={pdfUrl} storageKey={item.storageKey} className="h-full w-full shadow-2xl" />
+                                                                        <OfficeViewer
+                                                                            url={pdfUrl}
+                                                                            storageKey={item.storageKey}
+                                                                            className="h-full w-full shadow-2xl"
+                                                                            engine={officeEngine}
+                                                                            onEngineChange={setOfficeEngine}
+                                                                        />
                                                                     </div>
                                                                 ) : (
                                                                     <div className="w-full h-full">
