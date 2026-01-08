@@ -6,11 +6,10 @@ import { useLanguage } from '@/components/language-provider'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
-import { ChangelogModal } from '@/components/ChangelogModal'
+import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'apparence' | 'raccourcis' | 'api' | 'changelog'>('api')
-    const [isChangelogOpen, setIsChangelogOpen] = useState(false)
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('profile')
     const { theme, setTheme } = useTheme()
     const { t } = useLanguage()
     const useNavigateCallback = useNavigate()
@@ -74,7 +73,7 @@ export function SettingsPage() {
                             </div>
                         )}
 
-                        {activeTab === 'apparence' && (
+                        {activeTab === 'appearance' && (
                             <div className="space-y-8">
                                 <div>
                                     <h2 className="text-xl font-semibold mb-1">{t('settings.appearance.title')}</h2>
@@ -155,20 +154,47 @@ export function SettingsPage() {
                                     <h2 className="text-xl font-semibold mb-1">{t('changelog.title')}</h2>
                                     <p className="text-sm text-muted-foreground mb-6">{t('changelog.desc')}</p>
                                 </div>
-                                <button
-                                    onClick={() => setIsChangelogOpen(true)}
-                                    className="w-full px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium shadow-sm flex items-center justify-center gap-2"
-                                >
-                                    <History className="h-5 w-5" />
-                                    {t('changelog.view')}
-                                </button>
+                                <div className="space-y-8 pl-2">
+                                    {changelogs.map((log) => (
+                                        <div key={log.version} className="relative pl-6 border-l-2 border-muted space-y-2">
+                                            <div className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-background border-2 border-primary" />
+
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                                    {log.version}
+                                                    {log.version === changelogs[0].version && (
+                                                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">Actuel</span>
+                                                    )}
+                                                </h3>
+                                                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full w-fit">{log.date}</span>
+                                            </div>
+                                            <p className="text-sm font-medium text-muted-foreground mb-3">{log.title}</p>
+
+                                            <ul className="space-y-2.5">
+                                                {log.changes.map((change, i) => (
+                                                    <li key={i} className="text-sm flex gap-3">
+                                                        <span className={cn(
+                                                            "uppercase text-[10px] font-bold px-1.5 py-0.5 rounded h-fit mt-0.5 min-w-[3rem] text-center",
+                                                            change.type === 'new' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                                                            change.type === 'fix' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                                                            change.type === 'improvement' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                                                        )}>
+                                                            {change.type}
+                                                        </span>
+                                                        <span className="text-muted-foreground leading-relaxed">{change.description}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                     </div>
                 </main>
             </div >
-            <ChangelogModal isOpen={isChangelogOpen} onClose={() => setIsChangelogOpen(false)} />
+
         </div >
     )
 }
