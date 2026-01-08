@@ -15,8 +15,13 @@ interface FolderTreeProps {
 
 export function FolderTree({ folders, courses, parentId, level = 0 }: FolderTreeProps) {
     // Use loose equality to matches null/undefined parentId
-    const currentFolders = folders.filter(f => (f.parentId ?? null) == (parentId ?? null))
-    const currentCourses = courses.filter(c => (c.folderId ?? null) == (parentId ?? null))
+    const currentFolders = folders
+        .filter(f => (f.parentId ?? null) == (parentId ?? null))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+    const currentCourses = courses
+        .filter(c => (c.folderId ?? null) == (parentId ?? null))
+        .sort((a, b) => a.title.localeCompare(b.title))
 
     if (currentFolders.length === 0 && currentCourses.length === 0) return null
 

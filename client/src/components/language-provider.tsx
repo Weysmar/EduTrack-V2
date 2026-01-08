@@ -132,6 +132,12 @@ const translations: Translations = {
         "common.folder": "Folder",
         "common.noDesc": "No description",
         "folder.empty": "This folder is empty.",
+        // Item Edit
+        "item.edit": "Edit Item",
+        "item.edit.title": "Edit Item",
+        "item.edit.replaceFile": "Replace File",
+        "item.edit.keepFile": "Keep Current File",
+        "item.edit.success": "Item updated successfully",
         // New Additions
         "focus.enter": "Focus Mode",
         "focus.exit": "Exit Focus",
@@ -258,7 +264,18 @@ const translations: Translations = {
         "changelog.v010.title": "Genesis",
         "changelog.v010.engine": "Learning Engine: Courses, Notes, Exercises.",
         "changelog.v010.graph": "Knowledge Graph: Interactive visualization.",
-        "changelog.current": "CURRENT"
+        "changelog.current": "CURRENT",
+        // Revision Program
+        "revision.program": "Study Program",
+        "revision.generate": "Generate Program",
+        "revision.selectTarget": "Select Course or Folder",
+        "revision.examDate": "Exam Date",
+        "revision.noCalendar": "No calendar linked",
+        "revision.linkCalendar": "Link a Calendar",
+        "revision.availableTime": "Available Study Time",
+        "revision.hours": "Hours",
+        "revision.days": "Days",
+        "revision.generating": "Generating your personalized study plan..." // No comma
     },
     fr: {
         "app.title": "EduTrack",
@@ -383,6 +400,12 @@ const translations: Translations = {
         "common.folder": "Dossier",
         "common.noDesc": "Aucune description",
         "folder.empty": "Ce dossier est vide.",
+        // Item Edit
+        "item.edit": "Modifier",
+        "item.edit.title": "Modifier l'élément",
+        "item.edit.replaceFile": "Remplacer le fichier",
+        "item.edit.keepFile": "Conserver le fichier actuel",
+        "item.edit.success": "Élément mis à jour avec succès",
         // New Additions
         "focus.enter": "Mode Concentration",
         "focus.exit": "Quitter Focus",
@@ -510,7 +533,18 @@ const translations: Translations = {
         "changelog.v010.title": "Genèse",
         "changelog.v010.engine": "Moteur d'Apprentissage : Cours, Notes, Exercices.",
         "changelog.v010.graph": "Graphe de Connaissances : Visualisation interactive.",
-        "changelog.current": "ACTUEL"
+        "changelog.current": "ACTUEL",
+        // Revision Program
+        "revision.program": "Programme de Révision",
+        "revision.generate": "Générer le Programme",
+        "revision.selectTarget": "Sélectionner un Cours ou Dossier",
+        "revision.examDate": "Date de l'Examen",
+        "revision.noCalendar": "Aucun calendrier lié",
+        "revision.linkCalendar": "Lier un Calendrier",
+        "revision.availableTime": "Temps Disponible",
+        "revision.hours": "Heures",
+        "revision.days": "Jours",
+        "revision.generating": "Génération de votre plan d'étude personnalisé..." // No comma
     },
     mc: {
         "app.title": "EduCraft",
@@ -694,6 +728,12 @@ const translations: Translations = {
         "gen.delete.error": "Chunk error!",
         "common.open": "Teleport",
         "common.in": "in",
+        // Item Edit
+        "item.edit": "Enchant Item",
+        "item.edit.title": "Enchant Loot",
+        "item.edit.replaceFile": "Swap Item",
+        "item.edit.keepFile": "Keep Current Drop",
+        "item.edit.success": "Item enchanted successfully",
         "sort.label": "Order:",
         "sort.dateAdded": "Spawn Time",
         "sort.alphabetical": "A-Z Scrolls",
@@ -711,6 +751,18 @@ const translations: Translations = {
         "changelog.v051.folders": "Open Portals: Biomes are now open by default and dungeon navigation is smoother.",
         "changelog.v051.office": "Hybrid Scrolls: Integrated Google Scrolls for reading PPT/Excel enchantments.",
         "changelog.v051.api": "Redstone Logic: Fixed server-side lag, API drops, and chunk loading errors.",
+
+        // Revision Program (Minecraft)
+        "revision.program": "Quest Planner",
+        "revision.generate": "Forge Quest Path",
+        "revision.selectTarget": "Select Dungeon or Biome",
+        "revision.examDate": "Boss Battle Date",
+        "revision.noCalendar": "No calendar scroll found",
+        "revision.linkCalendar": "Bind a Calendar",
+        "revision.availableTime": "Grind Time Available",
+        "revision.hours": "Hours",
+        "revision.days": "Days",
+        "revision.generating": "The ancient ones are crafting your path...",
         "changelog.v051.polish": "Texture Pack: 100% lore translation, fixed void-blur on modals, and optimized inventory list view.",
         "changelog.v050.title": "Stability & Intelligence 🧠",
         "changelog.v050.api_keys": "Saving Level.dat: Fixed a bug where world keys were lost.",
@@ -761,7 +813,7 @@ type LanguageProviderState = {
 }
 
 const initialState: LanguageProviderState = {
-    language: "en",
+    language: "fr",
     setLanguage: () => null,
     t: (key) => key,
 }
@@ -770,7 +822,7 @@ const LanguageProviderContext = createContext<LanguageProviderState>(initialStat
 
 export function LanguageProvider({
     children,
-    defaultLanguage = "en",
+    defaultLanguage = "fr",
     storageKey = "vite-ui-language",
     ...props
 }: LanguageProviderProps) {

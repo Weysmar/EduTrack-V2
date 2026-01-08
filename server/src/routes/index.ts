@@ -10,6 +10,8 @@ import storageRoutes from './storageRoutes';
 import aiRoutes from './aiRoutes';
 import extractionRoutes from './extractionRoutes';
 
+import planningRoutes from './planningRoutes';
+import studyPlanRoutes from './studyPlanRoutes';
 import profileRoutes from './profileRoutes';
 
 const router = Router();
@@ -25,5 +27,7 @@ router.use('/quizzes', quizRoutes);
 router.use('/storage', storageRoutes);
 router.use('/ai', aiRoutes);
 router.use('/extract', extractionRoutes);
+router.use('/planning', planningRoutes);
+router.use('/plans', studyPlanRoutes);
 
 export default router;

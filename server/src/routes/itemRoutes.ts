@@ -11,7 +11,7 @@ router.use(authenticate);
 router.get('/', getItems);
 router.get('/:id', getItem);
 router.post('/', upload.single('file'), createItem);
-router.put('/:id', updateItem);
+router.put('/:id', upload.single('file'), updateItem);
 router.delete('/:id', deleteItem);
 router.post('/bulk/delete', bulkDeleteItems);
 router.post('/:id/upload', upload.single('file'), uploadItemFile);

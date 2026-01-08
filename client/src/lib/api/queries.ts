@@ -161,6 +161,11 @@ export const studyPlanQueries = {
     updateTask: async (taskId: string, data: any) => {
         const { data: res } = await apiClient.put(`/plans/tasks/${taskId}`, data);
         return res;
+    },
+    generate: async (data: any, apiKey?: string) => {
+        const config = apiKey ? { headers: { 'x-gemini-api-key': apiKey } } : {};
+        const { data: res } = await apiClient.post('/planning/generate', data, config);
+        return res;
     }
 };
 

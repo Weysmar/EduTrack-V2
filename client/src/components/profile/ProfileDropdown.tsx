@@ -47,22 +47,7 @@ export function ProfileDropdown() {
                 >
                     <Menu.Items className="absolute right-[-1rem] bottom-full mb-2 w-56 origin-bottom-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border">
                         <div className="p-1">
-                            {activeProfile && (
-                                <Menu.Item>
-                                    {({ active }) => (
-                                        <Link
-                                            to="/settings"
-                                            className={cn(
-                                                "group flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
-                                                active ? "bg-accent" : ""
-                                            )}
-                                        >
-                                            <Settings className="h-4 w-4 text-muted-foreground" />
-                                            {t("nav.settings")}
-                                        </Link>
-                                    )}
-                                </Menu.Item>
-                            )}
+                            {/* Settings removed as per new design */}
                         </div>
 
                         {activeProfile && (

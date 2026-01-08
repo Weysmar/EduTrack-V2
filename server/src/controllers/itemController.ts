@@ -100,15 +100,35 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
 
+        const updateData: any = { ...req.body };
+
+        // Handle File Replacement
+        if (req.file) {
+            // Delete old file if exists
+            if (item.storageKey) {
+                await storageService.deleteFile(item.storageKey).catch(err =>
+                    console.error("Failed to delete old file during update:", err)
+                );
+            }
+
+            // Upload new file
+            const uploadResult = await storageService.uploadFile(req.file);
+            updateData.fileUrl = uploadResult.url;
+            updateData.storageKey = uploadResult.key;
+            updateData.fileName = req.file.originalname;
+            updateData.fileSize = req.file.size;
+        }
+
         const updatedItem = await prisma.item.update({
             where: { id: req.params.id },
-            data: req.body
+            data: updateData
         });
 
         socketService.emitToProfile(req.user!.id, 'item:updated', updatedItem);
 
         res.json(updatedItem);
     } catch (error) {
+        console.error("Error updating item:", error);
         res.status(500).json({ message: 'Error updating item', error });
     }
 };
