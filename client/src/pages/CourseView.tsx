@@ -61,7 +61,7 @@ export function CourseView() {
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
     // View Options State
-    const [sortOption, setSortOption] = useState<'alpha' | 'date'>('date')
+    const [sortOption, setSortOption] = useState<'alpha' | 'date' | 'last_opened'>('date')
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
     const [gridColumns, setGridColumns] = useState<4 | 5 | 6 | 10>(4)
 
@@ -81,6 +81,31 @@ export function CourseView() {
 
     // Summary Hook (Adjusted if needed for API, assuming hook logic is compatible or needs refactor too)
     const { summary, generate: generateSummary, isGenerating: isSummaryGenerating } = useSummary(id, 'course')
+
+    // Filtering & Sorting Logic
+    const filteredItems = useMemo(() => {
+        let result = items?.filter((item: any) => {
+            const matchesTab = activeTab === 'all' || item.type === activeTab
+            const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
+            return matchesTab && matchesSearch
+        }) || []
+
+        // Sort logic
+        result.sort((a: any, b: any) => {
+            if (sortOption === 'alpha') {
+                return a.title.localeCompare(b.title)
+            } else if (sortOption === 'last_opened') {
+                // Fallback to updatedAt if lastOpened doesn't exist yet
+                const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+                return dateB - dateA;
+            } else {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            }
+        })
+
+        return result
+    }, [items, activeTab, searchQuery, sortOption])
 
     // --- Handlers ---
 
@@ -197,31 +222,67 @@ export function CourseView() {
         </div>
     )
 
-    // Filtering & Sorting Logic
-    const filteredItems = useMemo(() => {
-        let result = items?.filter((item: any) => {
-            const matchesTab = activeTab === 'all' || item.type === activeTab
-            const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
-            return matchesTab && matchesSearch
-        }) || []
+    // Rendering Helper for List View
+    const renderListViewItem = (item: any, isSelected: boolean) => {
+        const typeKey = {
+            note: 'item.create.type.note',
+            exercise: 'item.create.type.exercise',
+            resource: 'item.create.type.resource'
+        }[item.type] || item.type;
 
-        // Sort logic
-        result.sort((a: any, b: any) => {
-            if (sortOption === 'alpha') {
-                return a.title.localeCompare(b.title)
-            } else {
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            }
-        })
+        return (
+            <div
+                key={item.id}
+                onClick={() => navigate(`/course/${id}/item/${item.id}`)}
+                className={cn(
+                    "group flex items-center justify-between p-3 bg-card border rounded-lg hover:shadow-md transition-all cursor-pointer",
+                    isSelected ? "ring-1 ring-primary border-primary bg-primary/5" : "border-border"
+                )}
+            >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                        onClick={(e) => { e.stopPropagation(); toggleSelection(item.id) }}
+                        className={cn("w-5 h-5 rounded border flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors",
+                            isSelected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground hover:border-primary"
+                        )}
+                    >
+                        {isSelected && <CheckSquare className="h-3 w-3" />}
+                    </div>
 
-        return result
-    }, [items, activeTab, searchQuery, sortOption])
+                    <div className={cn("w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0",
+                        item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
+                        item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
+                        item.type === 'resource' && "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
+                    )}>
+                        {item.type === 'note' && <FileText className="h-5 w-5" />}
+                        {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
+                        {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                        <span className="font-medium truncate">{item.title}</span>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{t(typeKey)}</span>
+                            <span>•</span>
+                            <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
+                            {item.fileName && (
+                                <>
+                                    <span>•</span>
+                                    <span className="truncate max-w-[200px]">{item.fileName}</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     // Grid Columns Class
     const gridColsClass = {
         4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
         5: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-        6: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6',
+        6: 'grid-cols-1 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-6',
         10: 'grid-cols-2 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10',
     }[gridColumns]
 
@@ -280,11 +341,12 @@ export function CourseView() {
                             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('sort.by')}:</span>
                             <select
                                 value={sortOption}
-                                onChange={(e) => setSortOption(e.target.value as 'alpha' | 'date')}
-                                className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground"
+                                onChange={(e) => setSortOption(e.target.value as 'alpha' | 'date' | 'last_opened')}
+                                className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground [&>option]:bg-background [&>option]:text-foreground"
                             >
                                 <option value="date">{t('sort.date')}</option>
                                 <option value="alpha">{t('sort.alpha')}</option>
+                                <option value="last_opened">{t('sort.last_opened')}</option>
                             </select>
                         </div>
                         <div className="h-4 w-px bg-border hidden sm:block"></div>
@@ -309,7 +371,7 @@ export function CourseView() {
                                 <select
                                     value={gridColumns}
                                     onChange={(e) => setGridColumns(Number(e.target.value) as any)}
-                                    className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground p-0"
+                                    className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground p-0 [&>option]:bg-background [&>option]:text-foreground"
                                 >
                                     <option value={4}>4</option>
                                     <option value={5}>5</option>
@@ -345,66 +407,20 @@ export function CourseView() {
                     viewMode === 'grid' ? `grid ${gridColsClass}` : "flex flex-col space-y-2"
                 )}>
                     {filteredItems?.map((item: any) => {
+                        const isSelected = selectedItems.has(item.id)
+
+                        // --- LIST VIEW ITEM ---
+                        if (viewMode === 'list') {
+                            return renderListViewItem(item, isSelected)
+                        }
+
+                        // --- GRID VIEW ITEM ---
                         const typeKey = {
                             note: 'item.create.type.note',
                             exercise: 'item.create.type.exercise',
                             resource: 'item.create.type.resource'
                         }[item.type] || item.type;
 
-                        const isSelected = selectedItems.has(item.id)
-
-                        // --- LIST VIEW ITEM ---
-                        if (viewMode === 'list') {
-                            return (
-                                <div
-                                    key={item.id}
-                                    onClick={() => navigate(`/course/${id}/item/${item.id}`)}
-                                    className={cn(
-                                        "group flex items-center justify-between p-3 bg-card border rounded-lg hover:shadow-md transition-all cursor-pointer",
-                                        isSelected ? "ring-1 ring-primary border-primary bg-primary/5" : "border-border"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div
-                                            onClick={(e) => { e.stopPropagation(); toggleSelection(item.id) }}
-                                            className={cn("w-5 h-5 rounded border flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors",
-                                                isSelected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground hover:border-primary"
-                                            )}
-                                        >
-                                            {isSelected && <CheckSquare className="h-3 w-3" />}
-                                        </div>
-
-                                        <div className={cn("w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0",
-                                            item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
-                                            item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
-                                            item.type === 'resource' && "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
-                                        )}>
-                                            {item.type === 'note' && <FileText className="h-5 w-5" />}
-                                            {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
-                                            {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
-                                        </div>
-
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="font-medium truncate">{item.title}</span>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span>{t(typeKey)}</span>
-                                                <span>•</span>
-                                                <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
-                                                {item.fileName && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <span className="truncate max-w-[200px]">{item.fileName}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* Actions spacer if needed */}
-                                </div>
-                            )
-                        }
-
-                        // --- GRID VIEW ITEM ---
                         return (
                             <div
                                 key={item.id}
