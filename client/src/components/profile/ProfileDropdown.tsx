@@ -45,7 +45,7 @@ export function ProfileDropdown() {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                 >
-                    <Menu.Items className="absolute right-[-1rem] bottom-full mb-2 w-56 origin-bottom-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border">
+                    <Menu.Items className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 origin-bottom rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border">
                         <div className="p-1">
                             {/* Settings removed as per new design */}
                         </div>

@@ -1,26 +1,76 @@
-import { useState } from 'react';
-import { FileText, Download, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, Download, ExternalLink, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
+import { apiClient } from '@/lib/api/client';
+import { API_URL } from '@/config';
 
 interface OfficeViewerProps {
     url: string;
+    storageKey?: string;
     className?: string;
 }
 
-export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
+export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: OfficeViewerProps) {
     // Viewer Engine State: 'google' | 'microsoft'
     const [engine, setEngine] = useState<'google' | 'microsoft'>('google');
     const [hasError, setHasError] = useState(false);
+    const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Extension Check
-    const isDocx = /\.docx($|\?)/i.test(url) || url.toLowerCase().includes('docx');
+    const isDocx = /\.docx($|\?)/i.test(initialUrl) || initialUrl.toLowerCase().includes('docx');
+
+    useEffect(() => {
+        const fetchSignedUrl = async () => {
+            if (storageKey) {
+                setIsLoading(true);
+                try {
+                    const { data } = await apiClient.get<{ url: string }>(`/storage/sign/${storageKey}`);
+
+                    // Construct absolute URL (Required for Google/Office)
+                    // If API_URL is relative (e.g. '/api'), prepend origin
+                    // If API_URL is absolute, just append path
+                    const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+
+                    // data.url is likely '/storage/public/key...'
+                    // Ensure we don't double slash if API_URL has trailing slash
+                    const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+                    const cleanPath = data.url.startsWith('/') ? data.url : `/${data.url}`;
+
+                    setViewerUrl(`${cleanApiBase}${cleanPath}`);
+                } catch (e) {
+                    console.error("Failed to sign URL", e);
+                    setViewerUrl(initialUrl); // Fallback
+                } finally {
+                    setIsLoading(false);
+                }
+            } else {
+                setViewerUrl(initialUrl);
+            }
+        };
+
+        if (!isDocx) {
+            fetchSignedUrl();
+        }
+    }, [storageKey, initialUrl, isDocx]);
 
     if (isDocx) {
-        return <DocxViewer url={url} className={className} />;
+        return <DocxViewer url={initialUrl} className={className} />;
     }
 
+    if (isLoading) {
+        return (
+            <div className={`flex items-center justify-center p-8 bg-slate-50 dark:bg-slate-900 border rounded-lg h-full ${className}`}>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Preparing secure preview...</span>
+            </div>
+        );
+    }
+
+    if (!viewerUrl) return null;
+
     // URLs for engines
-    const encodedUrl = encodeURIComponent(url);
+    const encodedUrl = encodeURIComponent(viewerUrl);
     const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
     const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
 
@@ -34,7 +84,11 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">Aperçu indisponible</h3>
                 <p className="text-sm text-center text-muted-foreground max-w-sm mb-6">
-                    Le lecteur en ligne n'a pas pu charger ce document (peut-être protégé ou trop volumineux).
+                    Le lecteur en ligne n'a pas pu charger ce document.
+                    <br />
+                    <span className="text-xs opacity-75 mt-2 block">
+                        (Note: Si vous êtes en local/localhost, c'est normal car Google ne peut pas accéder à votre PC. Déployez l'app pour voir l'aperçu.)
+                    </span>
                 </p>
                 <div className="flex gap-3">
                     <button
@@ -45,7 +99,7 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
                         Essayer {engine === 'google' ? 'Microsoft' : 'Google'}
                     </button>
                     <a
-                        href={url}
+                        href={viewerUrl} // Signed URL for download
                         download
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                     >
@@ -78,7 +132,7 @@ export function OfficeViewer({ url, className = "" }: OfficeViewerProps) {
 
                 <div className="flex gap-2">
                     <a
-                        href={url}
+                        href={viewerUrl}
                         download
                         className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
                         title="Télécharger le fichier"
