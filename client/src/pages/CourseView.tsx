@@ -306,53 +306,60 @@ export function CourseView() {
             )}
 
             {/* Header */}
-            <div className="flex flex-col gap-4 border-b pb-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-3">
+            <div className="flex flex-col gap-4 border-b pb-4 mt-2 sm:mt-0 px-2 sm:px-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 truncate">
                             {course.icon ? (
-                                <span className="text-3xl">{course.icon}</span>
+                                <span className="text-2xl sm:text-3xl shrink-0">{course.icon}</span>
                             ) : (
-                                <span className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color || '#3b82f6' }} />
+                                <span className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0" style={{ backgroundColor: course.color || '#3b82f6' }} />
                             )}
-                            {course.title}
+                            <span className="truncate">{course.title}</span>
                         </h1>
-                        <p className="text-muted-foreground mt-1">{course.description}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-1">{course.description}</p>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium">
-                            <Plus className="h-4 w-4" /> {t('course.addContent')}
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:bg-primary/90 transition-all active:scale-95 shadow-sm"
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span className="whitespace-nowrap">{t('course.addContent')}</span>
                         </button>
-                        <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
-                            <Pencil className="h-5 w-5" />
-                        </button>
-                        <button onClick={handleDelete} className="p-2 text-destructive hover:bg-destructive/10 rounded-md" title={t('common.delete')}>
-                            <Trash2 className="h-5 w-5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
+                                <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </button>
+                            <button onClick={handleDelete} className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors" title={t('common.delete')}>
+                                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Toolbar: Sort & View Options */}
-                <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg gap-4 overflow-x-auto">
-
-                    {/* Left: Sort & Select All */}
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 sm:p-4 bg-muted/20 border rounded-xl">
+                    {/* Left: Sorting & Global Selection */}
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('sort.by')}:</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+                                {t('sort.label')}:
+                            </span>
                             <select
                                 value={sortOption}
-                                onChange={(e) => setSortOption(e.target.value as 'alpha' | 'date' | 'last_opened')}
-                                className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground [&>option]:bg-background [&>option]:text-foreground"
+                                onChange={(e) => setSortOption(e.target.value as any)}
+                                className="bg-transparent text-xs sm:text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground p-0 [&>option]:bg-background [&>option]:text-foreground"
                             >
-                                <option value="date">{t('sort.date')}</option>
-                                <option value="alpha">{t('sort.alpha')}</option>
-                                <option value="last_opened">{t('sort.last_opened')}</option>
+                                <option value="date">{t('sort.dateAdded')}</option>
+                                <option value="alpha">{t('sort.alphabetical')}</option>
+                                <option value="last_opened">{t('sort.lastOpened')}</option>
                             </select>
                         </div>
                         <div className="h-4 w-px bg-border hidden sm:block"></div>
                         <button
                             onClick={() => handleSelectAll(filteredItems)}
-                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <div className={cn("w-4 h-4 border rounded flex items-center justify-center transition-colors",
                                 selectedItems.size > 0 && selectedItems.size === filteredItems.length ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
@@ -469,15 +476,15 @@ export function CourseView() {
                                             item.type === 'note' && "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
                                             item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500"
                                         )}>
-                                            {item.type === 'note' && <FileText className="h-12 w-12 opacity-50" />}
-                                            {item.type === 'exercise' && <Dumbbell className="h-12 w-12 opacity-50" />}
+                                            {item.type === 'note' && <FileText className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
+                                            {item.type === 'exercise' && <Dumbbell className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                                         </div>
                                     )}
 
                                     {/* Type Badge Overlay */}
                                     <div className="absolute bottom-2 left-2 z-10">
                                         <span className={cn(
-                                            "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md border border-white/10",
+                                            "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md border border-white/10",
                                             item.type === 'resource' && "bg-blue-500/90 text-white",
                                             item.type === 'note' && "bg-yellow-500/90 text-white",
                                             item.type === 'exercise' && "bg-green-500/90 text-white"
@@ -488,29 +495,20 @@ export function CourseView() {
                                 </div>
 
                                 {/* CONTENT: Text Info */}
-                                <div className="p-4 flex flex-col gap-2">
+                                <div className="p-3 sm:p-4 flex flex-col gap-1 sm:gap-2">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
+                                        <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
                                             {item.title}
                                         </h3>
                                     </div>
 
-                                    <div className="text-xs text-muted-foreground/70 mt-2 flex items-center gap-2 overflow-hidden">
+                                    <div className="text-[10px] sm:text-xs text-muted-foreground/70 sm:mt-2 flex items-center gap-2 overflow-hidden">
                                         <Calendar className="h-3 w-3 flex-shrink-0" />
-                                        <span className="flex-shrink-0">
-                                            {new Date(item.createdAt).toLocaleDateString('fr-FR', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric'
-                                            })}
-                                        </span>
-
+                                        <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
                                         {item.fileName && (
                                             <>
-                                                <span className="opacity-50 flex-shrink-0">•</span>
-                                                <span className="truncate" title={item.fileName}>
-                                                    {item.fileName}
-                                                </span>
+                                                <span className="hidden sm:inline">•</span>
+                                                <span className="hidden sm:inline truncate max-w-[150px] italic opacity-80" title={item.fileName}>{item.fileName}</span>
                                             </>
                                         )}
                                     </div>
