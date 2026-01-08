@@ -15,7 +15,7 @@ interface OfficeViewerProps {
 export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange }: OfficeViewerProps) {
     // Viewer Engine State: 'google' | 'microsoft'
     // Use controlled state if provided, otherwise internal
-    const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft'>('google');
+    const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft'>('microsoft');
 
     const engine = controlledEngine || internalEngine;
     const setEngine = (newEngine: 'google' | 'microsoft') => {
