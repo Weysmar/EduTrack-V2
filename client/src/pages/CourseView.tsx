@@ -286,11 +286,12 @@ export function CourseView() {
                                 key={item.id}
                                 className={cn(
                                     "group flex flex-col p-0 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer relative overflow-hidden",
-                                    selectedItems.has(item.id) && "ring-2 ring-primary border-primary"
-                                )}
+                                    selectedItems.has(item.id) ? "ring-2 ring-primary border-transparent z-10" : "border-border"
+                                )
+                                }
                                 onClick={(e) => {
                                     // Navigate unless selecting
-                                    navigate(`/courses/${id}/items/${item.id}`)
+                                    navigate(`/course/${id}/item/${item.id}`)
                                 }}
                             >
                                 {/* Selection Checkbox (Visible on hover or if selected) */}
