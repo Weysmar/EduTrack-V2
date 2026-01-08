@@ -235,11 +235,11 @@ export function CourseView() {
                 key={item.id}
                 onClick={() => navigate(`/course/${id}/item/${item.id}`)}
                 className={cn(
-                    "group flex items-center justify-between p-3 bg-card border rounded-lg hover:shadow-md transition-all cursor-pointer",
-                    isSelected ? "ring-1 ring-primary border-primary bg-primary/5" : "border-border"
+                    "group flex items-center justify-between p-4 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer",
+                    isSelected ? "ring-2 ring-primary border-primary bg-primary/5 shadow-md" : "border-border shadow-sm"
                 )}
             >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div
                         onClick={(e) => { e.stopPropagation(); toggleSelection(item.id) }}
                         className={cn("w-5 h-5 rounded border flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors",
@@ -249,14 +249,14 @@ export function CourseView() {
                         {isSelected && <CheckSquare className="h-3 w-3" />}
                     </div>
 
-                    <div className={cn("w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0",
+                    <div className={cn("w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 shadow-inner",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
                         item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
                         item.type === 'resource' && "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
                     )}>
-                        {item.type === 'note' && <FileText className="h-5 w-5" />}
-                        {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
-                        {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
+                        {item.type === 'note' && <FileText className="h-6 w-6" />}
+                        {item.type === 'exercise' && <Dumbbell className="h-6 w-6" />}
+                        {item.type === 'resource' && <FolderOpen className="h-6 w-6" />}
                     </div>
 
                     <div className="flex flex-col min-w-0 flex-1 px-1">
