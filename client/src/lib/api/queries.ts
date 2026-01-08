@@ -53,6 +53,10 @@ export const itemQueries = {
     },
     delete: async (id: string) => {
         await apiClient.delete(`/items/${id}`);
+    },
+    bulkDelete: async (itemIds: string[]) => {
+        const { data } = await apiClient.post('/items/bulk/delete', { itemIds });
+        return data;
     }
 };
 

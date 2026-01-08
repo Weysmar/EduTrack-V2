@@ -136,6 +136,54 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// POST /api/items/bulk/delete
+export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
+    try {
+        const { itemIds } = req.body;
+
+        if (!Array.isArray(itemIds) || itemIds.length === 0) {
+            return res.status(400).json({ message: 'No items provided' });
+        }
+
+        // 1. Find items to verify ownership and get storage keys
+        const items = await prisma.item.findMany({
+            where: {
+                id: { in: itemIds },
+                profileId: req.user!.id
+            }
+        });
+
+        if (items.length === 0) {
+            return res.status(404).json({ message: 'No items found matching criteria' });
+        }
+
+        const validIds = items.map(i => i.id);
+
+        // 2. Delete files from storage
+        const deletePromises = items
+            .filter(item => item.storageKey)
+            .map(item => storageService.deleteFile(item.storageKey!));
+
+        await Promise.allSettled(deletePromises);
+
+        // 3. Delete from DB
+        await prisma.item.deleteMany({
+            where: {
+                id: { in: validIds }
+            }
+        });
+
+        // 4. Notify client
+        socketService.emitToProfile(req.user!.id, 'items:bulk-deleted', { ids: validIds });
+
+        console.log(`Bulk deleted ${validIds.length} items`);
+        res.json({ message: 'Items deleted successfully', count: validIds.length });
+    } catch (error) {
+        console.error('Error bulk deleting items:', error);
+        res.status(500).json({ message: 'Error deleting items', error });
+    }
+};
+
 // POST /api/items/:id/upload
 export const uploadItemFile = async (req: AuthRequest, res: Response) => {
     try {
