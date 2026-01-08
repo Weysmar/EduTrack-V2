@@ -563,7 +563,31 @@ export function CourseView() {
                 onGenerate={handleBulkGeneration}
                 isDeleting={isBulkDeleting}
             />
-            {/* Other modals... */}
+
+            <GenerateExerciseModal
+                isOpen={isGenerateModalOpen}
+                onClose={() => setIsGenerateModalOpen(false)}
+                sourceContent={aggregatedContent}
+                sourceTitle={`${selectedItems.size} ${selectedItems.size > 1 ? t('bulk.selected_plural') : t('bulk.selected_singular')}`}
+                courseId={id}
+                initialMode={generationMode}
+            />
+
+            {showSummary && (
+                <SummaryPanel
+                    summary={summary}
+                    onClose={() => setShowSummary(false)}
+                    isLoading={isSummaryGenerating}
+                    onConfigure={() => setIsSummaryOptionsOpen(true)}
+                    onRegenerate={() => handleGenerateSummary()}
+                />
+            )}
+
+            <SummaryOptionsModal
+                isOpen={isSummaryOptionsOpen}
+                onClose={() => setIsSummaryOptionsOpen(false)}
+                onGenerate={handleGenerateSummary}
+            />
         </div>
     )
 }
