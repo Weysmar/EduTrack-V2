@@ -167,12 +167,11 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
         // Construct absolute URL for external viewers
         const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
 
-        // For thumbnails, Google Viewer is usually lighter/cleaner than Microsoft's for embedding in small box
-        // But for Word we might want client-side? 
-        // Let's stick to Iframe for consistency and robustness for now, standardizing the "Live Thumbnail" approach.
-        // It avoids the complex 'docx-preview' state management here.
+        // For thumbnails, user requested Microsoft by default.
+        // Microsoft 'embed' view is often cleaner.
+        // Google is secondary.
 
-        const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+        const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
 
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
