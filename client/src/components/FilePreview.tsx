@@ -175,12 +175,12 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
 
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
-                {/* Scaled Iframe Container - Simulated Object Cover
-                    w-[600%] * scale(0.25) = 150% Width. 
-                    Centered (-translate-x-1/2) -> Crops 25% from left (Sidebar) and 25% from right.
-                    h-[600%] * scale(0.25) = 150% Height. Crops bottom.
+                {/* Scaled Iframe Container - True Center Crop
+                    w-[500%] * scale(0.25) = 125% Width. 
+                    Centered both ways -> Shows center of document, crops UI/margins
+                    h-[500%] * scale(0.25) = 125% Height.
                 */}
-                <div className="w-[600%] h-[600%] absolute top-0 left-1/2 origin-top -translate-x-1/2 transform scale-25 pointer-events-none select-none">
+                <div className="w-[500%] h-[500%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform scale-25 pointer-events-none select-none">
                     <iframe
                         src={viewerUrl}
                         className="w-full h-full border-0 bg-white"
