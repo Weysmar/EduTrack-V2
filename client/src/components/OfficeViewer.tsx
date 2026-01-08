@@ -71,7 +71,8 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
 
     // URLs for engines
     const encodedUrl = encodeURIComponent(viewerUrl);
-    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
+    // Use 'gview' for Google which is sometimes more reliable than 'viewer'
+    const googleViewerUrl = `https://docs.google.com/gview?url=${encodedUrl}&embedded=true`;
     const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
 
     const currentSrc = engine === 'google' ? googleViewerUrl : officeViewerUrl;
@@ -84,13 +85,13 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
                 </div>
                 <h3 className="font-semibold text-lg mb-2">Aperçu indisponible</h3>
                 <p className="text-sm text-center text-muted-foreground max-w-sm mb-6">
-                    Le lecteur en ligne n'a pas pu charger ce document.
+                    Le lecteur en ligne ({engine}) n'a pas pu charger ce document.
                     <br />
                     <span className="text-xs opacity-75 mt-2 block">
-                        (Note: Si vous êtes en local/localhost, c'est normal car Google ne peut pas accéder à votre PC. Déployez l'app pour voir l'aperçu.)
+                        Cela arrive souvent avec les bloqueurs de publicité (Brave Shields, uBlock) ou si le fichier est trop complexe.
                     </span>
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <button
                         onClick={() => { setHasError(false); setEngine(engine === 'google' ? 'microsoft' : 'google'); }}
                         className="flex items-center gap-2 px-4 py-2 border hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
@@ -104,7 +105,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
                     >
                         <Download className="h-4 w-4" />
-                        Télécharger
+                        Télécharger le fichier
                     </a>
                 </div>
             </div>
@@ -128,6 +129,16 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
                         <RefreshCw className="h-3 w-3" />
                         Changer de moteur
                     </button>
+                    {/* Add explicit link to open in new tab for debugging */}
+                    <a
+                        href={currentSrc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                        <ExternalLink className="h-3 w-3" />
+                        Ouvrir le lecteur
+                    </a>
                 </div>
 
                 <div className="flex gap-2">
@@ -139,15 +150,6 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
                     >
                         <Download className="h-4 w-4" />
                         <span className="hidden sm:inline">Télécharger</span>
-                    </a>
-                    <a
-                        href={currentSrc}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
-                        title="Ouvrir dans une nouvelle fenêtre"
-                    >
-                        <ExternalLink className="h-4 w-4" />
                     </a>
                 </div>
             </div>
@@ -161,6 +163,9 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "" }: Of
                     className="absolute inset-0 w-full h-full border-0"
                     allowFullScreen
                     onError={() => setHasError(true)}
+                    // Add sandbox to prevent scripts if possible? No, viewers need scripts.
+                    // But we can try to facilitate permissions.
+                    allow="clipboard-write; autoplay"
                 />
             </div>
         </div>
