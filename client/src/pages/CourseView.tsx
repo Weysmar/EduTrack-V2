@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { CreateItemModal } from '@/components/CreateItemModal'
 import { EditCourseModal } from '@/components/EditCourseModal'
@@ -10,7 +10,7 @@ import { ExportConfigModal } from '@/components/ExportConfigModal'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { usePdfExport } from '@/hooks/usePdfExport'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, Settings, FileText, Dumbbell, FolderOpen, Plus, FileDown, MonitorPlay, Brain, Play, ChevronDown, Layers, CheckSquare, Calendar, Pencil } from 'lucide-react'
+import { Trash2, Settings, FileText, Dumbbell, FolderOpen, Plus, FileDown, MonitorPlay, Brain, Play, ChevronDown, Layers, CheckSquare, Calendar, Pencil, LayoutGrid, List, ArrowUpDown } from 'lucide-react'
 import { StudyPlanView } from '@/components/StudyPlanView'
 import { GeneratePlanModal } from '@/components/GeneratePlanModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
@@ -49,38 +49,6 @@ export function CourseView() {
     // Auth for Proxy URLs
     const token = useAuthStore(state => state.token)
 
-    const toggleSelection = (itemId: string) => {
-        const newSelection = new Set(selectedItems)
-        if (newSelection.has(itemId)) {
-            newSelection.delete(itemId)
-        } else {
-            newSelection.add(itemId)
-        }
-        setSelectedItems(newSelection)
-    }
-
-    const clearSelection = () => {
-        setSelectedItems(new Set())
-    }
-
-    const handleBulkDelete = async () => {
-        if (selectedItems.size === 0) return
-
-        if (!confirm(t('bulk.delete_confirm') || 'Confirmer la suppression ?')) return
-
-        setIsBulkDeleting(true)
-        try {
-            const { itemQueries } = await import('@/lib/api/queries')
-            await itemQueries.bulkDelete(Array.from(selectedItems))
-            await queryClient.invalidateQueries({ queryKey: ['items', id] })
-            clearSelection()
-        } catch (error) {
-            console.error('Failed to bulk delete:', error)
-        } finally {
-            setIsBulkDeleting(false)
-        }
-    }
-
     // --- State ---
     const [activeTab, setActiveTab] = useState<'all' | 'exercise' | 'note' | 'resource' | 'flashcards' | 'plan'>('all')
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -91,6 +59,11 @@ export function CourseView() {
     const [showSummary, setShowSummary] = useState(false)
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+
+    // View Options State
+    const [sortOption, setSortOption] = useState<'alpha' | 'date'>('date')
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+    const [gridColumns, setGridColumns] = useState<4 | 5 | 6 | 10>(4)
 
     // Generation State
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
@@ -122,6 +95,47 @@ export function CourseView() {
     const handleDelete = async () => {
         if (confirm(t('course.delete.confirm'))) {
             deleteCourseMutation.mutate(id)
+        }
+    }
+
+    const toggleSelection = (itemId: string) => {
+        const newSelection = new Set(selectedItems)
+        if (newSelection.has(itemId)) {
+            newSelection.delete(itemId)
+        } else {
+            newSelection.add(itemId)
+        }
+        setSelectedItems(newSelection)
+    }
+
+    const clearSelection = () => {
+        setSelectedItems(new Set())
+    }
+
+    const handleSelectAll = (filteredItemsList: any[]) => {
+        if (selectedItems.size === filteredItemsList.length && filteredItemsList.length > 0) {
+            clearSelection()
+        } else {
+            const newSelection = new Set(filteredItemsList.map(item => item.id))
+            setSelectedItems(newSelection)
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedItems.size === 0) return
+
+        if (!confirm(t('bulk.delete_confirm') || 'Confirmer la suppression ?')) return
+
+        setIsBulkDeleting(true)
+        try {
+            const { itemQueries } = await import('@/lib/api/queries')
+            await itemQueries.bulkDelete(Array.from(selectedItems))
+            await queryClient.invalidateQueries({ queryKey: ['items', id] })
+            clearSelection()
+        } catch (error) {
+            console.error('Failed to bulk delete:', error)
+        } finally {
+            setIsBulkDeleting(false)
         }
     }
 
@@ -157,9 +171,6 @@ export function CourseView() {
     }
 
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
-        // Hook internal logic for API generation
-        // Ensure useSummary Hook is API ready (Phase 4 task?)
-        // For now keep UI
         const content = await getAggregatedContent()
         setShowSummary(true)
         generateSummary(options, content)
@@ -186,25 +197,34 @@ export function CourseView() {
         </div>
     )
 
-    // Filtering Logic
-    const filteredItems = items?.filter((item: any) => {
-        const matchesTab = activeTab === 'all' || item.type === activeTab
-        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
-        return matchesTab && matchesSearch
-    })
+    // Filtering & Sorting Logic
+    const filteredItems = useMemo(() => {
+        let result = items?.filter((item: any) => {
+            const matchesTab = activeTab === 'all' || item.type === activeTab
+            const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase())
+            return matchesTab && matchesSearch
+        }) || []
 
-    const allExercises = [
-        ...(flashcardSets || []).map((s: any) => ({ ...s, type: 'flashcard' as const })),
-        ...(quizzes || []).map((q: any) => ({ ...q, type: 'quiz' as const, count: q.questionCount, mastered: 0 }))
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as any[]
+        // Sort logic
+        result.sort((a: any, b: any) => {
+            if (sortOption === 'alpha') {
+                return a.title.localeCompare(b.title)
+            } else {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            }
+        })
 
-    const filteredExercises = allExercises.filter(ex =>
-        ex.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+        return result
+    }, [items, activeTab, searchQuery, sortOption])
 
-    // Render (Simplified for brevity, assuming components accept props)
-    // IMPORTANT: Child components like CreateItemModal also need refactoring to usage API instead of DB.
-    // I will assume they are next on the list.
+    // Grid Columns Class
+    const gridColsClass = {
+        4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+        5: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+        6: 'grid-cols-1 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6',
+        10: 'grid-cols-2 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10',
+    }[gridColumns]
+
 
     return (
         <div
@@ -225,55 +245,105 @@ export function CourseView() {
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-3">
-                        {course.icon ? (
-                            <span className="text-3xl">{course.icon}</span>
-                        ) : (
-                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color || '#3b82f6' }} />
+            <div className="flex flex-col gap-4 border-b pb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold flex items-center gap-3">
+                            {course.icon ? (
+                                <span className="text-3xl">{course.icon}</span>
+                            ) : (
+                                <span className="w-4 h-4 rounded-full" style={{ backgroundColor: course.color || '#3b82f6' }} />
+                            )}
+                            {course.title}
+                        </h1>
+                        <p className="text-muted-foreground mt-1">{course.description}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium">
+                            <Plus className="h-4 w-4" /> {t('course.addContent')}
+                        </button>
+                        <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
+                            <Pencil className="h-5 w-5" />
+                        </button>
+                        <button onClick={handleDelete} className="p-2 text-destructive hover:bg-destructive/10 rounded-md" title={t('common.delete')}>
+                            <Trash2 className="h-5 w-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Toolbar: Sort & View Options */}
+                <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg gap-4 overflow-x-auto">
+
+                    {/* Left: Sort & Select All */}
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('sort.by')}:</span>
+                            <select
+                                value={sortOption}
+                                onChange={(e) => setSortOption(e.target.value as 'alpha' | 'date')}
+                                className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground"
+                            >
+                                <option value="date">{t('sort.date')}</option>
+                                <option value="alpha">{t('sort.alpha')}</option>
+                            </select>
+                        </div>
+                        <div className="h-4 w-px bg-border hidden sm:block"></div>
+                        <button
+                            onClick={() => handleSelectAll(filteredItems)}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <div className={cn("w-4 h-4 border rounded flex items-center justify-center transition-colors",
+                                selectedItems.size > 0 && selectedItems.size === filteredItems.length ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                            )}>
+                                {selectedItems.size > 0 && selectedItems.size === filteredItems.length && <CheckSquare className="h-3 w-3" />}
+                            </div>
+                            {t('action.selectAll')}
+                        </button>
+                    </div>
+
+                    {/* Right: View Toggles */}
+                    <div className="flex items-center gap-2">
+                        {viewMode === 'grid' && (
+                            <div className="flex items-center gap-2 mr-2">
+                                <span className="text-xs text-muted-foreground">{t('grid.columns')}:</span>
+                                <select
+                                    value={gridColumns}
+                                    onChange={(e) => setGridColumns(Number(e.target.value) as any)}
+                                    className="bg-transparent text-sm font-medium border-none focus:ring-0 cursor-pointer text-foreground p-0"
+                                >
+                                    <option value={4}>4</option>
+                                    <option value={5}>5</option>
+                                    <option value={6}>6</option>
+                                    <option value={10}>10</option>
+                                </select>
+                            </div>
                         )}
-                        {course.title}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">{course.description}</p>
-                </div>
-                <div className="flex gap-2">
-                    {/* Buttons... */}
-                    <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium">
-                        <Plus className="h-4 w-4" /> {t('course.addContent')}
-                    </button>
-                    <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
-                        <Pencil className="h-5 w-5" />
-                    </button>
-                    <button onClick={handleDelete} className="p-2 text-destructive hover:bg-destructive/10 rounded-md" title={t('common.delete')}>
-                        <Trash2 className="h-5 w-5" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-2 border-b items-center justify-between">
-                <div className="flex gap-2">
-                    {['all', 'exercise', 'note', 'resource'].map((tab) => {
-                        const tabKey = {
-                            all: 'course.tabs.all',
-                            exercise: 'course.tabs.exercises',
-                            note: 'course.tabs.notes',
-                            resource: 'course.tabs.resources'
-                        }[tab] || `course.tabs.${tab}`;
-
-                        return (
-                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-4 py-2 text-sm font-medium border-b-2 capitalize", activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
-                                {t(tabKey)}
+                        <div className="flex items-center bg-background border rounded-md p-1">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={cn("p-1.5 rounded transition-all", viewMode === 'grid' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}
+                                title={t('view.grid')}
+                            >
+                                <LayoutGrid className="h-4 w-4" />
                             </button>
-                        )
-                    })}
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={cn("p-1.5 rounded transition-all", viewMode === 'list' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}
+                                title={t('view.list')}
+                            >
+                                <List className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* List */}
             <div className="flex-1 overflow-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+                <div className={cn(
+                    "gap-4 pb-20",
+                    viewMode === 'grid' ? `grid ${gridColsClass}` : "flex flex-col space-y-2"
+                )}>
                     {filteredItems?.map((item: any) => {
                         const typeKey = {
                             note: 'item.create.type.note',
@@ -281,12 +351,66 @@ export function CourseView() {
                             resource: 'item.create.type.resource'
                         }[item.type] || item.type;
 
+                        const isSelected = selectedItems.has(item.id)
+
+                        // --- LIST VIEW ITEM ---
+                        if (viewMode === 'list') {
+                            return (
+                                <div
+                                    key={item.id}
+                                    onClick={() => navigate(`/course/${id}/item/${item.id}`)}
+                                    className={cn(
+                                        "group flex items-center justify-between p-3 bg-card border rounded-lg hover:shadow-md transition-all cursor-pointer",
+                                        isSelected ? "ring-1 ring-primary border-primary bg-primary/5" : "border-border"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div
+                                            onClick={(e) => { e.stopPropagation(); toggleSelection(item.id) }}
+                                            className={cn("w-5 h-5 rounded border flex items-center justify-center cursor-pointer flex-shrink-0 transition-colors",
+                                                isSelected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground hover:border-primary"
+                                            )}
+                                        >
+                                            {isSelected && <CheckSquare className="h-3 w-3" />}
+                                        </div>
+
+                                        <div className={cn("w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0",
+                                            item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
+                                            item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
+                                            item.type === 'resource' && "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
+                                        )}>
+                                            {item.type === 'note' && <FileText className="h-5 w-5" />}
+                                            {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
+                                            {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
+                                        </div>
+
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="font-medium truncate">{item.title}</span>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span>{t(typeKey)}</span>
+                                                <span>•</span>
+                                                <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
+                                                {item.fileName && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <span className="truncate max-w-[200px]">{item.fileName}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Actions spacer if needed */}
+                                </div>
+                            )
+                        }
+
+                        // --- GRID VIEW ITEM ---
                         return (
                             <div
                                 key={item.id}
                                 className={cn(
                                     "group flex flex-col p-0 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer relative overflow-hidden",
-                                    selectedItems.has(item.id) ? "ring-2 ring-primary ring-inset border-transparent z-10" : "border-border"
+                                    isSelected ? "ring-2 ring-primary ring-inset border-transparent z-10" : "border-border"
                                 )
                                 }
                                 onClick={(e) => {
@@ -298,7 +422,7 @@ export function CourseView() {
                                 <div
                                     className={cn(
                                         "absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity",
-                                        selectedItems.has(item.id) && "opacity-100"
+                                        isSelected && "opacity-100"
                                     )}
                                     onClick={(e) => e.stopPropagation()}
                                 >
@@ -306,12 +430,12 @@ export function CourseView() {
                                         onClick={() => toggleSelection(item.id)}
                                         className={cn(
                                             "w-6 h-6 rounded-md border shadow-sm flex items-center justify-center transition-colors backdrop-blur-sm",
-                                            selectedItems.has(item.id)
+                                            isSelected
                                                 ? "bg-primary border-primary text-primary-foreground"
                                                 : "bg-background/80 border-muted-foreground/30 hover:border-primary"
                                         )}
                                     >
-                                        {selectedItems.has(item.id) && <CheckSquare className="h-4 w-4" />}
+                                        {isSelected && <CheckSquare className="h-4 w-4" />}
                                     </button>
                                 </div>
 
