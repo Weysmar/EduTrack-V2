@@ -12,12 +12,14 @@ export const changelogs: ChangelogEntry[] = [
     {
         version: "0.5.1",
         date: "2026-01-08",
-        title: "Mobilité & Accessibilité 📱",
+        title: "Mobilité & Stabilité 📱⚡",
         changes: [
             { type: 'improvement', description: "Optimisation Mobile : Refonte de la vue cours pour smartphone avec des cartes plus compactes et un en-tête intelligent." },
             { type: 'improvement', description: "Navigation Fluide : Les dossiers sont désormais ouverts par défaut pour un accès direct à vos cours." },
             { type: 'new', description: "Lecteur Office Hybride : Transition vers Google Viewer pour une ouverture fiable des PPT et Excel sur tous supports." },
-            { type: 'fix', description: "Responsive Header : Correction du chevauchement des boutons sur petits écrans." }
+            { type: 'fix', description: "Intercepteur API : Détection automatique des sessions expirées et reconnexion intelligente." },
+            { type: 'fix', description: "Dépendances : Réparation des erreurs de compilation liées aux modules Word (docx-preview) et HEIC (heic2any)." },
+            { type: 'fix', description: "Synchro Prisma : Mise à jour du moteur de base de données pour une cohérence parfaite des types serveur." }
         ]
     },
     {
