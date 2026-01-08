@@ -151,7 +151,7 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
                     </Document>
                 </div>
                 {/* PDF Label Overlay */}
-                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90 z-10">
+                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90 z-10">
                     PDF
                 </div>
             </div>
