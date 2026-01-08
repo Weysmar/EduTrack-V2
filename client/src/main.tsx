@@ -15,7 +15,7 @@ import App from './App.tsx'
 import './index.css'
 
 
-console.log('🔌 EduTrack Client Initialized (v0.5.9 - Document Previews) 🚀');
+console.log('🔌 EduTrack Client Initialized (v0.5.10 - Grid Redesign) 🚀');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
