@@ -21,7 +21,7 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     // 2. Verify token
     jwt.verify(token, process.env.JWT_SECRET as string, (err: any, user: any) => {
         if (err) {
-            return res.status(403).json({ message: 'Invalid or expired token' });
+            return res.status(401).json({ message: 'Invalid or expired token' });
         }
 
         // 3. Attach user to request
