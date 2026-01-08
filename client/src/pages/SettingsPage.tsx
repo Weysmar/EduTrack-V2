@@ -9,7 +9,7 @@ import { useProfileStore } from '@/store/profileStore'
 import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('profile')
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('api')
     const { theme, setTheme } = useTheme()
     const { t } = useLanguage()
     const useNavigateCallback = useNavigate()
@@ -163,12 +163,12 @@ export function SettingsPage() {
                                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                                     {log.version}
                                                     {log.version === changelogs[0].version && (
-                                                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">Actuel</span>
+                                                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">{t('changelog.current')}</span>
                                                     )}
                                                 </h3>
                                                 <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full w-fit">{log.date}</span>
                                             </div>
-                                            <p className="text-sm font-medium text-muted-foreground mb-3">{log.title}</p>
+                                            <p className="text-sm font-medium text-muted-foreground mb-3">{t(log.title)}</p>
 
                                             <ul className="space-y-2.5">
                                                 {log.changes.map((change, i) => (
@@ -181,7 +181,7 @@ export function SettingsPage() {
                                                         )}>
                                                             {change.type}
                                                         </span>
-                                                        <span className="text-muted-foreground leading-relaxed">{change.description}</span>
+                                                        <span className="text-muted-foreground leading-relaxed">{t(change.description)}</span>
                                                     </li>
                                                 ))}
                                             </ul>
