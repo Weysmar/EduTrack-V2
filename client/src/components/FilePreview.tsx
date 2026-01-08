@@ -183,8 +183,8 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
 
     return (
         <div className={cn("w-full h-full flex flex-col items-center justify-center relative transition-colors", bgColor, className)}>
-            <Icon className={cn("h-10 w-10 mb-2 opacity-80", textColor)} />
-            <span className={cn("text-xs font-bold tracking-wider opacity-70", textColor)}>{label}</span>
+            <Icon className={cn("h-6 w-6 sm:h-10 sm:w-10 mb-1 sm:mb-2 opacity-80", textColor)} />
+            <span className={cn("text-[10px] sm:text-xs font-bold tracking-wider opacity-70", textColor)}>{label}</span>
 
             {/* Corner Fold Effect (CSS) */}
             <div className={cn("absolute top-0 right-0 w-8 h-8 bg-black/5 dark:bg-white/5 rounded-bl-xl")} />

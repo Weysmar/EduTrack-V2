@@ -43,7 +43,7 @@ export function FolderTree({ folders, courses, parentId, level = 0 }: FolderTree
 }
 
 function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder, allFolders: Folder[], allCourses: Course[], level: number }) {
-    const [isOpen, setIsOpen] = useState(false)
+    const [isOpen, setIsOpen] = useState(true)
     const location = useLocation()
     const isActive = location.pathname === `/folder/${folder.id}`
     const queryClient = useQueryClient()
