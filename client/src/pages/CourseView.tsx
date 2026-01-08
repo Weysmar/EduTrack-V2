@@ -58,7 +58,10 @@ export function CourseView() {
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false)
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
-    const [showThumbnails, setShowThumbnails] = useState(true) // Thumbnail toggle state
+    const [showThumbnails, setShowThumbnails] = useState(() => {
+        const saved = localStorage.getItem('showThumbnails');
+        return saved !== null ? JSON.parse(saved) : true;
+    })
     const [isBulkDeleting, setIsBulkDeleting] = useState(false)
 
     // View Options State
@@ -450,7 +453,11 @@ export function CourseView() {
                         {viewMode === 'grid' && (
                             <div className="flex items-center gap-2 mr-2">
                                 <button
-                                    onClick={() => setShowThumbnails(!showThumbnails)}
+                                    onClick={() => {
+                                        const newValue = !showThumbnails;
+                                        setShowThumbnails(newValue);
+                                        localStorage.setItem('showThumbnails', JSON.stringify(newValue));
+                                    }}
                                     className={cn("p-1.5 rounded transition-all mr-2", showThumbnails ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400" : "text-muted-foreground hover:bg-muted")}
                                     title={showThumbnails ? t('view.thumbnails_on') || "Masquer aperçus" : t('view.thumbnails_off') || "Afficher aperçus"}
                                 >

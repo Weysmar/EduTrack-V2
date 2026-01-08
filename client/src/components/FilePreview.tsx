@@ -27,7 +27,7 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
     // Determine file extension and type
     const ext = (fileName?.split('.').pop() || fileType?.split('/')[1] || '').toLowerCase();
 
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext);
     const isHeic = ['heic', 'heif'].includes(ext);
     const isPDF = ext === 'pdf';
     const isWord = ['doc', 'docx'].includes(ext);
@@ -106,7 +106,7 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
         if (loading && isHeic) return <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
         return (
-            <div className={cn("w-full h-full bg-slate-900 overflow-hidden relative", className)}>
+            <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative", className)}>
                 {previewUrl ? (
                     <img
                         src={previewUrl}
@@ -211,7 +211,12 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
     let Icon = FileIcon;
     let label = ext.toUpperCase();
 
-    if (isText) {
+    if (isPDF) {
+        bgColor = "bg-red-50 dark:bg-red-900/20";
+        textColor = "text-red-600 dark:text-red-400";
+        Icon = FileText;
+        label = "PDF";
+    } else if (isText) {
         bgColor = "bg-gray-50 dark:bg-gray-900/20";
         textColor = "text-gray-600 dark:text-gray-400";
         Icon = FileText;
