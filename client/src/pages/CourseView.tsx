@@ -243,6 +243,53 @@ export function CourseView() {
         </div>
     )
 
+    // Helper function to get color classes based on file extension
+    const getFileExtensionColor = (fileName: string | undefined) => {
+        if (!fileName) return 'bg-muted text-foreground/80'
+
+        const ext = fileName.split('.').pop()?.toLowerCase()
+
+        switch (ext) {
+            case 'pdf':
+                return 'bg-red-500/90 text-white'
+            case 'docx':
+            case 'doc':
+                return 'bg-blue-500/90 text-white'
+            case 'xlsx':
+            case 'xls':
+            case 'csv':
+                return 'bg-green-600/90 text-white'
+            case 'pptx':
+            case 'ppt':
+                return 'bg-orange-500/90 text-white'
+            case 'zip':
+            case 'rar':
+            case '7z':
+                return 'bg-slate-600/90 text-white'
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'gif':
+            case 'svg':
+            case 'webp':
+                return 'bg-purple-500/90 text-white'
+            case 'mp4':
+            case 'avi':
+            case 'mov':
+            case 'mkv':
+                return 'bg-pink-500/90 text-white'
+            case 'mp3':
+            case 'wav':
+            case 'flac':
+                return 'bg-cyan-500/90 text-white'
+            case 'txt':
+            case 'md':
+                return 'bg-gray-500/90 text-white'
+            default:
+                return 'bg-muted text-foreground/80 border'
+        }
+    }
+
     // Rendering Helper for List View
     const renderListViewItem = (item: any, isSelected: boolean) => {
         const typeKey = {
@@ -291,9 +338,7 @@ export function CourseView() {
                                     <span>•</span>
                                     <span className={cn(
                                         "px-1.5 py-0.5 rounded font-mono text-[9px] sm:text-[10px] uppercase font-bold tracking-wider shadow-sm border border-white/10",
-                                        item.type === 'resource' && "bg-blue-500/90 text-white",
-                                        item.type === 'note' && "bg-yellow-500/90 text-white",
-                                        item.type === 'exercise' && "bg-green-500/90 text-white"
+                                        getFileExtensionColor(item.fileName)
                                     )}>
                                         {item.fileName.split('.').pop()}
                                     </span>
