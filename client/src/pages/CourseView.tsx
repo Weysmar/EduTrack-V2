@@ -14,6 +14,9 @@ import { Trash2, Settings, FileText, Dumbbell, FolderOpen, Plus, FileDown, Monit
 import { StudyPlanView } from '@/components/StudyPlanView'
 import { GeneratePlanModal } from '@/components/GeneratePlanModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
+import { FilePreview } from '@/components/FilePreview'
+import { API_URL } from '@/config'
+import { useAuthStore } from '@/store/authStore'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { useSummary } from '@/hooks/useSummary'
 import { DEFAULT_SUMMARY_OPTIONS, SummaryOptions } from '@/lib/summary/types'
@@ -42,6 +45,9 @@ export function CourseView() {
     // Placeholders for now until Flashcard/Quiz endpoints are real
     const flashcardSets = []
     const quizzes = []
+
+    // Auth for Proxy URLs
+    const token = useAuthStore(state => state.token)
 
     const toggleSelection = (itemId: string) => {
         const newSelection = new Set(selectedItems)
@@ -310,6 +316,17 @@ export function CourseView() {
                                         {selectedItems.has(item.id) && <CheckSquare className="h-3.5 w-3.5" />}
                                     </button>
                                 </div>
+
+                                {/* LEFT: File Preview (Only for resources) */}
+                                {item.type === 'resource' && (
+                                    <div className="mr-4 w-16 h-16 rounded-md overflow-hidden border shrink-0 bg-muted/30">
+                                        <FilePreview
+                                            url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
+                                            fileName={item.fileName}
+                                            fileType={item.fileType}
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="flex-1"> {/* Wrap content to push checkbox to the right */}
                                     <div className="flex items-start justify-between">
