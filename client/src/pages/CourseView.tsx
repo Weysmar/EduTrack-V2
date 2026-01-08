@@ -289,7 +289,12 @@ export function CourseView() {
                             {item.fileName && (
                                 <>
                                     <span>•</span>
-                                    <span className="px-1.5 py-0.5 bg-muted border rounded font-mono text-[9px] sm:text-[10px] uppercase text-foreground/80">
+                                    <span className={cn(
+                                        "px-1.5 py-0.5 rounded font-mono text-[9px] sm:text-[10px] uppercase font-bold tracking-wider shadow-sm border border-white/10",
+                                        item.type === 'resource' && "bg-blue-500/90 text-white",
+                                        item.type === 'note' && "bg-yellow-500/90 text-white",
+                                        item.type === 'exercise' && "bg-green-500/90 text-white"
+                                    )}>
                                         {item.fileName.split('.').pop()}
                                     </span>
                                     <span className="truncate max-w-[120px] sm:max-w-md opacity-60 italic">{item.fileName}</span>
