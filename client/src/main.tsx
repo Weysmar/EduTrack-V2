@@ -15,7 +15,7 @@ import App from './App.tsx'
 import './index.css'
 
 
-console.log('🔌 EduTrack Client Initialized (v0.5.5 - File Format Styling) 🚀');
+console.log('🔌 EduTrack Client Initialized (v0.5.6 - Image Viewer Enhanced) 🚀');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

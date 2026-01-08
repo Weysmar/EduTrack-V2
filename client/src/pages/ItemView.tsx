@@ -113,7 +113,7 @@ export function ItemView() {
         (item?.fileType ? item.fileType.split('/')[1] : '') ||
         (item?.fileData ? item.fileData.split('.').pop()?.toLowerCase() : '') || '';
 
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
     const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
 
     if (isItemLoading) return <div className="p-8">Loading...</div>
