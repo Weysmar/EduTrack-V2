@@ -297,7 +297,7 @@ export function ItemView() {
             )}
 
             {/* Header */}
-            <div className="h-16 border-b flex items-center justify-between px-3 md:px-6 bg-card sticky top-0 z-40">
+            <div className="min-h-[4rem] h-auto border-b flex items-center justify-between px-3 md:px-6 py-2 bg-card sticky top-0 z-40">
                 <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                     <button
                         onClick={() => navigate(`/course/${courseId}`)}
