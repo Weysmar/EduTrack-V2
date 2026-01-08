@@ -15,7 +15,7 @@ import App from './App.tsx'
 import './index.css'
 
 
-console.log('🔌 EduTrack Client Initialized (v0.5.15 - Z-Index Fixes) 🚀');
+console.log('🔌 EduTrack Client Initialized (v0.5.16 - Drag & Drop Fix) 🚀');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

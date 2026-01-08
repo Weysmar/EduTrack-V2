@@ -4,6 +4,7 @@ import { Course, Folder } from '@/lib/types';
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { ChevronRight, Folder as FolderIcon } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface FolderTreeProps {
     folders: Folder[]
@@ -45,6 +46,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
     const [isOpen, setIsOpen] = useState(false)
     const location = useLocation()
     const isActive = location.pathname === `/folder/${folder.id}`
+    const queryClient = useQueryClient()
 
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault()
@@ -62,6 +64,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
             try {
                 const { courseQueries } = await import('@/lib/api/queries')
                 await courseQueries.update(String(idToUpdate), { folderId: folder.id })
+                queryClient.invalidateQueries({ queryKey: ['courses'] })
                 toast.success("Course moved successfully")
             } catch (error) {
                 console.error("Failed to move course:", error)
