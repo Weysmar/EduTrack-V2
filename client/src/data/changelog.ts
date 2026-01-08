@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 
 export const changelogs: ChangelogEntry[] = [
     {
+        version: "0.5.1",
+        date: "2026-01-08",
+        title: "Mobilité & Accessibilité 📱",
+        changes: [
+            { type: 'improvement', description: "Optimisation Mobile : Refonte de la vue cours pour smartphone avec des cartes plus compactes et un en-tête intelligent." },
+            { type: 'improvement', description: "Navigation Fluide : Les dossiers sont désormais ouverts par défaut pour un accès direct à vos cours." },
+            { type: 'new', description: "Lecteur Office Hybride : Transition vers Google Viewer pour une ouverture fiable des PPT et Excel sur tous supports." },
+            { type: 'fix', description: "Responsive Header : Correction du chevauchement des boutons sur petits écrans." }
+        ]
+    },
+    {
         version: "0.5.0",
         date: "2026-01-07",
         title: "Stabilité & Intelligence 🧠",
