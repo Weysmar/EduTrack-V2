@@ -349,7 +349,7 @@ export function CourseView() {
                                 {/* CONTENT: Text Info */}
                                 <div className="p-3 flex flex-col gap-1">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h3 className="font-semibold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors" title={item.title}>
+                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors" title={item.title}>
                                             {item.title}
                                         </h3>
                                     </div>

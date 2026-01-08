@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
 import { FileText, MonitorPlay, File as FileIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,8 @@ interface FilePreviewProps {
 export function FilePreview({ url, fileName, fileType, className }: FilePreviewProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
     // Determine file extension and type
     const ext = (fileName?.split('.').pop() || fileType?.split('/')[1] || '').toLowerCase();
@@ -69,6 +71,30 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
         };
     }, [url, isHeic]);
 
+    // Resize Observer for PDF width
+    useEffect(() => {
+        if (!isPDF || !containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.contentBoxSize) {
+                    setContainerWidth(entry.contentBoxSize[0].inlineSize);
+                } else {
+                    setContainerWidth(entry.contentRect.width);
+                }
+            }
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        // Initial set
+        setContainerWidth(containerRef.current.clientWidth);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [isPDF]);
+
 
     // --- RENDERERS ---
 
@@ -98,22 +124,26 @@ export function FilePreview({ url, fileName, fileType, className }: FilePreviewP
     // 2. PDF
     if (isPDF && url) {
         return (
-            <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
-                <div className="absolute inset-0 flex items-center justify-center">
+            <div
+                ref={containerRef}
+                className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}
+            >
+                {/* PDF Page Renders here. Centered and scaled to fit width */}
+                <div className="absolute inset-0 flex items-start justify-center">
                     <Document
                         file={url}
                         loading={<div className="animate-pulse bg-muted w-full h-full" />}
                         error={
-                            <div className="flex flex-col items-center text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                                 <FileText className="h-8 w-8 mb-1" />
-                                <span className="text-[10px] font-bold">PDF</span>
+                                <span className="text-[10px] font-bold">PDF ERROR</span>
                             </div>
                         }
-                        className="w-full h-full flex items-center justify-center"
+                        className="w-full flex justify-center"
                     >
                         <Page
                             pageNumber={1}
-                            width={250} // Fixed width approx for card size
+                            width={containerWidth || 300} // Dynamic width
                             renderTextLayer={false}
                             renderAnnotationLayer={false}
                             className="shadow-md"
