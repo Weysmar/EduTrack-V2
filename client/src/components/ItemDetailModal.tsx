@@ -1,5 +1,5 @@
 import { Item } from '@/lib/types';
-import { X, Dumbbell, FileText, FolderOpen, Download, Calendar, Trash2, MonitorPlay, Eye } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Download, Calendar, Trash2, MonitorPlay, Eye, Image as ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useState } from 'react'
@@ -117,11 +117,11 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                             <div className={cn("p-2 rounded-md",
                                 item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                                 item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
-                                item.type === 'resource' && "bg-green-100 text-green-600 dark:bg-green-900/20",
+                                item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
                             )}>
                                 {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
                                 {item.type === 'note' && <FileText className="h-5 w-5" />}
-                                {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
+                                {item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold">{item.title}</h2>

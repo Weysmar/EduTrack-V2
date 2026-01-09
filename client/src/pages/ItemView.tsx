@@ -10,7 +10,7 @@ import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
@@ -119,6 +119,7 @@ export function ItemView() {
 
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
     const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+    const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
 
@@ -311,12 +312,12 @@ export function ItemView() {
                     <div className={cn("p-2 rounded-md flex-shrink-0",
                         item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
-                        item.type === 'resource' && "bg-green-100 text-green-600 dark:bg-green-900/20",
+                        item.type === 'resource' && (isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
 
                     )}>
                         {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
                         {item.type === 'note' && <FileText className="h-5 w-5" />}
-                        {item.type === 'resource' && <FolderOpen className="h-5 w-5" />}
+                        {item.type === 'resource' && (isImage ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
 
                     </div>
                     <div className="min-w-0 flex-1">
@@ -347,6 +348,9 @@ export function ItemView() {
                                         } else if (isExcel) {
                                             badgeClass = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
                                             Icon = FileText;
+                                        } else if (isImage) {
+                                            badgeClass = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+                                            Icon = ImageIcon;
                                         }
 
                                         return (
@@ -518,7 +522,7 @@ export function ItemView() {
 
             {/* Main Content Area */}
             <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-6 md:p-10">
-                <div className={cn("w-full space-y-6", showSummary ? "" : "max-w-5xl mx-auto")}>
+                <div className={cn("w-full space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
 
                     {/* Metadata Badges */}
                     {item.type === 'exercise' && item.status && item.difficulty && (

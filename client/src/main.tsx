@@ -15,7 +15,7 @@ import App from './App.tsx'
 import './index.css'
 
 
-console.log('🔌 EduTrack Client Initialized (v0.5.20 - Hook Fix & Last Opened Sort) 🚀');
+console.log('🔌 EduTrack Client Initialized (v0.5.21 - UI Refinements) 🚀');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
