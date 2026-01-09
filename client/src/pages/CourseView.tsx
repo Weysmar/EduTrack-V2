@@ -374,7 +374,7 @@ export function CourseView() {
                                     )}>
                                         {item.fileName.split('.').pop()}
                                     </span>
-                                    <span className="truncate max-w-[120px] sm:max-w-md opacity-60 italic">{item.fileName}</span>
+                                    <span className="opacity-60 italic break-all">{item.fileName}</span>
                                 </>
                             )}
                         </div>
@@ -615,7 +615,7 @@ export function CourseView() {
                                 {/* CONTENT: Text Info */}
                                 <div className="p-3 sm:p-4 flex flex-col gap-1 sm:gap-2">
                                     <div className="flex items-start justify-between gap-2">
-                                        <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
+                                        <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors break-words" title={item.title}>
                                             {item.title}
                                         </h3>
                                     </div>
@@ -626,7 +626,7 @@ export function CourseView() {
                                         {item.fileName && (
                                             <>
                                                 <span className="hidden sm:inline">•</span>
-                                                <span className="hidden sm:inline truncate max-w-[150px] italic opacity-80" title={item.fileName}>{item.fileName}</span>
+                                                <span className="hidden sm:inline opacity-80 italic break-all" title={item.fileName}>{item.fileName}</span>
                                             </>
                                         )}
                                     </div>
