@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -9,9 +9,9 @@ import { useLanguage } from '@/components/language-provider'
 import { FolderTree } from './FolderTree'
 import { ProfileDropdown } from './profile/ProfileDropdown'
 import { useProfileStore } from '@/store/profileStore'
+import { FocusTimer } from './FocusTimer'
 
 export function Sidebar() {
-    // Use selector for better reactivity - Sidebar V6.9
     const activeProfile = useProfileStore(state => state.activeProfile);
     const { t } = useLanguage()
     const queryClient = useQueryClient()
@@ -88,6 +88,10 @@ export function Sidebar() {
                     <MapIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     <span className="font-medium hidden md:block">{t('nav.board') || "Investigation Board"}</span>
                 </Link>
+
+                <div className="mt-4">
+                    <FocusTimer />
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto py-4">

@@ -8,14 +8,15 @@ import { LanguageToggle } from '@/components/language-toggle'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
-import { SearchModal } from '@/components/SearchModal'
-import { useSearchStore } from '@/store/searchStore'
+import { CommandPalette } from '@/components/CommandPalette'
+import { useCommandStore } from '@/store/commandStore'
 import { Search } from 'lucide-react'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
+import { useFocusStore } from '@/store/focusStore'
 
 export function AppLayout() {
     // Initialize Socket Connection
@@ -42,9 +43,19 @@ export function AppLayout() {
     }, [activeProfile, setUrl, disconnect])
 
     const { isSidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
-    const { setIsOpen } = useSearchStore()
+    const { open: openCommandPalette } = useCommandStore()
     const location = useLocation()
     const navigate = useNavigate()
+
+    // Focus Timer Global Tick
+    const { tick, isActive } = useFocusStore();
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isActive) {
+            interval = setInterval(tick, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isActive, tick]);
 
     // Auto-close sidebar on mobile on initial load
     useEffect(() => {
@@ -56,10 +67,6 @@ export function AppLayout() {
 
         // Check once on mount
         handleResize()
-
-        // Optional: Listen to resize if we want dynamic behavior (can be annoying if resizing window on desktop)
-        // window.addEventListener('resize', handleResize)
-        // return () => window.removeEventListener('resize', handleResize)
     }, [closeSidebar])
 
     // Auto-close on navigation (Mobile only ideally, but harmless on desktop if we check width or just allow it)
@@ -71,7 +78,7 @@ export function AppLayout() {
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background relative">
-            <SearchModal />
+            <CommandPalette />
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -105,7 +112,7 @@ export function AppLayout() {
 
                     {/* Search Trigger */}
                     <button
-                        onClick={() => setIsOpen(true)}
+                        onClick={openCommandPalette}
                         className="flex-1 max-w-xl mx-2 lg:mx-4 relative flex items-center group"
                     >
                         <div className="relative w-full flex items-center">
