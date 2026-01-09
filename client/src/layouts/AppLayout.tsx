@@ -42,7 +42,7 @@ export function AppLayout() {
         }
     }, [activeProfile, setUrl, disconnect])
 
-    const { isSidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
+    const { isSidebarOpen, isCollapsed, toggleSidebar, closeSidebar } = useUIStore()
     const { open: openCommandPalette } = useCommandStore()
     const location = useLocation()
     const navigate = useNavigate()
@@ -91,8 +91,10 @@ export function AppLayout() {
             {/* Sidebar Area */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-50 w-64 transform border-r bg-card transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
-                    !isSidebarOpen && "-translate-x-full lg:w-0 lg:border-none"
+                    "fixed inset-y-0 left-0 z-50 transform border-r bg-card transition-all duration-300 ease-in-out lg:static lg:translate-x-0 overflow-hidden",
+                    // Width logic: Mobile always 64 (w-64), Desktop depends on collapsed state
+                    isSidebarOpen ? (isCollapsed ? "w-64 lg:w-20" : "w-64") : "-translate-x-full lg:w-0 lg:border-none"
+                    // Note: w-64 is 16rem (256px). lg:w-20 is 5rem (80px).
                 )}
             >
                 <Sidebar />

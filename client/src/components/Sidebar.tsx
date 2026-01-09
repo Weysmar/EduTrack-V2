@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -10,12 +10,15 @@ import { FolderTree } from './FolderTree'
 import { ProfileDropdown } from './profile/ProfileDropdown'
 import { useProfileStore } from '@/store/profileStore'
 import { FocusTimer } from './FocusTimer'
+import { useUIStore } from '@/store/uiStore'
+import { cn } from '@/lib/utils'
 
 export function Sidebar() {
     const activeProfile = useProfileStore(state => state.activeProfile);
     const { t } = useLanguage()
     const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const { isCollapsed, toggleCollapse } = useUIStore()
 
     // Using useQuery with activeProfile check
     const { data: courses } = useQuery({
@@ -54,69 +57,115 @@ export function Sidebar() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-card border-r">
+        <div className={cn("flex flex-col h-full bg-card border-r transition-all duration-300", isCollapsed ? "w-20" : "w-full")}>
             {/* App Header */}
-            <div className="h-14 flex items-center justify-start px-4 border-b">
-                <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                    <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
+            <div className={cn("h-14 flex items-center border-b transition-all shrink-0", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
+                {!isCollapsed && (
+                    <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity overflow-hidden">
+                        <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
+                            <FolderPlus className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-lg whitespace-nowrap">{t('app.title')}</span>
+                    </Link>
+                )}
+
+                {isCollapsed && (
+                    <Link to="/" className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0 hover:opacity-80">
                         <FolderPlus className="h-5 w-5" />
-                    </div>
-                    <span className="font-bold text-lg">{t('app.title')}</span>
-                </Link>
+                    </Link>
+                )}
+
+                <button
+                    onClick={toggleCollapse}
+                    className={cn("text-muted-foreground hover:text-foreground transition-colors hidden lg:block", !isCollapsed && "ml-auto")}
+                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                    {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                </button>
             </div>
 
-            <div className="p-4 border-b space-y-2">
+            <div className={cn("border-b space-y-2 transition-all", isCollapsed ? "p-2" : "p-4")}>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2 px-4 rounded-md hover:opacity-90 transition-opacity"
+                    className={cn(
+                        "w-full flex items-center gap-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all",
+                        isCollapsed ? "justify-center p-2" : "justify-center py-2 px-4"
+                    )}
+                    title={t('nav.newCourse')}
                 >
                     <Plus className="h-4 w-4" />
-                    <span className="font-medium hidden md:block">{t('nav.newCourse')}</span>
+                    {!isCollapsed && <span className="font-medium hidden md:block">{t('nav.newCourse')}</span>}
                 </button>
                 <button
                     onClick={handleCreateFolder}
-                    className="w-full flex items-center justify-center gap-2 bg-muted text-muted-foreground py-1.5 px-4 rounded-md hover:bg-muted/80 transition-colors text-sm"
+                    className={cn(
+                        "w-full flex items-center gap-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-all text-sm",
+                        isCollapsed ? "justify-center p-2" : "justify-center py-1.5 px-4"
+                    )}
+                    title={t('folder.new')}
                 >
                     <FolderPlus className="h-3.5 w-3.5" />
-                    <span className="font-medium hidden md:block">{t('folder.new')}</span>
+                    {!isCollapsed && <span className="font-medium hidden md:block">{t('folder.new')}</span>}
                 </button>
 
                 <Link
                     to="/board"
-                    className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 py-2 px-4 rounded-md hover:bg-amber-100 transition-colors mt-2 group"
+                    className={cn(
+                        "w-full flex items-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 rounded-md hover:bg-amber-100 transition-all mt-2 group",
+                        isCollapsed ? "justify-center p-2" : "justify-center py-2 px-4"
+                    )}
+                    title={t('nav.board') || "Investigation Board"}
                 >
                     <MapIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    <span className="font-medium hidden md:block">{t('nav.board') || "Investigation Board"}</span>
+                    {!isCollapsed && <span className="font-medium hidden md:block">{t('nav.board') || "Investigation Board"}</span>}
                 </Link>
 
-                <div className="mt-4">
-                    <FocusTimer />
+                <div className="mt-4 overflow-hidden">
+                    {!isCollapsed ? <FocusTimer /> : (
+                        <button onClick={toggleCollapse} className="w-full flex justify-center py-2 hover:bg-accent rounded-md" title="Expand to see Timer">
+                            <RotateCcw className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4">
-                <h2 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                    {t('nav.myCourses')}
-                </h2>
+            <div className="flex-1 overflow-y-auto py-4 overflow-x-hidden">
+                {!isCollapsed && (
+                    <h2 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 whitespace-nowrap">
+                        {t('nav.myCourses')}
+                    </h2>
+                )}
+
                 <nav className="space-y-1 px-2">
                     {/* Render Root Level Items (No Folder) */}
                     {(courses && folders) && (
-                        <FolderTree
-                            folders={folders}
-                            courses={courses}
-                        />
+                        !isCollapsed ? (
+                            <FolderTree
+                                folders={folders}
+                                courses={courses}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 opacity-50 mt-4">
+                                <span className="text-xs text-center text-muted-foreground writing-vertical">
+                                    ...
+                                </span>
+                            </div>
+                        )
                     )}
 
-                    {courses?.length === 0 && folders?.length === 0 && (
+                    {courses?.length === 0 && folders?.length === 0 && !isCollapsed && (
                         <p className="px-2 text-sm text-muted-foreground italic">{t('nav.noCourses')}</p>
                     )}
                 </nav>
             </div>
 
-            <div className="p-4 border-t mt-auto flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                    <ProfileDropdown />
-                </div>
+            <div className={cn("border-t mt-auto flex items-center gap-2 transition-all", isCollapsed ? "p-2 justify-center" : "p-4")}>
+                {!isCollapsed && (
+                    <div className="flex-1 min-w-0">
+                        <ProfileDropdown />
+                    </div>
+                )}
+
                 <Link
                     to="/settings"
                     className="flex items-center justify-center p-2 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors border border-transparent hover:border-border"
@@ -124,6 +173,12 @@ export function Sidebar() {
                 >
                     <Settings className="h-5 w-5 text-muted-foreground" />
                 </Link>
+
+                {isCollapsed && (
+                    <div className="absolute left-20 bottom-4 bg-popover p-2 rounded shadow-md hidden group-hover:block whitespace-nowrap z-50">
+                        Profile
+                    </div>
+                )}
             </div>
 
             <CreateCourseModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
