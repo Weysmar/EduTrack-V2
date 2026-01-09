@@ -1,32 +1,45 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { X, Calendar, Clock, BookOpen, ChevronRight, Loader2, Sparkles, Folder } from 'lucide-react'
+import { X, Calendar, Clock, BookOpen, ChevronRight, Loader2, Sparkles, Folder, Brain, Zap, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { courseQueries, folderQueries, studyPlanQueries } from '@/lib/api/queries'
 import { useProfileStore } from '@/store/profileStore'
+import { useCalendarStore } from '@/store/calendarStore'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 interface RevisionProgramModalProps {
     isOpen: boolean
     onClose: () => void
 }
 
-type Step = 1 | 2 | 3 | 4; // 1: Target, 2: Date, 3: Time, 4: Result
+type Step = 1 | 2 | 3 | 4; // 1: Target, 2: Date, 3: Parameters, 4: Result
 
 export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalProps) {
     const { t } = useLanguage()
+    const navigate = useNavigate()
     const [step, setStep] = useState<Step>(1)
 
     // State
     const [selectedTarget, setSelectedTarget] = useState<{ id: string, type: 'course' | 'folder', title: string } | null>(null)
     const [examDate, setExamDate] = useState<string>('')
-    const [availableTime, setAvailableTime] = useState<number>(10)
-    const [timeUnit, setTimeUnit] = useState<'hours' | 'days'>('hours')
+
+    // New Params
+    const [hoursPerDay, setHoursPerDay] = useState<number>(2)
+    const [daysPerWeek, setDaysPerWeek] = useState<number>(5)
+
+    // AI Provider
+    const [provider, setProvider] = useState<'google' | 'perplexity'>('google')
+
     const [generatedPlan, setGeneratedPlan] = useState<any>(null)
 
     const { apiKeys } = useProfileStore()
-    const apiKey = apiKeys?.google_gemini_exercises || apiKeys?.google_gemini_summaries || undefined
+    const { isConnected: isCalendarConnected } = useCalendarStore()
+
+    const apiKey = provider === 'google'
+        ? (apiKeys?.google_gemini_exercises || apiKeys?.google_gemini_summaries)
+        : (apiKeys?.perplexity_exercises || apiKeys?.perplexity_summaries);
 
     // Data Fetching
     const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: courseQueries.getAll })
@@ -50,13 +63,20 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
         if (step === 2 && !examDate) return
 
         if (step === 3) {
+            // Validate API Key
+            if (!apiKey) {
+                toast.error(t('settings.api.missing') + ` (${provider === 'google' ? 'Gemini' : 'Perplexity'})`);
+                return;
+            }
+
             // Trigger generation
             generateMutation.mutate({
                 targetId: selectedTarget?.id,
                 targetType: selectedTarget?.type,
                 examDate,
-                availableTime,
-                timeUnit
+                hoursPerDay,
+                daysPerWeek,
+                provider
             })
             return // Wait for mutation
         }
@@ -69,7 +89,8 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
         setSelectedTarget(null)
         setGeneratedPlan(null)
         setExamDate('')
-        setAvailableTime(10)
+        setHoursPerDay(2)
+        setDaysPerWeek(5)
     }
 
     useEffect(() => {
@@ -111,6 +132,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                         <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center animate-pulse">
                             <Loader2 className="h-12 w-12 animate-spin text-primary" />
                             <p className="text-lg font-medium text-muted-foreground">{t('revision.generating')}</p>
+                            <p className="text-sm text-muted-foreground/70">{provider === 'perplexity' ? "Consulting the knowledge of the universe..." : "Gemini is thinking..."}</p>
                         </div>
                     ) : (
                         <>
@@ -169,48 +191,118 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                                 />
                                             </div>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            {t('revision.noCalendar')} • <span className="underline cursor-pointer hover:text-primary">{t('revision.linkCalendar')}</span>
-                                        </p>
+
+                                        {/* Updated Calendar Status Link */}
+                                        <div className="flex items-center justify-between text-sm mt-2">
+                                            {isCalendarConnected ? (
+                                                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                    {t('calendar.connected') || "Calendar Linked"}
+                                                </div>
+                                            ) : (
+                                                <p className="text-muted-foreground">
+                                                    {t('revision.noCalendar')} • <button onClick={() => navigate('/calendar')} className="underline cursor-pointer hover:text-primary transition-colors">{t('revision.linkCalendar')}</button>
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             {step === 3 && (
-                                <div className="space-y-6">
+                                <div className="space-y-8">
                                     <h3 className="text-xl font-semibold">{t('revision.availableTime')}</h3>
 
-                                    <div className="bg-card border p-6 rounded-xl space-y-8">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="h-5 w-5 text-primary" />
-                                                <span className="text-2xl font-bold">{availableTime}</span>
-                                                <span className="text-muted-foreground">{t(`revision.${timeUnit}`)}</span>
+                                    {/* Two Column Layout for Time Selection */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                                        {/* Hours Per Day */}
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-medium text-muted-foreground">Hours per Day</label>
+                                                <span className="text-lg font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{hoursPerDay}h</span>
                                             </div>
-                                            <div className="flex bg-muted rounded-lg p-1">
-                                                <button
-                                                    onClick={() => setTimeUnit('hours')}
-                                                    className={cn("px-3 py-1 rounded-md text-sm font-medium transition-colors", timeUnit === 'hours' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}
-                                                >
-                                                    {t('revision.hours')}
-                                                </button>
-                                                <button
-                                                    onClick={() => setTimeUnit('days')}
-                                                    className={cn("px-3 py-1 rounded-md text-sm font-medium transition-colors", timeUnit === 'days' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}
-                                                >
-                                                    {t('revision.days')}
-                                                </button>
+                                            <input
+                                                type="range"
+                                                min="0.5"
+                                                max="12"
+                                                step="0.5"
+                                                value={hoursPerDay}
+                                                onChange={e => setHoursPerDay(parseFloat(e.target.value))}
+                                                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                            />
+                                            <div className="flex justify-between text-xs text-muted-foreground">
+                                                <span>30min</span>
+                                                <span>12h</span>
                                             </div>
                                         </div>
 
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max={timeUnit === 'hours' ? 100 : 60}
-                                            value={availableTime}
-                                            onChange={e => setAvailableTime(parseInt(e.target.value))}
-                                            className="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                                        />
+                                        {/* Days Per Week */}
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-medium text-muted-foreground">Days per Week</label>
+                                                <span className="text-lg font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{daysPerWeek}d</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="7"
+                                                step="1"
+                                                value={daysPerWeek}
+                                                onChange={e => setDaysPerWeek(parseInt(e.target.value))}
+                                                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                            />
+                                            <div className="flex justify-between text-xs text-muted-foreground">
+                                                <span>1d</span>
+                                                <span>7d</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Summary & Provider Selection */}
+                                    <div className="bg-muted/30 p-4 rounded-xl border space-y-4">
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <Clock className="w-4 h-4 text-primary" />
+                                            <span className="font-medium">Total Weekly Effort:</span>
+                                            <span className="font-bold">~{hoursPerDay * daysPerWeek} hours / week</span>
+                                        </div>
+
+                                        <div className="border-t pt-4">
+                                            <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-3 block">AI Model Provider</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    onClick={() => setProvider('google')}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
+                                                        provider === 'google'
+                                                            ? "bg-background border-primary ring-1 ring-primary shadow-sm"
+                                                            : "bg-muted/50 border-transparent hover:bg-background"
+                                                    )}
+                                                >
+                                                    <Brain className={cn("w-4 h-4", provider === 'google' ? "text-primary" : "text-muted-foreground")} />
+                                                    <span className="font-medium text-sm">Google Gemini</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setProvider('perplexity')}
+                                                    className={cn(
+                                                        "flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
+                                                        provider === 'perplexity'
+                                                            ? "bg-background border-primary ring-1 ring-primary shadow-sm"
+                                                            : "bg-muted/50 border-transparent hover:bg-background"
+                                                    )}
+                                                >
+                                                    <Zap className={cn("w-4 h-4", provider === 'perplexity' ? "text-primary" : "text-muted-foreground")} />
+                                                    <span className="font-medium text-sm">Perplexity AI</span>
+                                                </button>
+                                            </div>
+
+                                            {!apiKey && (
+                                                <div className="flex items-center gap-2 mt-3 text-amber-600 dark:text-amber-500 text-xs bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                                                    <AlertTriangle className="h-3 w-3" />
+                                                    <span>API Key missing for {provider === 'google' ? 'Gemini' : 'Perplexity'}. Check settings.</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -299,7 +391,8 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                             onClick={handleNext}
                             disabled={
                                 (step === 1 && !selectedTarget) ||
-                                (step === 2 && !examDate)
+                                (step === 2 && !examDate) ||
+                                (step === 3 && !apiKey)
                             }
                             className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 flex items-center gap-2 font-medium"
                         >

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
 import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,7 @@ interface FilePreviewProps {
     showThumbnails?: boolean;
 }
 
-export function FilePreview({ url, fileName, fileType, className, showThumbnails = true }: FilePreviewProps) {
+export const FilePreview = memo(({ url, fileName, fileType, className, showThumbnails = true }: FilePreviewProps) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -249,4 +249,5 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
             <div className={cn("absolute top-0 right-0 w-8 h-8 bg-black/5 dark:bg-white/5 rounded-bl-xl")} />
         </div>
     );
-}
+});
+FilePreview.displayName = "FilePreview";
