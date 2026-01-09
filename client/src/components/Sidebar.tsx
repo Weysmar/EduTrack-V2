@@ -112,7 +112,7 @@ export function Sidebar() {
 
                 <div className="mt-4 overflow-hidden">
                     {!isCollapsed ? <FocusTimer /> : (
-                        <button onClick={toggleCollapse} className="w-full flex justify-center py-2 hover:bg-accent rounded-md" title="Expand to see Timer">
+                        <button onClick={toggleCollapse} className="w-full flex justify-center py-2 hover:bg-accent rounded-md" title={t('sidebar.expandTimer')}>
                             <RotateCcw className="w-4 h-4 text-muted-foreground" />
                         </button>
                     )}

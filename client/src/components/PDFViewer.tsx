@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ZoomIn, ZoomOut } from 'lucide-react'
+import { useLanguage } from './language-provider'
 
 // PDF.js worker is configured globally in main.tsx
 
@@ -10,6 +11,7 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({ url, className = "" }: PDFViewerProps) {
+    const { t } = useLanguage()
     const [numPages, setNumPages] = useState<number | null>(null)
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
@@ -39,7 +41,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                     <button
                         onClick={zoomOut}
                         className="p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
-                        title="Dézoomer"
+                        title={t('action.zoomOut')}
                     >
                         <ZoomOut className="h-4 w-4" />
                     </button>
@@ -47,7 +49,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                     <button
                         onClick={zoomIn}
                         className="p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
-                        title="Zoomer"
+                        title={t('action.zoomIn')}
                     >
                         <ZoomIn className="h-4 w-4" />
                     </button>

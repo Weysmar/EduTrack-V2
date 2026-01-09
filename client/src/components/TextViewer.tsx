@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Copy, Check, FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { cn } from '@/lib/utils'
+import { useLanguage } from './language-provider'
 
 interface TextViewerProps {
     url: string
@@ -11,6 +12,7 @@ interface TextViewerProps {
 }
 
 export function TextViewer({ url, fileName, isMarkdown = false, className }: TextViewerProps) {
+    const { t } = useLanguage()
     const [content, setContent] = useState<string>('')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -86,7 +88,7 @@ export function TextViewer({ url, fileName, isMarkdown = false, className }: Tex
                 <button
                     onClick={handleCopy}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md hover:bg-accent transition-colors"
-                    title="Copy to clipboard"
+                    title={t('action.copy')}
                 >
                     {copied ? (
                         <>

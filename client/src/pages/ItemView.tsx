@@ -284,7 +284,7 @@ export function ItemView() {
                             className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
                         >
                             <Minimize className="h-4 w-4" />
-                            <span className="text-sm font-medium hidden sm:inline">{t('action.close') || "Fermer"}</span>
+                            <span className="text-sm font-medium hidden sm:inline">{t('action.close')}</span>
                         </button>
                     </div>
                     <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
@@ -320,7 +320,7 @@ export function ItemView() {
                                 {/* Default to Iframe/PDF logic */}
                                 <iframe
                                     src={`${pdfUrl}#view=FitH`}
-                                    title="Document Fullscreen"
+                                    title={t('document.fullscreen')}
                                     className="w-full h-full border-0 bg-white"
                                     allowFullScreen
                                 />
@@ -467,7 +467,7 @@ export function ItemView() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                        title="Ouvrir dans un nouvel onglet"
+                                        title={t('action.openNewTab')}
                                     >
                                         <ExternalLink className="h-5 w-5" />
                                     </a>
@@ -476,7 +476,7 @@ export function ItemView() {
                                         <button
                                             onClick={() => setIsPdfFullscreen(true)}
                                             className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                                            title="Plein écran (Local)"
+                                            title={t('action.fullscreen')}
                                         >
                                             <Maximize className="h-5 w-5" />
                                         </button>
@@ -646,7 +646,7 @@ export function ItemView() {
                                         onClick={handleExportPDF}
                                         disabled={isExporting}
                                         className="text-xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                        title="Export PDF"
+                                        title={t('export.pdf')}
                                     >
                                         <FileText className="h-4 w-4" />
                                         <span className="hidden sm:inline">PDF</span>
@@ -655,7 +655,7 @@ export function ItemView() {
                                         onClick={handleExportDOCX}
                                         disabled={isExporting}
                                         className="text-xs hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                        title="Export Word"
+                                        title={t('export.word')}
                                     >
                                         <Download className="h-4 w-4" />
                                         <span className="hidden sm:inline">DOCX</span>

@@ -1,5 +1,6 @@
 import { ZoomIn, ZoomOut, RotateCw, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useLanguage } from './language-provider'
 import heic2any from 'heic2any'
 
 interface ImageViewerProps {
@@ -9,6 +10,7 @@ interface ImageViewerProps {
 }
 
 export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerProps) {
+    const { t } = useLanguage()
     const [scale, setScale] = useState(1)
     const [rotation, setRotation] = useState(0)
     const [displayUrl, setDisplayUrl] = useState<string | null>(null)
@@ -92,14 +94,14 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
             {/* Toolbar */}
             <div className="flex items-center justify-end p-2 bg-slate-800/50 absolute top-0 right-0 z-10 w-full backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
                 <div className="flex bg-slate-900/80 rounded-lg p-1 gap-1">
-                    <button onClick={zoomOut} className="p-1.5 hover:bg-white/20 rounded text-white" title="Dézoomer">
+                    <button onClick={zoomOut} className="p-1.5 hover:bg-white/20 rounded text-white" title={t('action.zoomOut')}>
                         <ZoomOut className="h-4 w-4" />
                     </button>
-                    <button onClick={zoomIn} className="p-1.5 hover:bg-white/20 rounded text-white" title="Zoomer">
+                    <button onClick={zoomIn} className="p-1.5 hover:bg-white/20 rounded text-white" title={t('action.zoomIn')}>
                         <ZoomIn className="h-4 w-4" />
                     </button>
                     <div className="w-px bg-white/20 mx-1" />
-                    <button onClick={rotate} className="p-1.5 hover:bg-white/20 rounded text-white" title="Pivoter">
+                    <button onClick={rotate} className="p-1.5 hover:bg-white/20 rounded text-white" title={t('action.rotate')}>
                         <RotateCw className="h-4 w-4" />
                     </button>
                 </div>
