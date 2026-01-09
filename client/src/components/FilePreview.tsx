@@ -4,6 +4,9 @@ import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon } 
 import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 
+// Configure PDF Worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 
 interface FilePreviewProps {
