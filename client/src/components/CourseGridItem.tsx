@@ -61,12 +61,27 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
             {/* TOP: File Preview / Header Area */}
             <div className="w-full aspect-video bg-muted border-b relative group-hover:opacity-95 transition-opacity">
                 {item.type === 'resource' ? (
-                    <FilePreview
-                        url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
-                        fileName={item.fileName}
-                        fileType={item.fileType}
-                        showThumbnails={showThumbnails}
-                    />
+                    item.thumbnailUrl ? (
+                        <div className="w-full h-full relative overflow-hidden">
+                            <img
+                                src={`${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`}
+                                alt={item.fileName}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                            />
+                            {/* Overlay for file type if needed, or just let FilePreview handle it if we passed it there. 
+                                  Let's check if FilePreview handles arbitrary images. 
+                                  FilePreview seems complex. For thumbnail, simple img is best.
+                              */}
+                        </div>
+                    ) : (
+                        <FilePreview
+                            url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
+                            fileName={item.fileName}
+                            fileType={item.fileType}
+                            showThumbnails={showThumbnails}
+                        />
+                    )
                 ) : (
                     <div className={cn(
                         "w-full h-full flex items-center justify-center",
