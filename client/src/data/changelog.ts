@@ -10,6 +10,29 @@ export interface ChangelogEntry {
 
 export const changelogs: ChangelogEntry[] = [
     {
+        version: "0.5.3",
+        date: "2026-01-09",
+        title: "changelog.v053.title",
+        changes: [
+            { type: 'improvement', description: "changelog.v053.perf" },
+            { type: 'improvement', description: "changelog.v053.cache" },
+            { type: 'new', description: "changelog.v053.lazy" },
+            { type: 'improvement', description: "changelog.v053.images" }
+        ]
+    },
+    {
+        version: "0.5.2",
+        date: "2026-01-09",
+        title: "changelog.v052.title",
+        changes: [
+            { type: 'new', description: "changelog.v052.revision" },
+            { type: 'improvement', description: "changelog.v052.edit" },
+            { type: 'new', description: "changelog.v052.vscode" },
+            { type: 'fix', description: "changelog.v052.pptx" },
+            { type: 'fix', description: "changelog.v052.ui" }
+        ]
+    },
+    {
         version: "0.5.1",
         date: "2026-01-08",
         title: "changelog.v051.title",
