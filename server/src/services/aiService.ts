@@ -6,7 +6,35 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+        if (provider === 'perplexity') {
+            const effectiveKey = apiKey || process.env.PERPLEXITY_API_KEY;
+            if (!effectiveKey) throw new Error('No Perplexity API key provided.');
+
+            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${effectiveKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model.includes('gemini') ? 'llama-3.1-sonar-small-128k-online' : model,
+                    messages: [
+                        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+                        { role: 'user', content: prompt }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Perplexity API Error: ${response.status} - ${error}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
         try {
             // Validate API key
             const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
@@ -39,7 +67,14 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+        if (provider === 'perplexity') {
+            const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, apiKey, 'perplexity');
+            // Clean markdown json blocks if present
+            const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+            return JSON.parse(cleanText);
+        }
+
         try {
             const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
             if (!effectiveKey) {

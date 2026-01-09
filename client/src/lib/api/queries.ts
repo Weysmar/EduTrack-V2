@@ -163,7 +163,15 @@ export const studyPlanQueries = {
         return res;
     },
     generate: async (data: any, apiKey?: string) => {
-        const config = apiKey ? { headers: { 'x-gemini-api-key': apiKey } } : {};
+        const headers: any = {};
+        if (apiKey) {
+            if (data.provider === 'perplexity') {
+                headers['x-perplexity-api-key'] = apiKey;
+            } else {
+                headers['x-gemini-api-key'] = apiKey;
+            }
+        }
+        const config = { headers };
         const { data: res } = await apiClient.post('/planning/generate', data, config);
         return res;
     }
