@@ -38,9 +38,10 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
             setGeneratedPlan(data.program)
             setStep(4)
         },
-        onError: (error) => {
+        onError: (error: any) => {
             console.error(error)
-            toast.error("Failed to generate plan. Please try again.")
+            const errMsg = error.response?.data?.error || error.message || "Failed to generate plan."
+            toast.error(errMsg)
         }
     })
 

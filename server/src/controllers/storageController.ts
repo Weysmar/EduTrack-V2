@@ -10,11 +10,14 @@ const URL_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
 
 // export const getSignedUrl = ... (Removed for Option 3)
 
+import sharp from 'sharp';
+
 export const servePublicFile = async (req: Request, res: Response) => {
     try {
         // Handle wildcard match for nested keys
         // If route is /public/*, params[0] usually holds the rest
         const key = req.params[0] || req.params.key;
+        const width = req.query.width || req.query.w;
 
         if (!key) {
             return res.status(400).send('Key is required');
@@ -26,6 +29,28 @@ export const servePublicFile = async (req: Request, res: Response) => {
             if (fs.existsSync(filePath)) {
                 res.setHeader('Access-Control-Allow-Origin', '*'); // Allow Google/MS to fetch
                 res.removeHeader('X-Frame-Options');
+
+                // Check for resizing request
+                if (width && !isNaN(Number(width))) {
+                    const w = parseInt(width as string);
+                    const ext = path.extname(filePath).toLowerCase();
+                    if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif'].includes(ext)) {
+                        try {
+                            const imageBuffer = fs.readFileSync(filePath);
+                            const resized = await sharp(imageBuffer)
+                                .resize(w, null, { withoutEnlargement: true })
+                                .toBuffer();
+
+                            res.setHeader('Content-Type', `image/${ext.replace('.', '')}`);
+                            res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache aggressive
+                            return res.send(resized);
+                        } catch (err) {
+                            console.error('Resize error, serving original', err);
+                            return res.sendFile(filePath);
+                        }
+                    }
+                }
+
                 return res.sendFile(filePath);
             } else {
                 return res.status(404).send('File not found');

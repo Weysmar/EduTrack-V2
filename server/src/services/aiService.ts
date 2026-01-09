@@ -41,17 +41,35 @@ export const aiService = {
 
     async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string): Promise<any> {
         try {
-            const text = await this.generateText(prompt, systemPrompt + "\nIMPORTANT: Output valid JSON only.", model, apiKey);
-            // Clean markdown code blocks if present
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonStart = cleanText.indexOf('{');
-            const jsonEnd = cleanText.lastIndexOf('}');
-            if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found in response");
+            const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
+            if (!effectiveKey) {
+                throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
+            }
 
-            return JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
-        } catch (error) {
-            console.error('AI JSON Generation Error:', error);
-            throw new Error('Failed to generate JSON from AI');
+            const client = new GoogleGenerativeAI(effectiveKey);
+            const modelInstance = client.getGenerativeModel({
+                model,
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            });
+
+            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
+            const result = await modelInstance.generateContent(fullPrompt);
+            const response = await result.response;
+            const text = response.text();
+
+            return JSON.parse(text);
+        } catch (error: any) {
+            console.error('AI JSON Generation Error Stack:', error);
+
+            // Try to extract a useful message
+            let message = error.message || 'Failed to generate JSON from AI';
+            if (message.includes('404')) message = `Modèle IA indisponible (${model})`;
+            if (message.includes('401')) message = `Clé API Gemini invalide`;
+            if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
+
+            throw new Error(`AI JSON Error: ${message}`);
         }
     }
 };

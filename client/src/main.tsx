@@ -9,6 +9,13 @@ if (typeof URL.parse === 'undefined') {
     };
 }
 
+import { pdfjs } from 'react-pdf';
+// Configure PDF.js worker globally
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'

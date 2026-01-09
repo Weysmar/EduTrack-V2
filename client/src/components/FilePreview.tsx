@@ -4,11 +4,7 @@ import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon } 
 import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+
 
 interface FilePreviewProps {
     url?: string | null;
@@ -58,7 +54,15 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
                     console.error("HEIC preview failed", e);
                 }
             } else {
-                if (isMounted) setPreviewUrl(url);
+                if (isMounted) {
+                    let finalUrl = url;
+                    // Optimize images for thumbnails: request server-side resize
+                    if (isImage && showThumbnails && url.includes('/storage/public/')) {
+                        const separator = url.includes('?') ? '&' : '?';
+                        finalUrl = `${url}${separator}width=400`; // 400px for retina support on 200px boxes
+                    }
+                    setPreviewUrl(finalUrl);
+                }
             }
             if (isMounted) setLoading(false);
         };
@@ -164,25 +168,15 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
     }
 
     // 3. Office Live Thumbnails (PPTX, Excel, Word)
-    // Word: Use local rendering if possible, otherwise fallback to iframe
-    // PPT/Excel: Use Google Viewer iframe as thumbnail
+    // ENABLED: User requested thumbnails for all formats.
+    // Note: This may cause console errors/warnings due to multiple Office Live iframes.
     if ((isWord || isPPT || isExcel) && url && showThumbnails) {
         // Construct absolute URL for external viewers
         const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
-
-        // For thumbnails, user requested Microsoft by default.
-        // Microsoft 'embed' view is often cleaner.
-        // Google is secondary.
-
         const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
 
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
-                {/* Scaled Iframe Container - True Center Crop
-                    w-[500%] * scale(0.25) = 125% Width. 
-                    Centered both ways -> Shows center of document, crops UI/margins
-                    h-[500%] * scale(0.25) = 125% Height.
-                */}
                 <div className="w-[500%] h-[500%] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.25] pointer-events-none select-none">
                     <iframe
                         src={viewerUrl}
@@ -193,11 +187,7 @@ export function FilePreview({ url, fileName, fileType, className, showThumbnails
                         tabIndex={-1}
                     />
                 </div>
-
-                {/* Interactivity/Click Shield */}
                 <div className="absolute inset-0 z-10 bg-transparent" />
-
-                {/* Type Label Overlay */}
                 <div className={cn("absolute top-2 left-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90 z-20",
                     isWord ? "bg-blue-600" : isExcel ? "bg-green-600" : "bg-orange-600"
                 )}>
