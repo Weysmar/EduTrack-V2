@@ -104,7 +104,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 pointer-events-auto"
-                            placeholder="e.g. Advanced Calculus"
+                            placeholder={t('course.create.name.placeholder')}
                             autoFocus
                             required
                         />
@@ -116,7 +116,7 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px] pointer-events-auto"
-                            placeholder="Brief summary of the course..."
+                            placeholder={t('course.create.desc.placeholder')}
                         />
                     </div>
 

@@ -2,6 +2,7 @@ import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState } from 'react'
 import { useProfileStore } from '@/store/profileStore'
 import { User, Loader2 } from 'lucide-react'
+import { useLanguage } from '@/components/language-provider'
 
 interface CreateProfileModalProps {
     isOpen: boolean
@@ -10,6 +11,7 @@ interface CreateProfileModalProps {
 
 export function CreateProfileModal({ isOpen, onClose }: CreateProfileModalProps) {
     const { createProfile, switchProfile } = useProfileStore()
+    const { t } = useLanguage()
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -79,7 +81,7 @@ export function CreateProfileModal({ isOpen, onClose }: CreateProfileModalProps)
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             className="w-full p-2 rounded-md border bg-background"
-                                            placeholder="e.g. Jean Dupont"
+                                            placeholder={t('profile.create.name.placeholder')}
                                             required
                                         />
                                     </div>
@@ -93,7 +95,7 @@ export function CreateProfileModal({ isOpen, onClose }: CreateProfileModalProps)
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full p-2 rounded-md border bg-background"
-                                            placeholder="jean@example.com"
+                                            placeholder={t('profile.create.email.placeholder')}
                                         />
                                     </div>
 
