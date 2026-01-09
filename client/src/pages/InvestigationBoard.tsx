@@ -74,7 +74,7 @@ export function InvestigationBoard() {
                     label: course.title,
                     color: 'yellow',
                     rotation: 0,
-                    subLabel: 'CASE FILE'
+                    subLabel: t('board.caseFile')
                 },
                 // Make it bigger?
                 style: { width: 300, height: 200, fontSize: '2rem' }
@@ -100,7 +100,7 @@ export function InvestigationBoard() {
                 if (item.type === 'note') {
                     type = 'postIt';
                     data.color = 'pink';
-                    data.subLabel = 'NOTE';
+                    data.subLabel = t('board.note');
                 } else if (item.type === 'resource') {
                     // Check if it's an image or PDF with thumbnail
                     if (item.thumbnailUrl || (item.fileName && item.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
@@ -114,12 +114,12 @@ export function InvestigationBoard() {
                     } else {
                         type = 'postIt';
                         data.color = 'blue';
-                        data.subLabel = 'EVIDENCE';
+                        data.subLabel = t('board.evidence');
                     }
                 } else {
                     type = 'postIt';
                     data.color = 'green';
-                    data.subLabel = 'EXERCISE';
+                    data.subLabel = t('board.exercise');
                 }
 
                 const itemId = `item-${item.id}`;

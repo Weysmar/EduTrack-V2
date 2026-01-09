@@ -416,8 +416,8 @@ export function ItemView() {
                                     >
                                         <ExternalLink className="h-5 w-5" />
                                     </a>
-                                    {/* Original PDF Fullscreen Button */}
-                                    {pdfUrl && !isOffice && (
+                                    {/* Universal Local Fullscreen Button */}
+                                    {pdfUrl && (
                                         <button
                                             onClick={() => setIsPdfFullscreen(true)}
                                             className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
@@ -787,6 +787,23 @@ export function ItemView() {
                                                                             className="h-full w-full shadow-2xl"
                                                                             engine={officeEngine}
                                                                             onEngineChange={setOfficeEngine}
+                                                                        />
+                                                                    </div>
+                                                                ) : isImage ? (
+                                                                    <div className="w-full h-full flex items-center justify-center bg-black/90 p-4">
+                                                                        <img
+                                                                            src={pdfUrl}
+                                                                            alt={item.title}
+                                                                            className="max-w-full max-h-full object-contain"
+                                                                        />
+                                                                    </div>
+                                                                ) : (isText || isMarkdown) ? (
+                                                                    <div className="w-full h-full bg-white dark:bg-zinc-950 p-8 overflow-auto max-w-4xl mx-auto my-8 rounded-lg shadow-xl">
+                                                                        <TextViewer
+                                                                            url={pdfUrl}
+                                                                            fileName={item.fileName}
+                                                                            isMarkdown={isMarkdown}
+                                                                            className="min-h-full"
                                                                         />
                                                                     </div>
                                                                 ) : (

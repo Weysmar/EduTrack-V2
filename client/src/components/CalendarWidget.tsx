@@ -9,7 +9,7 @@ import { useLanguage } from '@/components/language-provider'
 
 export function CalendarWidget() {
     const { apiKeys } = useProfileStore()
-    const { language } = useLanguage()
+    const { language, t } = useLanguage()
     const [currentDate, setCurrentDate] = useState(new Date())
     const [events, setEvents] = useState<ICalEvent[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -142,13 +142,13 @@ export function CalendarWidget() {
                                             </div>
                                             <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                 <ClockIcon className="h-3 w-3" />
-                                                {formatEventTime(event)}
+                                                {formatEventTime(event, t)}
                                             </div>
                                         </div>
                                     ))}
                                     {dayEvents.length === 0 && (
                                         <div className="flex-1 flex items-center justify-center">
-                                            <span className="text-[10px] text-muted-foreground/30 italic">No events</span>
+                                            <span className="text-[10px] text-muted-foreground/30 italic">{t('calendar.noEvents')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -159,15 +159,15 @@ export function CalendarWidget() {
             </div>
             {lastSynced && (
                 <div className="p-2 border-t text-[10px] text-center text-muted-foreground bg-muted/10">
-                    Synced: {format(lastSynced, 'HH:mm')}
+                    {t('calendar.synced')}: {format(lastSynced, 'HH:mm')}
                 </div>
             )}
         </div>
     )
 }
 
-function formatEventTime(event: ICalEvent) {
-    if (event.allDay) return "All Day"
+function formatEventTime(event: ICalEvent, t: (key: string) => string) {
+    if (event.allDay) return t('calendar.allDay')
     return `${format(event.start, 'HH:mm')}`
 }
 
