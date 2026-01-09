@@ -2,10 +2,10 @@ import { Outlet } from 'react-router-dom'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 import { Sidebar } from '@/components/Sidebar'
-import { Menu } from 'lucide-react'
+import { Menu, Map as MapIcon } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageToggle } from '@/components/language-toggle'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
 import { CommandPalette } from '@/components/CommandPalette'
@@ -131,10 +131,17 @@ export function AppLayout() {
 
 
                     <div className="flex items-center gap-2">
-                        {/* Hide Drive Button on very small screens if needed, or keep it */}
                         <div className="hidden sm:block">
                             <GoogleConnectButton />
                         </div>
+
+                        <Link
+                            to="/board"
+                            className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                            title="Tableau d'Enquête"
+                        >
+                            <MapIcon className="h-5 w-5" />
+                        </Link>
 
                         <LanguageToggle />
                         <ModeToggle />
