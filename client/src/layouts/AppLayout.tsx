@@ -15,6 +15,7 @@ import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
+import { useCalendarStore } from '@/store/calendarStore'
 
 export function AppLayout() {
     // Initialize Socket Connection
@@ -28,6 +29,17 @@ export function AppLayout() {
             switchProfile(user.id).catch(console.error)
         }
     }, [isAuthenticated, user, activeProfile, switchProfile])
+
+    const { setUrl, disconnect } = useCalendarStore()
+
+    // Sync Calendar Connection from Profile
+    useEffect(() => {
+        if (activeProfile?.settings?.google_calendar) {
+            setUrl(activeProfile.settings.google_calendar)
+        } else if (activeProfile && !activeProfile.settings?.google_calendar) {
+            disconnect()
+        }
+    }, [activeProfile, setUrl, disconnect])
 
     const { isSidebarOpen, toggleSidebar, closeSidebar } = useUIStore()
     const { setIsOpen } = useSearchStore()
