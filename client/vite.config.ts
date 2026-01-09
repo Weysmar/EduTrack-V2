@@ -14,7 +14,15 @@ export default defineConfig({
         },
     },
     build: {
-        target: 'esnext'
+        target: 'esnext',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+                    ui: ['lucide-react', 'sonner', 'clsx', 'tailwind-merge']
+                }
+            }
+        }
     },
     optimizeDeps: {
         esbuildOptions: {
