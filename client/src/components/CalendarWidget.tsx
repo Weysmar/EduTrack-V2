@@ -81,7 +81,7 @@ export function CalendarWidget() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                    <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Refresh">
+                    <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                     </button>
                     <div className="h-4 w-px bg-border mx-1" />

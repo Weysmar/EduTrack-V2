@@ -3,6 +3,7 @@ import { FileText, Download, ExternalLink, RefreshCw, AlertCircle, Loader2 } fro
 import { DocxViewer } from './DocxViewer';
 import { apiClient } from '@/lib/api/client';
 import { API_URL } from '@/config';
+import { useLanguage } from './language-provider';
 
 interface OfficeViewerProps {
     url: string;
@@ -13,6 +14,7 @@ interface OfficeViewerProps {
 }
 
 export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange }: OfficeViewerProps) {
+    const { t } = useLanguage()
     // Viewer Engine State: 'google' | 'microsoft'
     // Use controlled state if provided, otherwise internal
     const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft'>('microsoft');
@@ -141,7 +143,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     <button
                         onClick={() => setEngine(engine === 'google' ? 'microsoft' : 'google')}
                         className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                        title="Changer de lecteur si l'affichage bug"
+                        title={t('office.switchViewer')}
                     >
                         <RefreshCw className="h-3 w-3" />
                         Changer de moteur
@@ -163,7 +165,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                         href={viewerUrl}
                         download
                         className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
-                        title="Télécharger le fichier"
+                        title={t('action.download')}
                     >
                         <Download className="h-4 w-4" />
                         <span className="hidden sm:inline">Télécharger</span>
@@ -176,7 +178,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                 <iframe
                     key={engine} // Force remount on engine change
                     src={currentSrc}
-                    title="Document Viewer"
+                    title={t('document.viewer')}
                     className="absolute inset-0 w-full h-full border-0"
                     allowFullScreen
                     onError={() => setHasError(true)}

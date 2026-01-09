@@ -107,7 +107,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                         <button
                             onClick={onMaximize}
                             className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Agrandir"
+                            title={t('action.expand')}
                         >
                             <Maximize2 className="h-4 w-4" />
                         </button>
@@ -133,7 +133,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                             <button
                                 onClick={onClose}
                                 className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md transition-colors"
-                                title="Fermer"
+                                title={t('action.close')}
                             >
                                 <span className="text-lg leading-none">×</span>
                             </button>
