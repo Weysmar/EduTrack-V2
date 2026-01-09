@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ZoomIn, ZoomOut } from 'lucide-react'
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// PDF.js worker is configured globally in main.tsx
 
 interface PDFViewerProps {
     url: string

@@ -1,13 +1,13 @@
 
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
-// @ts-ignore
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
 import mammoth from 'mammoth';
 import { apiClient } from '@/lib/api/client';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// PDF.js worker is configured globally in main.tsx to ensure version consistency
+// with react-pdf.
+
 // Note: Verbosity control not available in this pdfjs-dist version
 // Warnings will still appear but are non-blocking
 
