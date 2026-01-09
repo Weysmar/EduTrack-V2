@@ -108,17 +108,7 @@ export function Sidebar() {
                     {!isCollapsed && <span className="font-medium hidden md:block">{t('folder.new')}</span>}
                 </button>
 
-                <Link
-                    to="/board"
-                    className={cn(
-                        "w-full flex items-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 rounded-md hover:bg-amber-100 transition-all mt-2 group",
-                        isCollapsed ? "justify-center p-2" : "justify-center py-2 px-4"
-                    )}
-                    title={t('nav.board') || "Investigation Board"}
-                >
-                    <MapIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    {!isCollapsed && <span className="font-medium hidden md:block">{t('nav.board') || "Investigation Board"}</span>}
-                </Link>
+
 
                 <div className="mt-4 overflow-hidden">
                     {!isCollapsed ? <FocusTimer /> : (
