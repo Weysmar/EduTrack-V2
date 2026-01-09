@@ -38,16 +38,16 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
 
                             <ul className="space-y-2">
                                 {log.changes.map((change, i) => (
-                                    <li key={i} className="text-sm flex gap-2">
+                                    <li key={i} className="text-sm flex gap-2 items-start">
                                         <span className={cn(
-                                            "uppercase text-[10px] font-bold px-1.5 py-0.5 rounded h-fit mt-0.5",
+                                            "uppercase text-[10px] font-bold px-1.5 py-0.5 rounded h-fit mt-0.5 flex-shrink-0 whitespace-nowrap",
                                             change.type === 'new' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
                                             change.type === 'fix' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
                                             change.type === 'improvement' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
                                         )}>
                                             {change.type}
                                         </span>
-                                        <span className="text-muted-foreground">{change.description}</span>
+                                        <span className="text-muted-foreground flex-1">{change.description}</span>
                                     </li>
                                 ))}
                             </ul>
