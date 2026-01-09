@@ -242,6 +242,13 @@ const translations: Translations = {
         "changelog.v053.cache": "Smart Caching: Assets are now cached for instant revisits.",
         "changelog.v053.lazy": "Lazy Loading: Initial load is faster thanks to code splitting.",
         "changelog.v053.images": "Optimized Assets: Images are compressed and decoded asynchronously.",
+
+        // v0.5.4
+        "changelog.v054.title": "Power User Update",
+        "changelog.v054.board": "Added Investigation Board view for visual knowledge mapping.",
+        "changelog.v054.command": "Introduced Global Command Center (Ctrl+K) for instant navigation.",
+        "changelog.v054.focus": "Added Focus Mode with integrated Pomodoro Timer.",
+        "changelog.v054.sidebar": "Collapsible Sidebar for maximized workspace.",
         "changelog.v050.title": "Stability & Intelligence 🧠",
         "changelog.v050.api_keys": "API Key Persistence: Critical fix for disappearing keys. They are now stored securely.",
         "changelog.v050.logout": "Clean Logout: The 'Logout' button now correctly cleans up the session and token.",
@@ -542,6 +549,13 @@ const translations: Translations = {
         "changelog.v053.cache": "Cache Intelligent : Les ressources sont en cache pour une navigation instantanée.",
         "changelog.v053.lazy": "Lazy Loading : Chargement initial accéléré grâce au découpage du code.",
         "changelog.v053.images": "Assets Optimisés : Images compressées et décodées en asynchrone.",
+
+        // v0.5.4
+        "changelog.v054.title": "Mise à jour Power User",
+        "changelog.v054.board": "Nouveau Tableau d'Enquête pour visualiser vos connaissances.",
+        "changelog.v054.command": "Centre de Commande Global (Ctrl+K) pour tout contrôler.",
+        "changelog.v054.focus": "Mode Focus ajouté avec Timer Pomodoro intégré.",
+        "changelog.v054.sidebar": "Barre latérale rétractable pour plus d'espace.",
         "changelog.v050.title": "Stabilité & Intelligence 🧠",
         "changelog.v050.api_keys": "Persistance Clés API : Correction d'un bug critique où les clés disparaissaient.",
         "changelog.v050.logout": "Déconnexion Propre : Le bouton 'Déconnexion' nettoie maintenant correctement la session.",
@@ -828,6 +842,13 @@ const translations: Translations = {
         "changelog.v053.cache": "Chunk Caching: Chunks are saved to disk for instant loading.",
         "changelog.v053.lazy": "Render Distance: Far chunks load only when needed.",
         "changelog.v053.images": "Texture Optimization: Textures are compressed to save VRAM.",
+
+        // v0.5.4
+        "changelog.v054.title": "Redstone Update",
+        "changelog.v054.board": "Added Conspiracy Map.",
+        "changelog.v054.command": "Added Command Block Center.",
+        "changelog.v054.focus": "Added Day/Night Cycle Timer.",
+        "changelog.v054.sidebar": "Piston-powered Menu.",
 
         // Revision Program (Minecraft)
         "revision.program": "Quest Planner",
