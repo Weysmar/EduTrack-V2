@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2 } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -80,6 +80,14 @@ export function Sidebar() {
                     <FolderPlus className="h-3.5 w-3.5" />
                     <span className="font-medium hidden md:block">{t('folder.new')}</span>
                 </button>
+
+                <Link
+                    to="/board"
+                    className="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 py-2 px-4 rounded-md hover:bg-amber-100 transition-colors mt-2 group"
+                >
+                    <MapIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium hidden md:block">{t('nav.board') || "Investigation Board"}</span>
+                </Link>
             </div>
 
             <div className="flex-1 overflow-y-auto py-4">

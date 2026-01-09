@@ -21,6 +21,7 @@ const CalendarPage = lazy(() => import('@/pages/CalendarPage').then(m => ({ defa
 const ProfileManager = lazy(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const AuthPage = lazy(() => import('@/pages/AuthPage').then(m => ({ default: m.AuthPage })))
+const InvestigationBoard = lazy(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
 
 // Suspense Wrapper
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
                     {
                         path: 'settings',
                         element: <LazyPage><SettingsPage /></LazyPage>,
+                    },
+                    {
+                        path: 'board', // New Route
+                        element: <LazyPage><InvestigationBoard /></LazyPage>,
                     },
                     {
                         path: 'course/:courseId',
