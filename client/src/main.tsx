@@ -10,11 +10,12 @@ if (typeof URL.parse === 'undefined') {
 }
 
 import { pdfjs } from 'react-pdf';
-// Configure PDF.js worker globally
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Pin worker version to 5.4.296 to match the API version bundled with react-pdf 10.3.0
+const workerUrl = `//unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
