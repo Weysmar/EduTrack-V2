@@ -34,7 +34,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
                 if (width && !isNaN(Number(width))) {
                     const w = parseInt(width as string);
                     const ext = path.extname(filePath).toLowerCase();
-                    if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif'].includes(ext)) {
+                    if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif', '.avif'].includes(ext)) {
                         try {
                             const imageBuffer = fs.readFileSync(filePath);
                             const resized = await sharp(imageBuffer)

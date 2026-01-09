@@ -118,7 +118,7 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                             <div className={cn("p-2 rounded-md",
                                 item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                                 item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
-                                item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
+                                item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
                             )}>
                                 {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
                                 {item.type === 'note' && <FileText className="h-5 w-5" />}
