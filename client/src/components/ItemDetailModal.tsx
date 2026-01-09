@@ -69,7 +69,8 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                     try {
                         // Convert Blob to File
                         const file = new File([item.fileData], item.fileName || 'file', { type: item.fileType })
-                        textContent = await extractText(file)
+                        const result = await extractText(file)
+                        textContent = result.text
 
                         // Cache the extracted text
                         if (item.id) {

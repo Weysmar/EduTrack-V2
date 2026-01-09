@@ -11,7 +11,7 @@ interface AuthRequest extends Request<any, any, any, any> {
 export const createStudyPlan = async (req: AuthRequest, res: Response) => {
     try {
         const { courseId, title, goal, deadline, hoursPerWeek, weeks } = req.body;
-        const profileId = req.user?.profileId;
+        const profileId = req.user?.id;
 
         const result = await prisma.studyPlan.create({
             data: {
@@ -59,7 +59,7 @@ export const createStudyPlan = async (req: AuthRequest, res: Response) => {
 export const getStudyPlans = async (req: AuthRequest, res: Response) => {
     try {
         const { courseId } = req.query;
-        const where: any = { profileId: req.user?.profileId };
+        const where: any = { profileId: req.user?.id };
         if (courseId) where.courseId = String(courseId);
 
         const plans = await prisma.studyPlan.findMany({
