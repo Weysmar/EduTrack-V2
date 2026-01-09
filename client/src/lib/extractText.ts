@@ -45,7 +45,7 @@ export async function extractText(file: File): Promise<ExtractionResult> {
                 ...result,
                 stats: { ...result.stats, timeMs: Date.now() - startTime }
             };
-        } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(fileName)) {
+        } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|webp|avif|heic|heif)$/i.test(fileName)) {
             console.log('Detected Image');
             const text = await extractImageText(file);
             return {
