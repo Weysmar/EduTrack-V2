@@ -95,7 +95,7 @@ import { Toaster } from "sonner"
 function App() {
     return (
         <QueryClientProvider client={queryClient}>
-            <LanguageProvider defaultLanguage="en" storageKey="vite-ui-language">
+            <LanguageProvider defaultLanguage="fr" storageKey="vite-ui-language">
                 <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                     <RouterProvider router={router} />
                     <Toaster richColors position="top-right" />

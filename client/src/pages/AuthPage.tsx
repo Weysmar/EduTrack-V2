@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 
 export function AuthPage() {
@@ -16,6 +17,7 @@ export function AuthPage() {
     const { login, register, user } = useAuthStore();
     const { loadProfile } = useProfileStore();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,7 +37,7 @@ export function AuthPage() {
 
             navigate('/');
         } catch (err: any) {
-            setError(err.message || 'Authentication failed');
+            setError(err.message || t('auth.error.default'));
         } finally {
             setIsLoading(false);
         }
@@ -46,12 +48,12 @@ export function AuthPage() {
             <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                        {isLogin ? 'Welcome back' : 'Create an account'}
+                        {isLogin ? t('auth.welcome.back') : t('auth.create.account')}
                     </h2>
                     <p className="mt-2 text-sm text-muted-foreground">
                         {isLogin
-                            ? 'Enter your credentials to access your account'
-                            : 'Enter your details to create your account'}
+                            ? t('auth.login.desc')
+                            : t('auth.register.desc')}
                     </p>
                 </div>
 
@@ -59,7 +61,7 @@ export function AuthPage() {
                     <div className="space-y-4 rounded-md shadow-sm">
                         {!isLogin && (
                             <div>
-                                <label className="block text-sm font-medium text-foreground">Name</label>
+                                <label className="block text-sm font-medium text-foreground">{t('auth.name')}</label>
                                 <input
                                     type="text"
                                     required
@@ -70,7 +72,7 @@ export function AuthPage() {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-medium text-foreground">Email address</label>
+                            <label className="block text-sm font-medium text-foreground">{t('auth.email')}</label>
                             <input
                                 type="email"
                                 required
@@ -81,7 +83,7 @@ export function AuthPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-foreground">Password</label>
+                            <label className="block text-sm font-medium text-foreground">{t('auth.password')}</label>
                             <input
                                 type="password"
                                 required
@@ -103,7 +105,7 @@ export function AuthPage() {
                             className="group relative flex w-full justify-center rounded-md bg-primary py-2 px-4 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
                         >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isLogin ? 'Sign in' : 'Sign up'}
+                            {isLogin ? t('auth.submit.login') : t('auth.submit.register')}
                         </button>
                     </div>
                 </form>
@@ -114,8 +116,8 @@ export function AuthPage() {
                         onClick={() => setIsLogin(!isLogin)}
                     >
                         {isLogin
-                            ? "Don't have an account? Sign up"
-                            : 'Already have an account? Sign in'}
+                            ? t('auth.switch.toRegister')
+                            : t('auth.switch.toLogin')}
                     </button>
                 </div>
             </div>

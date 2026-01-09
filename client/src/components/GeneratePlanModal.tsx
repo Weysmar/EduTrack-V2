@@ -5,6 +5,8 @@ import { generateStudyPlan } from '@/lib/plans/generator'
 import { useCalendarStore } from '@/store/calendarStore'
 import { fetchICalFeed } from '@/lib/ical-parser'
 import { useProfileStore } from '@/store/profileStore'
+import { useLanguage } from '@/components/language-provider'
+import { toast } from 'sonner'
 
 interface GeneratePlanModalProps {
     isOpen: boolean
@@ -14,6 +16,7 @@ interface GeneratePlanModalProps {
 }
 
 export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }: GeneratePlanModalProps) {
+    const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
     const { icalUrl, isConnected } = useCalendarStore()
 
@@ -31,7 +34,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
 
     const handleSyncCalendar = async () => {
         if (!isConnected || !icalUrl) {
-            alert("Please connect your Google Calendar via the button in the top bar first.")
+            toast.error(t('plan.calendar.notConnected') || "Connectez d'abord votre calendrier Google.")
             return
         }
 
@@ -56,13 +59,13 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
             if (examEvent) {
                 const dateStr = examEvent.start.toISOString().split('T')[0]
                 setDeadline(dateStr)
-                alert(`Found exam in calendar: ${examEvent.summary} on ${dateStr}`)
+                toast.success(t('plan.calendar.found', { event: examEvent.summary, date: dateStr }) || `Examen trouvé : ${examEvent.summary} le ${dateStr}`)
             } else {
-                alert(`No event found with "Examen ${course.title}" in your calendar.`)
+                toast.warning(t('plan.calendar.notFound', { course: course.title }) || `Aucun événement "Examen ${course.title}" trouvé.`)
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to sync with calendar.")
+            toast.error(t('plan.calendar.error') || "Erreur de synchronisation calendrier.")
         } finally {
             setIsLoading(false)
         }
@@ -70,7 +73,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
 
     const handleGenerate = async () => {
         if (!deadline) {
-            alert("Please select a deadline")
+            toast.error(t('plan.error.noDeadline') || "Veuillez sélectionner une date d'examen.")
             return
         }
 
@@ -84,12 +87,12 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
                 goal,
                 preferences: { flashcardsRatio, quizRatio, readingRatio }
             })
-            alert("Study Plan Generated Successfully!")
+            toast.success(t('plan.success') || "Programme de révision généré avec succès !")
             onPlanGenerated()
             onClose()
         } catch (error) {
             console.error(error)
-            alert("Failed to generate plan. Please try again.")
+            toast.error(t('plan.error.failed') || "Échec de la génération. Veuillez réessayer.")
         } finally {
             setIsLoading(false)
         }

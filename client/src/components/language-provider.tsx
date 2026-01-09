@@ -275,7 +275,28 @@ const translations: Translations = {
         "revision.availableTime": "Available Study Time",
         "revision.hours": "Hours",
         "revision.days": "Days",
-        "revision.generating": "Generating your personalized study plan..." // No comma
+        "revision.generating": "Generating your personalized study plan...",
+        "plan.calendar.notConnected": "Please connect your Google Calendar first.",
+        "plan.calendar.found": "Found exam: {event} on {date}",
+        "plan.calendar.notFound": "No event found for '{course}'",
+        "plan.calendar.error": "Calendar sync failed.",
+        "plan.error.noDeadline": "Please select a deadline.",
+        "plan.success": "Study Plan Generated Successfully!",
+        "plan.error.failed": "Failed to generate plan.",
+        // Auth
+        "auth.welcome.back": "Welcome back",
+        "auth.create.account": "Create an account",
+        "auth.login.desc": "Enter your credentials to access your account",
+        "auth.register.desc": "Enter your details to create your account",
+        "auth.name": "Name",
+        "auth.email": "Email address",
+        "auth.password": "Password",
+        "auth.submit.login": "Sign in",
+        "auth.submit.register": "Sign up",
+        "auth.switch.toRegister": "Don't have an account? Sign up",
+        "auth.switch.toLogin": "Already have an account? Sign in",
+        "auth.error.default": "Authentication failed",
+        "auth.error.missing": "Please fill in all fields"
     },
     fr: {
         "app.title": "EduTrack",
@@ -549,7 +570,28 @@ const translations: Translations = {
         "revision.availableTime": "Temps Disponible",
         "revision.hours": "Heures",
         "revision.days": "Jours",
-        "revision.generating": "Génération de votre plan d'étude personnalisé..." // No comma
+        "revision.generating": "Génération de votre plan d'étude personnalisé...",
+        "plan.calendar.notConnected": "Connectez d'abord votre calendrier Google via le bouton en haut.",
+        "plan.calendar.found": "Examen trouvé : {event} le {date}",
+        "plan.calendar.notFound": "Aucun événement trouvé pour '{course}'",
+        "plan.calendar.error": "Erreur de synchronisation calendrier.",
+        "plan.error.noDeadline": "Veuillez sélectionner une date d'examen.",
+        "plan.success": "Programme de révision généré avec succès !",
+        "plan.error.failed": "Échec de la génération. Veuillez réessayer.",
+        // Auth
+        "auth.welcome.back": "Bon retour",
+        "auth.create.account": "Créer un compte",
+        "auth.login.desc": "Entrez vos identifiants pour accéder à votre compte",
+        "auth.register.desc": "Entrez vos coordonnées pour créer votre compte",
+        "auth.name": "Nom",
+        "auth.email": "Adresse Email",
+        "auth.password": "Mot de passe",
+        "auth.submit.login": "Se connecter",
+        "auth.submit.register": "S'inscrire",
+        "auth.switch.toRegister": "Pas de compte ? S'inscrire",
+        "auth.switch.toLogin": "Déjà un compte ? Se connecter",
+        "auth.error.default": "Échec de l'authentification",
+        "auth.error.missing": "Veuillez remplir tous les champs"
     },
     mc: {
         "app.title": "EduCraft",
@@ -768,6 +810,20 @@ const translations: Translations = {
         "revision.hours": "Hours",
         "revision.days": "Days",
         "revision.generating": "The ancient ones are crafting your path...",
+        // Auth (Minecraft)
+        "auth.welcome.back": "Welcome back, Steve",
+        "auth.create.account": "Spawn New Player",
+        "auth.login.desc": "Login to the Server",
+        "auth.register.desc": "Whitelist Request",
+        "auth.name": "Gamertag",
+        "auth.email": "Redstone Signal (Email)",
+        "auth.password": "Server PC",
+        "auth.submit.login": "Join Server",
+        "auth.submit.register": "Spawn In",
+        "auth.switch.toRegister": "No whitelist? Request Access",
+        "auth.switch.toLogin": "Already whitelisted? Join",
+        "auth.error.default": "Kicked from server: Auth Failed",
+        "auth.error.missing": "Missing Command Arguments",
         "changelog.v051.polish": "Texture Pack: 100% lore translation, fixed void-blur on modals, and optimized inventory list view.",
         "changelog.v050.title": "Stability & Intelligence 🧠",
         "changelog.v050.api_keys": "Saving Level.dat: Fixed a bug where world keys were lost.",
@@ -814,7 +870,7 @@ type LanguageProviderProps = {
 type LanguageProviderState = {
     language: Language
     setLanguage: (language: Language) => void
-    t: (key: string) => string
+    t: (key: string, variables?: Record<string, string | number>) => string
 }
 
 const initialState: LanguageProviderState = {
@@ -846,8 +902,14 @@ export function LanguageProvider({
         }
     }, [language, storageKey])
 
-    const t = (key: string) => {
-        return translations[language][key] || key
+    const t = (key: string, variables?: Record<string, string | number>) => {
+        let text = translations[language][key] || key
+        if (variables) {
+            Object.entries(variables).forEach(([k, v]) => {
+                text = text.replace(`{${k}}`, String(v))
+            })
+        }
+        return text
     }
 
     const value = {
