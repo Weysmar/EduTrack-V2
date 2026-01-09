@@ -69,6 +69,7 @@ model Item {
   fileUrl          String?
   fileName         String?
   fileSize         Int?
+  thumbnailUrl     String?  // URL to the generated thumbnail
   storageKey       String?  // S3 key
   status           String?
   difficulty       String?

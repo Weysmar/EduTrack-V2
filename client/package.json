@@ -23,6 +23,7 @@
     "@tiptap/starter-kit": "^2.27.1",
     "@types/html2pdf.js": "^0.10.0",
     "axios": "^1.13.2",
+    "browser-image-compression": "^2.0.2",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "dexie": "^3.2.4",

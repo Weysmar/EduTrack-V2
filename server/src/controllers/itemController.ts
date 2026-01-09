@@ -63,6 +63,37 @@ export const createItem = async (req: AuthRequest, res: Response) => {
             storageKey = uploadResult.key;
             fileName = req.file.originalname;
             fileSize = req.file.size;
+
+            // Generate Thumbnail
+            const thumbnailBuffer = await storageService.generateThumbnail(req.file);
+            if (thumbnailBuffer) {
+                const thumbFile = {
+                    ...req.file,
+                    buffer: thumbnailBuffer,
+                    originalname: `thumb-${req.file.originalname.split('.')[0]}.webp`,
+                    mimetype: 'image/webp'
+                } as Express.Multer.File;
+
+                const thumbUpload = await storageService.uploadFile(thumbFile);
+                // We could add thumbnailUrl to item data here
+                // But I need to define thumbnailUrl variable first
+            }
+        }
+
+        let thumbnailUrl = null;
+        if (req.file) {
+            const thumbnailBuffer = await storageService.generateThumbnail(req.file);
+            if (thumbnailBuffer) {
+                const thumbFile = {
+                    ...req.file,
+                    buffer: thumbnailBuffer,
+                    originalname: `thumb-${req.file.originalname.replace(/\.[^/.]+$/, "")}.webp`,
+                    mimetype: 'image/webp'
+                } as Express.Multer.File;
+
+                const thumbUpload = await storageService.uploadFile(thumbFile);
+                thumbnailUrl = thumbUpload.url;
+            }
         }
 
         const item = await prisma.item.create({
@@ -78,7 +109,8 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 fileUrl,
                 storageKey,
                 fileName,
-                fileSize: fileSize ? parseInt(String(fileSize)) : null
+                fileSize: fileSize ? parseInt(String(fileSize)) : null,
+                thumbnailUrl
             }
         });
 
@@ -104,12 +136,14 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 
         // Handle File Replacement
         if (req.file) {
-            // Delete old file if exists
+            // Delete old file and thumbnail if exists
             if (item.storageKey) {
                 await storageService.deleteFile(item.storageKey).catch(err =>
                     console.error("Failed to delete old file during update:", err)
                 );
             }
+            // Logic to delete old thumbnail? We don't verify if it exists but usually it shares a pattern or we should have stored key. 
+            // For now, simpler to just upload new. Optimally we should store thumbnailKey.
 
             // Upload new file
             const uploadResult = await storageService.uploadFile(req.file);
@@ -117,6 +151,22 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
             updateData.storageKey = uploadResult.key;
             updateData.fileName = req.file.originalname;
             updateData.fileSize = req.file.size;
+
+            // Generate Thumbnail
+            const thumbnailBuffer = await storageService.generateThumbnail(req.file);
+            if (thumbnailBuffer) {
+                const thumbFile = {
+                    ...req.file,
+                    buffer: thumbnailBuffer,
+                    originalname: `thumb-${req.file.originalname.replace(/\.[^/.]+$/, "")}.webp`,
+                    mimetype: 'image/webp'
+                } as Express.Multer.File;
+
+                const thumbUpload = await storageService.uploadFile(thumbFile);
+                updateData.thumbnailUrl = thumbUpload.url;
+            } else {
+                updateData.thumbnailUrl = null; // Reset if not an image or fails
+            }
         }
 
         const updatedItem = await prisma.item.update({

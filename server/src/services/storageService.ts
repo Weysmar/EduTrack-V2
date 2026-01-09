@@ -81,5 +81,21 @@ export const storageService = {
         } else {
             return `/uploads/${key}`;
         }
+    },
+
+    async generateThumbnail(file: Express.Multer.File): Promise<Buffer | null> {
+        // Only process images
+        if (!file.mimetype.startsWith('image/')) return null;
+
+        try {
+            const sharp = require('sharp'); // Dynamic import to avoid crash if not installed
+            return await sharp(file.buffer)
+                .resize(400, 300, { fit: 'cover', position: 'center' })
+                .webp({ quality: 80 })
+                .toBuffer();
+        } catch (error) {
+            console.error('Thumbnail generation failed:', error);
+            return null;
+        }
     }
 };
