@@ -1,6 +1,6 @@
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState, useEffect } from 'react'
-import { v4 as uuidv4 } from 'uuid'
+import { toast } from 'sonner'
 import { generateFlashcards, GenerationParams } from '@/lib/flashcards/generator'
 import { generateQuizQuestions } from '@/lib/quiz/generator'
 import { Loader2, Brain, AlertCircle, CheckSquare, Layers } from 'lucide-react'
@@ -64,7 +64,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
         try {
             const now = new Date()
-            const setId = uuidv4()
+
 
             if (mode === 'flashcards') {
                 const cards = await generateFlashcards({
@@ -80,8 +80,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                 const { flashcardQueries } = await import('@/lib/api/queries')
 
-                await flashcardQueries.create({
-                    id: setId,
+                const createdSet = await flashcardQueries.create({
                     courseId,
                     itemId,
                     profileId: activeProfile?.id || "",
@@ -98,8 +97,9 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                 /* Cards handled in create payload */
 
+                toast.success("Flashcards générées avec succès !")
                 onClose()
-                navigate(`/flashcards/study/${setId}`)
+                navigate(`/flashcards/study/${createdSet.id}`)
 
             } else {
                 // Quiz Generation
@@ -116,7 +116,6 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                 const { quizQueries } = await import('@/lib/api/queries')
                 const quiz = await quizQueries.create({
-                    id: setId,
                     courseId,
                     itemId,
                     profileId: activeProfile?.id || "",
@@ -157,8 +156,9 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                 /* Questions/Cards are handled by the create payload above */
 
+                toast.success("Quiz généré avec succès !")
                 onClose()
-                navigate(`/quiz/study/${setId}`)
+                navigate(`/quiz/study/${quiz.id}`)
             }
 
         } catch (e: any) {
