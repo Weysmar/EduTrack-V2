@@ -706,7 +706,7 @@ export function ItemView() {
                         </div>
                     ) : (
                         // ORIGINAL CONTENT VIEW
-                        <div className="bg-card border rounded-xl p-8 min-h-[50vh] shadow-sm">
+                        <div className="bg-card border rounded-xl p-0 sm:p-0 min-h-[50vh] shadow-sm overflow-hidden">
                             {/* PDF VIEWER Integration */}
                             {pdfUrl ? (
                                 <div className="border rounded-lg overflow-hidden bg-card shadow-sm relative">

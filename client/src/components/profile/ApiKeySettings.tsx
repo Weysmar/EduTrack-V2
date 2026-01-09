@@ -85,7 +85,7 @@ export function ApiKeySettings() {
                         onChange={v => setKeys(prev => ({ ...prev, perplexity_summaries: v }))}
                         show={showKey['perplexity_summaries']}
                         onToggle={() => toggleShow('perplexity_summaries')}
-                        placeholder="pplx-..."
+                        placeholder={t('settings.api.placeholder.pplx')}
                     />
 
                     <ApiKeyInput
@@ -95,7 +95,7 @@ export function ApiKeySettings() {
                         onChange={v => setKeys(prev => ({ ...prev, perplexity_exercises: v }))}
                         show={showKey['perplexity_exercises']}
                         onToggle={() => toggleShow('perplexity_exercises')}
-                        placeholder="pplx-..."
+                        placeholder={t('settings.api.placeholder.pplx')}
                     />
                 </div>
 
@@ -110,7 +110,7 @@ export function ApiKeySettings() {
                         onChange={v => setKeys(prev => ({ ...prev, google_gemini_summaries: v }))}
                         show={showKey['google_gemini_summaries']}
                         onToggle={() => toggleShow('google_gemini_summaries')}
-                        placeholder="AIza..."
+                        placeholder={t('settings.api.placeholder.gemini')}
                     />
 
                     <ApiKeyInput
@@ -120,7 +120,7 @@ export function ApiKeySettings() {
                         onChange={v => setKeys(prev => ({ ...prev, google_gemini_exercises: v }))}
                         show={showKey['google_gemini_exercises']}
                         onToggle={() => toggleShow('google_gemini_exercises')}
-                        placeholder="AIza..."
+                        placeholder={t('settings.api.placeholder.gemini')}
                     />
                 </div>
 
@@ -135,7 +135,7 @@ export function ApiKeySettings() {
                         onChange={v => setKeys(prev => ({ ...prev, google_calendar: v }))}
                         show={showKey['google_calendar']}
                         onToggle={() => toggleShow('google_calendar')}
-                        placeholder="Bearer ..."
+                        placeholder={t('settings.api.placeholder.bearer')}
                     />
                 </div>
             </div>

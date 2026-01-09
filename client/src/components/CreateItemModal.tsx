@@ -188,7 +188,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                     value={content}
                                     onChange={e => setContent(e.target.value)}
                                     className="w-full px-3 py-2 border rounded-md bg-background min-h-[100px]"
-                                    placeholder="Instructions for the exercise..."
+                                    placeholder={t('item.form.instructions.placeholder')}
                                 />
                             </div>
                             <div className="space-y-2">
