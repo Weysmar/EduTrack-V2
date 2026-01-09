@@ -68,6 +68,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                                 alt={item.fileName}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
+                                decoding="async"
                             />
                             {/* Overlay for file type if needed, or just let FilePreview handle it if we passed it there. 
                                   Let's check if FilePreview handles arbitrary images. 

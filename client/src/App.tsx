@@ -1,31 +1,38 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
-import { Dashboard } from '@/pages/Dashboard'
-import { CourseView } from '@/pages/CourseView'
-import { ItemView } from '@/pages/ItemView'
-import { FolderView } from '@/pages/FolderView'
-import { Flashcards } from '@/pages/Flashcards'
-import { StudySession } from '@/pages/StudySession'
-import { QuizStudy } from '@/pages/QuizStudy'
-import { CalendarPage } from '@/pages/CalendarPage'
-import { ProfileManager } from '@/pages/ProfileManager'
-
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { ThemeProvider } from "@/components/theme-provider"
-
-import { SettingsPage } from '@/pages/SettingsPage'
-
-import { AuthPage } from '@/pages/AuthPage'
 import { RequireAuth } from '@/components/RequireAuth'
+import { LanguageProvider } from "@/components/language-provider"
+import { Toaster } from "sonner"
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 
+// Lazy load pages to split bundle
+const Dashboard = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.Dashboard })))
+const CourseView = lazy(() => import('@/pages/CourseView').then(m => ({ default: m.CourseView })))
+const ItemView = lazy(() => import('@/pages/ItemView').then(m => ({ default: m.ItemView })))
+const FolderView = lazy(() => import('@/pages/FolderView').then(m => ({ default: m.FolderView })))
+const Flashcards = lazy(() => import('@/pages/Flashcards').then(m => ({ default: m.Flashcards })))
+const StudySession = lazy(() => import('@/pages/StudySession').then(m => ({ default: m.StudySession })))
+const QuizStudy = lazy(() => import('@/pages/QuizStudy').then(m => ({ default: m.QuizStudy })))
+const CalendarPage = lazy(() => import('@/pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
+const ProfileManager = lazy(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const AuthPage = lazy(() => import('@/pages/AuthPage').then(m => ({ default: m.AuthPage })))
 
+// Suspense Wrapper
+const LazyPage = ({ children }: { children: React.ReactNode }) => (
+    <Suspense fallback={<LoadingSpinner />}>
+        {children}
+    </Suspense>
+)
 
 const router = createBrowserRouter([
     {
         path: '/auth',
-        element: <AuthPage />
+        element: <LazyPage><AuthPage /></LazyPage>
     },
     {
         path: '/',
@@ -38,44 +45,43 @@ const router = createBrowserRouter([
                 children: [
                     {
                         index: true,
-                        element: <Dashboard />,
+                        element: <LazyPage><Dashboard /></LazyPage>,
                     },
                     {
                         path: 'settings',
-                        element: <SettingsPage />,
+                        element: <LazyPage><SettingsPage /></LazyPage>,
                     },
-
                     {
                         path: 'course/:courseId',
-                        element: <CourseView />,
+                        element: <LazyPage><CourseView /></LazyPage>,
                     },
                     {
                         path: 'course/:courseId/item/:itemId',
-                        element: <ItemView />,
+                        element: <LazyPage><ItemView /></LazyPage>,
                     },
                     {
                         path: 'folder/:folderId',
-                        element: <FolderView />,
+                        element: <LazyPage><FolderView /></LazyPage>,
                     },
                     {
                         path: 'flashcards',
-                        element: <Flashcards />,
+                        element: <LazyPage><Flashcards /></LazyPage>,
                     },
                     {
                         path: 'flashcards/study/:setId',
-                        element: <StudySession />,
+                        element: <LazyPage><StudySession /></LazyPage>,
                     },
                     {
                         path: 'quiz/study/:id',
-                        element: <QuizStudy />,
+                        element: <LazyPage><QuizStudy /></LazyPage>,
                     },
                     {
                         path: 'calendar',
-                        element: <CalendarPage />,
+                        element: <LazyPage><CalendarPage /></LazyPage>,
                     },
                     {
                         path: 'profiles',
-                        element: <ProfileManager />,
+                        element: <LazyPage><ProfileManager /></LazyPage>,
                     },
                     {
                         path: '*',
@@ -86,11 +92,6 @@ const router = createBrowserRouter([
         ]
     }
 ])
-
-
-
-import { LanguageProvider } from "@/components/language-provider"
-import { Toaster } from "sonner"
 
 function App() {
     return (
