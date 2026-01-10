@@ -1,7 +1,9 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { cn } from '@/lib/utils';
 import { HierarchyNode } from '@/types/knowledge-map';
+import { useKnowledgeMapData } from '@/hooks/useKnowledgeMapData';
+import { useLanguage } from '@/components/language-provider';
 
 const DepthColors = {
     0: 'bg-blue-500 border-blue-700 text-white',
@@ -17,6 +19,9 @@ const CourseColor = 'bg-yellow-200 border-yellow-400 text-black';
 
 export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     const isTopic = data.type === 'topic';
+    const { assignCourseToFolder } = useKnowledgeMapData();
+    const { t } = useLanguage();
+    const [isDragOver, setIsDragOver] = useState(false);
 
     // Determine Color based on Depth or Type
     let colorClass = DepthColors.default;
@@ -26,13 +31,45 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
         colorClass = CourseColor;
     }
 
+    const handleDragOver = (e: React.DragEvent) => {
+        if (!isTopic) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragOver(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        if (!isTopic) return;
+        e.preventDefault();
+        setIsDragOver(false);
+
+        const courseId = e.dataTransfer.getData('application/reactflow/courseId');
+        if (courseId) {
+            try {
+                await assignCourseToFolder({ courseId, folderId: data.id });
+                // Optional: Show toast success
+            } catch (err) {
+                console.error("Failed to assign course", err);
+            }
+        }
+    };
+
     return (
         <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             className={cn(
-                "relative shadow-md rounded-sm p-4 w-[160px] min-h-[100px] flex flex-col transition-transform hover:scale-105 hover:shadow-xl",
+                "relative shadow-md rounded-sm p-4 w-[160px] min-h-[100px] flex flex-col transition-all duration-200",
                 colorClass,
                 "border-t-2 border-l-2 border-r-2 border-b-4", // Thick bottom border for depth
-                "font-sans"
+                "font-sans",
+                isDragOver ? "scale-110 shadow-2xl ring-4 ring-green-400 z-50 brightness-110" : "hover:scale-105 hover:shadow-xl",
+                data.isHighlighted === false ? "opacity-30 blur-[1px]" : "opacity-100"
             )}
             style={{
                 // Add slight random rotation for organic feel provided by parent or random here if fixed
@@ -57,6 +94,14 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
                 {isTopic && data.childrenCount > 0 && (
                     <div className="mt-2 text-[10px] opacity-80 font-mono bg-black/10 px-1 rounded">
                         {data.childrenCount} children
+                    </div>
+                )}
+
+                {isDragOver && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-sm backdrop-blur-[1px]">
+                        <span className="font-bold text-white text-xs uppercase tracking-widest border-2 border-white px-2 py-1 rounded">
+                            {t('action.assign') || 'Assign'}
+                        </span>
                     </div>
                 )}
             </div>

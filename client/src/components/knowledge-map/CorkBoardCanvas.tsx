@@ -1,16 +1,19 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import ReactFlow, {
     Background,
-    Controls,
     MiniMap,
     useNodesState,
     useEdgesState,
     Node,
-    Edge
+    Edge,
+    useReactFlow,
+    ReactFlowProvider
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { PostItNode } from './PostItNode';
 import { ConnectionThread } from './ConnectionThread';
+import { ControlBar } from './ControlBar';
+import { FilterPanel } from './FilterPanel';
 import { useKnowledgeMapData } from '@/hooks/useKnowledgeMapData';
 import { HierarchyNode } from '@/types/knowledge-map';
 
@@ -22,10 +25,19 @@ const edgeTypes = {
     thread: ConnectionThread
 };
 
-export function CorkBoardCanvas() {
+interface MapContentProps {
+    searchQuery: string;
+    showTopics: boolean;
+    showCourses: boolean;
+    onToggleTopics: (v: boolean) => void;
+    onToggleCourses: (v: boolean) => void;
+}
+
+function MapContent({ searchQuery, showTopics, showCourses, onToggleTopics, onToggleCourses }: MapContentProps) {
     const { rootNodes, savePosition, isLoading } = useKnowledgeMapData();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const { fitView } = useReactFlow();
 
     // Transform Hierarchy into React Flow Elements (Basic Radial Layout)
     useEffect(() => {
@@ -34,90 +46,152 @@ export function CorkBoardCanvas() {
         const newNodes: Node[] = [];
         const newEdges: Edge[] = [];
 
-        const centerX = 0;
-        const centerY = 0;
-
-        // Recursive placement function (Simple radial)
-        const placeNode = (node: HierarchyNode, x: number, y: number, angleRange: { start: number, end: number }) => {
-            // Use saved position if available (handled in hook, but let's confirm)
+        // Recursive placement function (Balanced Radial)
+        const placeNode = (node: HierarchyNode, x: number, y: number, angleRange: { start: number, end: number }, level: number) => {
             const posX = node.position?.x ?? x;
             const posY = node.position?.y ?? y;
 
-            newNodes.push({
-                id: node.id,
-                type: 'postIt',
-                position: { x: posX, y: posY },
-                data: node,
-            });
+            // Filter Logic
+            const isTopic = node.type === 'topic';
+            const isCourse = node.type === 'course';
+
+            let isVisible = true;
+            if (isTopic && !showTopics) isVisible = false;
+            if (isCourse && !showCourses) isVisible = false;
+
+            // Search Logic
+            let isMatch = true;
+            if (searchQuery) {
+                isMatch = node.title.toLowerCase().includes(searchQuery.toLowerCase());
+            }
+
+            if (isVisible) {
+                newNodes.push({
+                    id: node.id,
+                    type: 'postIt',
+                    position: { x: posX, y: posY },
+                    data: {
+                        ...node,
+                        isHighlighted: searchQuery ? isMatch : false,
+                        // If searching, we could dim non-matches or styling them in the Node
+                        // For now we pass the flag
+                    },
+                    style: {
+                        opacity: searchQuery && !isMatch ? 0.3 : 1
+                    }
+                });
+            }
 
             if (node.children.length > 0) {
-                const step = (angleRange.end - angleRange.start) / node.children.length;
-                const radius = 250 + (node.depth * 50); // Increase radius with depth
+                const baseRadius = 300;
+                const radius = baseRadius + (level * 100) + (node.children.length * 20);
+
+                const totalAngle = angleRange.end - angleRange.start;
 
                 node.children.forEach((child, index) => {
-                    const angle = angleRange.start + (step * index) + (step / 2);
-                    // If no saved position, calculate radial
+                    const angleStep = totalAngle / node.children.length;
+                    const angle = angleRange.start + (angleStep * index) + (angleStep / 2);
+
                     const childX = node.position ? node.position.x : posX + Math.cos(angle) * radius;
                     const childY = node.position ? node.position.y : posY + Math.sin(angle) * radius;
 
-                    // Add Edge
-                    newEdges.push({
-                        id: `${node.id}-${child.id}`,
-                        source: node.id,
-                        target: child.id,
-                        type: 'thread',
-                        data: { depth: node.depth },
-                        animated: false
-                    });
+                    // Edge visibility check
+                    const childIsTopic = child.type === 'topic';
+                    let childVisible = true;
+                    if (childIsTopic && !showTopics) childVisible = false;
+                    if (!childIsTopic && !showCourses) childVisible = false;
 
+                    if (isVisible && childVisible) {
+                        newEdges.push({
+                            id: `${node.id}-${child.id}`,
+                            source: node.id,
+                            target: child.id,
+                            type: 'thread',
+                            data: { depth: child.depth },
+                        });
+                    }
+
+                    const sectorSize = angleStep * 0.8;
                     placeNode(child, childX, childY, {
-                        start: angle - (step / 2.5),
-                        end: angle + (step / 2.5)
-                    });
+                        start: angle - (sectorSize / 2),
+                        end: angle + (sectorSize / 2)
+                    }, level + 1);
                 });
             }
         };
 
-        // Place roots (usually just one, but can be multiple)
         rootNodes.forEach((root, i) => {
-            placeNode(root, i * 500, 0, { start: 0, end: Math.PI * 2 });
+            placeNode(root, i * 1500, 0, { start: 0, end: Math.PI * 2 }, 0);
         });
 
         setNodes(newNodes);
         setEdges(newEdges);
 
-    }, [rootNodes, setNodes, setEdges]); // Rerun when data changes
+    }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, searchQuery]);
 
     const onNodeDragStop = useCallback((event: any, node: Node) => {
         savePosition(node.id, node.position.x, node.position.y);
     }, [savePosition]);
 
+    const onNodeDoubleClick = useCallback((event: any, node: Node) => {
+        fitView({ nodes: [node], duration: 800, padding: 0.5 });
+    }, [fitView]);
+
     if (isLoading) {
-        return <div className="flex items-center justify-center h-full text-white">Loading Map...</div>;
+        return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">Loading Knowledge Map...</div>;
     }
 
+    return (
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeDragStop={onNodeDragStop}
+            onNodeDoubleClick={onNodeDoubleClick}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            minZoom={0.2}
+            maxZoom={4}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        >
+            <Background color="#3f2e22" gap={40} size={1} style={{ opacity: 0.05 }} />
+            <ControlBar />
+            <FilterPanel
+                showTopics={showTopics}
+                setShowTopics={onToggleTopics}
+                showCourses={showCourses}
+                setShowCourses={onToggleCourses}
+            />
+            <MiniMap
+                nodeColor={(n) => {
+                    if (n.type === 'postIt') return '#8B5E3C';
+                    return '#eee';
+                }}
+                maskColor="rgba(0, 0, 0, 0.1)"
+                style={{
+                    height: 120,
+                    backgroundColor: '#EFEBE9',
+                    border: '2px solid #8B5E3C',
+                    borderRadius: '8px'
+                }}
+                zoomable
+                pannable
+            />
+        </ReactFlow>
+    );
+}
+
+export function CorkBoardCanvas(props: MapContentProps) {
     return (
         <div className="w-full h-full bg-[#C89666] relative overflow-hidden"
             style={{
                 backgroundImage: 'url("https://www.transparenttextures.com/patterns/cork-board.png")',
                 boxShadow: 'inset 0 0 100px rgba(0,0,0,0.5)'
             }}>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onNodeDragStop={onNodeDragStop}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                fitView
-                minZoom={0.1}
-                maxZoom={2}
-            >
-                <Background color="#3f2e22" gap={30} size={1} style={{ opacity: 0.1 }} />
-                <Controls className="bg-white border text-black" />
-                <MiniMap style={{ height: 120 }} zoomable pannable />
-            </ReactFlow>
+            <ReactFlowProvider>
+                <MapContent {...props} />
+            </ReactFlowProvider>
         </div>
     );
 }
