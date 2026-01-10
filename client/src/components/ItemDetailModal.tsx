@@ -12,6 +12,11 @@ import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { FilePreviewModal } from './FilePreviewModal'
 import { TTSControls } from './TTSControls'
 import { useProfileStore } from '@/store/profileStore'
+import { Editor } from './Editor'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { itemQueries } from '@/lib/api/queries'
+import { Pencil, Check, X as Cancel } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ItemDetailModalProps {
     item: Item | null
@@ -27,12 +32,35 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
     const { activeProfile } = useProfileStore()
+    const queryClient = useQueryClient()
+
+    // Edit mode state
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [editedContent, setEditedContent] = useState(item?.content || '')
 
     // Auto-detect language (simple logic for now fallback to profile lang)
     const contentLang = activeProfile?.language === 'fr' || !activeProfile ? 'fr-FR' : 'en-US';
 
     // Use Summary Hook
     const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(item?.id || 0, item?.type || 'note')
+
+    // Update mutation
+    const updateMutation = useMutation({
+        mutationFn: (content: string) => {
+            if (!item?.id) throw new Error('No item ID')
+            const formData = new FormData()
+            formData.append('content', content)
+            return itemQueries.update(String(item.id), formData)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['items'] })
+            setIsEditMode(false)
+            toast.success('Note updated successfully')
+        },
+        onError: () => {
+            toast.error('Failed to update note')
+        }
+    })
 
     if (!item) return null
 
@@ -148,6 +176,48 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                                 />
                             )}
 
+                            {/* Edit/Save/Cancel buttons for notes */}
+                            {item.type === 'note' && (
+                                isEditMode ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditMode(false)
+                                                setEditedContent(item.content || '')
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-md transition-all border text-muted-foreground hover:bg-muted border-transparent"
+                                            title="Cancel"
+                                        >
+                                            <Cancel className="h-4 w-4" />
+                                            <span className="text-xs font-semibold hidden md:inline">Cancel</span>
+                                        </button>
+                                        <button
+                                            onClick={() => updateMutation.mutate(editedContent)}
+                                            disabled={updateMutation.isPending}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-md transition-all bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                            title="Save"
+                                        >
+                                            <Check className="h-4 w-4" />
+                                            <span className="text-xs font-semibold hidden md:inline">
+                                                {updateMutation.isPending ? 'Saving...' : 'Save'}
+                                            </span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setIsEditMode(true)
+                                            setEditedContent(item.content || '')
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-2 rounded-md transition-all border text-muted-foreground hover:bg-muted border-transparent"
+                                        title="Edit"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="text-xs font-semibold hidden md:inline">Edit</span>
+                                    </button>
+                                )
+                            )}
+
                             <button
                                 onClick={() => {
                                     if (summary) setShowSummary(!showSummary)
@@ -210,7 +280,15 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                             {item.content && (
                                 <div className="prose dark:prose-invert max-w-none">
                                     {item.type === 'note' ? (
-                                        <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                        isEditMode ? (
+                                            <Editor
+                                                content={editedContent}
+                                                onChange={setEditedContent}
+                                                editable={true}
+                                            />
+                                        ) : (
+                                            <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                        )
                                     ) : (
                                         <p className="whitespace-pre-wrap">{item.content}</p>
                                     )}
