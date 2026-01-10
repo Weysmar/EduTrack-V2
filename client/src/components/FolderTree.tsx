@@ -65,7 +65,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
 
             const idToUpdate = String(courseId);
 
-            console.log(`[FolderTree] Dropping course ${idToUpdate} into folder ${folder.id}`);
+            // Dropping course into folder
             try {
                 const { courseQueries } = await import('@/lib/api/queries')
                 await courseQueries.update(String(idToUpdate), { folderId: folder.id })
