@@ -107,6 +107,7 @@ export function AppLayout() {
                         <button
                             onClick={toggleSidebar}
                             className="p-2 hover:bg-accent rounded-md lg:hidden"
+                            aria-label="Toggle Sidebar"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
@@ -116,6 +117,7 @@ export function AppLayout() {
                     <button
                         onClick={openCommandPalette}
                         className="flex-1 max-w-xl mx-2 lg:mx-4 relative flex items-center group"
+                        aria-label="Search"
                     >
                         <div className="relative w-full flex items-center">
                             <Search className="absolute left-3 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
