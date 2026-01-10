@@ -35,7 +35,7 @@ export function KnowledgeMapModal({ isOpen, onClose }: KnowledgeMapModalProps) {
                         </div>
 
                         {/* Search Bar in Header */}
-                        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+                        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder={t('board.search.placeholder') || "Search..."} />
                     </div>
 
                     <div className="flex items-center gap-2">
