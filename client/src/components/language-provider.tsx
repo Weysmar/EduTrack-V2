@@ -159,6 +159,11 @@ const translations: Translations = {
         "common.folder": "Folder",
         "common.noDesc": "No description",
         "folder.empty": "This folder is empty.",
+        // Board
+        "board.mapTitle": "Cork Board Knowledge Map",
+        "board.orphans": "Orphan Courses",
+        "board.noOrphans": "All courses are assigned to a topic.",
+        "board.caseFile": "Case File",
         // Item Edit
         "item.edit": "Edit Item",
         "item.edit.title": "Edit Item",
@@ -178,10 +183,6 @@ const translations: Translations = {
         "calendar.synced": "Synced",
         // New Additions
         "app.search": "Search...",
-        "board.caseFile": "CASE FILE",
-        "board.note": "NOTE",
-        "board.evidence": "EVIDENCE",
-        "board.exercise": "EXERCISE",
         "nav.board": "Investigation Board",
         "board.mode": "Detective Board",
         "focus.enter": "Focus Mode",
