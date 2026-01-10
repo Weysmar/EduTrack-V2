@@ -62,8 +62,7 @@ export function ItemView() {
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
-    const [isFocusMode, setIsFocusMode] = useState(false)
-    const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+
     const [isPdfFullscreen, setIsPdfFullscreen] = useState(false)
 
     // Inline Edit Mode
