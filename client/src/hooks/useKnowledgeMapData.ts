@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfileStore } from '@/store/profileStore';
 import { HierarchyNode } from '@/types/knowledge-map';
-import { folderQueries, courseQueries } from '@/lib/api/queries';
+import { folderQueries, courseQueries, itemQueries } from '@/lib/api/queries';
 import { useMemo, useCallback } from 'react';
 
 const STORAGE_KEY = 'knowledge-map-layout';

@@ -1,4 +1,4 @@
-import { Filter, Layers, BookOpen, Book } from 'lucide-react';
+import { Filter, Layers, BookOpen, Book, FileText } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 import { cn } from '@/lib/utils';
 import { Panel } from 'reactflow';
@@ -8,9 +8,11 @@ interface FilterPanelProps {
     setShowTopics: (v: boolean) => void;
     showCourses: boolean;
     setShowCourses: (v: boolean) => void;
+    showDocuments: boolean;
+    setShowDocuments: (v: boolean) => void;
 }
 
-export function FilterPanel({ showTopics, setShowTopics, showCourses, setShowCourses }: FilterPanelProps) {
+export function FilterPanel({ showTopics, setShowTopics, showCourses, setShowCourses, showDocuments, setShowDocuments }: FilterPanelProps) {
     const { t } = useLanguage();
 
     return (
@@ -53,6 +55,23 @@ export function FilterPanel({ showTopics, setShowTopics, showCourses, setShowCou
                     />
                     <BookOpen className="h-4 w-4 text-[#8D6E63] group-hover:text-[#5D4037]" />
                     <span className="text-sm text-[#3E2723] select-none">{t('common.courses') || 'Courses'}</span>
+                </label>
+
+                <label className="flex items-center gap-2 px-2 py-1.5 hover:bg-[#D7CCC8]/30 rounded cursor-pointer transition-colors group">
+                    <div className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                        showDocuments ? "bg-[#5D4037] border-[#5D4037]" : "border-[#8D6E63]"
+                    )}>
+                        {showDocuments && <div className="w-1.5 h-1.5 bg-white rounded-[1px]" />}
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={showDocuments}
+                        onChange={(e) => setShowDocuments(e.target.checked)}
+                        className="hidden"
+                    />
+                    <FileText className="h-4 w-4 text-[#8D6E63] group-hover:text-[#5D4037]" />
+                    <span className="text-sm text-[#3E2723] select-none">{t('common.documents') || 'Documents'}</span>
                 </label>
             </div>
         </Panel>

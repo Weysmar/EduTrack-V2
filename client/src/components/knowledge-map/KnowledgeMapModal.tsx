@@ -17,6 +17,7 @@ export function KnowledgeMapModal({ isOpen, onClose }: KnowledgeMapModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [showTopics, setShowTopics] = useState(true);
     const [showCourses, setShowCourses] = useState(true);
+    const [showDocuments, setShowDocuments] = useState(false);
 
     if (!isOpen) return null;
 
@@ -54,8 +55,10 @@ export function KnowledgeMapModal({ isOpen, onClose }: KnowledgeMapModalProps) {
                         searchQuery={searchQuery}
                         showTopics={showTopics}
                         showCourses={showCourses}
+                        showDocuments={showDocuments}
                         onToggleTopics={setShowTopics}
                         onToggleCourses={setShowCourses}
+                        onToggleDocuments={setShowDocuments}
                     />
                 </div>
 
