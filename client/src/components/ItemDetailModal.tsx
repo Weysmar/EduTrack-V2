@@ -10,6 +10,8 @@ import { extractText } from '@/lib/extractText'
 import { SummaryResultModal } from './SummaryResultModal'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { FilePreviewModal } from './FilePreviewModal'
+import { TTSControls } from './TTSControls'
+import { useProfileStore } from '@/store/profileStore'
 
 interface ItemDetailModalProps {
     item: Item | null
@@ -24,6 +26,10 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
     const [extractionError, setExtractionError] = useState<string | null>(null)
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+    const { activeProfile } = useProfileStore()
+
+    // Auto-detect language (simple logic for now fallback to profile lang)
+    const contentLang = activeProfile?.language === 'fr' || !activeProfile ? 'fr-FR' : 'en-US';
 
     // Use Summary Hook
     const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(item?.id || 0, item?.type || 'note')
@@ -133,6 +139,15 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            {/* TTS Controls */}
+                            {item.content && (
+                                <TTSControls
+                                    text={item.content.replace(/<[^>]*>?/gm, '')} // Strip HTML for reading
+                                    lang={contentLang}
+                                    className="mr-2"
+                                />
+                            )}
+
                             <button
                                 onClick={() => {
                                     if (summary) setShowSummary(!showSummary)
