@@ -24,7 +24,14 @@ export function useKnowledgeMapData() {
         enabled: !!activeProfile?.id
     });
 
-    // 3. Load Layouts from LocalStorage
+    // 3. Fetch all Items (Documents)
+    const { data: items = [] } = useQuery({
+        queryKey: ['items', activeProfile?.id],
+        queryFn: itemQueries.getAll,
+        enabled: !!activeProfile?.id
+    });
+
+    // 4. Load Layouts from LocalStorage
     const savedLayoutSnapshot = useMemo(() => {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
@@ -35,7 +42,7 @@ export function useKnowledgeMapData() {
         }
     }, [activeProfile?.id]);
 
-    // 4. Build Hierarchy Tree
+    // 5. Build Hierarchy Tree
     const { nodes, orphanCourses } = useMemo(() => {
         if (!folders.length && !courses.length) return { nodes: [], orphanCourses: [] };
 
@@ -63,18 +70,35 @@ export function useKnowledgeMapData() {
             const parentId = course.folderId ? String(course.folderId) : null;
             const courseIdStr = String(course.id);
 
-            if (parentId && nodeMap.has(parentId)) {
-                const courseNode: HierarchyNode = {
-                    id: courseIdStr,
-                    title: course.title,
-                    type: 'course',
-                    parentId: parentId,
+            const courseNode: HierarchyNode = {
+                id: courseIdStr,
+                title: course.title,
+                type: 'course',
+                parentId: parentId || null,
+                depth: 0,
+                children: [],
+                childrenCount: 0,
+                resourceCount: 0
+            };
+
+            // Link Items to Course
+            const courseItems = items.filter((item: any) => String(item.courseId) === courseIdStr);
+            courseItems.forEach((item: any) => {
+                courseNode.children.push({
+                    id: String(item.id),
+                    title: item.title,
+                    type: 'item',
+                    parentId: courseIdStr,
                     depth: 0,
                     children: [],
                     childrenCount: 0,
-                    resourceCount: 0
-                };
+                    resourceCount: 0,
+                    data: { fileType: item.type } // Store type for icon
+                });
+                courseNode.resourceCount++;
+            });
 
+            if (parentId && nodeMap.has(parentId)) {
                 const parent = nodeMap.get(parentId);
                 if (parent) {
                     parent.children.push(courseNode);
@@ -118,7 +142,7 @@ export function useKnowledgeMapData() {
         hierarchy.forEach(root => traverse(root, 0));
 
         return { nodes: hierarchy, orphanCourses: orphans };
-    }, [folders, courses, savedLayoutSnapshot, activeProfile?.id]);
+    }, [folders, courses, items, savedLayoutSnapshot, activeProfile?.id]);
 
     // Save Position callback
     const savePosition = useCallback((nodeId: string, x: number, y: number) => {

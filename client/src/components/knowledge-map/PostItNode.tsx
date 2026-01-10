@@ -19,6 +19,8 @@ const CourseColor = 'bg-yellow-200 border-yellow-400 text-black';
 
 export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     const isTopic = data.type === 'topic';
+    const isCourse = data.type === 'course';
+    const isItem = data.type === 'item';
     const { assignCourseToFolder } = useKnowledgeMapData();
     const { t } = useLanguage();
     const [isDragOver, setIsDragOver] = useState(false);
@@ -66,16 +68,26 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
             className={cn(
                 "relative shadow-md rounded-sm p-4 w-[160px] min-h-[100px] flex flex-col transition-all duration-200",
                 colorClass,
-                "border-t-2 border-l-2 border-r-2 border-b-4", // Thick bottom border for depth
+                isItem ? "border shadow-sm hover:shadow-md" : "border-t-2 border-l-2 border-r-2 border-b-4", // Preserve paper look for items, thick border for topics
                 "font-sans",
                 isDragOver ? "scale-110 shadow-2xl ring-4 ring-green-400 z-50 brightness-110" : "hover:scale-105 hover:shadow-xl",
                 data.isHighlighted === false ? "opacity-30" : "opacity-100"
             )}
             style={{
                 // Add slight random rotation for organic feel provided by parent or random here if fixed
-                transform: `rotate(${Math.random() * 2 - 1}deg)`
+                transform: `rotate(${isItem ? 0 : Math.random() * 2 - 1}deg)`,
+                transformOrigin: 'top center'
             }}
         >
+            {/* Push Pin Visualization */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 filter drop-shadow-md">
+                <div className={cn(
+                    "w-4 h-4 rounded-full border border-black/20",
+                    isTopic ? "bg-red-600" : isItem ? "bg-blue-600" : "bg-yellow-500", // Different pin colors
+                    "shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.4)]" // Sphere effect
+                )} />
+                <div className="w-0.5 h-2 bg-black/20 mx-auto -mt-1" /> {/* Pin needle hint */}
+            </div>
             {/* Handles for connections */}
             <Handle type="target" position={Position.Top} className="opacity-0" />
 
