@@ -173,12 +173,29 @@ export function useKnowledgeMapData() {
         }
     });
 
+    // 6. Upload File Mutation (for DnD)
+    const { mutateAsync: uploadFile } = useMutation({
+        mutationFn: async ({ file, courseId }: { file: File, courseId: string }) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('courseId', courseId);
+            formData.append('title', file.name); // Default title
+            formData.append('type', 'document'); // Generic type, backend might refine
+
+            await itemQueries.create(formData);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['items'] });
+        }
+    });
+
     return {
         rootNodes: nodes,
         orphanCourses,
         allFolders: folders,
         savePosition,
         assignCourseToFolder,
+        uploadFile,
         isLoading: false
     };
 }
