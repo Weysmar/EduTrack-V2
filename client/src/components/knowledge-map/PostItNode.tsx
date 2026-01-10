@@ -21,9 +21,10 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     const isTopic = data.type === 'topic';
     const isCourse = data.type === 'course';
     const isItem = data.type === 'item';
-    const { assignCourseToFolder } = useKnowledgeMapData();
+    const { assignCourseToFolder, uploadFile } = useKnowledgeMapData();
     const { t } = useLanguage();
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
     // Determine Color based on Depth or Type
     let colorClass = DepthColors.default;
@@ -34,9 +35,9 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     }
 
     const handleDragOver = (e: React.DragEvent) => {
-        if (!isTopic) return;
+        if (!isTopic && !isCourse) return; // Allow on courses (for files) and topics (for courses)
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        e.dataTransfer.dropEffect = 'copy'; // 'copy' for files usually
         setIsDragOver(true);
     };
 
@@ -45,20 +46,39 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     };
 
     const handleDrop = async (e: React.DragEvent) => {
-        if (!isTopic) return;
         e.preventDefault();
         setIsDragOver(false);
 
-        const courseId = e.dataTransfer.getData('application/reactflow/courseId');
-        if (courseId) {
-            try {
-                await assignCourseToFolder({ courseId, folderId: data.id });
-                // Optional: Show toast success
-            } catch (err) {
-                console.error("Failed to assign course", err);
+        // 1. Handle File Upload (Drag file onto Course)
+        if (isCourse && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            for (const file of files) {
+                try {
+                    await uploadFile({ file, courseId: data.id });
+                    // Optional: toast success
+                } catch (err) {
+                    console.error("Failed to upload file", err);
+                }
+            }
+            return;
+        }
+
+        // 2. Handle Organize (Drag Course onto Folder)
+        if (isTopic) {
+            const courseId = e.dataTransfer.getData('application/reactflow/courseId');
+            if (courseId) {
+                try {
+                    await assignCourseToFolder({ courseId, folderId: data.id });
+                } catch (err) {
+                    console.error("Failed to assign course", err);
+                }
             }
         }
     };
+
+    // Preview Timer to prevent flickering
+    const handleMouseEnter = () => setShowPreview(true);
+    const handleMouseLeave = () => setShowPreview(false);
 
     return (
         <div
@@ -77,6 +97,8 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
                 transform: `rotate(${isItem ? 0 : Math.random() * 2 - 1}deg)`,
                 transformOrigin: 'top center'
             }}
+            onMouseEnter={handleMouseEnter} // Hover handlers
+            onMouseLeave={handleMouseLeave}
         >
             {/* Push Pin Visualization */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 filter drop-shadow-md">
@@ -93,7 +115,7 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
             <div className="flex-1 flex flex-col justify-center items-center text-center">
                 {/* Icon */}
                 <div className="text-xl mb-1">
-                    {isTopic ? '📚' : '📖'}
+                    {isTopic ? '📚' : isItem ? (data.data?.fileType === 'pdf' ? '📕' : '�') : '�📖'}
                 </div>
 
                 {/* Title */}
@@ -107,12 +129,37 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
                         {data.childrenCount} children
                     </div>
                 )}
+                {/* Quick Info for items */}
+                {isItem && (
+                    <div className="mt-1 text-[9px] opacity-60 uppercase tracking-wider">
+                        Document
+                    </div>
+                )}
 
                 {isDragOver && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-sm backdrop-blur-[1px]">
                         <span className="font-bold text-white text-xs uppercase tracking-widest border-2 border-white px-2 py-1 rounded">
-                            {t('action.assign') || 'Assign'}
+                            {isCourse ? (t('action.upload') || 'Upload') : (t('action.assign') || 'Assign')}
                         </span>
+                    </div>
+                )}
+
+                {/* PREVIEW TOOLTIP */}
+                {showPreview && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white/95 backdrop-blur-sm rounded-md shadow-xl border border-stone-200 p-2 z-[100] text-left animate-in fade-in slide-in-from-top-2 duration-200 pointer-events-none data-[side=bottom]:slide-in-from-top-2">
+                        <div className="text-xs font-bold text-stone-800 mb-1 border-b border-stone-100 pb-1 truncate">{data.title}</div>
+                        <div className="space-y-1">
+                            {isCourse && <div className="text-[10px] text-stone-500">📥 Drop files to upload</div>}
+                            {isTopic && <div className="text-[10px] text-stone-500">📂 Contains {data.childrenCount} items</div>}
+                            {isItem && (
+                                <>
+                                    <div className="text-[10px] text-stone-600"><span className="font-semibold">Type:</span> {data.data?.fileType || 'Doc'}</div>
+                                    <div className="text-[10px] text-blue-600 italic">Double-click to open</div>
+                                </>
+                            )}
+                        </div>
+                        {/* Decorative Arrow */}
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-t border-l border-stone-200" />
                     </div>
                 )}
             </div>
