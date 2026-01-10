@@ -61,10 +61,10 @@ export function Sidebar() {
             {/* Sidebar Toggle - Floating Bubble Style */}
             <button
                 onClick={toggleCollapse}
-                className="absolute -right-3 top-6 z-50 h-6 w-6 rounded-full border bg-background hover:bg-accent flex items-center justify-center shadow-md transition-colors hidden lg:flex"
+                className="absolute -right-4 top-6 z-50 h-8 w-8 rounded-full border-2 border-primary/30 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 hover:scale-110 flex items-center justify-center shadow-lg transition-all hidden lg:flex group-hover:border-primary/50"
                 title={isCollapsed ? t('action.expand') : t('action.close')}
             >
-                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+                {isCollapsed ? <ChevronRight className="h-4 w-4 text-primary" /> : <ChevronLeft className="h-4 w-4 text-primary" />}
             </button>
 
             {/* App Header */}
