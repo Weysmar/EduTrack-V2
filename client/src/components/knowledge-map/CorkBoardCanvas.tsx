@@ -176,6 +176,8 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
                 setShowTopics={onToggleTopics}
                 showCourses={showCourses}
                 setShowCourses={onToggleCourses}
+                showDocuments={showDocuments}
+                setShowDocuments={onToggleDocuments}
             />
             <MiniMap
                 nodeColor={(n) => {
