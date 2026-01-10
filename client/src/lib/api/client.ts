@@ -20,19 +20,26 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Interceptor for centralized error handling
+let isSessionExpired = false;
+
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Suppress duplicate logs if session is already known to be expired
+        if (isSessionExpired && (error.response?.status === 401 || error.response?.status === 403)) {
+            return Promise.reject(error);
+        }
+
         console.error(`[API Client] Error ${error.response?.status} on ${error.config?.url}:`, error.response?.data || error.message);
 
         if (error.response?.status === 401 || error.response?.status === 403) {
-            console.warn('[API Client] Unauthorized/Forbidden. Clearing session and redirecting to login...');
+            isSessionExpired = true;
+            console.warn('[API Client] Unauthorized. Redirecting to login...');
 
             // Clean up
             localStorage.removeItem('jwt_token');
 
-            // If we're not already on the auth page, force a reload to auth
-            // This ensures all stores (authStore, profileStore) are reset
+            // Force reload if not already on auth page
             if (!window.location.pathname.startsWith('/auth')) {
                 window.location.href = '/auth';
             }
