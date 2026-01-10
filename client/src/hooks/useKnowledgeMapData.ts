@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfileStore } from '@/store/profileStore';
 import { HierarchyNode } from '@/types/knowledge-map';
 import { folderQueries, courseQueries } from '@/lib/api/queries';
@@ -8,6 +8,7 @@ const STORAGE_KEY = 'knowledge-map-layout';
 
 export function useKnowledgeMapData() {
     const activeProfile = useProfileStore(state => state.activeProfile);
+    const queryClient = useQueryClient();
 
     // 1. Fetch all Folders (Topics)
     const { data: folders = [] } = useQuery({
@@ -137,11 +138,23 @@ export function useKnowledgeMapData() {
         }
     }, [activeProfile?.id]);
 
+    // 5. Assign Course to Folder Mutation
+    const { mutateAsync: assignCourseToFolder } = useMutation({
+        mutationFn: async ({ courseId, folderId }: { courseId: string, folderId: string }) => {
+            await courseQueries.update(courseId, { folderId });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['courses'] });
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+        }
+    });
+
     return {
         rootNodes: nodes,
         orphanCourses,
         allFolders: folders,
         savePosition,
+        assignCourseToFolder,
         isLoading: false
     };
 }
