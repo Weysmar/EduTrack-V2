@@ -61,8 +61,9 @@ export function AuthPage() {
                     <div className="space-y-4 rounded-md shadow-sm">
                         {!isLogin && (
                             <div>
-                                <label className="block text-sm font-medium text-foreground">{t('auth.name')}</label>
+                                <label htmlFor="auth-name" className="block text-sm font-medium text-foreground">{t('auth.name')}</label>
                                 <input
+                                    id="auth-name"
                                     type="text"
                                     required
                                     className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"
@@ -72,8 +73,9 @@ export function AuthPage() {
                             </div>
                         )}
                         <div>
-                            <label className="block text-sm font-medium text-foreground">{t('auth.email')}</label>
+                            <label htmlFor="auth-email" className="block text-sm font-medium text-foreground">{t('auth.email')}</label>
                             <input
+                                id="auth-email"
                                 type="email"
                                 required
                                 className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"
@@ -83,8 +85,9 @@ export function AuthPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-foreground">{t('auth.password')}</label>
+                            <label htmlFor="auth-password" className="block text-sm font-medium text-foreground">{t('auth.password')}</label>
                             <input
+                                id="auth-password"
                                 type="password"
                                 required
                                 className="mt-1 block w-full rounded-md border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"

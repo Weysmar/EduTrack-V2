@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import compression from 'compression';
 import { Server } from 'socket.io';
 import routes from './routes';
 import { socketService } from './services/socketService';
@@ -40,6 +41,7 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(compression());
 
 // Routes
 app.use('/api', routes);
