@@ -69,7 +69,7 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
                 "border-t-2 border-l-2 border-r-2 border-b-4", // Thick bottom border for depth
                 "font-sans",
                 isDragOver ? "scale-110 shadow-2xl ring-4 ring-green-400 z-50 brightness-110" : "hover:scale-105 hover:shadow-xl",
-                data.isHighlighted === false ? "opacity-30 blur-[1px]" : "opacity-100"
+                data.isHighlighted === false ? "opacity-30" : "opacity-100"
             )}
             style={{
                 // Add slight random rotation for organic feel provided by parent or random here if fixed

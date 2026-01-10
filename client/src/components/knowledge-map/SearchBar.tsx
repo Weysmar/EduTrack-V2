@@ -4,9 +4,10 @@ import { useLanguage } from '@/components/language-provider';
 interface SearchBarProps {
     value: string;
     onChange: (value: string) => void;
+    placeholder?: string;
 }
 
-export function SearchBar({ value, onChange }: SearchBarProps) {
+export function SearchBar({ value, onChange, placeholder }: SearchBarProps) {
     const { t } = useLanguage();
 
     return (
@@ -18,7 +19,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                placeholder={t('app.search') || 'Search...'}
+                placeholder={placeholder || t('app.search') || 'Search...'}
                 className="w-64 pl-10 pr-10 py-2 bg-[#EFEBE9] border-2 border-[#8D6E63] rounded-full text-[#3E2723] placeholder-[#A1887F] focus:outline-none focus:border-[#5D4037] focus:ring-2 focus:ring-[#8D6E63]/20 shadow-inner transition-all"
             />
             {value && (
