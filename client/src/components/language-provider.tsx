@@ -304,6 +304,12 @@ const translations: Translations = {
         "tts.error": "Failed to read text",
         "tts.reading": "Reading...",
 
+        // STT
+        "stt.start": "Start Dictation",
+        "stt.stop": "Stop Dictation",
+        "stt.listening": "Listening...",
+        "stt.unsupported": "Speech-to-Text not supported",
+
         "changelog.v051.title": "Mobility & Stability 📱⚡",
         "changelog.v051.mobile": "Mobile Optimization: Reworked Course View for smartphones with compact cards, an intelligent header, and optimized file previews.",
         "changelog.v051.folders": "Fluid Navigation: Folders are now open by default and breadcrumbs are improved for better hierarchy awareness.",
@@ -695,6 +701,12 @@ const translations: Translations = {
         "tts.error": "Échec de la lecture",
         "tts.reading": "Lecture en cours...",
 
+        // STT (FR)
+        "stt.start": "Démarrer la dictée",
+        "stt.stop": "Arrêter la dictée",
+        "stt.listening": "J'écoute...",
+        "stt.unsupported": "Reconnaissance vocale non supportée",
+
         "changelog.v051.title": "Mobilité & Stabilité 📱⚡",
         "changelog.v051.mobile": "Optimisation Mobile : Refonte de la vue cours, aperçus de fichiers plus fluides et en-tête intelligent pour smartphones.",
         "changelog.v051.folders": "Navigation : Dossiers ouverts par défaut et amélioration de la visibilité de la hiérarchie.",
@@ -1050,6 +1062,12 @@ const translations: Translations = {
         "tts.unsupported": "Voice Crystal not found in inventory",
         "tts.error": "Crystal malfunction",
         "tts.reading": "Crystal speaking...",
+
+        // STT (MC)
+        "stt.start": "Cast Whisper Spell",
+        "stt.stop": "Silence Spell",
+        "stt.listening": "Spirits are listening...",
+        "stt.unsupported": "No magic detected",
 
         // Item Edit
         "item.edit": "Enchant Item",
