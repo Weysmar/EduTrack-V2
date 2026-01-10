@@ -1,0 +1,57 @@
+import { X } from 'lucide-react';
+import { CorkBoardCanvas } from './CorkBoardCanvas';
+import { useLanguage } from '@/components/language-provider';
+
+interface KnowledgeMapModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export function KnowledgeMapModal({ isOpen, onClose }: KnowledgeMapModalProps) {
+    const { t } = useLanguage();
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-[95vw] h-[90vh] bg-background rounded-lg shadow-2xl relative flex flex-col overflow-hidden border-4 border-[#8B5E3C]">
+                {/* Header */}
+                <div className="h-14 bg-[#5D4037] text-[#EFEBE9] px-4 flex items-center justify-between shadow-md z-10">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">📌</span>
+                        <h2 className="text-lg font-bold font-serif tracking-wide">
+                            {t('board.mapTitle') || 'Cork Board Knowledge Map'}
+                        </h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-[#8D6E63] rounded-full transition-colors text-white"
+                            aria-label="Close Map"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Canvas Area */}
+                <div className="flex-1 relative cursor-grab active:cursor-grabbing">
+                    <CorkBoardCanvas />
+                </div>
+
+                {/* Footer (Orphans) */}
+                <div className="h-32 bg-[#3E2723] border-t-4 border-[#2D1B17] text-[#D7CCC8] relative flex flex-col">
+                    <div className="absolute -top-3 left-4 bg-[#5D4037] px-3 py-1 text-xs font-bold rounded-t-md shadow-sm border-t border-l border-r border-[#795548]">
+                        📭 {t('board.orphans') || 'Orphan Courses'}
+                    </div>
+                    <div className="flex-1 p-4 flex items-center gap-4 overflow-x-auto">
+                        <div className="text-sm opacity-50 italic">
+                            {t('board.noOrphans') || 'All courses are assigned to a topic.'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

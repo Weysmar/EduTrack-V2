@@ -18,12 +18,27 @@ import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
 import { useFocusStore } from '@/store/focusStore'
 
+import { KnowledgeMapModal } from '@/components/knowledge-map/KnowledgeMapModal'
+
 export function AppLayout() {
     // Initialize Socket Connection
     useSocket()
 
     const { user, isAuthenticated } = useAuthStore()
     const { activeProfile, switchProfile } = useProfileStore()
+    const [isMapOpen, setIsMapOpen] = useState(false)
+
+    // Keyboard shortcut to open map
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.code === 'KeyM') {
+                e.preventDefault()
+                setIsMapOpen(prev => !prev)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [])
 
     useEffect(() => {
         if (isAuthenticated && user?.id && !activeProfile) {
@@ -79,6 +94,7 @@ export function AppLayout() {
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background relative">
             <CommandPalette />
+            <KnowledgeMapModal isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
@@ -137,13 +153,13 @@ export function AppLayout() {
                             <GoogleConnectButton />
                         </div>
 
-                        <Link
-                            to="/board"
+                        <button
+                            onClick={() => setIsMapOpen(true)}
                             className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Tableau d'Enquête"
+                            title="Tableau d'Enquête (Ctrl+Shift+M)"
                         >
                             <MapIcon className="h-5 w-5" />
-                        </Link>
+                        </button>
 
                         <LanguageToggle />
                         <ModeToggle />
