@@ -1,10 +1,18 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Bold, Italic, List, ListOrdered, Mic, MicOff } from 'lucide-react'
+import Underline from '@tiptap/extension-underline'
+import TextStyle from '@tiptap/extension-text-style'
+import Color from '@tiptap/extension-color'
+import Highlight from '@tiptap/extension-highlight'
+import {
+    Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
+    Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
+import { useState } from 'react'
 
 interface EditorProps {
     content: string
@@ -15,6 +23,8 @@ interface EditorProps {
 export function Editor({ content, onChange, editable = true }: EditorProps) {
     const { language, t } = useLanguage()
     const isMinecraft = language === 'mc'
+    const [showColorPicker, setShowColorPicker] = useState(false)
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false)
 
     // Determine dictation language based on app language
     const dictationLang = language === 'fr' ? 'fr-FR' : 'en-US';
@@ -36,10 +46,20 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
 
     const editor = useEditor({
         extensions: [
-            StarterKit,
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2, 3]
+                }
+            }),
             Placeholder.configure({
                 placeholder: 'Write your notes here...',
             }),
+            Underline,
+            TextStyle,
+            Color,
+            Highlight.configure({
+                multicolor: true
+            })
         ],
         content,
         editable,
@@ -51,7 +71,9 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                 class: cn(
                     'prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px] px-3 py-2',
                     // Default styling adjustments
-                    '[&_h1]:text-2xl [&_h2]:text-xl',
+                    '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg',
+                    '[&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold',
+                    '[&_h1]:mt-4 [&_h2]:mt-3 [&_h3]:mt-2',
                     // Minecraft "Voxel Texture Pack" Styles
                     isMinecraft && [
                         "font-['Minecraftia'] text-lg", // Pixel font, slightly larger to be readable
@@ -69,6 +91,9 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
 
     if (!editor) return null
 
+    const textColors = ['#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
+    const highlightColors = ['#FEF3C7', '#FEE2E2', '#DBEAFE', '#D1FAE5', '#E9D5FF', '#FCE7F3']
+
     return (
         <div className={cn(
             "border rounded-md overflow-hidden bg-background",
@@ -76,9 +101,50 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
         )}>
             {editable && (
                 <div className={cn(
-                    "border-b bg-muted/40 p-1 flex gap-1",
+                    "border-b bg-muted/40 p-1 flex flex-wrap gap-1",
                     isMinecraft && "bg-stone-800 border-stone-600"
                 )}>
+                    {/* Headings */}
+                    <button
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('heading', { level: 1 }) && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Heading 1"
+                    >
+                        <Heading1 className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('heading', { level: 2 }) && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Heading 2"
+                    >
+                        <Heading2 className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('heading', { level: 3 }) && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Heading 3"
+                    >
+                        <Heading3 className="h-4 w-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+
+                    {/* Text Styling */}
                     <button
                         onClick={() => editor.chain().focus().toggleBold().run()}
                         className={cn(
@@ -87,6 +153,7 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                             isMinecraft && "rounded-none hover:bg-stone-700"
                         )}
                         type="button"
+                        title="Bold"
                     >
                         <Bold className="h-4 w-4" />
                     </button>
@@ -98,10 +165,101 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                             isMinecraft && "rounded-none hover:bg-stone-700"
                         )}
                         type="button"
+                        title="Italic"
                     >
                         <Italic className="h-4 w-4" />
                     </button>
+                    <button
+                        onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('underline') && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Underline"
+                    >
+                        <UnderlineIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => editor.chain().focus().toggleStrike().run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('strike') && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Strikethrough"
+                    >
+                        <Strikethrough className="h-4 w-4" />
+                    </button>
+
                     <div className="w-px h-6 bg-border mx-1 my-auto" />
+
+                    {/* Color & Highlight */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowColorPicker(!showColorPicker)}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors relative",
+                                isMinecraft && "rounded-none hover:bg-stone-700"
+                            )}
+                            type="button"
+                            title="Text Color"
+                        >
+                            <Palette className="h-4 w-4" />
+                        </button>
+                        {showColorPicker && (
+                            <div className="absolute top-full left-0 mt-1 bg-popover border shadow-md rounded-md p-2 flex gap-1 z-10">
+                                {textColors.map(color => (
+                                    <button
+                                        key={color}
+                                        onClick={() => {
+                                            editor.chain().focus().setColor(color).run()
+                                            setShowColorPicker(false)
+                                        }}
+                                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                        type="button"
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowHighlightPicker(!showHighlightPicker)}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors",
+                                editor.isActive('highlight') && "bg-muted text-foreground",
+                                isMinecraft && "rounded-none hover:bg-stone-700"
+                            )}
+                            type="button"
+                            title="Highlight"
+                        >
+                            <Highlighter className="h-4 w-4" />
+                        </button>
+                        {showHighlightPicker && (
+                            <div className="absolute top-full left-0 mt-1 bg-popover border shadow-md rounded-md p-2 flex gap-1 z-10">
+                                {highlightColors.map(color => (
+                                    <button
+                                        key={color}
+                                        onClick={() => {
+                                            editor.chain().focus().setHighlight({ color }).run()
+                                            setShowHighlightPicker(false)
+                                        }}
+                                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                        type="button"
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+
+                    {/* Lists */}
                     <button
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
                         className={cn(
@@ -110,6 +268,7 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                             isMinecraft && "rounded-none hover:bg-stone-700"
                         )}
                         type="button"
+                        title="Bullet List"
                     >
                         <List className="h-4 w-4" />
                     </button>
@@ -121,8 +280,48 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
                             isMinecraft && "rounded-none hover:bg-stone-700"
                         )}
                         type="button"
+                        title="Ordered List"
                     >
                         <ListOrdered className="h-4 w-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+
+                    {/* Quote, Code, Separator */}
+                    <button
+                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('blockquote') && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Quote"
+                    >
+                        <Quote className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => editor.chain().focus().toggleCode().run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            editor.isActive('code') && "bg-muted text-foreground",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Inline Code"
+                    >
+                        <Code className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            isMinecraft && "rounded-none hover:bg-stone-700"
+                        )}
+                        type="button"
+                        title="Horizontal Line"
+                    >
+                        <Minus className="h-4 w-4" />
                     </button>
 
                     {/* Speech to Text Button */}
