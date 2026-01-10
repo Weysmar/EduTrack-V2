@@ -2,25 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2026-01-10
+## [0.5.8] - 2026-01-11
 
 ### Added
-- **Focus Page**: A dedicated, distraction-free page for study sessions (`/focus`), featuring a large timer, mode toggles (Work/Short Break/Long Break), and fullscreen support.
-- **Library Page**: A dedicated page (`/library`) to list all courses with search functionality, replacing the "See all" link destination.
-- **Compact Focus Timer**: A new, smaller timer widget integrated into the App Header for persistent visibility without taking up sidebar space.
-- **Login Branding**: Added EduTrack logo and "EduTrack" text to the login/registration page header.
+- **Text-to-Speech**: Logic to read notes aloud with speed control and language detection.
+- **Speech-to-Text**: Dictation feature in the editor to write by voice.
+- **Library Page**: A dedicated page (`/library`) to list all courses with search functionality.
+- **Compact Focus Timer**: A new, smaller timer widget integrated into the App Header.
+- **Focus Page**: A dedicated page (`/focus`) for immersive study sessions.
 
 ### Changed
-- **Dashboard Layout**:
-    - Replaced existing layout with a simplified structure.
-    - Moved `CalendarWidget` to a full-width container immediately below the Hero section for better readability.
-    - Reduced top padding of the dashboard to align visually with the sidebar.
-    - Updated "See all" link in "Recent Courses" to point to the new Library page.
-- **Focus Widget**: Removed the large Focus Widget from the Sidebar in favor of the new Header Compact Timer.
+- **Dashboard Layout**: Optimized layout with full-width calendar and better spacing.
+- **Sidebar**: Reverted toggle button to original design but kept the collapsible logic.
+- **Login**: Added branding elements.
 
 ### Fixed
-- **Navigation**: Fixed broken/empty "See all" link in Dashboard.
-- **UI Spacing**: Adjusted dashboard margins for a cleaner look.
+- **Navigation**: Fixed broken "See all" links.
+- **Deployment**: Fixed syntax error in `GoogleConnectButton`.
 
 ## [Previous]
 - **Homepage**: Implemented Bento Grid layout, Hero section with greetings and streaks, and Quick Actions dock.
