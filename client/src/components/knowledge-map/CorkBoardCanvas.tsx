@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import ReactFlow, {
     Background,
     MiniMap,
@@ -40,6 +40,10 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const { fitView } = useReactFlow();
+
+    // Zen Mode State
+    const [isZenMode, setIsZenMode] = useState(false);
+    const toggleZen = useCallback(() => setIsZenMode(prev => !prev), []);
 
     // Transform Hierarchy into React Flow Elements (Basic Radial Layout)
     useEffect(() => {
@@ -170,7 +174,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
             defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         >
             <Background color="#3f2e22" gap={40} size={1} style={{ opacity: 0.05 }} />
-            <ControlBar />
+            <ControlBar isZenMode={isZenMode} onToggleZen={toggleZen} />
             <FilterPanel
                 showTopics={showTopics}
                 setShowTopics={onToggleTopics}

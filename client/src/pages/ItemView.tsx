@@ -230,7 +230,7 @@ export function ItemView() {
         if (item.type === 'resource' && !effectiveContent && pdfUrl) {
             setIsExtracting(true)
             try {
-                console.log("Auto-extracting content for exercise generation...");
+                // Auto-extracting content for exercise generation
                 const res = await fetch(pdfUrl);
                 if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 

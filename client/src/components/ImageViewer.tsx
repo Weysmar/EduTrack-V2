@@ -107,7 +107,16 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto flex items-center justify-center bg-[url('/checkerboard.png')] p-4">
+            <div
+                className="flex-1 overflow-auto flex items-center justify-center p-4"
+                style={{
+                    backgroundImage: `
+                        conic-gradient(#E5E7EB 90deg, #F3F4F6 90deg 180deg, #E5E7EB 180deg 270deg, #F3F4F6 270deg)
+                    `,
+                    backgroundSize: '20px 20px',
+                    backgroundPosition: '0 0, 10px 10px'
+                }}
+            >
                 <img
                     src={displayUrl}
                     alt={alt}

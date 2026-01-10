@@ -78,14 +78,14 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
             // Compress image if it is an image
             if (file.type.startsWith('image/')) {
                 try {
-                    console.log(`Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+                    // Original size logged for compression tracking
                     const options = {
                         maxSizeMB: 1,
                         maxWidthOrHeight: 1920,
                         useWebWorker: true
                     }
                     const compressedFile = await imageCompression(file, options);
-                    console.log(`Compressed size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+                    // Compressed size logged for compression tracking
                     fileToUpload = compressedFile;
                 } catch (error) {
                     console.error("Image compression failed, using original file", error);

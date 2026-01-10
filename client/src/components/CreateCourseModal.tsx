@@ -76,13 +76,13 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
 
     const handleClose = (e?: React.MouseEvent) => {
         e?.stopPropagation();
-        console.log('❌ [CreateCourseModal] Close clicked!');
+        // Modal close triggered
         onClose();
     }
 
     if (!isOpen) return null
 
-    console.log('🔍 [CreateCourseModal] Rendered with z-[9999]');
+    // Modal rendered
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={handleClose}>

@@ -48,7 +48,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
             // Decode URL if strictly needed, but fetchICalFeed handles it via proxy
             const events = await fetchICalFeed(icalUrl)
 
-            console.log("Searching for:", `Examen ${course.title}`)
+            // Searching for exam event in calendar
 
             const examEvent = events.find(e =>
                 e.summary.toLowerCase().includes(`examen ${course.title.toLowerCase()}`) ||
