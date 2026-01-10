@@ -1,4 +1,4 @@
-export type NodeType = 'topic' | 'course';
+export type NodeType = 'topic' | 'course' | 'item';
 
 export interface HierarchyNode {
     id: string;

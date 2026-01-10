@@ -29,11 +29,13 @@ interface MapContentProps {
     searchQuery: string;
     showTopics: boolean;
     showCourses: boolean;
+    showDocuments: boolean;
     onToggleTopics: (v: boolean) => void;
     onToggleCourses: (v: boolean) => void;
+    onToggleDocuments: (v: boolean) => void;
 }
 
-function MapContent({ searchQuery, showTopics, showCourses, onToggleTopics, onToggleCourses }: MapContentProps) {
+function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onToggleTopics, onToggleCourses, onToggleDocuments }: MapContentProps) {
     const { rootNodes, savePosition, isLoading } = useKnowledgeMapData();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -54,10 +56,12 @@ function MapContent({ searchQuery, showTopics, showCourses, onToggleTopics, onTo
             // Filter Logic
             const isTopic = node.type === 'topic';
             const isCourse = node.type === 'course';
+            const isItem = node.type === 'item';
 
             let isVisible = true;
             if (isTopic && !showTopics) isVisible = false;
             if (isCourse && !showCourses) isVisible = false;
+            if (isItem && !showDocuments) isVisible = false;
 
             // Search Logic
             let isMatch = true;
@@ -97,9 +101,13 @@ function MapContent({ searchQuery, showTopics, showCourses, onToggleTopics, onTo
 
                     // Edge visibility check
                     const childIsTopic = child.type === 'topic';
+                    const childIsCourse = child.type === 'course';
+                    const childIsItem = child.type === 'item';
+
                     let childVisible = true;
                     if (childIsTopic && !showTopics) childVisible = false;
-                    if (!childIsTopic && !showCourses) childVisible = false;
+                    if (childIsCourse && !showCourses) childVisible = false;
+                    if (childIsItem && !showDocuments) childVisible = false;
 
                     if (isVisible && childVisible) {
                         newEdges.push({
@@ -126,6 +134,12 @@ function MapContent({ searchQuery, showTopics, showCourses, onToggleTopics, onTo
 
         setNodes(newNodes);
         setEdges(newEdges);
+
+        // Initial centering
+        // We use a small timeout to let the nodes render in React Flow before fitting
+        setTimeout(() => {
+            fitView({ padding: 0.2, duration: 800 });
+        }, 100);
 
     }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, searchQuery]);
 
