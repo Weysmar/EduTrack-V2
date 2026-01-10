@@ -73,7 +73,7 @@ export function FocusPage() {
                 className="absolute top-4 left-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
                 <ChevronLeft className="w-5 h-5" />
-                {t('common.back') || "Retour"}
+                {t('common.back') === 'common.back' ? "Retour" : t('common.back')}
             </button>
 
             {/* Fullscreen Toggle */}

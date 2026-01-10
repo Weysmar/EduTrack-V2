@@ -17,9 +17,9 @@ export function GoogleConnectButton() {
 
     if (isConnected) {
         return (
-            <button disabled className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-500 border border-green-500/20 rounded-full cursor-default text-xs font-medium">
+            <button disabled className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-600 dark:text-green-500 border border-green-500 rounded-full cursor-default text-sm font-medium transition-colors">
                 <Check className="h-3.5 w-3.5" />
-                Connected
+                Connecté
             </button>
         )
     }
@@ -28,10 +28,10 @@ export function GoogleConnectButton() {
         <button
             onClick={handleConnect}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-2 bg-white border shadow-sm hover:shadow hover:bg-gray-50 rounded-lg transition-all text-sm text-gray-700 font-medium"
+            className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-transparent shadow-sm hover:shadow hover:bg-muted/80 rounded-full transition-all text-sm text-muted-foreground hover:text-foreground font-medium"
         >
-            <Calendar className="h-5 w-5 text-blue-500" />
-            {isLoading ? 'Connecting...' : 'Connect Google Calendar'}
+            <Calendar className="h-4 w-4" />
+            {isLoading ? 'Connexion...' : 'Connecter Agenda'}
         </button>
     )
 }
