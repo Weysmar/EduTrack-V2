@@ -141,7 +141,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
             fitView({ padding: 0.2, duration: 800 });
         }, 100);
 
-    }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, searchQuery]);
+    }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, showDocuments, searchQuery]);
 
     const onNodeDragStop = useCallback((event: any, node: Node) => {
         savePosition(node.id, node.position.x, node.position.y);

@@ -70,8 +70,7 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
                 colorClass,
                 isItem ? "border shadow-sm hover:shadow-md" : "border-t-2 border-l-2 border-r-2 border-b-4", // Preserve paper look for items, thick border for topics
                 "font-sans",
-                isDragOver ? "scale-110 shadow-2xl ring-4 ring-green-400 z-50 brightness-110" : "hover:scale-105 hover:shadow-xl",
-                data.isHighlighted === false ? "opacity-30" : "opacity-100"
+                isDragOver ? "scale-110 shadow-2xl ring-4 ring-green-400 z-50 brightness-110" : "hover:scale-105 hover:shadow-xl"
             )}
             style={{
                 // Add slight random rotation for organic feel provided by parent or random here if fixed
