@@ -1047,12 +1047,7 @@ const translations: Translations = {
         "auth.switch.toLogin": "Already whitelisted? Join",
         "auth.error.default": "Kicked from server: Auth Failed",
         "auth.error.missing": "Missing Command Arguments",
-        // v0.5.4
-        "changelog.v054.title": "Power User Update",
-        "changelog.v054.board": "New Map Table: Visualize your knowledge graph.",
-        "changelog.v054.command": "Command Center (Ctrl+K): Global quick-actions menu.",
-        "changelog.v054.focus": "Focus Buff: Enter Concentration Mode (Pomodoro Timer).",
-        "changelog.v054.sidebar": "Collapsible Sidebar: More screen real estate on demand.",
+
         // v0.5.5
         "changelog.v055.title": "Map Table - Full Release",
         "changelog.v055.board_complete": "Phase 3: Search, advanced filters, and mini-map added.",
