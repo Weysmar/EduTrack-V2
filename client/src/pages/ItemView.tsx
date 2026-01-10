@@ -23,7 +23,12 @@ import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
 import { EditItemModal } from '@/components/EditItemModal'
+import { EditItemModal } from '@/components/EditItemModal'
 import { itemQueries, courseQueries } from '@/lib/api/queries'
+import { Editor } from '@/components/Editor'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Pencil, Check, X as Cancel } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function ItemView() {
     const { courseId, itemId } = useParams()
@@ -57,7 +62,38 @@ export function ItemView() {
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+    const [isFocusMode, setIsFocusMode] = useState(false)
+    const [isImageFullscreen, setIsImageFullscreen] = useState(false)
     const [isPdfFullscreen, setIsPdfFullscreen] = useState(false)
+
+    // Inline Edit Mode
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [editedContent, setEditedContent] = useState('')
+    const queryClient = useQueryClient()
+
+    // Sync content when item loads
+    useEffect(() => {
+        if (item?.content) {
+            setEditedContent(item.content)
+        }
+    }, [item])
+
+    const updateMutation = useMutation({
+        mutationFn: (content: string) => {
+            if (!item?.id) throw new Error('No item ID')
+            const formData = new FormData()
+            formData.append('content', content)
+            return itemQueries.update(String(item.id), formData)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['items', id] })
+            setIsEditMode(false)
+            toast.success('Note updated successfully')
+        },
+        onError: () => {
+            toast.error('Failed to update note')
+        }
+    })
 
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
@@ -487,14 +523,51 @@ export function ItemView() {
                         })()
                     )}
 
-                    {/* Edit Button */}
-                    <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                        title={t('item.edit')}
-                    >
-                        <Edit className="h-5 w-5" />
-                    </button>
+                    {/* Edit Button Logic */}
+                    {item.type === 'note' ? (
+                        isEditMode ? (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setIsEditMode(false)
+                                        setEditedContent(item.content || '')
+                                    }}
+                                    className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground border border-transparent"
+                                    title="Cancel"
+                                >
+                                    <Cancel className="h-5 w-5" />
+                                </button>
+                                <button
+                                    onClick={() => updateMutation.mutate(editedContent)}
+                                    disabled={updateMutation.isPending}
+                                    className="px-3 py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md transition-colors flex items-center gap-2 font-medium"
+                                    title="Save"
+                                >
+                                    <Check className="h-4 w-4" />
+                                    <span className="hidden sm:inline">{updateMutation.isPending ? 'Saving...' : 'Save'}</span>
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setIsEditMode(true)
+                                    setEditedContent(item.content || '')
+                                }}
+                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                title={t('item.edit')}
+                            >
+                                <Pencil className="h-5 w-5" />
+                            </button>
+                        )
+                    ) : (
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                            title={t('item.edit')}
+                        >
+                            <Edit className="h-5 w-5" />
+                        </button>
+                    )}
 
                     {/* Unified Generation Menu */}
                     <Menu as="div" className="relative">
@@ -891,7 +964,15 @@ export function ItemView() {
                             ) : item.content ? (
                                 <div className="prose dark:prose-invert max-w-none prose-lg">
                                     {item.type === 'note' ? (
-                                        <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                        isEditMode ? (
+                                            <Editor
+                                                content={editedContent}
+                                                onChange={setEditedContent}
+                                                editable={true}
+                                            />
+                                        ) : (
+                                            <div dangerouslySetInnerHTML={{ __html: item.content }} />
+                                        )
                                     ) : (
                                         <p className="whitespace-pre-wrap">{item.content}</p>
                                     )}
