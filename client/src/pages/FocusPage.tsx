@@ -97,7 +97,7 @@ export function FocusPage() {
                             mode === 'work' ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Focus
+                        {t('focus.work')}
                     </button>
                     <button
                         onClick={() => setMode('break')}
@@ -106,7 +106,7 @@ export function FocusPage() {
                             mode === 'break' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Pause courte
+                        {t('focus.shortBreak')}
                     </button>
                     <button
                         onClick={() => setMode('longBreak')}
@@ -115,7 +115,7 @@ export function FocusPage() {
                             mode === 'longBreak' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Pause longue
+                        {t('focus.longBreak')}
                     </button>
                 </div>
 
@@ -154,9 +154,9 @@ export function FocusPage() {
                             {isActive ? (
                                 <span className="flex items-center gap-2 animate-pulse">
                                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                    En cours
+                                    {t('focus.active')}
                                 </span>
-                            ) : "Prêt"}
+                            ) : t('focus.ready')}
                         </div>
                     </div>
                 </div>
@@ -166,7 +166,7 @@ export function FocusPage() {
                     <button
                         onClick={reset}
                         className="p-4 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all border hover:border-border"
-                        title="Réinitialiser"
+                        title={t('timer.reset')}
                     >
                         <RotateCcw className="w-6 h-6" />
                     </button>
@@ -179,7 +179,7 @@ export function FocusPage() {
                                 ? "bg-primary text-primary-foreground shadow-primary/25"
                                 : "bg-green-500 text-white shadow-green-500/25"
                         )}
-                        title={isActive ? "Pause" : "Démarrer"}
+                        title={isActive ? t('action.pause') : t('action.start')}
                     >
                         {isActive ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-1" />}
                     </button>
@@ -191,7 +191,7 @@ export function FocusPage() {
                 {/* Task Context (Optional Enhancement) */}
                 {mode === 'work' && (
                     <div className="mt-8 text-center max-w-sm">
-                        <h3 className="text-muted-foreground text-sm uppercase tracking-wider mb-2">Focus actuel</h3>
+                        <h3 className="text-muted-foreground text-sm uppercase tracking-wider mb-2">{t('focus.current')}</h3>
                         <div className="bg-card border px-6 py-4 rounded-xl shadow-sm">
                             <p className="font-medium text-lg">Révision Générale</p>
                         </div>
