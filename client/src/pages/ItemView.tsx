@@ -961,7 +961,7 @@ export function ItemView() {
                                 </div>
 
                             ) : item.content ? (
-                                <div className="prose dark:prose-invert max-w-none prose-lg">
+                                <div className="prose dark:prose-invert max-w-none [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold [&_h1]:mt-6 [&_h2]:mt-4 [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6">
                                     {item.type === 'note' ? (
                                         isEditMode ? (
                                             <Editor
