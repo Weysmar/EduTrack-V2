@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
-import { ZoomIn, ZoomOut } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react'
 import { useLanguage } from './language-provider'
 
 // PDF.js worker is configured globally in main.tsx
@@ -15,6 +15,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     const [numPages, setNumPages] = useState<number | null>(null)
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
+    const [isZenMode, setIsZenMode] = useState(false)
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages)
@@ -28,13 +29,27 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
 
     const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3))
     const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5))
+    const toggleZen = () => setIsZenMode(!isZenMode)
 
     return (
-        <div className={`w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative flex flex-col ${className}`}>
+        <div className={isZenMode
+            ? "fixed inset-0 z-[100] bg-gray-900 flex flex-col animate-in fade-in duration-300 h-screen w-screen"
+            : `w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative flex flex-col ${className}`
+        }>
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-3 bg-slate-200 dark:bg-slate-800 border-b sticky top-0 z-10">
-                <div className="text-sm font-medium px-2">
-                    {loading ? 'Chargement...' : `${numPages} pages`}
+            <div className={`flex items-center justify-between p-3 border-b sticky top-0 z-10 ${isZenMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={toggleZen}
+                        className={`p-1.5 rounded transition-all flex items-center gap-2 ${isZenMode ? 'bg-primary text-primary-foreground shadow-lg px-3' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                        title={isZenMode ? t('action.exitZen') : t('action.enterZen')}
+                    >
+                        {isZenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                        {isZenMode && <span className="text-xs font-bold">{t('action.exitZen') || 'Quitter Zen'}</span>}
+                    </button>
+                    <div className="text-sm font-medium px-2">
+                        {loading ? 'Chargement...' : `${numPages} pages`}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">

@@ -107,26 +107,38 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                 </div>
             </div>
 
-            {/* CONTENT: Text Info */}
-            <div className="p-3 sm:p-4 flex flex-col gap-1 sm:gap-2">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
-                        {item.title}
-                    </h3>
-                </div>
-
-                <div className="text-[10px] sm:text-xs text-muted-foreground/70 sm:mt-2 flex items-center gap-2 overflow-hidden">
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    {item.fileName && (
-                        <>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="hidden sm:inline truncate max-w-[150px] italic opacity-80" title={item.fileName}>{item.fileName}</span>
-                        </>
-                    )}
+            {/* Hover Preview Overlay */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center z-30 pointer-events-none">
+                <p className="text-white font-bold text-sm mb-2 line-clamp-3">{item.title}</p>
+                {item.fileName && (
+                    <p className="text-white/80 text-xs italic mb-1 line-clamp-1">{item.fileName}</p>
+                )}
+                <div className="mt-2 px-3 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
+                    {t('action.preview') || 'Aperçu'}
                 </div>
             </div>
         </div>
+
+            {/* CONTENT: Text Info */ }
+    <div className="p-3 sm:p-4 flex flex-col gap-1 sm:gap-2">
+        <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
+                {item.title}
+            </h3>
+        </div>
+
+        <div className="text-[10px] sm:text-xs text-muted-foreground/70 sm:mt-2 flex items-center gap-2 overflow-hidden">
+            <Calendar className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
+            {item.fileName && (
+                <>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline truncate max-w-[150px] italic opacity-80" title={item.fileName}>{item.fileName}</span>
+                </>
+            )}
+        </div>
+    </div>
+        </div >
     );
 });
 
