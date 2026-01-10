@@ -968,6 +968,7 @@ export function ItemView() {
                                                 content={editedContent}
                                                 onChange={setEditedContent}
                                                 editable={true}
+                                                className="border-0 shadow-none min-h-[50vh]"
                                             />
                                         ) : (
                                             <div dangerouslySetInnerHTML={{ __html: item.content }} />

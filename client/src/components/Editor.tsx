@@ -18,9 +18,10 @@ interface EditorProps {
     content: string
     onChange: (content: string) => void
     editable?: boolean
+    className?: string
 }
 
-export function Editor({ content, onChange, editable = true }: EditorProps) {
+export function Editor({ content, onChange, editable = true, className }: EditorProps) {
     const { language, t } = useLanguage()
     const isMinecraft = language === 'mc'
     const [showColorPicker, setShowColorPicker] = useState(false)
@@ -97,7 +98,8 @@ export function Editor({ content, onChange, editable = true }: EditorProps) {
     return (
         <div className={cn(
             "border rounded-md overflow-hidden bg-background",
-            isMinecraft && "border-4 border-stone-600 rounded-none bg-stone-900" // Cobblestone-ish container
+            isMinecraft && "border-4 border-stone-600 rounded-none bg-stone-900", // Cobblestone-ish container
+            className
         )}>
             {editable && (
                 <div className={cn(
