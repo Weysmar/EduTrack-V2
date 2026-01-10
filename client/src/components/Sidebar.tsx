@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -57,9 +57,18 @@ export function Sidebar() {
     }
 
     return (
-        <div className={cn("flex flex-col h-full bg-card border-r transition-all duration-300", isCollapsed ? "w-20" : "w-full")}>
+        <div className={cn("flex flex-col h-full bg-card border-r transition-all duration-300 relative group", isCollapsed ? "w-20" : "w-64")}>
+            {/* Sidebar Toggle - Floating Bubble Style */}
+            <button
+                onClick={toggleCollapse}
+                className="absolute -right-3 top-6 z-50 h-6 w-6 rounded-full border bg-background hover:bg-accent flex items-center justify-center shadow-md transition-colors hidden lg:flex"
+                title={isCollapsed ? t('action.expand') : t('action.close')}
+            >
+                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+            </button>
+
             {/* App Header */}
-            <div className={cn("h-14 flex items-center border-b transition-all shrink-0", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
+            <div className={cn("h-14 flex items-center border-b transition-all shrink-0 relative", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
                 {!isCollapsed && (
                     <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity overflow-hidden">
                         <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
@@ -74,14 +83,6 @@ export function Sidebar() {
                         <FolderPlus className="h-5 w-5" />
                     </Link>
                 )}
-
-                <button
-                    onClick={toggleCollapse}
-                    className={cn("text-muted-foreground hover:text-foreground transition-colors hidden lg:block", !isCollapsed && "ml-auto")}
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-                </button>
             </div>
 
             <div className={cn("border-b space-y-2 transition-all", isCollapsed ? "p-2" : "p-4")}>
