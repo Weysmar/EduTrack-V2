@@ -19,6 +19,7 @@ import { useCalendarStore } from '@/store/calendarStore'
 import { useFocusStore } from '@/store/focusStore'
 
 import { KnowledgeMapModal } from '@/components/knowledge-map/KnowledgeMapModal'
+import { CompactFocusTimer } from '@/components/CompactFocusTimer' // Added
 
 export function AppLayout() {
     // Initialize Socket Connection
@@ -149,6 +150,7 @@ export function AppLayout() {
 
 
                     <div className="flex items-center gap-2">
+                        <CompactFocusTimer />
                         <div className="hidden sm:block">
                             <GoogleConnectButton />
                         </div>
