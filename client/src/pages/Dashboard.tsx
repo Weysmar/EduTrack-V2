@@ -169,7 +169,7 @@ export function Dashboard() {
 
                 {/* CALENDAR (Moved up as requested) */}
                 <div className="w-full">
-                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[500px]">
+                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full">
                         <CalendarWidget />
                     </div>
                 </div>
