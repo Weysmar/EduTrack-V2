@@ -190,6 +190,7 @@ const translations: Translations = {
         "calendar.noEvents": "No events",
         "calendar.allDay": "All Day",
         "calendar.synced": "Synced",
+        "calendar.connected": "Connected",
         // New Additions
         "app.search": "Search...",
         "focus.enter": "Focus Mode",
@@ -520,6 +521,7 @@ const translations: Translations = {
         "calendar.noEvents": "Aucun événement",
         "calendar.allDay": "Toute la journée",
         "calendar.synced": "Synchronisé",
+        "calendar.connected": "Connecté",
         "app.search": "Rechercher...",
         "board.caseFile": "DOSSIER",
         "board.note": "NOTE",
@@ -662,6 +664,23 @@ const translations: Translations = {
         "changelog.v054.command": "Centre de Commande Global (Ctrl+K) pour tout contrôler.",
         "changelog.v054.focus": "Mode Focus ajouté avec Timer Pomodoro intégré.",
         "changelog.v054.sidebar": "Barre latérale rétractable pour plus d'espace.",
+        // v0.5.5
+        "changelog.v055.title": "Tableau d'Enquête - Complet",
+        "changelog.v055.board_complete": "Phase 3 : Recherche, filtres et mini-carte pour naviguer efficacement.",
+        "changelog.v055.drag_drop": "Glisser-déposer : Assignez les cours orphelins aux sujets via drag & drop.",
+        "changelog.v055.filters": "Filtres avancés (Sujets, Cours) pour une meilleure organisation.",
+        "changelog.v055.layout": "Algorithme de disposition radiale amélioré et positionnement des nœuds.",
+        // v0.5.6
+        "changelog.v056.title": "Intégration des Documents",
+        "changelog.v056.documents": "Les documents (PDF, Images, fichiers Office) apparaissent maintenant sur le tableau.",
+        "changelog.v056.filters": "Ajout du filtre Documents pour afficher/masquer les items.",
+        // v0.5.7
+        "changelog.v057.title": "Améliorations Visuelles",
+        "changelog.v057.cork": "Texture liège améliorée avec motif CSS.",
+        "changelog.v057.pins": "Ajout de punaises colorées sur tous les nœuds (Rouge : Sujets, Jaune : Cours, Bleu : Documents).",
+        "changelog.v057.documents_fix": "Correction du bug de rendu du filtre documents.",
+        "changelog.v057.reset_view": "La vue réinitialisée se centre maintenant intelligemment sur le contenu.",
+        // v0.5.0
         "changelog.v050.title": "Stabilité & Intelligence 🧠",
         "changelog.v050.api_keys": "Persistance Clés API : Correction d'un bug critique où les clés disparaissaient.",
         "changelog.v050.logout": "Déconnexion Propre : Le bouton 'Déconnexion' nettoie maintenant correctement la session.",
@@ -847,6 +866,7 @@ const translations: Translations = {
         "calendar.noEvents": "No raids planned",
         "calendar.allDay": "Sun to Moon",
         "calendar.synced": "Map Updated",
+        "calendar.connected": "Portal Linked",
         // Search
         "search.placeholder": "Locate intentory items...",
         "search.noResults": "No entities found for",
@@ -1018,6 +1038,29 @@ const translations: Translations = {
         "auth.switch.toLogin": "Already whitelisted? Join",
         "auth.error.default": "Kicked from server: Auth Failed",
         "auth.error.missing": "Missing Command Arguments",
+        // v0.5.4
+        "changelog.v054.title": "Power User Update",
+        "changelog.v054.board": "New Map Table: Visualize your knowledge graph.",
+        "changelog.v054.command": "Command Center (Ctrl+K): Global quick-actions menu.",
+        "changelog.v054.focus": "Focus Buff: Enter Concentration Mode (Pomodoro Timer).",
+        "changelog.v054.sidebar": "Collapsible Sidebar: More screen real estate on demand.",
+        // v0.5.5
+        "changelog.v055.title": "Map Table - Full Release",
+        "changelog.v055.board_complete": "Phase 3: Search, advanced filters, and mini-map added.",
+        "changelog.v055.drag_drop": "Drag & Drop: Assign orphan courses to topics via dragging.",
+        "changelog.v055.filters": "Advanced Filters (Topics, Courses) for better navigation.",
+        "changelog.v055.layout": "Improved radial layout algorithm and node positioning.",
+        // v0.5.6
+        "changelog.v056.title": "Item Integration",
+        "changelog.v056.documents": "Documents (PDF, Images, Office) now spawn on the Map Table.",
+        "changelog.v056.filters": "Added Documents filter to show/hide items.",
+        // v0.5.7
+        "changelog.v057.title": "Visual Upgrades",
+        "changelog.v057.cork": "Improved cork board texture (CSS pattern instead of external resource).",
+        "changelog.v057.pins": "Added colored pins to all nodes (Red: Topics, Yellow: Courses, Blue: Items).",
+        "changelog.v057.documents_fix": "Fixed document filter rendering bug.",
+        "changelog.v057.reset_view": "Reset view now centers smartly on existing content.",
+        // v0.5.0
         "changelog.v050.title": "Stability & Intelligence 🧠",
         "changelog.v050.api_keys": "Saving Level.dat: Fixed a bug where world keys were lost.",
         "changelog.v050.logout": "Safe Quit: The 'Quit' button now properly saves your player state.",
