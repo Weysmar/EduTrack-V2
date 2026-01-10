@@ -335,13 +335,6 @@ const translations: Translations = {
         "changelog.v058.library": "Library Page: A dedicated space to browse and filter all your courses.",
         "changelog.v058.dashboard": "Dashboard Refinements: Improved layout and added a compact focus timer to the header.",
 
-        // v0.5.8
-        "changelog.v058.title": "Voice & Accessibility 🗣️",
-        "changelog.v058.tts": "Text-to-Speech: Listen to your notes with multilang support and speed control.",
-        "changelog.v058.stt": "Speech-to-Text: Dictate your content directly into the editor.",
-        "changelog.v058.library": "Library Page: A dedicated space to browse and filter all your courses.",
-        "changelog.v058.dashboard": "Dashboard Refinements: Improved layout and added a compact focus timer to the header.",
-
         // v0.5.4
         "changelog.v054.title": "Power User Update",
         "changelog.v054.board": "Added Investigation Board view for visual knowledge mapping.",
@@ -737,13 +730,6 @@ const translations: Translations = {
         "changelog.v053.cache": "Cache Intelligent : Les ressources sont en cache pour une navigation instantanée.",
         "changelog.v053.lazy": "Lazy Loading : Chargement initial accéléré grâce au découpage du code.",
         "changelog.v053.images": "Assets Optimisés : Images compressées et décodées en asynchrone.",
-
-        // v0.5.8
-        "changelog.v058.title": "Voix & Accessibilité 🗣️",
-        "changelog.v058.tts": "Synthèse Vocale : Écoutez vos notes avec contrôle de vitesse et détection de langue.",
-        "changelog.v058.stt": "Reconnaissance Vocale : Dictez votre contenu directement dans l'éditeur.",
-        "changelog.v058.library": "Bibliothèque : Un espace dédié pour explorer et filtrer tous vos cours.",
-        "changelog.v058.dashboard": "Tableau de Bord : Mise en page améliorée et minuteur focus compact dans l'en-tête.",
 
         // v0.5.8
         "changelog.v058.title": "Voix & Accessibilité 🗣️",
