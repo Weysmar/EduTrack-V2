@@ -23,7 +23,7 @@ import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
 import { EditItemModal } from '@/components/EditItemModal'
-import { EditItemModal } from '@/components/EditItemModal'
+
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 import { Editor } from '@/components/Editor'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
