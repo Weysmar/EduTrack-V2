@@ -47,6 +47,12 @@ export function AuthPage() {
         <div className="flex min-h-screen items-center justify-center bg-background px-4">
             <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg">
                 <div className="text-center">
+                    <div className="flex justify-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <img src="/logo.png" alt="EduTrack Logo" className="h-10 w-10 object-contain rounded-lg shadow-sm" />
+                            <span className="font-bold text-2xl tracking-tight text-white">EduTrack</span>
+                        </div>
+                    </div>
                     <h2 className="text-3xl font-bold tracking-tight text-foreground">
                         {isLogin ? t('auth.welcome.back') : t('auth.create.account')}
                     </h2>
