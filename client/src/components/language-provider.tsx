@@ -859,7 +859,7 @@ const translations: Translations = {
         "profile.delete.tooltip": "Remove Player",
         "sidebar.expandTimer": "Show Time Crystal",
         "timer.reset": "Reset Hourglass",
-        "theme.toggle": "Switch Day/Night",
+
         "calendar.autoDetect": "Detect from Sundial",
         "file.thumbnail": "Item Preview",
         "icon.none": "No Symbol",
