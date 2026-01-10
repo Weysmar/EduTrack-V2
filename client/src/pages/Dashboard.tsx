@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar, Sparkles } from 'lucide-react'
+import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, Target, PenTool, Layout, CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 import { RevisionProgramModal } from '@/components/RevisionProgramModal'
 import { CalendarWidget } from '@/components/CalendarWidget'
@@ -9,6 +9,7 @@ import { useProfileStore } from '@/store/profileStore'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useQuery } from '@tanstack/react-query'
 import { courseQueries, itemQueries } from '@/lib/api/queries'
+import { cn } from '@/lib/utils'
 
 export function Dashboard() {
     const { t } = useLanguage()
@@ -28,6 +29,16 @@ export function Dashboard() {
         queryFn: itemQueries.getAll,
         enabled: !!activeProfile
     })
+
+    const greeting = useMemo(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Bonjour";
+        if (hour < 18) return "Bonne après-midi";
+        return "Bonsoir";
+    }, []);
+
+    // Mock Streak Logic (replace with real data later)
+    const streakDays = 5;
 
     if (!activeProfile) {
         return (
@@ -57,7 +68,8 @@ export function Dashboard() {
     const exerciseCount = itemList.filter((i: any) => i.type === 'exercise').length
     const noteCount = itemList.filter((i: any) => i.type === 'note').length
 
-    const recentCourses = [...courseList].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10)
+    const recentCourses = [...courseList].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5)
+    const lastActiveCourse = recentCourses[0];
 
     // Enrich activity
     const activity = [...itemList].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map((item: any) => {
@@ -65,210 +77,214 @@ export function Dashboard() {
         return { ...item, courseTitle: course?.title }
     })
 
-    const inProgress = itemList.filter((i: any) => i.status === 'in-progress').slice(0, 3).map((item: any) => {
-        const course = courseList.find((c: any) => c.id === item.courseId)
-        return { ...item, courseTitle: course?.title }
-    })
-
-    const hasCourses = courseCount > 0
+    // Quick Actions
+    const quickActions = [
+        { icon: Plus, label: "Nouveau Sujet", action: () => setIsCreateModalOpen(true), color: "bg-blue-500" },
+        { icon: PenTool, label: "Nouvelle Note", link: lastActiveCourse ? `/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" }, // Fallback logic
+        { icon: Zap, label: "Mode Focus", link: "/focus", color: "bg-violet-600" },
+        { icon: CalendarIcon, label: "Mon Planning", action: () => setIsRevisionModalOpen(true), color: "bg-emerald-500" },
+    ]
 
     return (
-        <div className="p-8 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-bold tracking-tight">{t('welcome.title')}</h1>
-                    <p className="text-muted-foreground text-lg">{t('welcome.subtitle')}</p>
-                </div>
-                <button
-                    onClick={() => setIsRevisionModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all font-medium shadow-md hover:shadow-lg"
-                >
-                    <Calendar className="h-5 w-5" />
-                    <span>{t('revision.generate')}</span>
-                </button>
-            </header>
+        <div className="p-4 md:p-8 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-6">
 
+            {/* HERO SECTION */}
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl">
+                {/* Background decorative elements */}
+                <div className="absolute top-0 right-0 p-12 opacity-10">
+                    <Sparkles className="w-64 h-64" />
+                </div>
+
+                <div className="relative z-10 p-8 md:p-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+                    <div className="space-y-4 max-w-2xl">
+                        <div className="flex items-center gap-3 text-white/80">
+                            <span className="text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                                <Flame className="w-4 h-4 text-orange-400 fill-orange-400" />
+                                {streakDays} Jours de série
+                            </span>
+                            <span className="text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                                <Target className="w-4 h-4 text-emerald-400" />
+                                Objectif hebdo: 80%
+                            </span>
+                        </div>
+
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">
+                                {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-violet-300">{activeProfile.name}</span>.
+                            </h1>
+                            <p className="text-lg text-slate-300 max-w-lg leading-relaxed">
+                                Prêt à continuer votre progression ? Vous étiez sur <strong className="text-white">{lastActiveCourse?.title || "vos cours"}</strong> récemment.
+                            </p>
+                        </div>
+
+                        {lastActiveCourse && (
+                            <div className="pt-2">
+                                <Link
+                                    to={`/course/${lastActiveCourse.id}`}
+                                    className="inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-lg shadow-white/10"
+                                >
+                                    <Zap className="w-4 h-4 fill-slate-900" />
+                                    Reprendre {lastActiveCourse.title}
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* DOCK (Quick Actions integrated into Hero for better visibility) */}
+                    <div className="flex gap-4">
+                        {quickActions.map((action, idx) => (
+                            action.link ? (
+                                <Link
+                                    key={idx}
+                                    to={action.link}
+                                    className="group flex flex-col items-center gap-2"
+                                >
+                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
+                                        <action.icon className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors">{action.label}</span>
+                                </Link>
+                            ) : (
+                                <button
+                                    key={idx}
+                                    onClick={action.action}
+                                    className="group flex flex-col items-center gap-2"
+                                >
+                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
+                                        <action.icon className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors">{action.label}</span>
+                                </button>
+                            )
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <CreateCourseModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
             <RevisionProgramModal isOpen={isRevisionModalOpen} onClose={() => setIsRevisionModalOpen(false)} />
 
-            {!hasCourses ? (
-                <div className="bg-gradient-to-r from-primary/20 to-primary/10 border-primary/20 border rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-2xl font-bold mb-2">📚 {t('welcome.empty.title')}</h2>
-                        <p className="text-muted-foreground">{t('welcome.empty.desc')}</p>
-                    </div>
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
-                    >
-                        <Plus className="h-5 w-5" />
-                        {t('welcome.create.button')}
-                    </button>
-                    <CreateCourseModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-card p-6 rounded-xl border shadow-sm flex items-center gap-4 hover:border-primary/50 transition-colors">
-                        <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500">
-                            <Book className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">{t('dashboard.stats.courses')}</p>
-                            <h2 className="text-3xl font-bold">{courseCount}</h2>
-                        </div>
-                    </div>
-                    <div className="bg-card p-6 rounded-xl border shadow-sm flex items-center gap-4 hover:border-primary/50 transition-colors">
-                        <div className="p-3 bg-green-500/10 rounded-lg text-green-500">
-                            <Dumbbell className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">{t('dashboard.stats.exercises')}</p>
-                            <h2 className="text-3xl font-bold">{exerciseCount}</h2>
-                        </div>
-                    </div>
-                    <div className="bg-card p-6 rounded-xl border shadow-sm flex items-center gap-4 hover:border-primary/50 transition-colors">
-                        <div className="p-3 bg-yellow-500/10 rounded-lg text-yellow-500">
-                            <FileText className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">{t('dashboard.stats.notes')}</p>
-                            <h2 className="text-3xl font-bold">{noteCount}</h2>
-                        </div>
+            {/* BENTO GRID LAYOUT */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+                {/* LEFT COL: CALENDAR (Span 4) */}
+                <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6">
+                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[400px]">
+                        <CalendarWidget />
                     </div>
                 </div>
-            )}
 
-            <div className="w-full">
-                <CalendarWidget />
-            </div>
+                {/* RIGHT COL: CONTENT (Span 8) */}
+                <div className="md:col-span-8 lg:col-span-9 space-y-6">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-muted-foreground" />
-                        <h2 className="text-xl font-semibold">{t('dashboard.recent')}</h2>
-                    </div>
-
-                    {recentCourses.length > 0 ? (
-                        <div className="grid grid-rows-2 grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4 pt-2 snap-x">
-                            {recentCourses.map((course: any) => (
-                                <Link
-                                    key={course.id}
-                                    to={`/course/${course.id}`}
-                                    draggable
-                                    onDragStart={(e) => {
-                                        e.dataTransfer.setData('courseId', course.id.toString())
-                                        e.dataTransfer.effectAllowed = 'move'
-                                    }}
-                                    className="snap-start bg-card border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 block h-40 group relative cursor-grab active:cursor-grabbing"
-                                >
-                                    <div
-                                        className="absolute left-0 top-0 bottom-0 w-2 transition-all group-hover:w-full opacity-5"
-                                        style={{ backgroundColor: course.color }}
-                                    />
-                                    <div className="p-5 flex flex-col h-full justify-between relative z-10">
-                                        <div className="flex items-star gap-3">
-                                            {course.icon ? (
-                                                <span className="text-3xl bg-background/50 rounded-lg p-1">{course.icon}</span>
-                                            ) : (
-                                                <div
-                                                    className="w-4 h-4 rounded-full mt-1"
-                                                    style={{ backgroundColor: course.color }}
-                                                />
-                                            )}
-                                            <div>
-                                                <h3 className="font-bold text-lg leading-tight line-clamp-2">{course.title}</h3>
-                                                <p className="text-xs text-muted-foreground mt-1">{new Date(course.createdAt).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <ArrowRight className="h-5 w-5 text-primary" />
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground">
-                            {t('dashboard.empty.courses')}
-                        </div>
-                    )}
-
-                    {inProgress.length > 0 && (
-                        <div className="pt-4 space-y-4">
-                            <div className="flex items-center gap-2">
-                                <Zap className="h-5 w-5 text-orange-500" />
-                                <h2 className="text-xl font-semibold">{t('dashboard.inprogress')}</h2>
+                    {/* STATS ROW */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
+                                <Book className="h-6 w-6" />
                             </div>
-                            <div className="grid gap-3">
-                                {inProgress.map((item: any) => (
+                            <div>
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.courses')}</p>
+                                <h2 className="text-2xl font-bold">{courseCount}</h2>
+                            </div>
+                        </div>
+                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                            <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
+                                <Dumbbell className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.exercises')}</p>
+                                <h2 className="text-2xl font-bold">{exerciseCount}</h2>
+                            </div>
+                        </div>
+                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                            <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-500">
+                                <FileText className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.notes')}</p>
+                                <h2 className="text-2xl font-bold">{noteCount}</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RECENT COURSES SLIDER */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-primary" />
+                                {t('dashboard.recent')}
+                            </h2>
+                            <Link to="/courses" className="text-xs text-primary hover:underline">Voir tout</Link>
+                        </div>
+
+                        {recentCourses.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {recentCourses.map((course: any) => (
                                     <Link
-                                        key={item.id}
-                                        to={`/course/${item.courseId}`}
-                                        className="bg-card border rounded-lg p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                                        key={course.id}
+                                        to={`/course/${course.id}`}
+                                        className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-primary/10 text-primary rounded-md">
-                                                <Dumbbell className="h-4 w-4" />
+                                        <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                {course.icon ? (
+                                                    <span className="text-2xl bg-muted/50 p-2 rounded-lg">{course.icon}</span>
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                                                        <Folder className="h-5 w-5 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="font-medium">{item.title}</h4>
-                                                <p className="text-xs text-muted-foreground">{item.courseTitle} • {t(`status.${item.status}`)}</p>
-                                            </div>
+                                            <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{course.description || "Aucune description"}</p>
                                         </div>
-                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                     </Link>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground">
+                                {t('dashboard.empty.courses')}
+                            </div>
+                        )}
+                    </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-muted-foreground" />
-                        {t('dashboard.activity')}
-                    </h2>
-                    <div className="bg-card border rounded-xl p-3 relative overflow-hidden h-full">
-                        <div className="space-y-3 relative">
-                            {activity.length > 0 && (
-                                <div className="absolute left-[15px] top-9 bottom-9 w-0.5 bg-muted/30" />
-                            )}
+                    {/* ACTIVITY FEED (Compact) */}
+                    <div className="space-y-3">
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-amber-500" />
+                            Activité Récente
+                        </h2>
+                        <div className="bg-card border rounded-2xl p-4 space-y-1">
                             {activity.length > 0 ? (
                                 activity.map((item: any) => (
-                                    <div key={item.id} className="relative flex items-start group">
-                                        <div className="relative z-10 flex-shrink-0 w-8 flex items-center justify-center mt-9 mr-4">
-                                            <div className="w-3 h-3 rounded-full bg-background border-2 border-primary group-hover:scale-125 group-hover:bg-primary transition-all ring-4 ring-card" />
+                                    <Link key={item.id} to={`/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
+                                        <div className="p-2 rounded-lg bg-background border shadow-sm group-hover:scale-105 transition-transform">
+                                            {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
+                                            {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
+                                            {item.type === 'resource' && <Folder className="h-4 w-4 text-blue-500" />}
                                         </div>
-                                        <Link
-                                            to={`/course/${item.courseId}`}
-                                            className="flex-1 bg-muted/5 hover:bg-muted/40 border border-transparent hover:border-border p-3.5 rounded-xl transition-all"
-                                        >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                                                    {new Date(item.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-                                                    {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                            <h4 className="font-bold text-sm group-hover:text-primary transition-colors line-clamp-1">{item.title}</h4>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground bg-background border px-2 py-0.5 rounded-md">
-                                                    {item.type === 'exercise' && <Dumbbell className="h-3 w-3" />}
-                                                    {item.type === 'note' && <FileText className="h-3 w-3" />}
-                                                    {item.type === 'resource' && <Folder className="h-3 w-3" />}
-                                                    <span className="opacity-70">{t('common.in')}</span>
-                                                    <span className="font-semibold text-primary/80">{item.courseTitle}</span>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</h4>
+                                            <p className="text-xs text-muted-foreground truncate">{item.courseTitle} • <span className="lowercase">{t(`common.in`)} {t(item.type)}</span></p>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                            {new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                                        </div>
+                                    </Link>
                                 ))
                             ) : (
-                                <p className="text-sm text-muted-foreground text-center py-8">{t('dashboard.empty.activity')}</p>
+                                <div className="text-center py-8 text-muted-foreground text-sm">
+                                    {t('dashboard.empty.activity')}
+                                </div>
                             )}
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
