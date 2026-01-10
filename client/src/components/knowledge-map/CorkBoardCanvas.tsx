@@ -202,8 +202,15 @@ export function CorkBoardCanvas(props: MapContentProps) {
     return (
         <div className="w-full h-full bg-[#C89666] relative overflow-hidden"
             style={{
-                backgroundImage: 'url("https://www.transparenttextures.com/patterns/cork-board.png")',
-                boxShadow: 'inset 0 0 100px rgba(0,0,0,0.5)'
+                // CSS Generated Cork Pattern
+                backgroundColor: '#b8865c',
+                backgroundImage: `
+                    radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1.5px),
+                    radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1.5px)
+                `,
+                backgroundSize: '12px 12px, 15px 15px',
+                backgroundPosition: '0 0, 6px 6px',
+                boxShadow: 'inset 0 0 100px rgba(0,0,0,0.6)'
             }}>
             <ReactFlowProvider>
                 <MapContent {...props} />

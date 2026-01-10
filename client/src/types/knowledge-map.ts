@@ -15,6 +15,7 @@ export interface HierarchyNode {
     isSelected?: boolean;
     isHighlighted?: boolean;
     customColor?: string;
+    data?: any;
 }
 
 export interface MapConnection {
