@@ -165,126 +165,129 @@ export function Dashboard() {
             <RevisionProgramModal isOpen={isRevisionModalOpen} onClose={() => setIsRevisionModalOpen(false)} />
 
             {/* BENTO GRID LAYOUT */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="space-y-6">
 
-                {/* LEFT COL: CALENDAR (Span 4) */}
-                <div className="md:col-span-4 lg:col-span-3 flex flex-col gap-6">
-                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[400px]">
-                        <CalendarWidget />
+                {/* TOP ROW: CONTENT (Stats + Recents + Activity) */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <div className="md:col-span-12 space-y-6">
+
+                        {/* STATS ROW */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                                <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
+                                    <Book className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.courses')}</p>
+                                    <h2 className="text-2xl font-bold">{courseCount}</h2>
+                                </div>
+                            </div>
+                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                                <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
+                                    <Dumbbell className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.exercises')}</p>
+                                    <h2 className="text-2xl font-bold">{exerciseCount}</h2>
+                                </div>
+                            </div>
+                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                                <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-500">
+                                    <FileText className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.notes')}</p>
+                                    <h2 className="text-2xl font-bold">{noteCount}</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* RECENT COURSES SLIDER (Span 2) */}
+                            <div className="lg:col-span-2 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-bold flex items-center gap-2">
+                                        <Clock className="h-5 w-5 text-primary" />
+                                        {t('dashboard.recent')}
+                                    </h2>
+                                    <Link to="/courses" className="text-xs text-primary hover:underline">Voir tout</Link>
+                                </div>
+
+                                {recentCourses.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {recentCourses.slice(0, 4).map((course: any) => (
+                                            <Link
+                                                key={course.id}
+                                                to={`/course/${course.id}`}
+                                                className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
+                                            >
+                                                <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
+                                                <div className="p-5">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        {course.icon ? (
+                                                            <span className="text-2xl bg-muted/50 p-2 rounded-lg">{course.icon}</span>
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                                                                <Folder className="h-5 w-5 text-muted-foreground" />
+                                                            </div>
+                                                        )}
+                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                                            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                                                        </div>
+                                                    </div>
+                                                    <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2">{course.description || "Aucune description"}</p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground">
+                                        {t('dashboard.empty.courses')}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ACTIVITY FEED (Span 1) */}
+                            <div className="space-y-3">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-amber-500" />
+                                    Activité Récente
+                                </h2>
+                                <div className="bg-card border rounded-2xl p-4 space-y-1 max-h-[400px] overflow-auto">
+                                    {activity.length > 0 ? (
+                                        activity.map((item: any) => (
+                                            <Link key={item.id} to={`/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
+                                                <div className="p-2 rounded-lg bg-background border shadow-sm group-hover:scale-105 transition-transform">
+                                                    {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
+                                                    {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
+                                                    {item.type === 'resource' && <Folder className="h-4 w-4 text-blue-500" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</h4>
+                                                    <p className="text-xs text-muted-foreground truncate">{item.courseTitle} • <span className="lowercase">{t(`common.in`)} {t(item.type)}</span></p>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                                    {new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                                                </div>
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-muted-foreground text-sm">
+                                            {t('dashboard.empty.activity')}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* RIGHT COL: CONTENT (Span 8) */}
-                <div className="md:col-span-8 lg:col-span-9 space-y-6">
-
-                    {/* STATS ROW */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-                                <Book className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.courses')}</p>
-                                <h2 className="text-2xl font-bold">{courseCount}</h2>
-                            </div>
-                        </div>
-                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                            <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
-                                <Dumbbell className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.exercises')}</p>
-                                <h2 className="text-2xl font-bold">{exerciseCount}</h2>
-                            </div>
-                        </div>
-                        <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                            <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-500">
-                                <FileText className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.notes')}</p>
-                                <h2 className="text-2xl font-bold">{noteCount}</h2>
-                            </div>
-                        </div>
+                {/* BOTTOM ROW: CALENDAR (Full Width) */}
+                <div className="w-full">
+                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[500px]">
+                        <CalendarWidget />
                     </div>
-
-                    {/* RECENT COURSES SLIDER */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-primary" />
-                                {t('dashboard.recent')}
-                            </h2>
-                            <Link to="/courses" className="text-xs text-primary hover:underline">Voir tout</Link>
-                        </div>
-
-                        {recentCourses.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {recentCourses.map((course: any) => (
-                                    <Link
-                                        key={course.id}
-                                        to={`/course/${course.id}`}
-                                        className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
-                                    >
-                                        <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
-                                        <div className="p-5">
-                                            <div className="flex justify-between items-start mb-4">
-                                                {course.icon ? (
-                                                    <span className="text-2xl bg-muted/50 p-2 rounded-lg">{course.icon}</span>
-                                                ) : (
-                                                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                                                        <Folder className="h-5 w-5 text-muted-foreground" />
-                                                    </div>
-                                                )}
-                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                                                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                            <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{course.description || "Aucune description"}</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground">
-                                {t('dashboard.empty.courses')}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ACTIVITY FEED (Compact) */}
-                    <div className="space-y-3">
-                        <h2 className="text-lg font-bold flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-amber-500" />
-                            Activité Récente
-                        </h2>
-                        <div className="bg-card border rounded-2xl p-4 space-y-1">
-                            {activity.length > 0 ? (
-                                activity.map((item: any) => (
-                                    <Link key={item.id} to={`/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
-                                        <div className="p-2 rounded-lg bg-background border shadow-sm group-hover:scale-105 transition-transform">
-                                            {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
-                                            {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
-                                            {item.type === 'resource' && <Folder className="h-4 w-4 text-blue-500" />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</h4>
-                                            <p className="text-xs text-muted-foreground truncate">{item.courseTitle} • <span className="lowercase">{t(`common.in`)} {t(item.type)}</span></p>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                            {new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
-                                        </div>
-                                    </Link>
-                                ))
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground text-sm">
-                                    {t('dashboard.empty.activity')}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
