@@ -293,6 +293,17 @@ const translations: Translations = {
         "gen.delete.error": "Error during deletion",
         "common.open": "Open",
         "common.in": "in",
+
+        // TTS
+        "tts.play": "Read Aloud",
+        "tts.pause": "Pause",
+        "tts.resume": "Resume",
+        "tts.stop": "Stop",
+        "tts.speed": "Speed",
+        "tts.unsupported": "Text-to-Speech is not supported in your browser",
+        "tts.error": "Failed to read text",
+        "tts.reading": "Reading...",
+
         "changelog.v051.title": "Mobility & Stability 📱⚡",
         "changelog.v051.mobile": "Mobile Optimization: Reworked Course View for smartphones with compact cards, an intelligent header, and optimized file previews.",
         "changelog.v051.folders": "Fluid Navigation: Folders are now open by default and breadcrumbs are improved for better hierarchy awareness.",
@@ -673,6 +684,17 @@ const translations: Translations = {
         "gen.delete.error": "Erreur lors de la suppression",
         "common.open": "Ouvrir",
         "common.in": "dans",
+
+        // TTS (FR)
+        "tts.play": "Lire à voix haute",
+        "tts.pause": "Pause",
+        "tts.resume": "Reprendre",
+        "tts.stop": "Arrêter",
+        "tts.speed": "Vitesse",
+        "tts.unsupported": "La synthèse vocale n'est pas supportée par votre navigateur",
+        "tts.error": "Échec de la lecture",
+        "tts.reading": "Lecture en cours...",
+
         "changelog.v051.title": "Mobilité & Stabilité 📱⚡",
         "changelog.v051.mobile": "Optimisation Mobile : Refonte de la vue cours, aperçus de fichiers plus fluides et en-tête intelligent pour smartphones.",
         "changelog.v051.folders": "Navigation : Dossiers ouverts par défaut et amélioration de la visibilité de la hiérarchie.",
@@ -1018,6 +1040,17 @@ const translations: Translations = {
         "gen.delete.error": "Chunk error!",
         "common.open": "Teleport",
         "common.in": "in",
+
+        // TTS (MC)
+        "tts.play": "Activate Voice Crystal",
+        "tts.pause": "Mute Crystal",
+        "tts.resume": "Unmute Crystal",
+        "tts.stop": "Shatter Crystal",
+        "tts.speed": "Enchantment Level",
+        "tts.unsupported": "Voice Crystal not found in inventory",
+        "tts.error": "Crystal malfunction",
+        "tts.reading": "Crystal speaking...",
+
         // Item Edit
         "item.edit": "Enchant Item",
         "item.edit.title": "Enchant Loot",
