@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 
 // Lazy load pages to split bundle
 const Dashboard = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.Dashboard })))
+const LibraryPage = lazy(() => import('@/pages/LibraryPage').then(m => ({ default: m.LibraryPage }))) // Added
 const CourseView = lazy(() => import('@/pages/CourseView').then(m => ({ default: m.CourseView })))
 const ItemView = lazy(() => import('@/pages/ItemView').then(m => ({ default: m.ItemView })))
 const FolderView = lazy(() => import('@/pages/FolderView').then(m => ({ default: m.FolderView })))
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
                     {
                         index: true,
                         element: <LazyPage><Dashboard /></LazyPage>,
+                    },
+                    {
+                        path: 'library', // New Route
+                        element: <LazyPage><LibraryPage /></LazyPage>,
                     },
                     {
                         path: 'settings',

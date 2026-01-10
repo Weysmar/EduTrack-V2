@@ -86,7 +86,7 @@ export function Dashboard() {
     ]
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-6">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-6">
 
             {/* HERO SECTION */}
             <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl">
@@ -167,7 +167,14 @@ export function Dashboard() {
             {/* BENTO GRID LAYOUT */}
             <div className="space-y-6">
 
-                {/* TOP ROW: CONTENT (Stats + Recents + Activity) */}
+                {/* CALENDAR (Moved up as requested) */}
+                <div className="w-full">
+                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[500px]">
+                        <CalendarWidget />
+                    </div>
+                </div>
+
+                {/* BOTTOM ROW: CONTENT (Stats + Recents + Activity) */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                     <div className="md:col-span-12 space-y-6">
 
@@ -210,7 +217,7 @@ export function Dashboard() {
                                         <Clock className="h-5 w-5 text-primary" />
                                         {t('dashboard.recent')}
                                     </h2>
-                                    <Link to="/courses" className="text-xs text-primary hover:underline">Voir tout</Link>
+                                    <Link to="/library" className="text-xs text-primary hover:underline">Voir tout</Link>
                                 </div>
 
                                 {recentCourses.length > 0 ? (
@@ -283,12 +290,6 @@ export function Dashboard() {
                     </div>
                 </div>
 
-                {/* BOTTOM ROW: CALENDAR (Full Width) */}
-                <div className="w-full">
-                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-h-[500px]">
-                        <CalendarWidget />
-                    </div>
-                </div>
             </div>
         </div>
     )
