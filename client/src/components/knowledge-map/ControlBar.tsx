@@ -12,7 +12,8 @@ export function ControlBar() {
     };
 
     const handleHome = () => {
-        setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 800 });
+        // Reset view to fit all nodes (center on content)
+        fitView({ padding: 0.2, duration: 800 });
     };
 
     return (
