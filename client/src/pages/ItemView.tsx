@@ -59,7 +59,7 @@ export function ItemView() {
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
-    const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft'>('microsoft') // Lifted state
+    const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft' | 'local'>('microsoft') // Lifted state
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
