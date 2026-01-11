@@ -93,7 +93,10 @@ export function useKnowledgeMapData() {
                     children: [],
                     childrenCount: 0,
                     resourceCount: 0,
-                    data: { fileType: item.type } // Store type for icon
+                    data: {
+                        fileType: item.type,
+                        courseId: courseIdStr // Add courseId for navigation
+                    }
                 });
                 courseNode.resourceCount++;
             });
