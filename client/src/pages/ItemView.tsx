@@ -23,6 +23,7 @@ import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
 import { EditItemModal } from '@/components/EditItemModal'
+import { TTSControls } from '@/components/TTSControls'
 
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 import { Editor } from '@/components/Editor'
@@ -472,6 +473,17 @@ export function ItemView() {
                             )}
                         </div>
                     </div>
+                    {/* TTS Controls */}
+                    {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
+                        <>
+                            <TTSControls
+                                text={item.content || item.extractedContent || ''}
+                                language={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
+                            />
+                            <div className="h-6 w-px bg-border mx-1" />
+                        </>
+                    )}
+
                 </div>
 
                 <div className="flex items-center gap-2">
