@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactFlow, {
     Background,
     MiniMap,
@@ -151,9 +152,26 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
         savePosition(node.id, node.position.x, node.position.y);
     }, [savePosition]);
 
+    const navigate = useNavigate();
+
     const onNodeDoubleClick = useCallback((event: any, node: Node) => {
-        fitView({ nodes: [node], duration: 800, padding: 0.5 });
-    }, [fitView]);
+        // Navigate on double click
+        if (node.data.type === 'course') {
+            navigate(`/course/${node.id}`);
+        } else if (node.data.type === 'item') {
+            const courseId = node.data.courseId || node.data.data?.courseId;
+            if (courseId) {
+                navigate(`/course/${courseId}/item/${node.id}`);
+            } else {
+                // Fallback if courseId is missing (should not happen if data is robust)
+                console.warn("Missing courseId for item navigation", node);
+                // Try to fallback to finding parent? For now just zoom.
+                fitView({ nodes: [node], duration: 800, padding: 0.5 });
+            }
+        } else {
+            fitView({ nodes: [node], duration: 800, padding: 0.5 });
+        }
+    }, [fitView, navigate]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">Loading Knowledge Map...</div>;
