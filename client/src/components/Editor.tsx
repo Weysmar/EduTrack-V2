@@ -30,7 +30,21 @@ export function Editor({ content, onChange, editable = true, className }: Editor
     // Determine dictation language based on app language
     const dictationLang = language === 'fr' ? 'fr-FR' : 'en-US';
 
-    const { startListening, stopListening, isListening, isSupported } = useSpeechRecognition(dictationLang);
+    const { startListening, stopListening, isListening, isSupported, error: speechError } = useSpeechRecognition(dictationLang);
+
+    useEffect(() => {
+        if (speechError) {
+            if (speechError === 'not-allowed' || speechError === 'permission-denied') {
+                toast.error(t('stt.error.permission'), {
+                    description: window.location.protocol === 'http:'
+                        ? t('stt.error.https')
+                        : t('stt.error.blocked')
+                });
+            } else {
+                toast.error(t('stt.error.generic'));
+            }
+        }
+    }, [speechError, t]);
 
     const handleDictationToggle = () => {
         if (isListening) {
