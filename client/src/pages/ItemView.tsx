@@ -478,7 +478,7 @@ export function ItemView() {
                         <>
                             <TTSControls
                                 text={item.content || item.extractedContent || ''}
-                                language={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
+                                lang={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
                             />
                             <div className="h-6 w-px bg-border mx-1" />
                         </>
