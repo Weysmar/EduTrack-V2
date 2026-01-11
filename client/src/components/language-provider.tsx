@@ -309,6 +309,10 @@ const translations: Translations = {
         "stt.stop": "Stop Dictation",
         "stt.listening": "Listening...",
         "stt.unsupported": "Speech-to-Text not supported",
+        "stt.error.permission": "Microphone Access Denied",
+        "stt.error.https": "Speech recognition requires a secure HTTPS connection (or localhost).",
+        "stt.error.blocked": "Please allow microphone access in your browser settings.",
+        "stt.error.generic": "Speech recognition failed.",
 
         "changelog.v051.title": "Mobility & Stability 📱⚡",
         "changelog.v051.mobile": "Mobile Optimization: Reworked Course View for smartphones with compact cards, an intelligent header, and optimized file previews.",
@@ -713,6 +717,10 @@ const translations: Translations = {
         "stt.stop": "Arrêter la dictée",
         "stt.listening": "J'écoute...",
         "stt.unsupported": "Reconnaissance vocale non supportée",
+        "stt.error.permission": "Accès Micro Refusé",
+        "stt.error.https": "La reconnaissance vocale nécessite une connexion sécurisée HTTPS (ou localhost).",
+        "stt.error.blocked": "Veuillez autoriser l'accès au micro dans les paramètres du navigateur.",
+        "stt.error.generic": "Échec de la reconnaissance vocale.",
 
         "changelog.v051.title": "Mobilité & Stabilité 📱⚡",
         "changelog.v051.mobile": "Optimisation Mobile : Refonte de la vue cours, aperçus de fichiers plus fluides et en-tête intelligent pour smartphones.",
