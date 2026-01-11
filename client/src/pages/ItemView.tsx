@@ -314,16 +314,21 @@ export function ItemView() {
             {/* HOISTED Fullscreen Modal (Works for ALL file types now) */}
             {isPdfFullscreen && (
                 <div className="fixed inset-0 z-[999] bg-black flex flex-col animate-in fade-in duration-200">
-                    <div className="absolute top-4 right-6 z-[1000] flex gap-2">
+                    {/* Toolbar */}
+                    <div className="h-14 bg-black/90 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-white font-medium text-sm">{item?.title || t('document.fullscreen')}</h3>
+                        </div>
                         <button
                             onClick={() => setIsPdfFullscreen(false)}
-                            className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors"
                         >
                             <Minimize className="h-4 w-4" />
                             <span className="text-sm font-medium hidden sm:inline">{t('action.close')}</span>
                         </button>
                     </div>
-                    <div className="w-full h-full overflow-hidden">
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-hidden">
                         {isOffice ? (
                             <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
                                 <OfficeViewer
