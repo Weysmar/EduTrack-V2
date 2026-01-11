@@ -34,9 +34,10 @@ interface MapContentProps {
     onToggleTopics: (v: boolean) => void;
     onToggleCourses: (v: boolean) => void;
     onToggleDocuments: (v: boolean) => void;
+    onClose: () => void;
 }
 
-function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onToggleTopics, onToggleCourses, onToggleDocuments }: MapContentProps) {
+function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onToggleTopics, onToggleCourses, onToggleDocuments, onClose }: MapContentProps) {
     const { rootNodes, savePosition, isLoading } = useKnowledgeMapData();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -157,10 +158,12 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
     const onNodeDoubleClick = useCallback((event: any, node: Node) => {
         // Navigate on double click
         if (node.data.type === 'course') {
+            onClose(); // Close modal before navigating
             navigate(`/course/${node.id}`);
         } else if (node.data.type === 'item') {
             const courseId = node.data.courseId || node.data.data?.courseId;
             if (courseId) {
+                onClose(); // Close modal before navigating
                 navigate(`/course/${courseId}/item/${node.id}`);
             } else {
                 // Fallback if courseId is missing (should not happen if data is robust)
@@ -171,7 +174,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
         } else {
             fitView({ nodes: [node], duration: 800, padding: 0.5 });
         }
-    }, [fitView, navigate]);
+    }, [fitView, navigate, onClose]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">Loading Knowledge Map...</div>;
