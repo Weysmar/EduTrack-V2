@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FileText, Download, ExternalLink, RefreshCw, AlertCircle, Loader2, Maximize2, Minimize2, Laptop } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Download, RefreshCw, Laptop } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
 import { useLanguage } from './language-provider';
 import { API_URL } from '@/config';
@@ -23,7 +23,6 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft' | 'local'>(
         isDocx ? 'microsoft' : 'microsoft'
     );
-    const [isZenMode, setIsZenMode] = useState(false);
     const [hasError, setHasError] = useState(false);
 
     const engine = controlledEngine || internalEngine;
@@ -36,8 +35,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
         }
     };
 
-    // Toggle Zen Handler
-    const toggleZen = () => setIsZenMode(!isZenMode);
+
 
     // Construct direct public URL
     const getPublicUrl = () => {
@@ -64,12 +62,9 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     if (engine === 'local') {
         if (isDocx) {
             return (
-                <div className={isZenMode ? "fixed inset-0 z-[100] bg-background flex flex-col" : `flex flex-col h-full bg-slate-50 border rounded-lg overflow-hidden ${className}`}>
+                <div className={`flex flex-col h-full bg-slate-50 border rounded-lg overflow-hidden ${className}`}>
                     <div className="flex items-center justify-between px-4 py-2 bg-white border-b text-sm">
                         <div className="flex items-center gap-3">
-                            <button onClick={toggleZen} className="p-1.5 rounded hover:bg-muted">
-                                {isZenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                            </button>
                             <span className="font-medium text-muted-foreground flex items-center gap-2">
                                 <Laptop className="h-4 w-4" />
                                 Mode Local (Rapide)
@@ -157,22 +152,10 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     const currentSrc = engine === 'google' ? googleViewerUrl : officeViewerUrl;
 
     return (
-        <div className={isZenMode
-            ? "fixed inset-0 z-[100] bg-background flex flex-col animate-in fade-in duration-300"
-            : `flex flex-col h-full bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden ${className}`
-        }>
+        <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden ${className}`}>
             {/* Toolbar */}
             <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b text-sm">
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={toggleZen}
-                        className={`p-1.5 rounded-full transition-all flex items-center gap-2 ${isZenMode ? 'bg-primary text-primary-foreground shadow-lg px-3' : 'text-muted-foreground hover:bg-muted'}`}
-                        title={isZenMode ? t('action.exitZen') : t('action.enterZen')}
-                    >
-                        {isZenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                        {isZenMode && <span className="text-xs font-bold">{t('action.exitZen') || 'Quitter Zen'}</span>}
-                    </button>
-
                     <span className="font-medium text-muted-foreground flex items-center gap-2 hidden sm:flex">
                         Aperçu ({engine === 'google' ? 'Google' : 'Microsoft'})
                     </span>
