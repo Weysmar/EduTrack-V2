@@ -12,7 +12,8 @@ import {
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 interface EditorProps {
     content: string
