@@ -43,7 +43,7 @@ export const PostItNode = memo(({ data }: NodeProps<HierarchyNode>) => {
     // Handle specific file extensions if fileType is generic
     const isImageFile = isItem && (
         isImage ||
-        ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(data.data?.fileType?.split('/').pop() || '')
+        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'].includes(data.data?.fileType?.split('/').pop() || '')
     );
 
     const imageUrl = isImageFile && data.data?.storageKey
