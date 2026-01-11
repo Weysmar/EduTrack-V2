@@ -59,6 +59,7 @@ export function KnowledgeMapModal({ isOpen, onClose }: KnowledgeMapModalProps) {
                         onToggleTopics={setShowTopics}
                         onToggleCourses={setShowCourses}
                         onToggleDocuments={setShowDocuments}
+                        onClose={onClose}
                     />
                 </div>
 
