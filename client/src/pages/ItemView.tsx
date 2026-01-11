@@ -313,8 +313,8 @@ export function ItemView() {
         <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-right-5 duration-300">
             {/* HOISTED Fullscreen Modal (Works for ALL file types now) */}
             {isPdfFullscreen && (
-                <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                    <div className="absolute top-4 right-6 z-10 flex gap-2">
+                <div className="fixed inset-0 z-[999] bg-black flex flex-col animate-in fade-in duration-200">
+                    <div className="absolute top-4 right-6 z-[1000] flex gap-2">
                         <button
                             onClick={() => setIsPdfFullscreen(false)}
                             className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
@@ -323,19 +323,19 @@ export function ItemView() {
                             <span className="text-sm font-medium hidden sm:inline">{t('action.close')}</span>
                         </button>
                     </div>
-                    <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
+                    <div className="w-full h-full overflow-hidden">
                         {isOffice ? (
-                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
+                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
                                 <OfficeViewer
                                     url={pdfUrl || ''}
                                     storageKey={item?.storageKey}
-                                    className="h-full w-full shadow-2xl"
+                                    className="h-full w-full"
                                     engine={officeEngine}
                                     onEngineChange={setOfficeEngine}
                                 />
                             </div>
                         ) : isImage ? (
-                            <div className="w-full h-full flex items-center justify-center bg-black/90 p-4 relative">
+                            <div className="w-full h-full flex items-center justify-center bg-black p-4 relative">
                                 <img
                                     src={pdfUrl || ''}
                                     alt={item?.title || "Image"}
@@ -343,16 +343,16 @@ export function ItemView() {
                                 />
                             </div>
                         ) : (isText || isMarkdown) ? (
-                            <div className="w-full h-full bg-card p-4 md:p-8 overflow-hidden shadow-2xl rounded-lg">
+                            <div className="w-full h-full bg-card p-4 md:p-8 overflow-auto shadow-2xl">
                                 <TextViewer
                                     url={pdfUrl || ''}
                                     fileName={item?.fileName}
                                     isMarkdown={isMarkdown}
-                                    className="h-full"
+                                    className="min-h-full"
                                 />
                             </div>
                         ) : (
-                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden shadow-2xl rounded-lg">
+                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
                                 {/* Default to Iframe/PDF logic */}
                                 <iframe
                                     src={`${pdfUrl}#view=FitH`}
