@@ -44,7 +44,7 @@ export function AuthPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <main className="flex min-h-screen items-center justify-center bg-background px-4">
             <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg">
                 <div className="text-center">
                     <div className="flex justify-center mb-6">
@@ -130,6 +130,6 @@ export function AuthPage() {
                     </button>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }
