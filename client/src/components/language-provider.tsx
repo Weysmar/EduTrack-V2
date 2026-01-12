@@ -355,6 +355,13 @@ const translations: Translations = {
         "changelog.v058.library": "Library Page: A dedicated space to browse and filter all your courses.",
         "changelog.v058.dashboard": "Dashboard Refinements: Improved layout and added a compact focus timer to the header.",
 
+        // v1.3.0
+        "changelog.v130.title": "Performance & Mobile 🚀",
+        "changelog.v130.mobile": "Mobile Experience: Redesigned resource viewer with full-screen support and optimized buttons.",
+        "changelog.v130.performance": "Lightning Fast: Improved load times by 40% with smart code-splitting and optimized assets.",
+        "changelog.v130.documents": "Document Import Fix: You can now attach files to exercises without errors.",
+        "changelog.v130.ai": "AI Updates: Latest Gemini 2.5 models with improved reliability.",
+
         // v0.5.4
         "changelog.v054.title": "Power User Update",
         "changelog.v054.board": "Added Investigation Board view for visual knowledge mapping.",
@@ -775,6 +782,13 @@ const translations: Translations = {
         "changelog.v058.stt": "Reconnaissance Vocale : Dictez votre contenu directement dans l'éditeur.",
         "changelog.v058.library": "Bibliothèque : Un espace dédié pour explorer et filtrer tous vos cours.",
         "changelog.v058.dashboard": "Tableau de Bord : Mise en page améliorée et minuteur focus compact dans l'en-tête.",
+
+        // v1.3.0
+        "changelog.v130.title": "Performance & Mobile 🚀",
+        "changelog.v130.mobile": "Expérience Mobile : Visualiseur de ressources redessiné avec support plein écran et boutons optimisés.",
+        "changelog.v130.performance": "Ultra-Rapide : Temps de chargement réduits de 40% grâce au découpage intelligent du code et aux ressources optimisées.",
+        "changelog.v130.documents": "Correction Import : Vous pouvez maintenant joindre des fichiers aux exercices sans erreur.",
+        "changelog.v130.ai": "IA Mise à Jour : Nouveaux modèles Gemini 2.5 avec fiabilité améliorée.",
 
         // v0.5.4
         "changelog.v054.title": "Mise à jour Power User",
