@@ -391,8 +391,8 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
-                </div >
-            </Dialog >
-        </Transition >
+                </div>
+            </Dialog>
+        </Transition>
     )
 }
