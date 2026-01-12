@@ -126,7 +126,7 @@ export function AppLayout() {
                     <div className="flex items-center gap-2 md:gap-4">
                         <button
                             onClick={toggleSidebar}
-                            className="p-2 hover:bg-accent rounded-md lg:hidden"
+                            className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
                             aria-label="Toggle Sidebar"
                         >
                             <Menu className="h-5 w-5" />
