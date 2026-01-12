@@ -13,7 +13,7 @@ import { pdfjs } from 'react-pdf';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Pin worker version to 5.4.296 to match the API version bundled with react-pdf 10.3.0
-const workerUrl = `//unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+const workerUrl = `//unpkg.com/pdfjs-dist@5.4.296/legacy/build/pdf.worker.min.mjs`;
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
