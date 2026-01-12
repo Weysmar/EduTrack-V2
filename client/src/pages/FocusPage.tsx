@@ -67,23 +67,24 @@ export function FocusPage() {
                 )} />
             )}
 
-            {/* Back Button */}
-            <button
-                onClick={() => navigate('/')}
-                className="absolute top-4 left-4 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-                <ChevronLeft className="w-5 h-5" />
-                {t('common.back') === 'common.back' ? "Retour" : t('common.back')}
-            </button>
+            {/* Header Controls */}
+            <div className="w-full flex items-center justify-between p-4 z-10">
+                <button
+                    onClick={() => navigate('/')}
+                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                    {t('common.back') === 'common.back' ? "Retour" : t('common.back')}
+                </button>
 
-            {/* Fullscreen Toggle */}
-            <button
-                onClick={toggleFullscreen}
-                className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title="Toggle Fullscreen"
-            >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
+                <button
+                    onClick={toggleFullscreen}
+                    className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Toggle Fullscreen"
+                >
+                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                </button>
+            </div>
 
             {/* Main Timer Container */}
             <div className="flex flex-col items-center gap-8 w-full max-w-md z-1">

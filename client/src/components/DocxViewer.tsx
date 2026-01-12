@@ -39,7 +39,7 @@ export function DocxViewer({ url, className = "" }: DocxViewerProps) {
                 await renderAsync(blob, containerRef.current, undefined, {
                     className: "docx-wrapper",
                     inWrapper: true,
-                    ignoreWidth: false, // Keep original width for fidelity
+                    ignoreWidth: true, // Allow reflow to fit container width
                     breakPages: true,
                     experimental: true, // Needed for advanced features
                     trimXmlDeclaration: true,
