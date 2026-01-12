@@ -8,7 +8,7 @@ import { CalendarWidget } from '@/components/CalendarWidget'
 import { useProfileStore } from '@/store/profileStore'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useQuery } from '@tanstack/react-query'
-import { courseQueries, itemQueries } from '@/lib/api/queries'
+import { courseQueries, itemQueries, analyticsQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 export function Dashboard() {
@@ -37,8 +37,59 @@ export function Dashboard() {
         return "Bonsoir";
     }, []);
 
-    // Mock Streak Logic (replace with real data later)
-    const streakDays = 5;
+    // Calculate Streak from Session Data
+    const { data: sessions = [] } = useQuery({
+        queryKey: ['analytics-sessions', activeProfile?.id],
+        queryFn: () => analyticsQueries.getSessions(),
+        enabled: !!activeProfile
+    });
+
+    const streakDays = useMemo(() => {
+        if (!sessions || sessions.length === 0) return 0;
+
+        // Sort sessions by date (newest first)
+        const sortedSessions = [...sessions].sort((a: any, b: any) =>
+            new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+        );
+
+        // Calculate consecutive days
+        let streak = 0;
+        let lastDate: Date | null = null;
+
+        for (const session of sortedSessions) {
+            const sessionDate = new Date(session.date || session.createdAt);
+            sessionDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            if (!lastDate) {
+                // First session (most recent)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                // Streak only counts if last session was today or yesterday
+                if (sessionDate.getTime() === today.getTime() || sessionDate.getTime() === yesterday.getTime()) {
+                    streak = 1;
+                    lastDate = sessionDate;
+                } else {
+                    break; // Streak is broken
+                }
+            } else {
+                // Check if this session is the day before the last one
+                const expectedDate = new Date(lastDate);
+                expectedDate.setDate(expectedDate.getDate() - 1);
+
+                if (sessionDate.getTime() === expectedDate.getTime()) {
+                    streak++;
+                    lastDate = sessionDate;
+                } else {
+                    break; // Gap in streak
+                }
+            }
+        }
+
+        return streak;
+    }, [sessions]);
 
     if (!activeProfile) {
         return (
