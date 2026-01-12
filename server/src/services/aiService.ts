@@ -5,6 +5,17 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // For now, we use server env key OR pass key from request
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Map friendly model names to their actual API versions
+const mapModelName = (model: string): string => {
+    const modelMap: Record<string, string> = {
+        'gemini-1.5-flash': 'gemini-1.5-flash-latest',
+        'gemini-1.5-pro': 'gemini-1.5-pro-latest',
+        'gemini-2.0-flash': 'gemini-2.0-flash-exp',
+        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite-exp'
+    };
+    return modelMap[model] || model;
+};
+
 export const aiService = {
     async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         if (provider === 'perplexity') {
@@ -50,7 +61,8 @@ export const aiService = {
             if (!fullPrompt || fullPrompt.length === 0) {
                 throw new Error('Prompt is empty');
             }
-            console.log(`[AI Service] Generating text with model ${model}. Prompt length: ${fullPrompt.length} chars. Key contents: ${effectiveKey.substring(0, 4)}...`);
+            const apiModel = mapModelName(model);
+            console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars. Key contents: ${effectiveKey.substring(0, 4)}...`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
             // Use specific model version for stability or catch 404
