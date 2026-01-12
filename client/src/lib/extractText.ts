@@ -1,5 +1,3 @@
-
-
 import * as pdfjsLib from 'pdfjs-dist';
 
 import mammoth from 'mammoth';
