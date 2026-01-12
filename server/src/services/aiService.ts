@@ -8,10 +8,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        'gemini-1.5-flash': 'gemini-1.5-flash-002',
-        'gemini-1.5-pro': 'gemini-1.5-pro-002',
+        // Stable models
+        'gemini-1.5-flash': 'gemini-1.5-flash',
+        'gemini-1.5-pro': 'gemini-1.5-pro',
+
+        // Experimental / Preview (Update as needed)
         'gemini-2.0-flash': 'gemini-2.0-flash-exp',
-        'gemini-2.0-flash-lite': 'gemini-exp-1206' // Experimental lite model
+
+        // Perplexity mappings (if passed through here)
+        'sonar-pro': 'sonar-pro',
+        'sonar': 'sonar',
+        'sonar-reasoning': 'sonar-reasoning'
     };
     return modelMap[model] || model;
 };
@@ -113,20 +120,35 @@ export const aiService = {
                 throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
             }
 
+            // Map model name
+            const apiModel = mapModelName(model);
+            console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
+
             const client = new GoogleGenerativeAI(effectiveKey);
             const modelInstance = client.getGenerativeModel({
-                model,
+                model: apiModel,
                 generationConfig: {
                     responseMimeType: "application/json"
                 }
             });
 
-            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
+            // For JSON mode, we don't strictly need system prompt in the way text mode does, 
+            // but Gemini 1.5 supports systemInstruction. 
+            // We'll combine it for compatibility.
+            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
+
             const result = await modelInstance.generateContent(fullPrompt);
             const response = await result.response;
             const text = response.text();
 
-            return JSON.parse(text);
+            try {
+                return JSON.parse(text);
+            } catch (jsonError) {
+                console.error("JSON Parse Error on raw text:", text);
+                // Fallback: try to extract JSON markdown block
+                const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
+                return JSON.parse(cleanText);
+            }
         } catch (error: any) {
             console.error('AI JSON Generation Error Stack:', error);
 
