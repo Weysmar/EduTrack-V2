@@ -42,9 +42,19 @@ export const aiService = {
                 throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
             }
 
+            // Perform basic validation
+            if (!fullPrompt || fullPrompt.length === 0) {
+                throw new Error('Prompt is empty');
+            }
+            console.log(`[AI Service] Generating text with model ${model}. Prompt length: ${fullPrompt.length} chars. Key contents: ${effectiveKey.substring(0, 4)}...`);
+
             const client = new GoogleGenerativeAI(effectiveKey);
             // Use specific model version for stability or catch 404
-            const modelInstance = client.getGenerativeModel({ model });
+            const modelInstance = client.getGenerativeModel({
+                model
+            }, {
+                timeout: 120000 // 2 minutes timeout for large PDFs
+            });
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
             // But for simple compat:
