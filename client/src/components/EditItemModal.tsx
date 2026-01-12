@@ -137,7 +137,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                                         className="w-full px-3 py-2 border rounded-md bg-background"
                                     >
                                         <option value="todo">{t('status.todo')}</option>
-                                        <option value="in-progress">{t('status.inprogress')}</option>
+                                        <option value="in-progress">{t('status.in-progress')}</option>
                                         <option value="completed">{t('status.completed')}</option>
                                     </select>
                                 </div>
