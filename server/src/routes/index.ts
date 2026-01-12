@@ -14,6 +14,8 @@ import planningRoutes from './planningRoutes';
 import studyPlanRoutes from './studyPlanRoutes';
 import profileRoutes from './profileRoutes';
 
+import analyticsRoutes from './analyticsRoutes';
+
 const router = Router();
 
 router.use('/auth', authRoutes);
@@ -29,5 +31,6 @@ router.use('/ai', aiRoutes);
 router.use('/extract', extractionRoutes);
 router.use('/planning', planningRoutes);
 router.use('/plans', studyPlanRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;
