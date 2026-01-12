@@ -85,8 +85,8 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
         <div>
             <div
                 className={cn(
-                    "group flex items-center justify-between px-3 py-2 rounded-r-full mr-2 transition-colors select-none",
-                    isActive ? "bg-[#D3E3FD] text-[#001D35] font-semibold dark:bg-primary/20 dark:text-primary-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    "group flex items-center justify-between px-2 py-1.5 rounded-md transition-colors select-none",
+                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
                 style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 8)}px` }}
                 onDragOver={(e) => e.preventDefault()}
@@ -133,10 +133,10 @@ function CourseItem({ course, level }: { course: Course, level: number }) {
             draggable
             onDragStart={handleDragStart}
             className={cn(
-                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-r-full mr-2 transition-colors cursor-grab active:cursor-grabbing",
+                "flex items-center gap-2.5 px-2 py-1.5 text-sm font-medium rounded-md transition-colors cursor-grab active:cursor-grabbing",
                 isActive
-                    ? "bg-[#D3E3FD] text-[#001D35] dark:bg-primary/20 dark:text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
             style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 24)}px` }}
         >
