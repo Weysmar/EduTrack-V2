@@ -134,6 +134,14 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 
         const updateData: any = { ...req.body };
 
+        // Sanitize data: remove 'file' property which comes from FormData implies by multer/body-parser but is not in Prisma schema
+        delete updateData.file;
+
+        // Ensure fileSize is Int if present (from body, before potential overwrite)
+        if (updateData.fileSize && typeof updateData.fileSize === 'string') {
+            updateData.fileSize = parseInt(updateData.fileSize, 10);
+        }
+
         // Handle File Replacement
         if (req.file) {
             // Delete old file and thumbnail if exists
