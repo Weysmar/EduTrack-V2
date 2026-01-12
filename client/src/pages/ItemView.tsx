@@ -521,21 +521,23 @@ export function ItemView() {
                                     >
                                         <ExternalLink className="h-5 w-5" />
                                     </a>
-                                    {/* Universal Local Fullscreen Button */}
-                                    {pdfUrl && (
-                                        <button
-                                            onClick={() => setIsPdfFullscreen(true)}
-                                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                                            title={t('action.fullscreen')}
-                                        >
-                                            <Maximize className="h-5 w-5" />
-                                        </button>
-                                    )}
                                     <div className="h-6 w-px bg-border mx-1 hidden md:block" />
                                 </>
                             );
                         })()
                     )}
+
+                    {/* Universal Fullscreen Button - Available for all items with files */}
+                    {pdfUrl && (
+                        <button
+                            onClick={() => setIsPdfFullscreen(true)}
+                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+                            title={t('action.fullscreen')}
+                        >
+                            <Maximize className="h-5 w-5" />
+                        </button>
+                    )}
+
 
                     {/* Edit Button Logic */}
                     {item.type === 'note' ? (
