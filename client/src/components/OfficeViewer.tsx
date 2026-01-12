@@ -67,7 +67,8 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                         <div className="flex items-center gap-3">
                             <span className="font-medium text-muted-foreground flex items-center gap-2">
                                 <Laptop className="h-4 w-4" />
-                                Mode Local (Rapide)
+                                <span className="hidden sm:inline">Mode Local (Rapide)</span>
+                                <span className="sm:hidden">Local</span>
                             </span>
                             <button
                                 onClick={() => setEngine('microsoft')}
