@@ -29,7 +29,7 @@ export const aiService = {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: model.includes('gemini') ? 'llama-3.1-sonar-small-128k-online' : model,
+                    model: model.includes('gemini') ? 'llama-3.1-sonar-large-128k-online' : model,
                     messages: [
                         { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
                         { role: 'user', content: prompt }

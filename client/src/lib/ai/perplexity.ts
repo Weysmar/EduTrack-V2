@@ -135,7 +135,7 @@ export async function generateWithPerplexity(prompt: string, systemPrompt: strin
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: model || 'sonar-pro',
+                model: model || 'llama-3.1-sonar-large-128k-online',
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: prompt }
