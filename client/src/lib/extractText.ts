@@ -174,6 +174,7 @@ async function extractPdfText(file: File): Promise<ExtractionResult> {
  * Renders each page as canvas and uses Tesseract.js
  */
 async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<ExtractionResult> {
+    const { createWorker } = await import('tesseract.js');
     const worker = await createWorker('eng+fra');
     let fullText = '';
 
@@ -220,6 +221,7 @@ async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<Extract
 
 async function extractImageText(file: File): Promise<string> {
     try {
+        const { createWorker } = await import('tesseract.js');
         const worker = await createWorker('eng+fra'); // Load English and French
         const ret = await worker.recognize(file);
         await worker.terminate();
