@@ -74,7 +74,8 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                                 className="text-xs text-blue-600 hover:underline flex items-center gap-1"
                             >
                                 <RefreshCw className="h-3 w-3" />
-                                Passer en Haute Fidélité
+                                <span className="hidden sm:inline">Passer en Haute Fidélité</span>
+                                <span className="sm:hidden">Haute Fidélité</span>
                             </button>
                         </div>
                         <div className="flex gap-2">
@@ -168,7 +169,8 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                             title="Utiliser le rendu navigateur (plus rapide, moins fidèle)"
                         >
                             <Laptop className="h-3 w-3" />
-                            Mode Local
+                            <span className="hidden sm:inline">Mode Local</span>
+                            <span className="sm:hidden">Local</span>
                         </button>
                     )}
                 </div>
