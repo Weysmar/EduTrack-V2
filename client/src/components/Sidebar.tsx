@@ -84,33 +84,40 @@ export function Sidebar() {
                 </button>
             </div>
 
-            <div className={cn("border-b space-y-2 transition-all", isCollapsed ? "p-2" : "p-4")}>
+            <div className={cn("py-4", isCollapsed ? "px-2" : "px-4")}>
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
                     className={cn(
-                        "w-full flex items-center gap-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all",
-                        isCollapsed ? "justify-center p-2" : "justify-center py-2 px-4"
+                        "flex items-center gap-3 transition-all duration-300 shadow-sm hover:shadow-md",
+                        isCollapsed
+                            ? "h-14 w-14 justify-center rounded-2xl bg-primary text-primary-foreground"
+                            : "h-14 w-40 px-5 rounded-2xl bg-[#C2E7FF] text-[#001D35] dark:bg-primary dark:text-primary-foreground"
                     )}
                     title={t('nav.newCourse')}
                 >
-                    <Plus className="h-4 w-4" />
-                    {!isCollapsed && <span className="font-medium hidden md:block">{t('nav.newCourse')}</span>}
-                </button>
-                <button
-                    onClick={handleCreateFolder}
-                    className={cn(
-                        "w-full flex items-center gap-2 bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-all text-sm",
-                        isCollapsed ? "justify-center p-2" : "justify-center py-1.5 px-4"
-                    )}
-                    title={t('folder.new')}
-                >
-                    <FolderPlus className="h-3.5 w-3.5" />
-                    {!isCollapsed && <span className="font-medium hidden md:block">{t('folder.new')}</span>}
+                    <Plus className={cn("transition-all", isCollapsed ? "h-6 w-6" : "h-6 w-6")} />
+                    {!isCollapsed && <span className="font-medium text-[15px]">{t('nav.newCourse')}</span>}
                 </button>
 
-
-
-
+                {!isCollapsed && (
+                    <button
+                        onClick={handleCreateFolder}
+                        className="mt-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-4 py-2 rounded-full hover:bg-muted/50 transition-colors w-full"
+                        title={t('folder.new')}
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span>{t('folder.new')}</span>
+                    </button>
+                )}
+                {isCollapsed && (
+                    <button
+                        onClick={handleCreateFolder}
+                        className="mt-4 h-10 w-10 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted transition-colors mx-auto"
+                        title={t('folder.new')}
+                    >
+                        <FolderPlus className="h-5 w-5" />
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto py-4 overflow-x-hidden">
