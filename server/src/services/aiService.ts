@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // Initialize Gemini
 // Note: In a real app, you might want to instantiate this per request if using User's Key
@@ -55,7 +55,13 @@ export const aiService = {
             const client = new GoogleGenerativeAI(effectiveKey);
             // Use specific model version for stability or catch 404
             const modelInstance = client.getGenerativeModel({
-                model
+                model,
+                safetySettings: [
+                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+                ]
             }, {
                 timeout: 120000 // 2 minutes timeout for large PDFs
             });
