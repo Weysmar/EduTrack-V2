@@ -86,7 +86,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
             await updateItemMutation.mutateAsync(formData);
         } catch (error) {
             console.error("Update failed:", error)
-            toast.error("Failed to update item")
+            toast.error(t('item.edit.error'))
         }
     }
 
@@ -165,7 +165,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
 
                             {/* Exercise File Upload (Optional) */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">{t('item.edit.replaceFile')} (Optional)</label>
+                                <label className="text-sm font-medium">{t('item.edit.replaceFile')} ({t('common.optional')})</label>
                                 <div className="border border-dashed rounded-lg p-3 text-center hover:bg-muted/5 transition-colors cursor-pointer relative bg-background">
                                     <input
                                         type="file"
@@ -174,7 +174,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                                     />
                                     <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
                                         <FolderOpen className="h-4 w-4" />
-                                        <span>{file ? file.name : (item.fileName ? t('item.edit.keepFile') : "Drop file to attach")}</span>
+                                        <span>{file ? file.name : (item.fileName ? t('item.edit.keepFile') : t('item.edit.drop_file'))}</span>
                                     </div>
                                 </div>
                             </div>
@@ -219,7 +219,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                             disabled={updateItemMutation.isPending}
                             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50"
                         >
-                            {updateItemMutation.isPending ? 'Updating...' : "Save Changes"}
+                            {updateItemMutation.isPending ? t('item.edit.save_loading') : t('item.edit.save')}
                         </button>
                     </div>
                 </form>
