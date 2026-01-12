@@ -34,10 +34,19 @@ export const generateContent = async (req: Request, res: Response) => {
         const safeError = {
             message: error?.message || 'Unknown error',
             name: error?.name || 'Error',
-            stack: error?.stack
+            stack: error?.stack,
+            ...error // Spread any other properties like 'response' or 'status'
         };
         console.error('Error detail:', JSON.stringify(safeError, null, 2));
-        res.status(500).json({ message: 'Generation failed', error: safeError.message });
+
+        // Attempt to extract specific Google API error details
+        const details = error?.response?.data || error?.message || 'Unknown';
+
+        res.status(500).json({
+            message: 'Generation failed',
+            error: safeError.message,
+            details: details
+        });
     }
 };
 
