@@ -8,10 +8,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        'gemini-1.5-flash': 'gemini-1.5-flash-latest',
-        'gemini-1.5-pro': 'gemini-1.5-pro-latest',
+        'gemini-1.5-flash': 'gemini-1.5-flash-002',
+        'gemini-1.5-pro': 'gemini-1.5-pro-002',
         'gemini-2.0-flash': 'gemini-2.0-flash-exp',
-        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite-exp'
+        'gemini-2.0-flash-lite': 'gemini-exp-1206' // Experimental lite model
     };
     return modelMap[model] || model;
 };
