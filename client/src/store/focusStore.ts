@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { soundUtils } from '@/lib/soundUtils';
 
 type FocusMode = 'work' | 'break' | 'longBreak';
 
@@ -62,9 +63,8 @@ export const useFocusStore = create<FocusState>()(
                         new Notification("Session terminée !", { body: "Prenez une pause bien méritée ☕" });
                     }
 
-                    // Play Sound (TODO: Add sound file)
-                    // const audio = new Audio('/sounds/bell.mp3');
-                    // audio.play().catch(e => console.log('Audio error', e));
+                    // Play notification sound
+                    soundUtils.playSessionComplete();
 
                     set({
                         mode: nextMode,
@@ -78,6 +78,9 @@ export const useFocusStore = create<FocusState>()(
                     if (Notification.permission === 'granted') {
                         new Notification("Fin de la pause", { body: "C'est reparti pour une session ! 🚀" });
                     }
+
+                    // Play break end sound
+                    soundUtils.playBreakEnd();
 
                     set({
                         mode: 'work',
