@@ -170,7 +170,7 @@ export function AppLayout() {
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-auto p-4 lg:p-6"
+                <div className="flex-1 overflow-auto p-0 md:p-4 lg:p-6"
                 >
                     <Outlet />
                 </div>

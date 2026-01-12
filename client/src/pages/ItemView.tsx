@@ -665,7 +665,7 @@ export function ItemView() {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-6 md:p-10">
+            <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-4 md:p-10">
                 <div className={cn("w-full space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
 
                     {/* Metadata Badges */}
@@ -800,7 +800,7 @@ export function ItemView() {
                                                     h1: ({ children }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
                                                     h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
                                                     h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
-                                                    p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}</p>,
+                                                    p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}}</p>,
                                                     ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
                                                     li: ({ children }) => <li className="text-lg text-slate-700 dark:text-slate-300">{children}</li>,
                                                     strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
@@ -850,10 +850,10 @@ export function ItemView() {
                         </div>
                     ) : (
                         // ORIGINAL CONTENT VIEW
-                        <div className="bg-card border rounded-xl p-0 sm:p-0 min-h-[50vh] shadow-sm overflow-hidden">
+                        <div className="bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden -mx-4 md:mx-0">
                             {/* PDF VIEWER Integration */}
                             {pdfUrl ? (
-                                <div className="border rounded-lg overflow-hidden bg-card shadow-sm relative">
+                                <div className="border-0 md:border rounded-none md:rounded-lg overflow-hidden bg-card shadow-none md:shadow-sm relative">
 
                                     {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
                                     {(() => {
