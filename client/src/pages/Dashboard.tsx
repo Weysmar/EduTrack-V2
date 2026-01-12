@@ -91,6 +91,24 @@ export function Dashboard() {
         return streak;
     }, [sessions]);
 
+    // Calculate Weekly Goal Progress
+    const { data: weeklyGoals = [] } = useQuery({
+        queryKey: ['weekly-goals', activeProfile?.id],
+        queryFn: () => analyticsQueries.getWeeklyGoals(),
+        enabled: !!activeProfile
+    });
+
+    const weeklyGoalProgress = useMemo(() => {
+        const activeGoal = weeklyGoals.find((g: any) => g.status === 'active');
+        if (!activeGoal || !activeGoal.targetMinutes) return 0;
+
+        const achieved = activeGoal.achievedMinutes || 0;
+        const target = activeGoal.targetMinutes;
+        const percentage = Math.round((achieved / target) * 100);
+
+        return Math.min(percentage, 100); // Cap at 100%
+    }, [weeklyGoals]);
+
     if (!activeProfile) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -155,7 +173,7 @@ export function Dashboard() {
                             </span>
                             <span className="text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
                                 <Target className="w-4 h-4 text-emerald-400" />
-                                Objectif hebdo: 80%
+                                Objectif hebdo: {weeklyGoalProgress}%
                             </span>
                         </div>
 
