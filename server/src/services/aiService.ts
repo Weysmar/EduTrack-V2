@@ -132,14 +132,35 @@ export const aiService = {
                 }
             });
 
-            // For JSON mode, we don't strictly need system prompt in the way text mode does, 
-            // but Gemini 1.5 supports systemInstruction. 
-            // We'll combine it for compatibility.
-            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
+            // Retry logic for 503 Service Unavailable (Overloaded)
+            const maxRetries = 3;
+            let attempt = 0;
+            let text = "";
+            let lastError;
 
-            const result = await modelInstance.generateContent(fullPrompt);
-            const response = await result.response;
-            const text = response.text();
+            while (attempt < maxRetries) {
+                try {
+                    // For JSON mode, we don't strictly need system prompt in the way text mode does, 
+                    // but Gemini 1.5 supports systemInstruction. 
+                    // We'll combine it for compatibility.
+                    const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
+                    const result = await modelInstance.generateContent(fullPrompt);
+                    const response = await result.response;
+                    text = response.text();
+                    break; // Success
+                } catch (error: any) {
+                    lastError = error;
+                    if (error.message?.includes('503') || error.message?.includes('overloaded')) {
+                        console.warn(`[AI Service] 503 Overloaded (Attempt ${attempt + 1}/${maxRetries}). Retrying...`);
+                        attempt++;
+                        await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
+                    } else {
+                        throw error; // Fatal error
+                    }
+                }
+            }
+
+            if (!text && lastError) throw lastError;
 
             try {
                 return JSON.parse(text);
