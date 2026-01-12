@@ -168,7 +168,16 @@ export function CalendarWidget() {
 
 function formatEventTime(event: ICalEvent, t: (key: string) => string) {
     if (event.allDay) return t('calendar.allDay')
-    return `${format(event.start, 'HH:mm')}`
+
+    const startTime = format(event.start, 'HH:mm')
+
+    // Show end time if available
+    if (event.end) {
+        const endTime = format(event.end, 'HH:mm')
+        return `${startTime} - ${endTime}`
+    }
+
+    return startTime
 }
 
 function ClockIcon({ className }: { className?: string }) {

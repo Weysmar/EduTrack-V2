@@ -80,9 +80,19 @@ export class ICalParser {
             seconds = parseInt(timePart.substring(4, 6));
         }
 
-        // Note: This minimal parser assumes UTC ("Z") or local time for simplicity. 
-        // A robust parser would handle Timezones (TZID).
-        const date = new Date(year, month, day, hours, minutes, seconds);
+        // Check if the date is in UTC (ends with 'Z')
+        const isUTC = value.endsWith('Z');
+
+        // Create date properly based on timezone
+        let date: Date;
+        if (isUTC) {
+            // Use Date.UTC for UTC times to avoid timezone conversion issues
+            date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+        } else {
+            // Use local time for dates without timezone info
+            date = new Date(year, month, day, hours, minutes, seconds);
+        }
+
         return { date, allDay };
     }
 }
