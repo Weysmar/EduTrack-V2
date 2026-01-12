@@ -150,7 +150,7 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b gap-3">
                         <div className="flex items-start gap-3 w-full md:w-auto min-w-0">
                             <div className={cn("p-2 rounded-md flex-shrink-0",
-                                item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
+                                item.type === 'exercise' && \"bg-green-100 text-green-600 dark:bg-green-900/20\",
                                 item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                                 item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
                             )}>
@@ -354,3 +354,4 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
         </>
     )
 }
+
