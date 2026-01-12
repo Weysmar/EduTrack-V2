@@ -206,6 +206,10 @@ export const analyticsQueries = {
         const { data } = await apiClient.get('/analytics/achievements');
         return data;
     },
+    getSessions: async () => {
+        const { data } = await apiClient.get('/analytics/sessions');
+        return data;
+    },
     unlockAchievement: async (data: any) => {
         const { data: res } = await apiClient.post('/analytics/achievements', data);
         return res;
