@@ -18,7 +18,10 @@ interface GenerateExerciseModalProps {
     initialMode?: 'flashcards' | 'quiz'
 }
 
+import { useLanguage } from '@/components/language-provider'
+
 export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle, initialMode = 'flashcards' }: GenerateExerciseModalProps) {
+    const { t } = useLanguage()
     const navigate = useNavigate()
     const { activeProfile } = useProfileStore()
     const [mode, setMode] = useState<'flashcards' | 'quiz'>(initialMode)
@@ -364,6 +367,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             </button>
                                         </div>
                                     </div>
+                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
