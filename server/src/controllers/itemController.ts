@@ -151,6 +151,7 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
             updateData.storageKey = uploadResult.key;
             updateData.fileName = req.file.originalname;
             updateData.fileSize = req.file.size;
+            updateData.fileType = req.file.mimetype;
 
             // Generate Thumbnail
             const thumbnailBuffer = await storageService.generateThumbnail(req.file);
