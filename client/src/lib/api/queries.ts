@@ -48,6 +48,13 @@ export const itemQueries = {
         return res;
     },
     update: async (id: string, data: any) => {
+        // Handle multipart if file exists (same logic as create)
+        if (data instanceof FormData) {
+            const { data: res } = await apiClient.put(`/items/${id}`, data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return res;
+        }
         const { data: res } = await apiClient.put(`/items/${id}`, data);
         return res;
     },
