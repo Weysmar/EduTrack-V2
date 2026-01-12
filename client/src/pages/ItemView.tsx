@@ -406,7 +406,7 @@ export function ItemView() {
                     </button>
                     <div className="h-8 md:h-6 w-px bg-border text-muted-foreground hidden sm:block" />
                     <div className={cn("p-2 rounded-md flex-shrink-0 mt-1 md:mt-0",
-                        item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
+                        item.type === 'exercise' && \"bg-green-100 text-green-600 dark:bg-green-900/20\",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                         item.type === 'resource' && (isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
 
@@ -1037,3 +1037,4 @@ export function ItemView() {
         </div>
     )
 }
+
