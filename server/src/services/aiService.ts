@@ -67,7 +67,7 @@ export const aiService = {
             const client = new GoogleGenerativeAI(effectiveKey);
             // Use specific model version for stability or catch 404
             const modelInstance = client.getGenerativeModel({
-                model,
+                model: apiModel,
                 safetySettings: [
                     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
