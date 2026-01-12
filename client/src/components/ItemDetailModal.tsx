@@ -147,9 +147,9 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
 
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                 <div className="w-full max-w-3xl bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-                    <div className="flex items-center justify-between p-6 border-b">
-                        <div className="flex items-center gap-3">
-                            <div className={cn("p-2 rounded-md",
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b gap-3">
+                        <div className="flex items-start gap-3 w-full md:w-auto min-w-0">
+                            <div className={cn("p-2 rounded-md flex-shrink-0",
                                 item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                                 item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                                 item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
@@ -158,15 +158,15 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                                 {item.type === 'note' && <FileText className="h-5 w-5" />}
                                 {item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold">{item.title}</h2>
+                            <div className="min-w-0 flex-1">
+                                <h2 className="text-lg md:text-xl font-bold line-clamp-2 break-words">{item.title}</h2>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                     <Calendar className="h-3 w-3" />
                                     {item.createdAt?.toLocaleDateString()}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
                             {/* TTS Controls */}
                             {item.content && (
                                 <TTSControls
