@@ -164,24 +164,26 @@ export function Dashboard() {
                     <Sparkles className="w-64 h-64" />
                 </div>
 
-                <div className="relative z-10 p-8 md:p-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-                    <div className="space-y-4 max-w-2xl">
-                        <div className="flex items-center gap-3 text-white/80">
-                            <span className="text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
-                                <Flame className="w-4 h-4 text-orange-400 fill-orange-400" />
-                                {streakDays} Jours de série
+                <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col gap-6">
+                    <div className="space-y-3 md:space-y-4 max-w-2xl">
+                        <div className="flex flex-wrap items-center gap-2 text-white/80">
+                            <span className="text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-2.5 md:px-3 py-1 rounded-full border border-white/10">
+                                <Flame className="w-3 h-3 md:w-4 md:h-4 text-orange-400 fill-orange-400" />
+                                <span className="hidden sm:inline">{streakDays} Jours de série</span>
+                                <span className="sm:hidden">{streakDays}j</span>
                             </span>
-                            <span className="text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full border border-white/10">
-                                <Target className="w-4 h-4 text-emerald-400" />
-                                Objectif hebdo: {weeklyGoalProgress}%
+                            <span className="text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-white/10 px-2.5 md:px-3 py-1 rounded-full border border-white/10">
+                                <Target className="w-3 h-3 md:w-4 md:h-4 text-emerald-400" />
+                                <span className="hidden sm:inline">Objectif: {weeklyGoalProgress}%</span>
+                                <span className="sm:hidden">{weeklyGoalProgress}%</span>
                             </span>
                         </div>
 
                         <div>
-                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">
+                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2">
                                 {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-violet-300">{activeProfile.name}</span>.
                             </h1>
-                            <p className="text-lg text-slate-300 max-w-lg leading-relaxed">
+                            <p className="text-sm md:text-base lg:text-lg text-slate-300 max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none">
                                 Prêt à continuer votre progression ? Vous étiez sur <strong className="text-white">{lastActiveCourse?.title || "vos cours"}</strong> récemment.
                             </p>
                         </div>
@@ -190,39 +192,39 @@ export function Dashboard() {
                             <div className="pt-2">
                                 <Link
                                     to={`/course/${lastActiveCourse.id}`}
-                                    className="inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-lg shadow-white/10"
+                                    className="inline-flex items-center justify-center gap-2 bg-white text-slate-900 px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-lg shadow-white/10 w-full sm:w-auto"
                                 >
                                     <Zap className="w-4 h-4 fill-slate-900" />
-                                    Reprendre {lastActiveCourse.title}
+                                    <span className="truncate">Reprendre {lastActiveCourse.title}</span>
                                 </Link>
                             </div>
                         )}
                     </div>
 
-                    {/* DOCK (Quick Actions integrated into Hero for better visibility) */}
-                    <div className="flex gap-4">
+                    {/* DOCK (Quick Actions) - Grid 2x2 mobile, row desktop */}
+                    <div className="grid grid-cols-2 sm:flex gap-3 md:gap-4 w-full sm:w-auto">
                         {quickActions.map((action, idx) => (
                             action.link ? (
                                 <Link
                                     key={idx}
                                     to={action.link}
-                                    className="group flex flex-col items-center gap-2"
+                                    className="group flex flex-col items-center gap-2 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
-                                        <action.icon className="w-6 h-6" />
+                                    <div className={cn("w-14 h-14 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
+                                        <action.icon className="w-7 h-7 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors">{action.label}</span>
+                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors text-center">{action.label}</span>
                                 </Link>
                             ) : (
                                 <button
                                     key={idx}
                                     onClick={action.action}
-                                    className="group flex flex-col items-center gap-2"
+                                    className="group flex flex-col items-center gap-2 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
-                                        <action.icon className="w-6 h-6" />
+                                    <div className={cn("w-14 h-14 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
+                                        <action.icon className="w-7 h-7 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors">{action.label}</span>
+                                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors text-center">{action.label}</span>
                                 </button>
                             )
                         ))}
