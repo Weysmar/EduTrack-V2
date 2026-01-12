@@ -45,7 +45,7 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                    <div className="flex min-h-full items-center justify-center p-0 md:p-4 text-center">
                         <Transition.Child
                             as={Fragment}
                             enter="ease-out duration-300"
@@ -55,9 +55,9 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-6xl h-[calc(100vh-6rem)] md:h-[85vh] transform overflow-hidden rounded-lg md:rounded-2xl bg-card border shadow-xl transition-all flex flex-col">
+                            <Dialog.Panel className="w-full h-[100dvh] md:h-[85vh] md:max-w-6xl transform overflow-hidden rounded-none md:rounded-2xl bg-card border shadow-xl transition-all flex flex-col">
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                                <div className="flex items-center justify-between p-3 md:p-4 border-b shrink-0 bg-card z-10">
                                     <Dialog.Title as="h3" className="text-base md:text-lg font-medium leading-6 flex items-center gap-2 min-w-0 flex-1 mr-2">
                                         <span className="truncate">Viewing: {fileName}</span>
                                     </Dialog.Title>
@@ -80,7 +80,7 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-1 bg-muted/20 relative overflow-hidden flex items-center justify-center p-4">
+                                <div className="flex-1 bg-muted/20 relative overflow-hidden flex items-center justify-center p-0 md:p-4">
                                     {previewUrl && (
                                         <>
                                             {isPdf && (
