@@ -55,11 +55,11 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-6xl h-[85vh] transform overflow-hidden rounded-2xl bg-card border shadow-xl transition-all flex flex-col">
+                            <Dialog.Panel className="w-full max-w-6xl h-[calc(100vh-6rem)] md:h-[85vh] transform overflow-hidden rounded-lg md:rounded-2xl bg-card border shadow-xl transition-all flex flex-col">
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-4 border-b">
-                                    <Dialog.Title as="h3" className="text-lg font-medium leading-6 flex items-center gap-2">
-                                        Viewing: {fileName}
+                                <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                                    <Dialog.Title as="h3" className="text-base md:text-lg font-medium leading-6 flex items-center gap-2 min-w-0 flex-1 mr-2">
+                                        <span className="truncate">Viewing: {fileName}</span>
                                     </Dialog.Title>
                                     <div className="flex items-center gap-2">
                                         <a
