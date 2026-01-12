@@ -122,14 +122,14 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium">{t('course.create.color')}</label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2.5 md:gap-2">
                             {COLORS.map(c => (
                                 <button
                                     key={c}
                                     type="button"
-                                    onClick={() => { setColor(c); setIcon('') }} // prioritizing color resets icon if desired, or keep both. Pattern matches SettingsModal.
+                                    onClick={() => { setColor(c); setIcon('') }}
                                     className={cn(
-                                        "w-6 h-6 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background pointer-events-auto",
+                                        "w-9 h-9 md:w-8 md:h-8 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background pointer-events-auto",
                                         color === c && !icon && "ring-2 ring-offset-2 ring-primary scale-110"
                                     )}
                                     style={{ backgroundColor: c }}
@@ -140,26 +140,26 @@ export function CreateCourseModal({ isOpen, onClose, initialFolderId }: CreateCo
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Icon (Overrides Color)</label>
-                        <div className="grid grid-cols-8 gap-2">
+                        <div className="grid grid-cols-6 md:grid-cols-8 gap-2">
                             {EMOJIS.map(emoji => (
                                 <button
                                     key={emoji}
                                     type="button"
                                     onClick={() => setIcon(emoji)}
                                     className={cn(
-                                        "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-lg transition-colors pointer-events-auto",
+                                        "h-10 w-10 md:h-8 md:w-8 flex items-center justify-center rounded-md hover:bg-muted text-xl md:text-lg transition-colors pointer-events-auto",
                                         icon === emoji && "bg-primary/20 ring-1 ring-primary"
                                     )}
                                 >
                                     {emoji}
                                 </button>
                             ))}
-                            {/* Clear Icon Button - Optional since color click clears it, but good for UI consistency with Settings */}
+                            {/* Clear Icon Button */}
                             <button
                                 type="button"
                                 onClick={() => setIcon('')}
                                 className={cn(
-                                    "h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-xs text-muted-foreground border border-dashed pointer-events-auto",
+                                    "h-10 w-10 md:h-8 md:w-8 flex items-center justify-center rounded-md hover:bg-muted text-xs text-muted-foreground border border-dashed pointer-events-auto",
                                     !icon && "bg-muted/50"
                                 )}
                                 title="No Icon"

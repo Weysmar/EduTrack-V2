@@ -122,8 +122,8 @@ export function AppLayout() {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300">
-                <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:px-6 justify-between">
-                    <div className="flex items-center gap-4">
+                <header className="flex h-14 items-center gap-2 md:gap-4 border-b bg-card px-3 md:px-4 lg:px-6 justify-between">
+                    <div className="flex items-center gap-2 md:gap-4">
                         <button
                             onClick={toggleSidebar}
                             className="p-2 hover:bg-accent rounded-md lg:hidden"
@@ -133,10 +133,10 @@ export function AppLayout() {
                         </button>
                     </div>
 
-                    {/* Search Trigger */}
+                    {/* Search Trigger - Full bar hidden on mobile, icon only */}
                     <button
                         onClick={openCommandPalette}
-                        className="flex-1 max-w-xl mx-2 lg:mx-4 relative flex items-center group"
+                        className="flex-1 max-w-xl mx-2 lg:mx-4 relative hidden sm:flex items-center group"
                         aria-label="Search"
                     >
                         <div className="relative w-full flex items-center">
@@ -150,18 +150,25 @@ export function AppLayout() {
                         </div>
                     </button>
 
+                    {/* Search Icon - Mobile only */}
+                    <button
+                        onClick={openCommandPalette}
+                        className="sm:hidden p-2 hover:bg-accent rounded-md"
+                        aria-label="Search"
+                    >
+                        <Search className="h-5 w-5" />
+                    </button>
 
-
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                         <CompactFocusTimer />
-                        <div className="hidden sm:block">
+                        <div className="hidden md:block">
                             <GoogleConnectButton />
                         </div>
 
                         <LanguageToggle />
                         <ModeToggle />
                     </div>
-                </header >
+                </header> >
 
                 <div className="flex-1 overflow-auto p-4 lg:p-6">
                     <Outlet />
