@@ -72,10 +72,11 @@ export function CalendarWidget() {
     return (
         <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[300px]">
             {/* Header */}
-            <div className="p-4 border-b flex items-center justify-between bg-muted/30">
+            <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/30">
                 <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-lg capitalize">
-                        {format(weekStart, 'd MMM', { locale })} - {format(weekEnd, 'd MMM yyyy', { locale })}
+                    <h3 className="font-bold text-base md:text-lg capitalize">
+                        <span className="hidden sm:inline">{format(weekStart, 'd MMM', { locale })} - {format(weekEnd, 'd MMM yyyy', { locale })}</span>
+                        <span className="sm:hidden">{format(weekStart, 'd MMM', { locale })}</span>
                     </h3>
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
@@ -84,11 +85,11 @@ export function CalendarWidget() {
                     <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                     </button>
-                    <div className="h-4 w-px bg-border mx-1" />
+                    <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
                     <button onClick={prevWeek} className="p-1.5 hover:bg-muted rounded">
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded">
+                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
                         Today
                     </button>
                     <button onClick={nextWeek} className="p-1.5 hover:bg-muted rounded">
@@ -103,9 +104,9 @@ export function CalendarWidget() {
                 </div>
             )}
 
-            {/* Week Grid */}
-            <div className="flex-1 p-4 overflow-auto">
-                <div className="grid grid-cols-7 gap-4 min-w-[800px] h-full">
+            {/* Week Grid - Horizontal scroll on mobile */}
+            <div className="flex-1 p-2 md:p-4 overflow-x-auto">
+                <div className="grid grid-cols-7 gap-2 md:gap-4 min-w-[600px] md:min-w-0 h-full">
                     {days.map((day, idx) => {
                         const dayEvents = events.filter(e => {
                             if (!e.start) return false
@@ -120,10 +121,11 @@ export function CalendarWidget() {
                                     isToday(day) ? "bg-primary/5 border border-primary/20" : "bg-muted/10 border border-transparent"
                                 )}
                             >
-                                <div className="text-center mb-2">
-                                    <div className="text-xs font-medium text-muted-foreground uppercase">{format(day, 'EEE', { locale })}</div>
+                                <div className="text-center mb-1 md:mb-2">
+                                    <div className="text-xs font-medium text-muted-foreground uppercase hidden md:block">{format(day, 'EEE', { locale })}</div>
+                                    <div className="text-xs font-medium text-muted-foreground uppercase md:hidden">{format(day, 'EEEEE', { locale })}</div>
                                     <div className={cn(
-                                        "text-lg font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full mt-1",
+                                        "text-base md:text-lg font-bold w-7 h-7 md:w-8 md:h-8 mx-auto flex items-center justify-center rounded-full mt-1",
                                         isToday(day) && "bg-primary text-primary-foreground"
                                     )}>
                                         {format(day, 'd')}
