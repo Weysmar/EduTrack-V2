@@ -852,25 +852,6 @@ export function ItemView() {
                             {pdfUrl ? (
                                 <div className="border-0 md:border rounded-none md:rounded-lg overflow-hidden bg-card shadow-none md:shadow-sm relative">
 
-                                    {/* Fullscreen Toggle Button */}
-                                    <button
-                                        onClick={() => setIsPdfFullscreen(!isPdfFullscreen)}
-                                        className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors flex items-center gap-2"
-                                        title={isPdfFullscreen ? "Quitter le plein écran" : "Plein écran"}
-                                    >
-                                        {isPdfFullscreen ? (
-                                            <>
-                                                <Minimize className="h-4 w-4" />
-                                                <span className="text-sm font-medium hidden sm:inline">Quitter</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Maximize className="h-4 w-4" />
-                                                <span className="text-sm font-medium hidden sm:inline">Plein écran</span>
-                                            </>
-                                        )}
-                                    </button>
-
                                     {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
                                     {(() => {
                                         // Variables are now defined at component scope (lines ~100)
