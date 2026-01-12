@@ -8,14 +8,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Stable models
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
+        // Stable models (2026)
+        'gemini-1.5-flash': 'gemini-2.5-flash',
+        'gemini-1.5-pro': 'gemini-2.5-pro',
+        'gemini-2.0-flash': 'gemini-2.5-flash',
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+        'gemini-2.5-pro': 'gemini-2.5-pro',
 
-        // Experimental / Preview (Update as needed)
-        'gemini-2.0-flash': 'gemini-2.0-flash-exp',
-
-        // Perplexity mappings (if passed through here)
+        // Perplexity mappings
         'sonar-pro': 'sonar-pro',
         'sonar': 'sonar',
         'sonar-reasoning': 'sonar-reasoning'
