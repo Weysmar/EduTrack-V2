@@ -91,10 +91,10 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
     }
 
     return (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 md:p-4 animate-in fade-in duration-200">
             <div className="w-full max-w-2xl bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">{t('item.edit.title')}</h2>
+                <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                    <h2 className="text-base md:text-lg font-semibold">{t('item.edit.title')}</h2>
                     <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors">
                         <X className="h-4 w-4" />
                     </button>

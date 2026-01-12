@@ -155,7 +155,7 @@ export function Dashboard() {
     ]
 
     return (
-        <div className="p-4 md:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-6">
+        <div className="p-3 md:p-4 lg:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-4 md:space-y-6">
 
             {/* HERO SECTION */}
             <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl">
@@ -250,7 +250,7 @@ export function Dashboard() {
                     <div className="md:col-span-12 space-y-6">
 
                         {/* STATS ROW */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                             <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
                                 <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
                                     <Book className="h-6 w-6" />
