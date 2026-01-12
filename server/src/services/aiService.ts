@@ -42,6 +42,10 @@ export const aiService = {
                 throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
             }
 
+            // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
+            // But for simple compat:
+            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
+
             // Perform basic validation
             if (!fullPrompt || fullPrompt.length === 0) {
                 throw new Error('Prompt is empty');
@@ -58,7 +62,7 @@ export const aiService = {
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
             // But for simple compat:
-            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
+            // MOVED UP
 
             const result = await modelInstance.generateContent(fullPrompt);
             const response = await result.response;
