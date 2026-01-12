@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export const getSummary = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?.id; // Use id directly as it corresponds to Profile.id
         const { itemId } = req.query;
 
         if (!itemId) {
@@ -15,7 +15,7 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
 
         const summary = await prisma.summary.findFirst({
             where: {
-                profileId: req.user?.profileId, // Use profileId from auth middleware
+                profileId: userId, // Use userId
                 itemId: String(itemId)
             },
             orderBy: { createdAt: 'desc' }
@@ -31,7 +31,8 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
 export const saveSummary = async (req: AuthRequest, res: Response) => {
     try {
         const { itemId, itemType, content, stats, options } = req.body;
-        const profileId = req.user?.profileId;
+        // Use req.user.id because that's what's in the token and it IS the profile ID
+        const profileId = req.user?.id;
 
         if (!profileId) return res.status(401).json({ error: "Profile not found" });
 
