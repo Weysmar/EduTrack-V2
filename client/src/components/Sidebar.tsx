@@ -141,6 +141,28 @@ export function Sidebar() {
                         <p className="px-2 text-sm text-muted-foreground italic">{t('nav.noCourses')}</p>
                     )}
                 </nav>
+
+                {/* Main Navigation Links */}
+                <div className="mt-4 px-2 space-y-1">
+                    {!isCollapsed && (
+                        <h2 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 whitespace-nowrap">
+                            {t('nav.explore') || 'Explorer'}
+                        </h2>
+                    )}
+
+                    <Link
+                        to="/board"
+                        className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
+                            "hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+                            isCollapsed ? "justify-center" : ""
+                        )}
+                        title={t('board.mapTitle') || "Tableau d'Enquête"}
+                    >
+                        <MapIcon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span>{t('board.mapTitle') || "Tableau d'Enquête"}</span>}
+                    </Link>
+                </div>
             </div>
 
             <div className={cn("border-t mt-auto flex items-center gap-2 transition-all", isCollapsed ? "p-2 justify-center" : "p-4")}>

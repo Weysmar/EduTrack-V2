@@ -155,14 +155,6 @@ export function AppLayout() {
                             <GoogleConnectButton />
                         </div>
 
-                        <button
-                            onClick={() => setIsMapOpen(true)}
-                            className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            title="Tableau d'Enquête (Ctrl+Shift+M)"
-                        >
-                            <MapIcon className="h-5 w-5" />
-                        </button>
-
                         <LanguageToggle />
                         <ModeToggle />
                     </div>
