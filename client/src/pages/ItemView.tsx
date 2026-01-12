@@ -395,17 +395,17 @@ export function ItemView() {
             )}
 
             {/* Header */}
-            <div className="min-h-[4rem] h-auto border-b flex items-center justify-between px-3 md:px-6 py-2 bg-card sticky top-0 z-40">
-                <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <div className="min-h-[4rem] h-auto border-b flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-3 md:py-2 bg-card sticky top-0 z-40 gap-3 md:gap-4 transition-all">
+                <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0 w-full">
                     <button
                         onClick={() => navigate(`/course/${courseId}`)}
-                        className="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground flex-shrink-0"
+                        className="p-2 mt-1 md:mt-0 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground flex-shrink-0"
                     >
                         <ArrowLeft className="h-5 w-5" />
                         <span className="font-medium hidden sm:inline">{t('course.return')}</span>
                     </button>
-                    <div className="h-6 w-px bg-border text-muted-foreground hidden sm:block" />
-                    <div className={cn("p-2 rounded-md flex-shrink-0",
+                    <div className="h-8 md:h-6 w-px bg-border text-muted-foreground hidden sm:block" />
+                    <div className={cn("p-2 rounded-md flex-shrink-0 mt-1 md:mt-0",
                         item.type === 'exercise' && "bg-blue-100 text-blue-600 dark:bg-blue-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                         item.type === 'resource' && (isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
@@ -417,11 +417,11 @@ export function ItemView() {
 
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-base md:text-xl font-bold truncate">{item.title}</h1>
-                        <div className="flex flex-col">
-                            {course && <p className="text-xs text-muted-foreground truncate">{course.title}</p>}
+                        <h1 className="text-base md:text-xl font-bold whitespace-normal leading-snug break-words">{item.title}</h1>
+                        <div className="flex flex-col mt-0.5">
+                            {course && <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed">{course.title}</p>}
                             {item.type === 'resource' && (
-                                <p className="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
+                                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                                     {(() => {
                                         const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
                                         const isWord = ['DOC', 'DOCX'].includes(ext);
@@ -450,22 +450,19 @@ export function ItemView() {
                                         }
 
                                         return (
-                                            <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent self-start", badgeClass)}>
+                                            <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent", badgeClass)}>
                                                 <Icon className="h-3 w-3" />
                                                 {ext}
                                             </span>
                                         );
                                     })()}
                                     {item.fileName && (
-                                        <>
-                                            <span className="opacity-50">•</span>
-                                            <span className="opacity-75">{item.fileName}</span>
-                                        </>
+                                        <span className="opacity-75">{item.fileName}</span>
                                     )}
                                     {item.createdAt && (
                                         <>
-                                            <span className="opacity-50">•</span>
-                                            <span className="opacity-75">
+                                            <span className="opacity-50 hidden sm:inline">•</span>
+                                            <span className="opacity-75 hidden sm:inline">
                                                 {new Date(item.createdAt).toLocaleDateString('fr-FR', {
                                                     day: '2-digit',
                                                     month: '2-digit',
@@ -474,24 +471,25 @@ export function ItemView() {
                                             </span>
                                         </>
                                     )}
-                                </p>
+                                </div>
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Actions Toolbar - Scrollable on mobile */}
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto md:overflow-visible -mx-3 px-3 md:mx-0 md:px-0 pt-2 border-t md:border-t-0 md:pt-0 no-scrollbar md:justify-end">
                     {/* TTS Controls */}
                     {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
-                        <>
+                        <div className="flex items-center gap-2 flex-shrink-0">
                             <TTSControls
                                 text={item.content || item.extractedContent || ''}
                                 lang={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
                             />
-                            <div className="h-6 w-px bg-border mx-1" />
-                        </>
+                            <div className="h-6 w-px bg-border mx-1 hidden md:block" />
+                        </div>
                     )}
 
-                </div>
-
-                <div className="flex items-center gap-2">
                     {/* Universal View/Download Button */}
                     {item.type === 'resource' && item.storageKey && (
                         (() => {
@@ -518,7 +516,7 @@ export function ItemView() {
                                         href={targetUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                                         title={t('action.openNewTab')}
                                     >
                                         <ExternalLink className="h-5 w-5" />
@@ -527,13 +525,13 @@ export function ItemView() {
                                     {pdfUrl && (
                                         <button
                                             onClick={() => setIsPdfFullscreen(true)}
-                                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                                             title={t('action.fullscreen')}
                                         >
                                             <Maximize className="h-5 w-5" />
                                         </button>
                                     )}
-                                    <div className="h-6 w-px bg-border mx-1" />
+                                    <div className="h-6 w-px bg-border mx-1 hidden md:block" />
                                 </>
                             );
                         })()
@@ -548,7 +546,7 @@ export function ItemView() {
                                         setIsEditMode(false)
                                         setEditedContent(item.content || '')
                                     }}
-                                    className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground border border-transparent"
+                                    className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground border border-transparent flex-shrink-0"
                                     title="Cancel"
                                 >
                                     <Cancel className="h-5 w-5" />
@@ -556,7 +554,7 @@ export function ItemView() {
                                 <button
                                     onClick={() => updateMutation.mutate(editedContent)}
                                     disabled={updateMutation.isPending}
-                                    className="px-3 py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md transition-colors flex items-center gap-2 font-medium"
+                                    className="px-3 py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md transition-colors flex items-center gap-2 font-medium flex-shrink-0"
                                     title="Save"
                                 >
                                     <Check className="h-4 w-4" />
@@ -569,7 +567,7 @@ export function ItemView() {
                                     setIsEditMode(true)
                                     setEditedContent(item.content || '')
                                 }}
-                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                                 title={t('item.edit')}
                             >
                                 <Pencil className="h-5 w-5" />
@@ -578,7 +576,7 @@ export function ItemView() {
                     ) : (
                         <button
                             onClick={() => setIsEditModalOpen(true)}
-                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                             title={t('item.edit')}
                         >
                             <Edit className="h-5 w-5" />
@@ -586,10 +584,11 @@ export function ItemView() {
                     )}
 
                     {/* Unified Generation Menu */}
-                    <Menu as="div" className="relative">
-                        <Menu.Button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm">
+                    <Menu as="div" className="relative flex-shrink-0">
+                        <Menu.Button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm whitespace-nowrap">
                             <Sparkles className="h-4 w-4" />
                             <span className="hidden md:inline">Génération</span>
+                            <span className="md:hidden">IA</span>
                         </Menu.Button>
                         <Transition
                             as={Fragment}
@@ -600,7 +599,7 @@ export function ItemView() {
                             leaveFrom="transform opacity-100 scale-100"
                             leaveTo="transform opacity-0 scale-95"
                         >
-                            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border">
+                            <Menu.Items className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 w-56 origin-bottom-right md:origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border mb-2 md:mb-0">
                                 <div className="p-1">
                                     <Menu.Item>
                                         {({ active }) => (
@@ -652,11 +651,9 @@ export function ItemView() {
                         </Transition>
                     </Menu>
 
-
-
                     <button
                         onClick={handleDelete}
-                        className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors flex-shrink-0"
                         title={t('action.delete')}
                     >
                         <Trash2 className="h-5 w-5" />
