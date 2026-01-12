@@ -47,7 +47,10 @@ export function FolderTree({ folders, courses, parentId, level = 0 }: FolderTree
     )
 }
 
+import { useLanguage } from '@/components/language-provider'
+
 function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder, allFolders: Folder[], allCourses: Course[], level: number }) {
+    const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(true)
     const location = useLocation()
     const isActive = location.pathname === `/folder/${folder.id}`
@@ -70,7 +73,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                 const { courseQueries } = await import('@/lib/api/queries')
                 await courseQueries.update(String(idToUpdate), { folderId: folder.id })
                 queryClient.invalidateQueries({ queryKey: ['courses'] })
-                toast.success("Course moved successfully")
+                toast.success(t('course.move.success'))
             } catch (error) {
                 console.error("Failed to move course:", error)
                 toast.error("Failed to move course")
