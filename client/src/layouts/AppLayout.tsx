@@ -168,9 +168,10 @@ export function AppLayout() {
                         <LanguageToggle />
                         <ModeToggle />
                     </div>
-                </header> >
+                </header>
 
-                <div className="flex-1 overflow-auto p-4 lg:p-6">
+                <div className="flex-1 overflow-auto p-4 lg:p-6"
+                >
                     <Outlet />
                 </div>
             </main >
