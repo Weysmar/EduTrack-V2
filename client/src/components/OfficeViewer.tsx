@@ -62,7 +62,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     if (engine === 'local') {
         if (isDocx) {
             return (
-                <div className={`flex flex-col h-full bg-slate-50 border rounded-lg overflow-hidden ${className}`}>
+                <div className={`flex flex-col h-full bg-slate-50 md:border md:rounded-lg overflow-hidden ${className}`}>
                     <div className="flex items-center justify-between px-4 py-2 bg-white border-b text-sm">
                         <div className="flex items-center gap-3">
                             <span className="font-medium text-muted-foreground flex items-center gap-2">
@@ -154,7 +154,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     const currentSrc = engine === 'google' ? googleViewerUrl : officeViewerUrl;
 
     return (
-        <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 border rounded-lg overflow-hidden ${className}`}>
+        <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
             {/* Toolbar */}
             <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b text-sm">
                 <div className="flex items-center gap-3">
