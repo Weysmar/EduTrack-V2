@@ -247,131 +247,123 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     🤖 Perplexity Pro
                                                 </button>
                                                 <button
-                                                    onClick={() => { setProvider('google'); setModel('gemini-2.0-flash') }}
-                                                    className={cn(
-                                                        "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
-                                                        provider === 'google'
-                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                            : "hover:bg-accent border-muted"
-                                                    )}
+                                                    onClick={() => { setProvider('google'); setModel('gemini-1.5-flash') }}
+                                                    className={`p-3 rounded-lg border flex flex-col items-center gap-2 transition-all ${provider === 'google' ? 'bg-primary/10 border-primary' : 'hover:bg-accent border-transparent'}`}
                                                 >
-                                                    ⚡ Google Gemini
+                                                    <span className="text-xl">⚡</span>
+                                                    <span className="font-medium text-sm">Google Gemini</span>
                                                 </button>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-sm font-medium">{t('summary.provider')}</label>
+                                                <select
+                                                    value={model || (provider === 'perplexity' ? 'sonar-pro' : 'gemini-1.5-flash')}
+                                                    onChange={(e) => setModel(e.target.value)}
+                                                    className="w-full px-3 py-2 border rounded-md bg-background"
+                                                >
+                                                    {provider === 'perplexity' ? (
+                                                        <>
+                                                            <option value="sonar-pro">Sonar Pro (Smart)</option>
+                                                            <option value="sonar">Sonar (Fast)</option>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Recommandé)</option>
+                                                            <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (Intelligence Max)</option>
+                                                            <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (Expérimental)</option>
+                                                        </>
+                                                    )}
+                                                </select>
                                             </div>
                                         </div>
 
+                                        {/* Count */}
                                         <div>
-                                            <label className="block text-sm font-medium mb-2">Modèle Spécifique</label>
+                                            <label className="block text-sm font-medium mb-1">
+                                                {mode === 'flashcards' ? 'Nombre de cartes' : 'Nombre de questions'}
+                                            </label>
+                                            <div className="flex gap-2">
+                                                {[5, 10, 15, 20, 30].map(n => (
+                                                    <button
+                                                        key={n}
+                                                        onClick={() => setCount(n)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-md border text-sm transition-colors",
+                                                            count === n
+                                                                ? "bg-primary text-primary-foreground border-primary"
+                                                                : "hover:bg-muted"
+                                                        )}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Difficulty */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Difficulté Cible</label>
                                             <select
-                                                value={model || (provider === 'perplexity' ? 'sonar-pro' : 'gemini-2.0-flash')}
-                                                onChange={(e) => setModel(e.target.value)}
+                                                value={difficulty}
+                                                onChange={(e: any) => setDifficulty(e.target.value)}
                                                 className="w-full bg-background border px-3 py-2 rounded-md text-sm ring-offset-background focus:ring-2 focus:ring-primary/20"
                                             >
-                                                {provider === 'perplexity' ? (
-                                                    <>
-                                                        <option value="sonar-deep-research">🐋 Sonar Deep Research (Recherche Profonde)</option>
-                                                        <option value="sonar-reasoning-pro">🧠 Sonar Reasoning Pro (Raisonnement)</option>
-                                                        <option value="sonar-pro">🤖 Sonar Pro (Standard)</option>
-                                                        <option value="sonar">🚀 Sonar (Rapide)</option>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (Recommandé)</option>
-                                                        <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (Intelligence Max)</option>
-                                                        <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Rapide)</option>
-                                                        <option value="gemini-2.0-flash-lite">🔥 Gemini 2.0 Flash-Lite (Ultra-rapide)</option>
-                                                    </>
-                                                )}
+                                                <option value="easy">Facile (Définitions & Faits)</option>
+                                                <option value="normal">Moyen (Concepts & Relations)</option>
+                                                <option value="hard">Difficile (Applications & Analyse)</option>
+                                                <option value="mixed">Mixte (Adaptatif)</option>
                                             </select>
                                         </div>
-                                    </div>
 
-                                    {/* Count */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">
-                                            {mode === 'flashcards' ? 'Nombre de cartes' : 'Nombre de questions'}
-                                        </label>
-                                        <div className="flex gap-2">
-                                            {[5, 10, 15, 20, 30].map(n => (
-                                                <button
-                                                    key={n}
-                                                    onClick={() => setCount(n)}
-                                                    className={cn(
-                                                        "px-3 py-1.5 rounded-md border text-sm transition-colors",
-                                                        count === n
-                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                            : "hover:bg-muted"
-                                                    )}
-                                                >
-                                                    {n}
-                                                </button>
-                                            ))}
+                                        {/* Types */}
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Axes de Travail</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {[
+                                                    { id: 'concept', label: 'Concepts' },
+                                                    { id: 'fact', label: 'Faits & Dates' },
+                                                    { id: 'calculation', label: 'Calculs' },
+                                                    { id: 'application', label: 'Applications' }
+                                                ].map(type => (
+                                                    <label key={type.id} className="flex items-center gap-3 text-sm p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedTypes.includes(type.id)}
+                                                            onChange={() => handleTypeToggle(type.id)}
+                                                            className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                                        />
+                                                        <span>{type.label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {error && (
+                                            <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                                                <AlertCircle className="h-4 w-4" />
+                                                {error}
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+                                            <button
+                                                onClick={onClose}
+                                                disabled={isLoading}
+                                                className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                                            >
+                                                Annuler
+                                            </button>
+                                            <button
+                                                onClick={handleGenerate}
+                                                disabled={isLoading}
+                                                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50"
+                                            >
+                                                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                                {isLoading ? 'Génération...' : `Générer ${mode === 'flashcards' ? 'Flashcards' : 'QCM'}`}
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {/* Difficulty */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Difficulté Cible</label>
-                                        <select
-                                            value={difficulty}
-                                            onChange={(e: any) => setDifficulty(e.target.value)}
-                                            className="w-full bg-background border px-3 py-2 rounded-md text-sm ring-offset-background focus:ring-2 focus:ring-primary/20"
-                                        >
-                                            <option value="easy">Facile (Définitions & Faits)</option>
-                                            <option value="normal">Moyen (Concepts & Relations)</option>
-                                            <option value="hard">Difficile (Applications & Analyse)</option>
-                                            <option value="mixed">Mixte (Adaptatif)</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Types */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Axes de Travail</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {[
-                                                { id: 'concept', label: 'Concepts' },
-                                                { id: 'fact', label: 'Faits & Dates' },
-                                                { id: 'calculation', label: 'Calculs' },
-                                                { id: 'application', label: 'Applications' }
-                                            ].map(type => (
-                                                <label key={type.id} className="flex items-center gap-3 text-sm p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedTypes.includes(type.id)}
-                                                        onChange={() => handleTypeToggle(type.id)}
-                                                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                                                    />
-                                                    <span>{type.label}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {error && (
-                                        <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                                            <AlertCircle className="h-4 w-4" />
-                                            {error}
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-                                        <button
-                                            onClick={onClose}
-                                            disabled={isLoading}
-                                            className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
-                                        >
-                                            Annuler
-                                        </button>
-                                        <button
-                                            onClick={handleGenerate}
-                                            disabled={isLoading}
-                                            className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50"
-                                        >
-                                            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                            {isLoading ? 'Génération...' : `Générer ${mode === 'flashcards' ? 'Flashcards' : 'QCM'}`}
-                                        </button>
-                                    </div>
-                                </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>

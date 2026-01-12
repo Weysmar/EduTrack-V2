@@ -54,7 +54,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                     🤖 Perplexity Pro
                                 </button>
                                 <button
-                                    onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-2.0-flash' })}
+                                    onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-1.5-flash' })}
                                     className={cn(
                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2",
                                         options.provider === 'google'
@@ -70,7 +70,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                         <div className="space-y-2">
                             <label className="text-sm font-semibold">Modèle</label>
                             <select
-                                value={options.model || (options.provider === 'perplexity' ? 'sonar-pro' : 'gemini-2.0-flash')}
+                                value={options.model || (options.provider === 'perplexity' ? 'sonar-pro' : 'gemini-1.5-flash')}
                                 onChange={(e) => setOptions({ ...options, model: e.target.value })}
                                 className="w-full bg-background border px-3 py-2 rounded-md text-sm ring-offset-background focus:ring-2 focus:ring-primary/20"
                             >
@@ -83,9 +83,9 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                     </>
                                 ) : (
                                     <>
-                                        <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (Recommandé)</option>
+                                        <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Recommandé)</option>
                                         <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (Intelligence Max)</option>
-                                        <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Rapide)</option>
+                                        <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (Expérimental)</option>
                                         <option value="gemini-2.0-flash-lite">🔥 Gemini 2.0 Flash-Lite (Ultra-rapide)</option>
                                     </>
                                 )}
