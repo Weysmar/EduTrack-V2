@@ -68,6 +68,7 @@ model Item {
   content          String?  @db.Text
   fileUrl          String?
   fileName         String?
+  fileType         String?  // MIME type (e.g., 'application/pdf')
   fileSize         Int?
   thumbnailUrl     String?  // URL to the generated thumbnail
   storageKey       String?  // S3 key
