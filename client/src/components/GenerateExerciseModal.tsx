@@ -239,7 +239,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             <label className="block text-sm font-medium mb-2">Moteur IA</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
-                                                    onClick={() => { setProvider('perplexity'); setModel('sonar-pro') }}
+                                                    onClick={() => { setProvider('perplexity'); setModel('llama-3.1-sonar-large-128k-online') }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
                                                         provider === 'perplexity'
