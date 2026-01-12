@@ -11,7 +11,7 @@ export function InvestigationBoard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showTopics, setShowTopics] = useState(true);
     const [showCourses, setShowCourses] = useState(true);
-    const [showDocuments, setShowDocuments] = useState(false);
+    const [showDocuments, setShowDocuments] = useState(true); // default to true to see everything initially? Or false like before. Let's keep false but check logic.
 
     // Placeholder onClose for interactions that might require it (though less relevant in full page)
     const handleClose = () => {

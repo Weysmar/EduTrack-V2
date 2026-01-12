@@ -16,8 +16,10 @@ const translations: Translations = {
         "nav.newCourse": "New Course",
         "nav.board": "Investigation Board",
         "nav.library": "Library",
+        "nav.explore": "Explore",
         "nav.settings": "Settings",
         "nav.selectProfile": "Select a profile first",
+        "board.subtitle": "Explore your knowledge base",
         "board.mode": "Detective Board",
         "course.create.title": "Create New Course",
         "course.create.name": "Course Title",
@@ -848,7 +850,9 @@ const translations: Translations = {
         "auth.switch.toRegister": "Pas de compte ? S'inscrire",
         "auth.switch.toLogin": "Déjà un compte ? Se connecter",
         "auth.error.default": "Échec de l'authentification",
-        "auth.error.missing": "Veuillez remplir tous les champs"
+        "auth.error.missing": "Veuillez remplir tous les champs",
+        "board.subtitle": "Explorez votre base de connaissances",
+        "nav.explore": "Explorer"
     },
     mc: {
         "app.title": "EduCraft",
