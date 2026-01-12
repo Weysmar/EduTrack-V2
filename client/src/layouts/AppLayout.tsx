@@ -21,7 +21,10 @@ import { useFocusStore } from '@/store/focusStore'
 import { KnowledgeMapModal } from '@/components/knowledge-map/KnowledgeMapModal'
 import { CompactFocusTimer } from '@/components/CompactFocusTimer' // Added
 
+import { useLanguage } from '@/components/language-provider'
+
 export function AppLayout() {
+    const { t } = useLanguage()
     // Initialize Socket Connection
     useSocket()
 
@@ -139,7 +142,7 @@ export function AppLayout() {
                         <div className="relative w-full flex items-center">
                             <Search className="absolute left-3 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                             <div className="w-full h-9 rounded-md border border-input bg-background px-9 py-2 text-sm text-muted-foreground text-left shadow-sm transition-colors group-hover:bg-accent/50 group-hover:text-accent-foreground">
-                                Search...
+                                {t('app.search')}
                             </div>
                             <kbd className="pointer-events-none absolute right-3 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
                                 <span className="text-xs">⌘</span>K

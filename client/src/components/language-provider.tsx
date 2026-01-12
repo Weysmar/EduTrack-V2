@@ -160,6 +160,8 @@ const translations: Translations = {
         "summary.error.ai": "AI Generation Failed. Check if API keys are valid.",
         // Common / Folder
         "common.folder": "Folder",
+        "common.save": "Save",
+        "common.saving": "Saving...",
         "common.noDesc": "No description",
         "folder.empty": "This folder is empty.",
         // Board
@@ -569,6 +571,8 @@ const translations: Translations = {
         "summary.error.ai": "Échec de l'IA. Vérifiez vos clés d'API.",
         // Common / Folder
         "common.folder": "Dossier",
+        "common.save": "Enregistrer",
+        "common.saving": "Enregistrement...",
         "common.noDesc": "Aucune description",
         "folder.empty": "Ce dossier est vide.",
         "calendar.noEvents": "Aucun événement",
