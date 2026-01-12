@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
+import { logErrorToFile } from '../utils/fileLogger';
 
 export const generateContent = async (req: Request, res: Response) => {
     try {
@@ -38,6 +39,7 @@ export const generateContent = async (req: Request, res: Response) => {
             ...error // Spread any other properties like 'response' or 'status'
         };
         console.error('Error detail:', JSON.stringify(safeError, null, 2));
+        logErrorToFile(safeError);
 
         // Attempt to extract specific Google API error details
         const details = error?.response?.data || error?.message || 'Unknown';
