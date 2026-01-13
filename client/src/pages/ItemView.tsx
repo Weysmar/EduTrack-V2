@@ -985,12 +985,12 @@ export function ItemView() {
                                                             content={editedContent}
                                                             onChange={setEditedContent}
                                                             editable={true}
-                                                            className="border-0 shadow-none min-h-[50vh]"
+                                                            className="min-h-[50vh]"
                                                         />
                                                     ) : (
                                                         <div
                                                             className={cn(
-                                                                "border rounded-xl bg-background p-6 md:p-10 min-h-[50vh] shadow-sm prose dark:prose-invert max-w-none",
+                                                                "border rounded-md bg-background overflow-hidden p-6 md:p-10 min-h-[50vh] prose dark:prose-invert max-w-none",
                                                                 "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold",
                                                                 "[&_h1]:mt-6 [&_h2]:mt-4 [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
                                                             )}
