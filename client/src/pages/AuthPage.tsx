@@ -49,7 +49,7 @@ export function AuthPage() {
                 <div className="text-center">
                     <div className="flex justify-center mb-6">
                         <div className="flex items-center gap-3">
-                            <img src="/logo.png" alt="EduTrack Logo" className="h-10 w-10 object-contain rounded-lg shadow-sm" />
+                            <img src="/logo.webp" alt="EduTrack Logo" className="h-10 w-10 object-contain rounded-lg shadow-sm" />
                             <span className="font-bold text-2xl tracking-tight text-white">EduTrack</span>
                         </div>
                     </div>

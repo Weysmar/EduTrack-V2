@@ -34,7 +34,7 @@ export function LanguageToggle() {
         {
             code: "mc",
             label: "Minecraft",
-            icon: <img src="/assets/minecraft_grass_block.png" alt="MC" className="w-5 h-5 object-contain" />
+            icon: <img src="/assets/minecraft_grass_block.webp" alt="MC" className="w-5 h-5 object-contain" />
         },
     ]
 
