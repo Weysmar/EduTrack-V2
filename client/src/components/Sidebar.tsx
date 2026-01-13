@@ -62,16 +62,14 @@ export function Sidebar() {
             <div className={cn("h-14 flex items-center border-b transition-all shrink-0", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
                 {!isCollapsed && (
                     <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity overflow-hidden">
-                        <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0">
-                            <FolderPlus className="h-5 w-5" />
-                        </div>
+                        <img src="/logo.webp" alt="EduTrack" className="h-8 w-8 rounded-lg object-contain" />
                         <span className="font-bold text-lg whitespace-nowrap">{t('app.title')}</span>
                     </Link>
                 )}
 
                 {isCollapsed && (
-                    <Link to="/" className="bg-primary text-primary-foreground p-1.5 rounded-lg shrink-0 hover:opacity-80">
-                        <FolderPlus className="h-5 w-5" />
+                    <Link to="/" className="shrink-0 hover:opacity-80 flex justify-center w-full">
+                        <img src="/logo.webp" alt="EduTrack" className="h-8 w-8 rounded-lg object-contain" />
                     </Link>
                 )}
 
