@@ -4,48 +4,53 @@
 
 /* Self-hosted Fonts */
 @font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/Inter-Regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/Inter-Medium.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/Inter-Bold.woff2') format('woff2');
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/Inter-Regular.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Caveat';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/Caveat-Regular.woff2') format('woff2');
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/Inter-Medium.woff2') format('woff2');
 }
+
 @font-face {
-  font-family: 'Caveat';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/Caveat-Bold.woff2') format('woff2');
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
 }
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/Inter-Bold.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Caveat';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/Caveat-Regular.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Caveat';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/Caveat-Bold.woff2') format('woff2');
+}
+
 /* Minecraftia remains fallback if needed, or we remove its external link to unblock */
 
 @layer base {
@@ -109,6 +114,34 @@
         --border: 217.2 32.6% 17.5%;
         --input: 217.2 32.6% 17.5%;
         --ring: 224.3 76.3% 48%;
+    }
+
+    .theme-nature {
+        --primary: 142.1 76.2% 36.3%;
+        /* Green 600 */
+        --primary-foreground: 355.7 100% 97.3%;
+        --ring: 142.1 76.2% 36.3%;
+    }
+
+    .dark .theme-nature {
+        --primary: 142.1 70.6% 45.3%;
+        /* Green 500 */
+        --primary-foreground: 144.9 80.4% 10%;
+        --ring: 142.1 70.6% 45.3%;
+    }
+
+    .theme-sunset {
+        --primary: 24.6 95% 53.1%;
+        /* Orange 500 */
+        --primary-foreground: 60 9.1% 97.8%;
+        --ring: 24.6 95% 53.1%;
+    }
+
+    .dark .theme-sunset {
+        --primary: 20.5 90.2% 48.2%;
+        /* Orange 600 */
+        --primary-foreground: 60 9.1% 97.8%;
+        --ring: 20.5 90.2% 48.2%;
     }
 }
 

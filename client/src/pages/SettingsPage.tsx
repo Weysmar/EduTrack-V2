@@ -10,7 +10,7 @@ import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('api')
-    const { theme, setTheme } = useTheme()
+    const { theme, setTheme, themeColor, setThemeColor } = useTheme()
     const { t } = useLanguage()
     const useNavigateCallback = useNavigate()
     const { activeProfile } = useProfileStore()
@@ -117,6 +117,42 @@ export function SettingsPage() {
                                         </div>
                                         <span className="text-sm font-medium">{t('settings.theme.system')}</span>
                                     </button>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t">
+                                    <h3 className="text-lg font-medium">Color Theme</h3>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <button
+                                            onClick={() => setThemeColor("default")}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all hover:bg-muted group relative overflow-hidden",
+                                                themeColor === 'default' ? "border-primary bg-primary/5 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <div className="w-full h-12 rounded-lg bg-blue-500 mb-2 shadow-sm" />
+                                            <span className="text-sm font-medium">Ocean (Default)</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setThemeColor("nature")}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all hover:bg-muted group relative overflow-hidden",
+                                                themeColor === 'nature' ? "border-green-600 bg-green-500/10 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <div className="w-full h-12 rounded-lg bg-green-600 mb-2 shadow-sm" />
+                                            <span className="text-sm font-medium">Nature</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setThemeColor("sunset")}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all hover:bg-muted group relative overflow-hidden",
+                                                themeColor === 'sunset' ? "border-orange-500 bg-orange-500/10 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <div className="w-full h-12 rounded-lg bg-orange-500 mb-2 shadow-sm" />
+                                            <span className="text-sm font-medium">Sunset</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
