@@ -12,13 +12,18 @@ import { useProfileStore } from '@/store/profileStore'
 import { FocusTimer } from './FocusTimer'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/components/theme-provider'
 
 export function Sidebar() {
     const activeProfile = useProfileStore(state => state.activeProfile);
     const { t } = useLanguage()
+    const { theme } = useTheme()
     const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const { isCollapsed, toggleCollapse } = useUIStore()
+
+    // Determine logo based on theme
+    const logoSrc = theme === 'light' ? '/logo-light.webp' : '/logo-dark.webp'
 
     // Using useQuery with activeProfile check
     const { data: courses } = useQuery({
@@ -62,14 +67,14 @@ export function Sidebar() {
             <div className={cn("h-14 flex items-center border-b transition-all shrink-0", isCollapsed ? "justify-center px-2" : "justify-between px-4")}>
                 {!isCollapsed && (
                     <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity overflow-hidden">
-                        <img src="/logo.webp" alt="EduTrack" className="h-8 w-8 rounded-lg object-contain" />
+                        <img src={logoSrc} alt="EduTrack" className="h-8 w-8 object-contain" />
                         <span className="font-bold text-lg whitespace-nowrap">{t('app.title')}</span>
                     </Link>
                 )}
 
                 {isCollapsed && (
                     <Link to="/" className="shrink-0 hover:opacity-80 flex justify-center w-full">
-                        <img src="/logo.webp" alt="EduTrack" className="h-8 w-8 rounded-lg object-contain" />
+                        <img src={logoSrc} alt="EduTrack" className="h-8 w-8 object-contain" />
                     </Link>
                 )}
 

@@ -4,6 +4,7 @@ import { useProfileStore } from '@/store/profileStore';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
+import { useTheme } from '@/components/theme-provider';
 
 
 export function AuthPage() {
@@ -18,6 +19,9 @@ export function AuthPage() {
     const { loadProfile } = useProfileStore();
     const navigate = useNavigate();
     const { t } = useLanguage();
+    const { theme } = useTheme();
+
+    const logoSrc = theme === 'light' ? '/logo-light.webp' : '/logo-dark.webp';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,7 +53,7 @@ export function AuthPage() {
                 <div className="text-center">
                     <div className="flex justify-center mb-6">
                         <div className="flex items-center gap-3">
-                            <img src="/logo.webp" alt="EduTrack Logo" className="h-10 w-10 object-contain rounded-lg shadow-sm" />
+                            <img src={logoSrc} alt="EduTrack Logo" className="h-10 w-10 object-contain" />
                             <span className="font-bold text-2xl tracking-tight text-white">EduTrack</span>
                         </div>
                     </div>
