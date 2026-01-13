@@ -355,6 +355,13 @@ const translations: Translations = {
         "changelog.v058.library": "Library Page: A dedicated space to browse and filter all your courses.",
         "changelog.v058.dashboard": "Dashboard Refinements: Improved layout and added a compact focus timer to the header.",
 
+        // v0.5.9
+        "changelog.v059.title": "Focus & Aesthetics 🎨",
+        "changelog.v059.analytics": "Focus Analytics: Detailed session tracking and weekly productivity charts.",
+        "changelog.v059.themes": "Custom Themes: Personalize your experience with new 'Nature' and 'Sunset' color palettes.",
+        "changelog.v059.dashboard": "Dashboard Light Mode: Hero section now supports a clean light theme for better visibility.",
+        "changelog.v059.notes": "Note Standardization: Improved note layout to match the editor's visual structure.",
+
         // v1.3.0
         "changelog.v130.title": "Performance & Mobile 🚀",
         "changelog.v130.mobile": "Mobile Experience: Redesigned resource viewer with full-screen support and optimized buttons.",
@@ -783,6 +790,13 @@ const translations: Translations = {
         "changelog.v058.library": "Bibliothèque : Un espace dédié pour explorer et filtrer tous vos cours.",
         "changelog.v058.dashboard": "Tableau de Bord : Mise en page améliorée et minuteur focus compact dans l'en-tête.",
 
+        // v0.5.9
+        "changelog.v059.title": "Focus & Esthétique 🎨",
+        "changelog.v059.analytics": "Analytics de Focus : Enregistrement des sessions et visualisation graphique de votre productivité.",
+        "changelog.v059.themes": "Thèmes Personnalisés : Ajout des nouveaux thèmes 'Nature' et 'Sunset' pour une expérience sur mesure.",
+        "changelog.v059.dashboard": "Mode Clair Dashboard : Refonte du Dashboard pour un support complet du thème clair.",
+        "changelog.v059.notes": "Style des Notes : Amélioration visuelle et uniformisation du rendu des notes avec l'éditeur.",
+
         // v1.3.0
         "changelog.v130.title": "Performance & Mobile 🚀",
         "changelog.v130.mobile": "Expérience Mobile : Visualiseur de ressources redessiné avec support plein écran et boutons optimisés.",
@@ -1179,6 +1193,13 @@ const translations: Translations = {
         "changelog.v054.command": "Added Command Block Center.",
         "changelog.v054.focus": "Added Day/Night Cycle Timer.",
         "changelog.v054.sidebar": "Piston-powered Menu.",
+
+        // v0.5.9
+        "changelog.v059.title": "Focus & Shaders 🎨",
+        "changelog.v059.analytics": "Beacon Stats: Logging your mining sessions with enchanted charts.",
+        "changelog.v059.themes": "Resource Packs: New 'Nature' and 'Sunset' textures for your interface.",
+        "changelog.v059.dashboard": "Daylight Mode: Dashboard now supports Overworld (Day) theme.",
+        "changelog.v059.notes": "Book Styling: Standardized book layouts to match the Scribe's Desk.",
 
         // Revision Program (Minecraft)
         "revision.program": "Quest Planner",
