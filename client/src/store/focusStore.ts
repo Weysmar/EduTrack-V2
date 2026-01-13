@@ -66,6 +66,40 @@ export const useFocusStore = create<FocusState>()(
                     // Play notification sound
                     soundUtils.playSessionComplete();
 
+                    // Record Session in Backend
+                    const state = get();
+                    // We need a way to get the current profile ID and course ID
+                    // Since this store doesn't have access to profile directly, we might need to pass it or use a getter if we had it.
+                    // For now, let's assume we can get it from localStorage or the API client handles auth, 
+                    // BUT recordSession payload expects profileId. 
+                    // Let's rely on the fact that we can get the active profile from the profile store persistence or just pass 'current' if backend handles it.
+                    // Ideally, we should pass profileId to completeSession or read it from localStorage.
+
+                    try {
+                        const storage = localStorage.getItem('profile-storage');
+                        if (storage) {
+                            const { state: profileState } = JSON.parse(storage);
+                            const profileId = profileState.activeProfile?.id;
+
+                            if (profileId) {
+                                // @ts-ignore
+                                import('@/lib/api/queries').then(({ analyticsQueries }) => {
+                                    analyticsQueries.recordSession({
+                                        profileId,
+                                        date: new Date(),
+                                        startTime: new Date(Date.now() - MODES['work'] * 1000), // Approx start time
+                                        durationMinutes: MODES['work'] / 60,
+                                        type: 'work',
+                                        courseId: null, // We don't track course selection yet in store explicitly as "active course"
+                                        notes: null
+                                    });
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Failed to record analytics", e);
+                    }
+
                     set({
                         mode: nextMode,
                         timeLeft: MODES[nextMode],

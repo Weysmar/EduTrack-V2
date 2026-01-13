@@ -1,14 +1,16 @@
 import { useFocusStore } from '@/store/focusStore';
-import { Play, Pause, RotateCcw, Brain, Coffee, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Brain, Coffee, ChevronLeft, Maximize2, Minimize2, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { FocusAnalytics } from '@/components/focus/FocusAnalytics';
 
 export function FocusPage() {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const {
         timeLeft,
@@ -68,7 +70,7 @@ export function FocusPage() {
             )}
 
             {/* Header Controls */}
-            <div className="w-full flex items-center justify-between p-4 z-10">
+            <div className="w-full flex items-center justify-between p-4 z-10 max-w-4xl mx-auto absolute top-0 left-0 right-0">
                 <button
                     onClick={() => navigate('/')}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -77,129 +79,146 @@ export function FocusPage() {
                     {t('common.back') === 'common.back' ? "Retour" : t('common.back')}
                 </button>
 
-                <button
-                    onClick={toggleFullscreen}
-                    className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Toggle Fullscreen"
-                >
-                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
-            </div>
-
-            {/* Main Timer Container */}
-            <div className="flex flex-col items-center gap-8 w-full max-w-md z-1">
-
-                {/* Mode Selector pills */}
-                <div className="flex bg-muted/50 p-1.5 rounded-full border">
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setMode('work')}
+                        onClick={() => setShowAnalytics(!showAnalytics)}
                         className={cn(
-                            "px-6 py-2 rounded-full text-sm font-medium transition-all",
-                            mode === 'work' ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"
+                            "p-2 transition-colors rounded-lg",
+                            showAnalytics ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
                         )}
+                        title="Statistiques"
                     >
-                        {t('focus.work')}
+                        <BarChart2 className="w-5 h-5" />
                     </button>
                     <button
-                        onClick={() => setMode('break')}
-                        className={cn(
-                            "px-6 py-2 rounded-full text-sm font-medium transition-all",
-                            mode === 'break' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
-                        )}
+                        onClick={toggleFullscreen}
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Toggle Fullscreen"
                     >
-                        {t('focus.shortBreak')}
-                    </button>
-                    <button
-                        onClick={() => setMode('longBreak')}
-                        className={cn(
-                            "px-6 py-2 rounded-full text-sm font-medium transition-all",
-                            mode === 'longBreak' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        {t('focus.longBreak')}
+                        {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                     </button>
                 </div>
+            </div>
 
-                {/* Big Timer Display */}
-                <div className="relative">
-                    {/* SVG Ring */}
-                    <svg className="w-72 h-72 md:w-96 md:h-96 -rotate-90 transform drop-shadow-2xl">
-                        <circle
-                            cx="50%" cy="50%" r="48%"
-                            className="stroke-muted fill-none"
-                            strokeWidth="8"
-                        />
-                        <circle
-                            cx="50%" cy="50%" r="48%"
+            {showAnalytics ? (
+                <div className="w-full max-w-2xl z-10 pt-12">
+                    <FocusAnalytics />
+                </div>
+            ) : (
+                /* Main Timer Container */
+                <div className="flex flex-col items-center gap-8 w-full max-w-md z-1 pt-12">
+
+                    {/* Mode Selector pills */}
+                    <div className="flex bg-muted/50 p-1.5 rounded-full border">
+                        <button
+                            onClick={() => setMode('work')}
                             className={cn(
-                                "fill-none transition-all duration-1000 ease-linear",
-                                mode === 'work' ? "stroke-primary" : "stroke-green-500"
+                                "px-6 py-2 rounded-full text-sm font-medium transition-all",
+                                mode === 'work' ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"
                             )}
-                            strokeWidth="8"
-                            strokeLinecap="round"
-                            strokeDasharray="300%"
-                            strokeDashoffset={`${300 - (progress * 3)}%`} // Approximate circumference logic
-                        />
-                    </svg>
+                        >
+                            {t('focus.work')}
+                        </button>
+                        <button
+                            onClick={() => setMode('break')}
+                            className={cn(
+                                "px-6 py-2 rounded-full text-sm font-medium transition-all",
+                                mode === 'break' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            {t('focus.shortBreak')}
+                        </button>
+                        <button
+                            onClick={() => setMode('longBreak')}
+                            className={cn(
+                                "px-6 py-2 rounded-full text-sm font-medium transition-all",
+                                mode === 'longBreak' ? "bg-background shadow text-green-600" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            {t('focus.longBreak')}
+                        </button>
+                    </div>
 
-                    {/* Time Text */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className={cn(
-                            "text-7xl md:text-8xl font-bold tracking-tighter tabular-nums transition-colors",
-                            isActive ? "opacity-100" : "opacity-80",
-                            mode === 'break' || mode === 'longBreak' ? "text-green-500" : "text-foreground"
-                        )}>
-                            {timeDisplay}
-                        </div>
-                        <div className="flex items-center gap-2 mt-4 text-muted-foreground uppercase tracking-widest text-sm font-semibold">
-                            {isActive ? (
-                                <span className="flex items-center gap-2 animate-pulse">
-                                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                    {t('focus.active')}
-                                </span>
-                            ) : t('focus.ready')}
+                    {/* Big Timer Display */}
+                    <div className="relative">
+                        {/* SVG Ring */}
+                        <svg className="w-72 h-72 md:w-96 md:h-96 -rotate-90 transform drop-shadow-2xl">
+                            <circle
+                                cx="50%" cy="50%" r="48%"
+                                className="stroke-muted fill-none"
+                                strokeWidth="8"
+                            />
+                            <circle
+                                cx="50%" cy="50%" r="48%"
+                                className={cn(
+                                    "fill-none transition-all duration-1000 ease-linear",
+                                    mode === 'work' ? "stroke-primary" : "stroke-green-500"
+                                )}
+                                strokeWidth="8"
+                                strokeLinecap="round"
+                                strokeDasharray="300%"
+                                strokeDashoffset={`${300 - (progress * 3)}%`} // Approximate circumference logic
+                            />
+                        </svg>
+
+                        {/* Time Text */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <div className={cn(
+                                "text-7xl md:text-8xl font-bold tracking-tighter tabular-nums transition-colors",
+                                isActive ? "opacity-100" : "opacity-80",
+                                mode === 'break' || mode === 'longBreak' ? "text-green-500" : "text-foreground"
+                            )}>
+                                {timeDisplay}
+                            </div>
+                            <div className="flex items-center gap-2 mt-4 text-muted-foreground uppercase tracking-widest text-sm font-semibold">
+                                {isActive ? (
+                                    <span className="flex items-center gap-2 animate-pulse">
+                                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                        {t('focus.active')}
+                                    </span>
+                                ) : t('focus.ready')}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Controls */}
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={reset}
-                        className="p-4 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all border hover:border-border"
-                        title={t('timer.reset')}
-                    >
-                        <RotateCcw className="w-6 h-6" />
-                    </button>
+                    {/* Controls */}
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={reset}
+                            className="p-4 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all border hover:border-border"
+                            title={t('timer.reset')}
+                        >
+                            <RotateCcw className="w-6 h-6" />
+                        </button>
 
-                    <button
-                        onClick={isActive ? pause : start}
-                        className={cn(
-                            "p-8 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center",
-                            mode === 'work'
-                                ? "bg-primary text-primary-foreground shadow-primary/25"
-                                : "bg-green-500 text-white shadow-green-500/25"
-                        )}
-                        title={isActive ? t('action.pause') : t('action.start')}
-                    >
-                        {isActive ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-1" />}
-                    </button>
+                        <button
+                            onClick={isActive ? pause : start}
+                            className={cn(
+                                "p-8 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center",
+                                mode === 'work'
+                                    ? "bg-primary text-primary-foreground shadow-primary/25"
+                                    : "bg-green-500 text-white shadow-green-500/25"
+                            )}
+                            title={isActive ? t('action.pause') : t('action.start')}
+                        >
+                            {isActive ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-1" />}
+                        </button>
 
-                    {/* Placeholder for Sound Toggle later */}
-                    <div className="w-14" />
-                </div>
-
-                {/* Task Context (Optional Enhancement) */}
-                {mode === 'work' && (
-                    <div className="mt-8 text-center max-w-sm">
-                        <h3 className="text-muted-foreground text-sm uppercase tracking-wider mb-2">{t('focus.current')}</h3>
-                        <div className="bg-card border px-6 py-4 rounded-xl shadow-sm">
-                            <p className="font-medium text-lg">Révision Générale</p>
-                        </div>
+                        <div className="w-14" />
                     </div>
-                )}
 
-            </div>
+                    {/* Task Context (Optional Enhancement) */}
+                    {mode === 'work' && (
+                        <div className="mt-8 text-center max-w-sm">
+                            <h3 className="text-muted-foreground text-sm uppercase tracking-wider mb-2">{t('focus.current')}</h3>
+                            <div className="bg-card border px-6 py-4 rounded-xl shadow-sm">
+                                <p className="font-medium text-lg">Révision Générale</p>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            )}
         </div>
     );
 }
