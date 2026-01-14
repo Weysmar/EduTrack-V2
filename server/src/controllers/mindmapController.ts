@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { incrementAIGeneration } from './profileController';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 const prisma = new PrismaClient();
 
@@ -34,19 +36,13 @@ Generate a comprehensive mind map now:`;
 // Helper to extract text from a file buffer
 const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<string> => {
     try {
+
         if (mimetype === 'application/pdf') {
-            let pdfParse = require('pdf-parse');
-            console.log('pdf-parse loaded:', typeof pdfParse, Object.keys(pdfParse || {}));
-            // Handle CommonJS/ESM interop
-            if (typeof pdfParse !== 'function' && pdfParse.default) {
-                pdfParse = pdfParse.default;
-                console.log('Used pdfParse.default');
-            }
+            // @ts-ignore
             const data = await pdfParse(buffer);
             console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
         } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
-            const mammoth = require('mammoth');
             const result = await mammoth.extractRawText({ buffer });
             return result.value;
         } else if (mimetype === 'text/plain' || mimetype === 'text/markdown') {
