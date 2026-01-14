@@ -65,6 +65,21 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
+        // Resolve API Key: Request > Profile Settings > Environment (handled by service)
+        let effectiveApiKey = apiKey;
+        if (!effectiveApiKey) {
+            const profile = await prisma.profile.findUnique({
+                where: { id: profileId },
+                select: { settings: true }
+            });
+
+            if (profile?.settings) {
+                const settings = profile.settings as any;
+                // Try summaries key first, then exercises, as fallback
+                effectiveApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+            }
+        }
+
         if (!noteIds.length && !fileItemIds.length) {
             return res.status(400).json({ error: 'At least one note or file is required' });
         }
@@ -135,7 +150,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
         // Generate mind map using AI
         const prompt = MINDMAP_PROMPT.replace('{content}', combinedContent.substring(0, 50000)); // Limit total context
-        const mermaidContent = await aiService.generateText(prompt, '', model, apiKey);
+        const mermaidContent = await aiService.generateText(prompt, '', model, effectiveApiKey);
 
         // Clean up response (remove any markdown code blocks)
         let cleanedContent = mermaidContent.trim();
