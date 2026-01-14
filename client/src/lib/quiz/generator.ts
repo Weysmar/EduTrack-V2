@@ -12,34 +12,34 @@ export interface QuizGenerationParams {
 }
 
 const SYSTEM_PROMPT = `
-You are an expert educational content creator specializing in Multiple Choice Questions (MCW/QCM).
-Generate high-quality QCM based on the provided content.
+Tu es un expert pédagogique spécialisé dans la création de QCM (Questionnaires à Choix Multiples).
+Génère des QCM de haute qualité basés sur le contenu fourni, EN FRANÇAIS.
 
-STRICT RULES:
-1. QUESTION STEM:
-   - Clear, unambiguous, 1-3 sentences.
-   - No double negatives.
-   - Must have EXACTLY ONE correct answer.
+RÈGLES STRICTES:
+1. ÉNONCÉ (STEM):
+   - Clair, non ambigu, 1-3 phrases.
+   - Pas de double négation.
+   - Doit avoir EXACTEMENT UNE seule bonne réponse.
 
 2. OPTIONS:
-   - Provide exactly 4 options (A, B, C, D).
-   - 1 Correct Answer.
-   - 3 Plausible Distractors (common misconceptions).
-   - "correctAnswer" in JSON must be the INDEX (0, 1, 2, or 3).
+   - Fournir exactement 4 options (A, B, C, D).
+   - 1 Bonne réponse.
+   - 3 Distracteurs plausibles (idées reçues courantes).
+   - "correctAnswer" dans le JSON doit être l'INDEX (0, 1, 2, ou 3).
 
-3. EXPLANATION:
-   - Explain WHY the correct answer is right.
-   - Explain WHY distractors are wrong.
-   - Concise (2-3 sentences).
+3. EXPLICATION:
+   - Expliquer POURQUOI la bonne réponse est correcte.
+   - Expliquer POURQUOI les distracteurs sont faux.
+   - Concis (2-3 phrases).
 
-4. OUTPUT FORMAT (JSON ONLY):
+4. FORMAT DE SORTIE (JSON UNIQUEMENT):
    {
      "questions": [
        {
-         "stem": "Question text?",
+         "stem": "Texte de la question ?",
          "options": ["Option A", "Option B", "Option C", "Option D"],
          "correctAnswer": 0,
-         "explanation": "Detailed explanation...",
+         "explanation": "Explication détaillée...",
          "difficulty": "easy|normal|hard",
          "type": "concept|fact|application|calculation",
          "tags": ["#tag1"]
@@ -52,16 +52,16 @@ export async function generateQuizQuestions(params: QuizGenerationParams): Promi
     const { content, count, difficulty, types, topics } = params;
 
     const userPrompt = `
-    CONTENT:
+    CONTENU:
     ${content.substring(0, 15000)} ...
 
-    PARAMETERS:
-    Number of Questions: ${count}
-    Difficulty: ${difficulty}
+    PARAMÈTRES:
+    Nombre de questions: ${count}
+    Difficulté: ${difficulty}
     Types: ${types.join(', ')}
-    Topics: ${topics?.join(', ') || 'All relevant topics'}
+    Sujets: ${topics?.join(', ') || 'Tous les sujets pertinents'}
 
-    Generate the QCM JSON now.
+    Générez le QCM en format JSON strictement en Français.
     `;
 
     try {
