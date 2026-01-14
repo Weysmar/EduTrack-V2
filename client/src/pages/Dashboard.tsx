@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, Target, PenTool, Layout, CheckCircle2, Network } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 import { RevisionProgramModal } from '@/components/RevisionProgramModal'
 import { CalendarWidget } from '@/components/CalendarWidget'
@@ -10,12 +10,14 @@ import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useQuery } from '@tanstack/react-query'
 import { courseQueries, itemQueries, analyticsQueries, mindmapQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function Dashboard() {
     const { t } = useLanguage()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false)
     const { activeProfile } = useProfileStore()
+    const queryClient = useQueryClient()
 
     // Queries
     const { data: courses } = useQuery({
@@ -49,6 +51,44 @@ export function Dashboard() {
         queryFn: () => analyticsQueries.getSessions(),
         enabled: !!activeProfile
     });
+
+    // Auto-log daily visit for streak
+    useEffect(() => {
+        if (!sessions || !activeProfile) return;
+
+        const checkDailyLogin = async () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Check if we have any session for today
+            const hasActivityToday = sessions.some((s: any) => {
+                const sDate = new Date(s.date || s.createdAt);
+                sDate.setHours(0, 0, 0, 0);
+                return sDate.getTime() === today.getTime();
+            });
+
+            if (!hasActivityToday) {
+                console.log("No activity today, logging daily visit for streak...");
+                try {
+                    await analyticsQueries.recordSession({
+                        profileId: activeProfile.id,
+                        date: new Date(),
+                        startTime: new Date(),
+                        durationMinutes: 1,
+                        type: 'daily_login',
+                        courseId: null,
+                        notes: 'Auto-logged daily visit'
+                    });
+                    // Refresh sessions to update streak immediately
+                    queryClient.invalidateQueries({ queryKey: ['analytics-sessions'] });
+                } catch (err) {
+                    console.error("Failed to log daily visit", err);
+                }
+            }
+        };
+
+        checkDailyLogin();
+    }, [sessions, activeProfile, queryClient]);
 
     const streakDays = useMemo(() => {
         if (!sessions || sessions.length === 0) return 0;
