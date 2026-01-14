@@ -37,35 +37,12 @@ Generate a comprehensive mind map now:`;
 // Helper to extract text from a file buffer
 const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<string> => {
     try {
-
         if (mimetype === 'application/pdf') {
-            // pdf-parse exports an object with PDFParse class
-            const PDFParseClass = pdfParse.PDFParse || pdfParse;
-
-            let data;
-            try {
-                // Try direct function call first (for standard pdf-parse)
-                data = await PDFParseClass(buffer);
-            } catch (error: any) {
-                if (error.message && error.message.includes("invoked without 'new'")) {
-                    console.log('PDFParse is a class, instantiating...');
-                    const parser = new PDFParseClass();
-                    // Log methods to debug if parseBuffer is missing
-                    console.log('Parser methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(parser)));
-
-                    if (typeof parser.parseBuffer === 'function') {
-                        data = await parser.parseBuffer(buffer);
-                    } else {
-                        throw new Error('PDFParse instance has no parseBuffer method');
-                    }
-                } else {
-                    throw error;
-                }
-            }
-
+            const data = await pdfParse(buffer);
             console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
         } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
+            const mammoth = require('mammoth');
             const result = await mammoth.extractRawText({ buffer });
             return result.value;
         } else if (mimetype === 'text/plain' || mimetype === 'text/markdown') {
@@ -74,22 +51,21 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
         return '';
     } catch (error) {
         console.error('Error extracting text from file:', error);
-        console.error('Buffer size:', buffer?.length);
-        console.error('Mimetype:', mimetype);
         return '';
     }
 };
 
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
-        const { noteIds = [], fileItemIds = [], files = [], name, apiKey, model = 'gemini-1.5-flash' } = req.body;
+        // Updated to remove 'files' for direct upload
+        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-1.5-flash' } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        if (!noteIds.length && !files.length && !fileItemIds.length) {
+        if (!noteIds.length && !fileItemIds.length) {
             return res.status(400).json({ error: 'At least one note or file is required' });
         }
 
@@ -148,23 +124,6 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                         } else {
                             console.warn(`No text extracted for file: ${item.fileName}`);
                         }
-                    }
-                }
-            }
-        }
-
-        // Extract content from uploaded files (use extractedContent if available, or parse buffer)
-        if (files && files.length > 0) {
-            for (const file of files) {
-                if (file.extractedContent) {
-                    combinedContent += `\n\n=== ${file.name} ===\n${file.extractedContent}`;
-                    fileNames.push(file.name);
-                } else if (file.buffer) {
-                    // If we have raw buffer from upload (e.g. from multer)
-                    const text = await extractTextFromFile(file.buffer, file.mimetype);
-                    if (text) {
-                        combinedContent += `\n\n=== ${file.originalname} ===\n${text.substring(0, 20000)}`;
-                        fileNames.push(file.originalname);
                     }
                 }
             }
