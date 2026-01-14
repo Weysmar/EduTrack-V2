@@ -24,6 +24,7 @@ import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
 import { EditItemModal } from '@/components/EditItemModal'
 import { TTSControls } from '@/components/TTSControls'
+import { GenerateMindMapModal } from '@/components/GenerateMindMapModal'
 
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 import { Editor } from '@/components/Editor'
@@ -57,6 +58,7 @@ export function ItemView() {
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
     const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
+    const [isMindMapModalOpen, setIsMindMapModalOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
     const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft' | 'local'>('microsoft') // Lifted state
@@ -634,6 +636,20 @@ export function ItemView() {
                                             <Menu.Item>
                                                 {({ active }) => (
                                                     <button
+                                                        onClick={() => setIsMindMapModalOpen(true)}
+                                                        className={cn(
+                                                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
+                                                            active ? "bg-accent text-accent-foreground" : "text-foreground"
+                                                        )}
+                                                    >
+                                                        <BrainCircuit className="h-4 w-4 text-blue-500" />
+                                                        Générer Mind Map
+                                                    </button>
+                                                )}
+                                            </Menu.Item>
+                                            <Menu.Item>
+                                                {({ active }) => (
+                                                    <button
                                                         onClick={() => {
                                                             if (summary) setShowSummary(true)
                                                             else setIsSummaryOptionsOpen(true)
@@ -1062,6 +1078,14 @@ export function ItemView() {
                         courseId={courseId || ""}
                     />
                 </>
+            )}
+            {item && (
+                <GenerateMindMapModal
+                    isOpen={isMindMapModalOpen}
+                    onClose={() => setIsMindMapModalOpen(false)}
+                    courseId={courseId}
+                    initialSelectedNotes={item.type === 'note' ? [item] : []}
+                />
             )}
         </div>
     )
