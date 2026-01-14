@@ -222,3 +222,30 @@ export const analyticsQueries = {
         return res;
     }
 };
+
+export const mindmapQueries = {
+    generate: async (data: {
+        noteIds?: string[];
+        name?: string;
+        apiKey?: string;
+        model?: string;
+    }) => {
+        const { data: res } = await apiClient.post('/mindmaps/generate', data);
+        return res;
+    },
+    getAll: async () => {
+        const { data } = await apiClient.get('/mindmaps');
+        return data;
+    },
+    getOne: async (id: string) => {
+        const { data } = await apiClient.get(`/mindmaps/${id}`);
+        return data;
+    },
+    update: async (id: string, updateData: { name?: string; description?: string; content?: string }) => {
+        const { data } = await apiClient.patch(`/mindmaps/${id}`, updateData);
+        return data;
+    },
+    delete: async (id: string) => {
+        await apiClient.delete(`/mindmaps/${id}`);
+    }
+};

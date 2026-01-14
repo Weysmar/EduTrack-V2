@@ -27,6 +27,7 @@ model Profile {
   quizzes    Quiz[]
   summaries  Summary[]
   studyPlans StudyPlan[]
+  mindmaps   MindMap[]
 }
 
 model Course {
@@ -193,4 +194,17 @@ model StudyTask {
   
   week StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
   plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model MindMap {
+  id          String   @id @default(uuid())
+  profileId   String
+  name        String
+  description String?
+  content     String   @db.Text // Mermaid syntax
+  sources     Json     // { noteIds: [ids], fileNames: [names] }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
