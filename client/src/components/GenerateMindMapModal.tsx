@@ -74,12 +74,12 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
             });
         },
         onSuccess: () => {
-            toast.success('Mind Map generated successfully!');
+            toast.success(t('mindmap.gen.success'));
             queryClient.invalidateQueries({ queryKey: ['mindmaps'] });
             handleClose();
         },
         onError: (error: any) => {
-            toast.error('Failed to generate mind map: ' + (error.response?.data?.message || error.message));
+            toast.error(t('mindmap.gen.error') + ': ' + (error.response?.data?.message || error.message));
         }
     });
 
@@ -129,7 +129,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                 <div className="flex justify-between items-center mb-6">
                                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 flex items-center gap-2">
                                         <BrainCircuit className="h-5 w-5 text-purple-500" />
-                                        Generate AI Mind Map
+                                        {t('mindmap.gen.title')}
                                     </Dialog.Title>
                                     <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
                                         <X className="h-5 w-5" />
@@ -139,12 +139,12 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                 <div className="space-y-6">
                                     {/* Name Input */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Mind Map Name (Optional)</label>
+                                        <label className="block text-sm font-medium mb-1">{t('mindmap.gen.name')}</label>
                                         <input
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            placeholder="e.g., History of Rome Overview"
+                                            placeholder={t('mindmap.gen.name.placeholder')}
                                             className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                         />
                                     </div>
@@ -152,7 +152,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                     {/* Pre-selected Files from View */}
                                     {selectedFiles.length > 0 && (
                                         <div>
-                                            <label className="block text-sm font-medium mb-1">Selected Document</label>
+                                            <label className="block text-sm font-medium mb-1">{t('mindmap.gen.doc.selected')}</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {selectedFiles.map((file) => (
                                                     <span key={file.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
@@ -172,14 +172,14 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
 
                                     {/* Note Selection */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Select Notes to Analyze</label>
+                                        <label className="block text-sm font-medium mb-1">{t('mindmap.gen.notes.label')}</label>
                                         <Combobox value={selectedNotes} onChange={setSelectedNotes} multiple>
                                             <div className="relative mt-1">
                                                 <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-background text-left border focus:outline-none focus:ring-2 focus:ring-primary sm:text-sm">
                                                     <Combobox.Input
                                                         className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 bg-transparent focus:ring-0 text-foreground"
                                                         onChange={(event) => setQuery(event.target.value)}
-                                                        placeholder="Search your notes..."
+                                                        placeholder={t('mindmap.gen.notes.placeholder')}
                                                     />
                                                     <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                                                         <ChevronsUpDown
@@ -198,7 +198,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-popover py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
                                                         {filteredNotes.length === 0 && query !== '' ? (
                                                             <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
-                                                                Nothing found.
+                                                                {t('search.noResults')}
                                                             </div>
                                                         ) : (
                                                             filteredNotes.map((note: any) => (
@@ -249,7 +249,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
 
                                     {/* File Selection */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Select Files to Analyze</label>
+                                        <label className="block text-sm font-medium mb-1">{t('mindmap.gen.file.label')}</label>
                                         <Combobox value={selectedFiles} onChange={(files) => {
                                             // Ensure we don't duplicate files if they were already pre-selected
                                             // The Combobox onChange sends the new array of selected items. 
@@ -262,7 +262,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     <Combobox.Input
                                                         className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 bg-transparent focus:ring-0 text-foreground"
                                                         onChange={(event) => setFileQuery(event.target.value)}
-                                                        placeholder="Search your files (PDF, DOCX)..."
+                                                        placeholder={t('mindmap.gen.file.placeholder')}
                                                     />
                                                     <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                                                         <ChevronsUpDown
@@ -281,7 +281,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-popover py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
                                                         {filteredFiles.length === 0 && fileQuery !== '' ? (
                                                             <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
-                                                                Nothing found.
+                                                                {t('search.noResults')}
                                                             </div>
                                                         ) : (
                                                             filteredFiles.map((file: any) => (
@@ -333,7 +333,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                     {/* File Upload (Placeholder for now) */}
                                     <div className="border border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center bg-muted/20">
                                         <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                        <p className="text-sm text-muted-foreground mb-1">Upload PDF, DOCX, PPTX files (Coming Soon)</p>
+                                        <p className="text-sm text-muted-foreground mb-1">{t('mindmap.gen.upload.label')}</p>
                                         <button className="text-xs text-primary font-medium hover:underline" disabled>
                                             Browse files
                                         </button>
@@ -344,7 +344,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             onClick={handleClose}
                                             className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-md transition-colors"
                                         >
-                                            Cancel
+                                            {t('mindmap.gen.cancel')}
                                         </button>
                                         <button
                                             onClick={() => generateMutation.mutate()}
@@ -354,12 +354,12 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             {generateMutation.isPending ? (
                                                 <>
                                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Generating...
+                                                    {t('mindmap.gen.generating')}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Sparkles className="h-4 w-4" />
-                                                    Generate Mind Map
+                                                    {t('mindmap.gen.submit')}
                                                 </>
                                             )}
                                         </button>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react"
+﻿import { createContext, useContext, useEffect, useState } from "react"
 
 export type Language = "en" | "fr" | "mc"
 
@@ -444,7 +444,35 @@ const translations: Translations = {
         "auth.switch.toRegister": "Don't have an account? Sign up",
         "auth.switch.toLogin": "Already have an account? Sign in",
         "auth.error.default": "Authentication failed",
-        "auth.error.missing": "Please fill in all fields"
+        "auth.error.missing": "Please fill in all fields",
+
+        // Mind Maps
+        "nav.mindmaps": "Mind Maps",
+        "mindmap.title": "Mind Maps",
+        "mindmap.subtitle": "Visualize your knowledge with AI-generated diagrams.",
+        "mindmap.new": "New Mind Map",
+        "mindmap.search": "Search mind maps...",
+        "mindmap.empty.title": "No mind maps yet",
+        "mindmap.empty.desc": "Create your first mind map from your notes to better visualize concepts and connections.",
+        "mindmap.empty.action": "Create Now",
+        "mindmap.sources": "sources",
+        "mindmap.open": "Open",
+        "mindmap.delete.confirm": "Are you sure you want to delete this mind map?",
+        // Generation Modal
+        "mindmap.gen.title": "Generate AI Mind Map",
+        "mindmap.gen.name": "Mind Map Name (Optional)",
+        "mindmap.gen.name.placeholder": "e.g., History of Rome Overview",
+        "mindmap.gen.notes.label": "Select Notes to Analyze",
+        "mindmap.gen.notes.placeholder": "Search your notes...",
+        "mindmap.gen.file.label": "Select Files to Analyze",
+        "mindmap.gen.file.placeholder": "Search your files (PDF, DOCX)...",
+        "mindmap.gen.doc.selected": "Selected Document",
+        "mindmap.gen.upload.label": "Upload PDF/DOCX (Coming Soon)",
+        "mindmap.gen.cancel": "Cancel",
+        "mindmap.gen.submit": "Generate Mind Map",
+        "mindmap.gen.generating": "Generating...",
+        "mindmap.gen.success": "Mind Map generated successfully!",
+        "mindmap.gen.error": "Failed to generate mind map"
     },
     fr: {
         "app.title": "EduTrack",
@@ -900,7 +928,35 @@ const translations: Translations = {
         "auth.error.default": "Échec de l'authentification",
         "auth.error.missing": "Veuillez remplir tous les champs",
         "board.subtitle": "Explorez votre base de connaissances",
-        "nav.explore": "Explorer"
+        "nav.explore": "Explorer",
+
+        // Mind Maps (FR)
+        "nav.mindmaps": "Mind Maps",
+        "mindmap.title": "Mind Maps",
+        "mindmap.subtitle": "Visualisez vos connaissances avec des diagrammes générés par IA.",
+        "mindmap.new": "Nouveau Mind Map",
+        "mindmap.search": "Rechercher...",
+        "mindmap.empty.title": "Aucun mind map pour l'instant",
+        "mindmap.empty.desc": "Créez votre premier mind map à partir de vos notes pour mieux visualiser les concepts.",
+        "mindmap.empty.action": "Créer",
+        "mindmap.sources": "sources",
+        "mindmap.open": "Ouvrir",
+        "mindmap.delete.confirm": "Êtes-vous sûr de vouloir supprimer ce mind map ?",
+        // Generation Modal
+        "mindmap.gen.title": "Générer Mind Map IA",
+        "mindmap.gen.name": "Nom du Mind Map (Optionnel)",
+        "mindmap.gen.name.placeholder": "ex: Aperçu Histoire de Rome",
+        "mindmap.gen.notes.label": "Sélectionner Notes à Analyser",
+        "mindmap.gen.notes.placeholder": "Chercher vos notes...",
+        "mindmap.gen.file.label": "Sélectionner Fichiers à Analyser",
+        "mindmap.gen.file.placeholder": "Chercher vos fichiers (PDF, DOCX)...",
+        "mindmap.gen.doc.selected": "Document Sélectionné",
+        "mindmap.gen.upload.label": "Upload PDF/DOCX (Bientôt)",
+        "mindmap.gen.cancel": "Annuler",
+        "mindmap.gen.submit": "Générer Mind Map",
+        "mindmap.gen.generating": "Génération...",
+        "mindmap.gen.success": "Mind Map généré avec succès !",
+        "mindmap.gen.error": "Échec de la génération"
     },
     mc: {
         "app.title": "EduCraft",
@@ -1284,19 +1340,46 @@ const translations: Translations = {
         "changelog.v010.engine": "Game Engine: Worlds, Books, Quests.",
         "changelog.v010.graph": "Map Room: Visualized knowledge graph.",
         "changelog.current": "LIVE"
+        // Mind Maps
+        "nav.mindmaps": "Realm Maps",
+        "mindmap.title": "Map Room",
+        "mindmap.subtitle": "Cartography of your knowledge base.",
+        "mindmap.new": "Craft Map",
+        "mindmap.search": "Locate map...",
+        "mindmap.empty.title": "No maps crafted",
+        "mindmap.empty.desc": "Combine Paper and Compass to create your first map.",
+        "mindmap.empty.action": "Craft Map",
+        "mindmap.sources": "biomes",
+        "mindmap.open": "View Map",
+        "mindmap.delete.confirm": "Throw this map into lava?",
+        // Generation Modal
+        "mindmap.gen.title": "Enchant Map",
+        "mindmap.gen.name": "Map Name (Optional)",
+        "mindmap.gen.name.placeholder": "e.g. Stronghold Coordinates",
+        "mindmap.gen.notes.label": "Select Books to Enchant",
+        "mindmap.gen.notes.placeholder": "Locate written books...",
+        "mindmap.gen.file.label": "Select Scrolls to Analyze",
+        "mindmap.gen.file.placeholder": "Locate scrolls...",
+        "mindmap.gen.doc.selected": "Selected Scroll",
+        "mindmap.gen.upload.label": "Drop Item Stack (Soon)",
+        "mindmap.gen.cancel": "Sneak",
+        "mindmap.gen.submit": "Enchant",
+        "mindmap.gen.generating": "Rendering chunks...",
+        "mindmap.gen.success": "Map crafted!",
+        "mindmap.gen.error": "Crafting failed!"
     }
 }
 
 type LanguageProviderProps = {
-    children: React.ReactNode
+        children: React.ReactNode
     defaultLanguage?: Language
     storageKey?: string
-}
+    }
 
 type LanguageProviderState = {
-    language: Language
+        language: Language
     setLanguage: (language: Language) => void
-    t: (key: string, variables?: Record<string, string | number>) => string
+            t: (key: string, variables ?: Record<string, string | number>) => string
 }
 
 const initialState: LanguageProviderState = {
