@@ -26,6 +26,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const [selectedFiles, setSelectedFiles] = useState<any[]>(initialSelectedFile ? [initialSelectedFile] : []);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [query, setQuery] = useState('');
+    const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
 
@@ -45,6 +46,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     });
 
     const notes = allItems?.filter((item: any) => item.type === 'note') || [];
+    const files = allItems?.filter((item: any) => item.type === 'resource') || [];
 
     // Filter notes for Combobox
     const filteredNotes =
@@ -52,6 +54,14 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
             ? notes
             : notes.filter((note: any) =>
                 note.title.toLowerCase().replace(/\s+/g, '').includes(query.toLowerCase().replace(/\s+/g, ''))
+            );
+
+    // Filter files for Combobox
+    const filteredFiles =
+        fileQuery === ''
+            ? files
+            : files.filter((file: any) =>
+                (file.title || file.fileName || '').toLowerCase().replace(/\s+/g, '').includes(fileQuery.toLowerCase().replace(/\s+/g, ''))
             );
 
     // Mutation for generation
@@ -79,6 +89,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
         setUploadedFiles([]);
         setName('');
         setQuery('');
+        setFileQuery('');
         onClose();
     };
 
@@ -219,7 +230,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             </div>
                                         </Combobox>
 
-                                        {/* Selected Badges */}
+                                        {/* Selected Note Badges */}
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {selectedNotes.map((note) => (
                                                 <span key={note.id} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
@@ -227,6 +238,89 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     {note.title}
                                                     <button
                                                         onClick={() => setSelectedNotes(selectedNotes.filter(n => n.id !== note.id))}
+                                                        className="ml-1 hover:text-destructive"
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* File Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Select Files to Analyze</label>
+                                        <Combobox value={selectedFiles} onChange={(files) => {
+                                            // Ensure we don't duplicate files if they were already pre-selected
+                                            // The Combobox onChange sends the new array of selected items. 
+                                            // But since we might have mixed pre-selected files that are not in the filteredFiles list (if pagination/search existed, but here we have allItems), it should be fine.
+                                            // Actually, initialSelectedFile might be in allItems.
+                                            setSelectedFiles(files);
+                                        }} multiple>
+                                            <div className="relative mt-1">
+                                                <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-background text-left border focus:outline-none focus:ring-2 focus:ring-primary sm:text-sm">
+                                                    <Combobox.Input
+                                                        className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 bg-transparent focus:ring-0 text-foreground"
+                                                        onChange={(event) => setFileQuery(event.target.value)}
+                                                        placeholder="Search your files (PDF, DOCX)..."
+                                                    />
+                                                    <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+                                                        <ChevronsUpDown
+                                                            className="h-5 w-5 text-muted-foreground"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </Combobox.Button>
+                                                </div>
+                                                <Transition
+                                                    as={Fragment}
+                                                    leave="transition ease-in duration-100"
+                                                    leaveFrom="opacity-100"
+                                                    leaveTo="opacity-0"
+                                                    afterLeave={() => setFileQuery('')}
+                                                >
+                                                    <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-popover py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
+                                                        {filteredFiles.length === 0 && fileQuery !== '' ? (
+                                                            <div className="relative cursor-default select-none py-2 px-4 text-muted-foreground">
+                                                                Nothing found.
+                                                            </div>
+                                                        ) : (
+                                                            filteredFiles.map((file: any) => (
+                                                                <Combobox.Option
+                                                                    key={file.id}
+                                                                    className={({ active }) =>
+                                                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-primary/20 text-primary' : 'text-foreground'
+                                                                        }`
+                                                                    }
+                                                                    value={file}
+                                                                >
+                                                                    {({ selected, active }) => (
+                                                                        <>
+                                                                            <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                                {file.title || file.fileName}
+                                                                            </span>
+                                                                            {selected ? (
+                                                                                <span className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? 'text-primary' : 'text-primary'}`}>
+                                                                                    <Check className="h-5 w-5" aria-hidden="true" />
+                                                                                </span>
+                                                                            ) : null}
+                                                                        </>
+                                                                    )}
+                                                                </Combobox.Option>
+                                                            ))
+                                                        )}
+                                                    </Combobox.Options>
+                                                </Transition>
+                                            </div>
+                                        </Combobox>
+
+                                        {/* Selected File Badges */}
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {selectedFiles.map((file) => (
+                                                <span key={file.id} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                    <FileText className="h-3 w-3" />
+                                                    {file.title || file.fileName}
+                                                    <button
+                                                        onClick={() => setSelectedFiles(selectedFiles.filter(f => f.id !== file.id))}
                                                         className="ml-1 hover:text-destructive"
                                                     >
                                                         <X className="h-3 w-3" />

@@ -226,6 +226,7 @@ export const analyticsQueries = {
 export const mindmapQueries = {
     generate: async (data: {
         noteIds?: string[];
+        fileItemIds?: string[];
         name?: string;
         apiKey?: string;
         model?: string;
