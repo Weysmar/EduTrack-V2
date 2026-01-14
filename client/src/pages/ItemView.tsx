@@ -1085,6 +1085,7 @@ export function ItemView() {
                     onClose={() => setIsMindMapModalOpen(false)}
                     courseId={courseId}
                     initialSelectedNotes={item.type === 'note' ? [item] : []}
+                    initialSelectedFile={item.type === 'resource' ? item : undefined}
                 />
             )}
         </div>

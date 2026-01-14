@@ -4,6 +4,7 @@ import { apiClient } from '../client';
 export const mindmapQueries = {
     generate: async (data: {
         noteIds?: string[];
+        fileItemIds?: string[]; // Added
         name?: string;
         apiKey?: string;
         model?: string;

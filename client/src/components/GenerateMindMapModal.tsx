@@ -14,18 +14,28 @@ interface GenerateMindMapModalProps {
     onClose: () => void;
     courseId?: string; // Optional: prepopulate notes from this course
     initialSelectedNotes?: any[];
+    initialSelectedFile?: any; // Add initial file item
 }
 
-export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [] }: GenerateMindMapModalProps) {
+export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile }: GenerateMindMapModalProps) {
     const { t } = useLanguage();
     const queryClient = useQueryClient();
 
     // State
     const [selectedNotes, setSelectedNotes] = useState<any[]>(initialSelectedNotes);
+    const [selectedFiles, setSelectedFiles] = useState<any[]>(initialSelectedFile ? [initialSelectedFile] : []);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [query, setQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialSelectedNotes.length) setSelectedNotes(initialSelectedNotes);
+            if (initialSelectedFile) setSelectedFiles([initialSelectedFile]);
+        }
+    }, [isOpen, initialSelectedNotes, initialSelectedFile]);
+
 
     // Fetch available notes
     const { data: allItems } = useQuery({
@@ -47,18 +57,9 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     // Mutation for generation
     const generateMutation = useMutation({
         mutationFn: async () => {
-            // Handle file uploads if any (this part assumes backend handles file objects, or we need to extract text frontend side first)
-            // For simplicity, let's assume we send noteIds and rely on backend for notes.
-            // For files, we might need a separate upload endpoint or extract text here. 
-            // EDIT: Backend expects 'files' array with 'name' and 'extractedContent'.
-            // Let's reuse the extraction logic from ItemView or assume text extraction happens here.
-
-            // Simple version: only notes for now, show warning if files added
-            // Implementing file extraction would be complex here without pdfjs-dist setup reuse.
-            // Let's stick to Notes first or try reuse.
-
             return mindmapQueries.generate({
                 noteIds: selectedNotes.map(n => n.id),
+                fileItemIds: selectedFiles.map(f => f.id),
                 name: name || `Mind Map ${new Date().toLocaleDateString()}`
             });
         },
@@ -74,6 +75,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
 
     const handleClose = () => {
         setSelectedNotes([]);
+        setSelectedFiles([]);
         setUploadedFiles([]);
         setName('');
         setQuery('');
@@ -135,6 +137,27 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                         />
                                     </div>
+
+                                    {/* Pre-selected Files from View */}
+                                    {selectedFiles.length > 0 && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Selected Document</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedFiles.map((file) => (
+                                                    <span key={file.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                                                        <FileText className="h-4 w-4" />
+                                                        {file.fileName || file.title || "Document"}
+                                                        <button
+                                                            onClick={() => setSelectedFiles(selectedFiles.filter(f => f.id !== file.id))}
+                                                            className="ml-1 hover:text-destructive"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Note Selection */}
                                     <div>
@@ -231,7 +254,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                         </button>
                                         <button
                                             onClick={() => generateMutation.mutate()}
-                                            disabled={generateMutation.isPending || (selectedNotes.length === 0 && uploadedFiles.length === 0)}
+                                            disabled={generateMutation.isPending || (selectedNotes.length === 0 && selectedFiles.length === 0 && uploadedFiles.length === 0)}
                                             className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
                                             {generateMutation.isPending ? (
