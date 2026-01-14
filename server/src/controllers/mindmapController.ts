@@ -39,15 +39,8 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
     try {
 
         if (mimetype === 'application/pdf') {
-            console.log('pdfParse type:', typeof pdfParse);
-            console.log('pdfParse keys:', Object.keys(pdfParse || {}));
-            console.log('pdfParse.default type:', typeof pdfParse?.default);
-            console.log('pdfParse value:', pdfParse);
-
-            // Try different access patterns
-            const parseFunc = typeof pdfParse === 'function' ? pdfParse : pdfParse?.default || pdfParse;
-            console.log('parseFunc type:', typeof parseFunc);
-
+            // pdf-parse exports an object with PDFParse class
+            const parseFunc = pdfParse.PDFParse || pdfParse;
             const data = await parseFunc(buffer);
             console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
