@@ -35,7 +35,11 @@ Generate a comprehensive mind map now:`;
 const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<string> => {
     try {
         if (mimetype === 'application/pdf') {
-            const pdfParse = require('pdf-parse');
+            let pdfParse = require('pdf-parse');
+            // Handle CommonJS/ESM interop
+            if (typeof pdfParse !== 'function' && pdfParse.default) {
+                pdfParse = pdfParse.default;
+            }
             const data = await pdfParse(buffer);
             return data.text;
         } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
