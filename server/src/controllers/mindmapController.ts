@@ -3,8 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { incrementAIGeneration } from './profileController';
-import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
+
+const pdfParse = require('pdf-parse');
 
 const prisma = new PrismaClient();
 
@@ -38,7 +39,6 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
     try {
 
         if (mimetype === 'application/pdf') {
-            // @ts-ignore
             const data = await pdfParse(buffer);
             console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
