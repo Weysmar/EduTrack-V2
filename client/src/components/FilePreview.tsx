@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 
 // Configure PDF Worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Worker is now configured globally in main.tsx
+// pdfjs.GlobalWorkerOptions.workerSrc = ... 
 
 
 

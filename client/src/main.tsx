@@ -13,9 +13,13 @@ import { pdfjs } from 'react-pdf';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Pin worker version to 5.4.296 to match the API version bundled with react-pdf 10.3.0
-const workerUrl = `//unpkg.com/pdfjs-dist@5.4.296/legacy/build/pdf.worker.min.mjs`;
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+// Use local worker file via Vite asset handling to avoid CORS issues with CDN
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjs.GlobalWorkerOptions.workerSrc;
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
