@@ -36,11 +36,14 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
     try {
         if (mimetype === 'application/pdf') {
             let pdfParse = require('pdf-parse');
+            console.log('pdf-parse loaded:', typeof pdfParse, Object.keys(pdfParse || {}));
             // Handle CommonJS/ESM interop
             if (typeof pdfParse !== 'function' && pdfParse.default) {
                 pdfParse = pdfParse.default;
+                console.log('Used pdfParse.default');
             }
             const data = await pdfParse(buffer);
+            console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
         } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
             const mammoth = require('mammoth');
@@ -52,6 +55,8 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
         return '';
     } catch (error) {
         console.error('Error extracting text from file:', error);
+        console.error('Buffer size:', buffer?.length);
+        console.error('Mimetype:', mimetype);
         return '';
     }
 };
@@ -114,10 +119,15 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                         else if (item.fileName?.toLowerCase().endsWith('.txt')) mimetype = 'text/plain';
                         else if (item.fileName?.toLowerCase().endsWith('.md')) mimetype = 'text/markdown';
 
+                        console.log(`Processing file: ${item.fileName}, Mimetype: ${mimetype}, Buffer: ${buffer ? 'Found' : 'Missing'}`);
+
+
                         const text = await extractTextFromFile(buffer, mimetype);
                         if (text && text.trim().length > 0) {
                             combinedContent += `\n\n=== ${item.fileName} ===\n${text.substring(0, 20000)}`; // Limit content per file
                             fileNames.push(item.fileName || 'Untitled File');
+                        } else {
+                            console.warn(`No text extracted for file: ${item.fileName}`);
                         }
                     }
                 }
