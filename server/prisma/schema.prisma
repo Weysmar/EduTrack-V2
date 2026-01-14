@@ -28,6 +28,22 @@ model Profile {
   summaries  Summary[]
   studyPlans StudyPlan[]
   mindmaps   MindMap[]
+  studySessions StudySession[]
+}
+
+model StudySession {
+  id              String   @id @default(uuid())
+  profileId       String
+  courseId        String?
+  date            DateTime
+  startTime       DateTime
+  durationMinutes Int
+  type            String
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id])
 }
 
 model Course {
@@ -45,6 +61,7 @@ model Course {
   folder  Folder? @relation(fields: [folderId], references: [id])
   items   Item[]
   studyPlans StudyPlan[]
+  studySessions StudySession[]
 }
 
 model Folder {

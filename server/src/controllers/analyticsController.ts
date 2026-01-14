@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-// Assuming prisma client is available or we mock it for now until schema is updated
-// import { prisma } from '../lib/prisma'; 
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Placeholder Implementation
 export const AnalyticsController = {
@@ -8,9 +9,6 @@ export const AnalyticsController = {
         try {
             console.log("Recording session:", req.body);
             const { profileId, date, startTime, durationMinutes, type, courseId, notes } = req.body;
-
-            // @ts-ignore - Prisma client not imported in this mocked file but assuming global or import
-            const { prisma } = await import('../lib/prisma');
 
             const session = await prisma.studySession.create({
                 data: {
@@ -33,13 +31,15 @@ export const AnalyticsController = {
 
     getSessions: async (req: Request, res: Response) => {
         try {
-            // @ts-ignore
-            const { prisma } = await import('../lib/prisma');
             // Assuming we get profileId from query or auth middleware (not fully set up here)
             // For now, let's assume we fetch all or filter by query param if provided
             // const profileId = req.query.profileId as string; 
+            const profileId = (req as any).user?.id || req.query.profileId;
+
+            const where = profileId ? { profileId } : {};
 
             const sessions = await prisma.studySession.findMany({
+                where,
                 orderBy: { date: 'desc' },
                 take: 100 // Limit to last 100 sessions
             });
