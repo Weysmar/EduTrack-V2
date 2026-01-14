@@ -278,6 +278,15 @@ export function Dashboard() {
                                     <h2 className="text-2xl font-bold">{noteCount}</h2>
                                 </div>
                             </div>
+                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
+                                <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500">
+                                    <Sparkles className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Génération IA</p>
+                                    <h2 className="text-2xl font-bold">{(activeProfile?.settings as any)?.aiGenerationCount || 0}</h2>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
