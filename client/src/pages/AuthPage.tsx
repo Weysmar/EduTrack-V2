@@ -4,7 +4,6 @@ import { useProfileStore } from '@/store/profileStore';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
-import { useTheme } from '@/components/theme-provider';
 
 
 export function AuthPage() {
@@ -19,9 +18,7 @@ export function AuthPage() {
     const { loadProfile } = useProfileStore();
     const navigate = useNavigate();
     const { t } = useLanguage();
-    const { theme } = useTheme();
-
-    const logoSrc = theme === 'light' ? '/logo-light.webp' : '/logo-dark.webp';
+    const logoSrc = '/logo.svg';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
