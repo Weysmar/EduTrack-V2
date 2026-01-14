@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { incrementAIGeneration } from './profileController';
 
 const prisma = new PrismaClient();
 
@@ -55,6 +56,9 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
                 options
             }
         });
+
+        // Increment AI counter for summary generation
+        await incrementAIGeneration(profileId);
 
         res.json(summary);
     } catch (error) {

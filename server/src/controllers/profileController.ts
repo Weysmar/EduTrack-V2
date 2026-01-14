@@ -54,3 +54,41 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
+/**
+ * Increment AI Generation Counter
+ * Call this function whenever an AI generation is performed
+ */
+export const incrementAIGeneration = async (profileId: string): Promise<number> => {
+    try {
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { settings: true }
+        });
+
+        if (!profile) {
+            throw new Error('Profile not found');
+        }
+
+        // Get current count from settings
+        const currentSettings = (profile.settings as any) || {};
+        const currentCount = currentSettings.aiGenerationCount || 0;
+        const newCount = currentCount + 1;
+
+        // Update settings with new count
+        await prisma.profile.update({
+            where: { id: profileId },
+            data: {
+                settings: {
+                    ...currentSettings,
+                    aiGenerationCount: newCount
+                }
+            }
+        });
+
+        return newCount;
+    } catch (error) {
+        console.error('Error incrementing AI generation counter:', error);
+        throw error;
+    }
+};

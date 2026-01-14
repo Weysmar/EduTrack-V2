@@ -283,7 +283,7 @@ export function Dashboard() {
                                     <Sparkles className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Génération IA</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.aiGeneration')}</p>
                                     <h2 className="text-2xl font-bold">{(activeProfile?.settings as any)?.aiGenerationCount || 0}</h2>
                                 </div>
                             </div>

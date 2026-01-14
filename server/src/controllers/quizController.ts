@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { socketService } from '../services/socketService';
+import { incrementAIGeneration } from './profileController';
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,11 @@ export const createQuiz = async (req: AuthRequest, res: Response) => {
             },
             include: { questions: true }
         });
+
+        // Increment AI counter if questions were AI-generated
+        if (questions && questions.length > 0) {
+            await incrementAIGeneration(req.user!.id);
+        }
 
         socketService.emitToProfile(req.user!.id, 'quiz:created', quiz);
         res.status(201).json(quiz);

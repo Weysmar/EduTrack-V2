@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { socketService } from '../services/socketService';
+import { incrementAIGeneration } from './profileController';
 
 const prisma = new PrismaClient();
 
@@ -65,6 +66,11 @@ export const createFlashcardSet = async (req: AuthRequest, res: Response) => {
             },
             include: { flashcards: true }
         });
+
+        // Increment AI counter if cards were generated (they contain AI-generated content)
+        if (cards && cards.length > 0) {
+            await incrementAIGeneration(req.user!.id);
+        }
 
         socketService.emitToProfile(req.user!.id, 'flashcardSet:created', set);
         res.status(201).json(set);

@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
 import { logErrorToFile } from '../utils/fileLogger';
+import { incrementAIGeneration } from './profileController';
 
-export const generateContent = async (req: Request, res: Response) => {
+interface AuthRequest extends Request {
+    user?: { id: string };
+}
+
+export const generateContent = async (req: AuthRequest, res: Response) => {
     try {
         console.log('=== AI Generate Request ===');
         console.log('Body:', JSON.stringify(req.body, null, 2));
@@ -28,6 +33,11 @@ export const generateContent = async (req: Request, res: Response) => {
         const response = await aiService.generateText(prompt, systemPrompt, model, apiKey);
         console.log('Generation successful, response length:', response?.length);
 
+        // Increment AI generation counter if user is authenticated
+        if (req.user?.id) {
+            await incrementAIGeneration(req.user.id);
+        }
+
         res.json({ text: response });
     } catch (error: any) {
         console.error('=== AI Generate Error ===');
@@ -52,10 +62,16 @@ export const generateContent = async (req: Request, res: Response) => {
     }
 };
 
-export const generateJSON = async (req: Request, res: Response) => {
+export const generateJSON = async (req: AuthRequest, res: Response) => {
     try {
         const { prompt, systemPrompt, provider, model, apiKey } = req.body;
         const response = await aiService.generateJSON(prompt, systemPrompt, model, apiKey);
+
+        // Increment AI generation counter if user is authenticated
+        if (req.user?.id) {
+            await incrementAIGeneration(req.user.id);
+        }
+
         res.json(response);
     } catch (error) {
         res.status(500).json({ message: 'JSON Generation failed', error: (error as Error).message });
