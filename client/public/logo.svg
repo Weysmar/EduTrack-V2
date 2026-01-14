@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Signature Blue: #3b82f6 -->
+  
+  <!-- Folder Outline -->
+  <path d="M80 60 H200 C220 60, 230 60, 240 80 L250 100 C260 120, 270 120, 280 120 H432 C454.091 120 472 137.909 472 160 V432 C472 454.091 454.091 472 432 472 H80 C57.9086 472 40 454.091 40 432 V100 C40 77.9086 57.9086 60 80 60Z" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Plus Sign (Centered in the body area) 
+       Body is approx 120 to 472. Center Y = 296. Center X = 256.
+  -->
+  <path d="M256 220 V372" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M180 296 H332" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
