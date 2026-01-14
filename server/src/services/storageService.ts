@@ -97,5 +97,40 @@ export const storageService = {
             console.error('Thumbnail generation failed:', error);
             return null;
         }
+    },
+
+    async getFileContent(key: string): Promise<Buffer | null> {
+        if (!key) return null;
+
+        try {
+            if (STORAGE_TYPE === 's3') {
+                const command = new GetObjectCommand({
+                    Bucket: process.env.AWS_BUCKET_NAME,
+                    Key: key
+                });
+                const response = await s3Client.send(command);
+                if (response.Body) {
+                    // Convert stream to buffer
+                    const streamToBuffer = (stream: any) =>
+                        new Promise<Buffer>((resolve, reject) => {
+                            const chunks: any[] = [];
+                            stream.on("data", (chunk: any) => chunks.push(chunk));
+                            stream.on("error", reject);
+                            stream.on("end", () => resolve(Buffer.concat(chunks)));
+                        });
+                    return await streamToBuffer(response.Body);
+                }
+                return null;
+            } else {
+                const targetPath = path.join(process.cwd(), UPLOAD_DIR, key);
+                if (fs.existsSync(targetPath)) {
+                    return fs.readFileSync(targetPath);
+                }
+                return null;
+            }
+        } catch (error) {
+            console.error('Error getting file content:', error);
+            return null;
+        }
     }
 };
