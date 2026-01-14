@@ -65,6 +65,10 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
+        // Resolve usage context
+        const isPerplexity = model.toLowerCase().includes('sonar') || model.toLowerCase().includes('pplx');
+        const provider = isPerplexity ? 'perplexity' : 'google';
+
         // Resolve API Key: Request > Profile Settings > Environment (handled by service)
         let effectiveApiKey = apiKey;
         if (!effectiveApiKey) {
@@ -75,8 +79,12 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
             if (profile?.settings) {
                 const settings = profile.settings as any;
-                // Try summaries key first, then exercises, as fallback
-                effectiveApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+                if (isPerplexity) {
+                    effectiveApiKey = settings.perplexity_summaries || settings.perplexity_exercises;
+                } else {
+                    // Try summaries key first, then exercises, as fallback
+                    effectiveApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+                }
             }
         }
 
@@ -150,7 +158,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
         // Generate mind map using AI
         const prompt = MINDMAP_PROMPT.replace('{content}', combinedContent.substring(0, 50000)); // Limit total context
-        const mermaidContent = await aiService.generateText(prompt, '', model, effectiveApiKey);
+        const mermaidContent = await aiService.generateText(prompt, '', model, effectiveApiKey, provider);
 
         // Clean up response (remove any markdown code blocks)
         let cleanedContent = mermaidContent.trim();
