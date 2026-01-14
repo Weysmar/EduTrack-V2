@@ -29,6 +29,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
+    const [model, setModel] = useState('gemini-1.5-flash');
 
     useEffect(() => {
         if (isOpen) {
@@ -70,7 +71,8 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
             return mindmapQueries.generate({
                 noteIds: selectedNotes.map(n => n.id),
                 fileItemIds: selectedFiles.map(f => f.id),
-                name: name || `Mind Map ${new Date().toLocaleDateString()}`
+                name: name || `Mind Map ${new Date().toLocaleDateString()}`,
+                model
             });
         },
         onSuccess: () => {
@@ -328,6 +330,27 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                 </span>
                                             ))}
                                         </div>
+                                    </div>
+
+                                    {/* Model Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">{t('ai.model.label') || 'Model'}</label>
+                                        <select
+                                            value={model}
+                                            onChange={(e) => setModel(e.target.value)}
+                                            className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        >
+                                            <optgroup label="Google Gemini">
+                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
+                                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (New)</option>
+                                            </optgroup>
+                                            <optgroup label="Perplexity AI">
+                                                <option value="sonar">Sonar (Standard)</option>
+                                                <option value="sonar-pro">Sonar Pro (Advanced)</option>
+                                                <option value="sonar-reasoning">Sonar Reasoning</option>
+                                            </optgroup>
+                                        </select>
                                     </div>
 
                                     {/* File Upload (Placeholder for now) */}
