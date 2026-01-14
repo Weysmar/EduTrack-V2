@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
-import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History } from "lucide-react"
+import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout } from "lucide-react"
 import { useTheme } from '@/components/theme-provider'
 import { useLanguage } from '@/components/language-provider'
 import { cn } from '@/lib/utils'
@@ -9,13 +9,14 @@ import { useProfileStore } from '@/store/profileStore'
 import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('api')
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'interface'>('interface')
     const { theme, setTheme, themeColor, setThemeColor } = useTheme()
     const { t } = useLanguage()
     const useNavigateCallback = useNavigate()
-    const { activeProfile } = useProfileStore()
+    const { activeProfile, updateProfile } = useProfileStore()
 
     const tabs = [
+        { id: 'interface', label: t('settings.tabs.interface'), icon: Layout },
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
         { id: 'appearance', label: t('settings.tabs.appearance'), icon: Sun },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
@@ -63,6 +64,44 @@ export function SettingsPage() {
                 {/* Content Area */}
                 <main className="bg-card border rounded-2xl shadow-sm overflow-hidden min-h-[500px]">
                     <div className="p-8">
+                        {activeTab === 'interface' && (
+                            <div className="space-y-8">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">{t('settings.interface.title')}</h2>
+                                    <p className="text-sm text-muted-foreground mb-6">{t('settings.page.subtitle')}</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                                        <div className="space-y-0.5">
+                                            <h3 className="font-medium">{t('settings.interface.explorer')}</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {t('nav.mindmaps')} & {t('board.mapTitle')}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={activeProfile?.settings?.disableExplorer !== true}
+                                                    onChange={(e) => {
+                                                        if (!activeProfile) return;
+                                                        const newSettings = {
+                                                            ...(activeProfile.settings || {}),
+                                                            disableExplorer: !e.target.checked
+                                                        };
+                                                        updateProfile({ settings: newSettings });
+                                                    }}
+                                                />
+                                                <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {activeTab === 'api' && (
                             <div className="space-y-6">
                                 <div>

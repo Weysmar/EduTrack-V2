@@ -115,46 +115,50 @@ export function Sidebar() {
             </div>
 
             <div className="flex-1 overflow-y-auto py-4 overflow-x-hidden">
-                {!isCollapsed && (
-                    <h2 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 whitespace-nowrap">
-                        {t('nav.myCourses')}
-                    </h2>
-                )}
-
                 <nav className="space-y-1 px-2">
                     {/* Explorer Section */}
-                    {!isCollapsed && (
-                        <h2 className="px-2 mt-6 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            {t('nav.explore') || 'Explorer'}
-                        </h2>
+                    {activeProfile?.settings?.disableExplorer !== true && (
+                        <>
+                            {!isCollapsed && (
+                                <h2 className="px-2 mt-6 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {t('nav.explore') || 'Explorer'}
+                                </h2>
+                            )}
+
+                            <Link
+                                to="/mindmaps"
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                                    isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                                )}
+                                title={t('nav.mindmaps') || "Mind Maps"}
+                            >
+                                <BrainCircuit className="h-4 w-4 shrink-0" />
+                                {!isCollapsed && <span className="text-sm font-medium">{t('nav.mindmaps') || "Mind Maps"}</span>}
+                            </Link>
+
+                            <Link
+                                to="/board"
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                                    isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                                )}
+                                title={t('board.mapTitle') || "Tableau d'Enquête"}
+                            >
+                                <MapIcon className="h-4 w-4 shrink-0" />
+                                {!isCollapsed && <span className="text-sm font-medium">{t('board.mapTitle') || "Tableau d'Enquête"}</span>}
+                            </Link>
+                        </>
                     )}
 
-                    <Link
-                        to="/mindmaps"
-                        className={cn(
-                            "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
-                            isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
-                        )}
-                        title={t('nav.mindmaps') || "Mind Maps"}
-                    >
-                        <BrainCircuit className="h-4 w-4 shrink-0" />
-                        {!isCollapsed && <span className="text-sm font-medium">{t('nav.mindmaps') || "Mind Maps"}</span>}
-                    </Link>
-
-                    <Link
-                        to="/board"
-                        className={cn(
-                            "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
-                            isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
-                        )}
-                        title={t('board.mapTitle') || "Tableau d'Enquête"}
-                    >
-                        <MapIcon className="h-4 w-4 shrink-0" />
-                        {!isCollapsed && <span className="text-sm font-medium">{t('board.mapTitle') || "Tableau d'Enquête"}</span>}
-                    </Link>
-
                     {/* Divider */}
-                    <div className="my-4 border-t" />
+                    {activeProfile?.settings?.disableExplorer !== true && <div className="my-4 border-t" />}
+
+                    {!isCollapsed && (
+                        <h2 className="px-2 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                            {t('nav.myCourses')}
+                        </h2>
+                    )}
 
                     {/* Render Root Level Items (No Folder) */}
                     {(courses && folders) && (
