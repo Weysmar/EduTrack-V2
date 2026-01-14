@@ -472,7 +472,8 @@ const translations: Translations = {
         "mindmap.gen.submit": "Generate Mind Map",
         "mindmap.gen.generating": "Generating...",
         "mindmap.gen.success": "Mind Map generated successfully!",
-        "mindmap.gen.error": "Failed to generate mind map"
+        "mindmap.gen.error": "Failed to generate mind map",
+        "ai.model.label": "Select AI Model"
     },
     fr: {
         "app.title": "EduTrack",
@@ -598,6 +599,7 @@ const translations: Translations = {
         "search.searching": "Recherche en cours...",
         "search.results": "résultats",
         "search.nav": "naviguer",
+        "ai.model.label": "Modèle IA",
         "search.select": "sélectionner",
         // Summary
         "summary.title": "Options de Résumé",
@@ -1366,9 +1368,11 @@ const translations: Translations = {
         "mindmap.gen.submit": "Enchant",
         "mindmap.gen.generating": "Rendering chunks...",
         "mindmap.gen.success": "Map crafted!",
-        "mindmap.gen.error": "Crafting failed!"
-    }
+        "mindmap.gen.error": "Crafting failed!",
+        "ai.model.label": "Select Enchantment Source"
+    },
 }
+
 
 type LanguageProviderProps = {
     children: React.ReactNode
