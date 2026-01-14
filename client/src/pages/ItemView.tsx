@@ -977,7 +977,7 @@ export function ItemView() {
                                                 })()}
                                             </div>
 
-                                        ) : item.content ? (
+                                        ) : (item.content || isEditMode) ? (
                                             <div className="w-full">
                                                 {item.type === 'note' ? (
                                                     isEditMode ? (
@@ -1004,8 +1004,22 @@ export function ItemView() {
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="text-center py-20 text-muted-foreground italic">
-                                                {t('item.noContent')}
+                                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                                <div className="text-center text-muted-foreground italic">
+                                                    {t('item.noContent')}
+                                                </div>
+                                                {item.type === 'note' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsEditMode(true)
+                                                            setEditedContent('')
+                                                        }}
+                                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-2"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                        <span>{t('item.startWriting')}</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
 
