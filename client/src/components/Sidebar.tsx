@@ -12,18 +12,16 @@ import { useProfileStore } from '@/store/profileStore'
 import { FocusTimer } from './FocusTimer'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/components/theme-provider'
 
 export function Sidebar() {
     const activeProfile = useProfileStore(state => state.activeProfile);
     const { t } = useLanguage()
-    const { theme } = useTheme()
     const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const { isCollapsed, toggleCollapse } = useUIStore()
 
-    // Determine logo based on theme
-    const logoSrc = theme === 'light' ? '/logo-light.webp' : '/logo-dark.webp'
+    // Use the single vector logo
+    const logoSrc = '/logo.svg'
 
     // Using useQuery with activeProfile check
     const { data: courses } = useQuery({
