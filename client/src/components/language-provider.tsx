@@ -1339,7 +1339,7 @@ const translations: Translations = {
         "changelog.v010.title": "The Big Bang",
         "changelog.v010.engine": "Game Engine: Worlds, Books, Quests.",
         "changelog.v010.graph": "Map Room: Visualized knowledge graph.",
-        "changelog.current": "LIVE"
+        "changelog.current": "LIVE",
         // Mind Maps
         "nav.mindmaps": "Realm Maps",
         "mindmap.title": "Map Room",
@@ -1371,15 +1371,15 @@ const translations: Translations = {
 }
 
 type LanguageProviderProps = {
-        children: React.ReactNode
+    children: React.ReactNode
     defaultLanguage?: Language
     storageKey?: string
-    }
+}
 
 type LanguageProviderState = {
-        language: Language
+    language: Language
     setLanguage: (language: Language) => void
-            t: (key: string, variables ?: Record<string, string | number>) => string
+    t: (key: string, variables?: Record<string, string | number>) => string
 }
 
 const initialState: LanguageProviderState = {
