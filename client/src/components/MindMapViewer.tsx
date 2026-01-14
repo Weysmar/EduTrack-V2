@@ -16,12 +16,24 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            theme: 'dark', // Adapt based on app theme if needed
+            // Use 'base' theme to allow custom variables
+            theme: 'base',
             securityLevel: 'loose',
+            themeVariables: {
+                // Modern Dark Theme Palette
+                primaryColor: '#1e293b', // Dark Slate (Background of nodes)
+                primaryTextColor: '#f8fafc', // Very bright text
+                primaryBorderColor: '#6366f1', // Indigo Border (Pop color)
+                lineColor: '#94a3b8', // Slate-400 for edges (visible on dark)
+                secondaryColor: '#334155',
+                tertiaryColor: '#0f172a',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '16px', // Readable text
+            },
             mindmap: {
-                padding: 40,
-                // @ts-ignore - useMaxWidth is valid in recent mermaid but typescript definition might lag
+                // @ts-ignore
                 useMaxWidth: false,
+                padding: 40,
             },
             flowchart: {
                 useMaxWidth: false,
@@ -42,18 +54,24 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                     const { svg } = await mermaid.render(id, content);
                     mermaidRef.current.innerHTML = svg;
 
-                    // Post-processing: remove explicitly set max-width if mermaid adds it despite config
+                    // Post-processing for size and visibility
                     const svgElement = mermaidRef.current.querySelector('svg');
                     if (svgElement) {
                         svgElement.style.maxWidth = 'none';
                         svgElement.style.height = '100%';
-                        // Do not force width to 100%, let it be natural or large
+                        // Ensure text is readable - sometimes mermaid overrides styles
+                        svgElement.style.fontFamily = 'Inter, system-ui, sans-serif';
                     }
 
                 } catch (error) {
                     console.error('Mermaid render error:', error);
                     if (mermaidRef.current) {
-                        mermaidRef.current.innerHTML = '<div class="text-red-500 p-4 text-center">Failed to render diagram syntax.</div>';
+                        mermaidRef.current.innerHTML = `
+                            <div class="flex flex-col items-center justify-center h-full text-red-400 p-4">
+                                <p class="font-bold mb-2">Failed to render Mind Map</p>
+                                <pre class="text-xs bg-black/20 p-2 rounded max-w-full overflow-auto">${error}</pre>
+                            </div>
+                        `;
                     }
                 }
             }
@@ -63,7 +81,9 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
     }, [content]);
 
     return (
-        <div className={cn("relative border rounded-xl bg-card overflow-hidden w-full h-full min-h-[500px]", className)}>
+        <div className={cn("relative border rounded-xl bg-slate-950/50 overflow-hidden w-full h-full min-h-[500px]", className)}>
+            <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" /> {/* Subtle background grid */}
+
             <TransformWrapper
                 initialScale={1}
                 minScale={0.2}
@@ -74,14 +94,15 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                 {({ zoomIn, zoomOut, resetTransform }) => (
                     <>
                         {/* Controls */}
-                        <div className="absolute top-4 right-4 z-10 flex gap-2">
-                            <button onClick={() => zoomIn()} className="p-2 bg-background/80 backdrop-blur border rounded-md shadow-sm hover:bg-muted" title="Zoom In">
+                        <div className="absolute top-4 right-4 z-10 flex gap-1 bg-black/40 backdrop-blur-md p-1 rounded-lg border border-white/10">
+                            <button onClick={() => zoomIn()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Zoom In">
                                 <Maximize className="h-4 w-4" />
                             </button>
-                            <button onClick={() => zoomOut()} className="p-2 bg-background/80 backdrop-blur border rounded-md shadow-sm hover:bg-muted" title="Zoom Out">
+                            <button onClick={() => zoomOut()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Zoom Out">
                                 <Minimize className="h-4 w-4" />
                             </button>
-                            <button onClick={() => resetTransform()} className="p-2 bg-background/80 backdrop-blur border rounded-md shadow-sm hover:bg-muted" title="Reset">
+                            <div className="w-px bg-white/10 mx-1 my-1" />
+                            <button onClick={() => resetTransform()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Reset">
                                 <RotateCcw className="h-4 w-4" />
                             </button>
                         </div>
