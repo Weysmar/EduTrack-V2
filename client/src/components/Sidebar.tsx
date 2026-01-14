@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen, BrainCircuit } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -122,6 +122,40 @@ export function Sidebar() {
                 )}
 
                 <nav className="space-y-1 px-2">
+                    {/* Explorer Section */}
+                    {!isCollapsed && (
+                        <h2 className="px-2 mt-6 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Explorer
+                        </h2>
+                    )}
+
+                    <Link
+                        to="/mindmaps"
+                        className={cn(
+                            "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                            isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                        )}
+                        title="Mind Maps"
+                    >
+                        <BrainCircuit className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span className="text-sm font-medium">Mind Maps</span>}
+                    </Link>
+
+                    <Link
+                        to="/board"
+                        className={cn(
+                            "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                            isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                        )}
+                        title="Investigation Board"
+                    >
+                        <MapIcon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span className="text-sm font-medium">{t('nav.board') || "Board"}</span>}
+                    </Link>
+
+                    {/* Divider */}
+                    <div className="my-4 border-t" />
+
                     {/* Render Root Level Items (No Folder) */}
                     {(courses && folders) && (
                         !isCollapsed ? (

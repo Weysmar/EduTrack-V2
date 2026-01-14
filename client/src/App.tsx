@@ -22,6 +22,7 @@ const QuizStudy = lazy(() => import('@/pages/QuizStudy').then(m => ({ default: m
 const CalendarPage = lazy(() => import('@/pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const ProfileManager = lazy(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const MindMapsPage = lazy(() => import('@/pages/MindMapsPage').then(m => ({ default: m.MindMapsPage })))
 const AuthPage = lazy(() => import('@/pages/AuthPage').then(m => ({ default: m.AuthPage })))
 const InvestigationBoard = lazy(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
 
@@ -65,6 +66,10 @@ const router = createBrowserRouter([
                     {
                         path: 'board', // New Route
                         element: <LazyPage><InvestigationBoard /></LazyPage>,
+                    },
+                    {
+                        path: 'mindmaps',
+                        element: <LazyPage><MindMapsPage /></LazyPage>,
                     },
                     {
                         path: 'course/:courseId',
