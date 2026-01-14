@@ -40,8 +40,29 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
 
         if (mimetype === 'application/pdf') {
             // pdf-parse exports an object with PDFParse class
-            const parseFunc = pdfParse.PDFParse || pdfParse;
-            const data = await parseFunc(buffer);
+            const PDFParseClass = pdfParse.PDFParse || pdfParse;
+
+            let data;
+            try {
+                // Try direct function call first (for standard pdf-parse)
+                data = await PDFParseClass(buffer);
+            } catch (error: any) {
+                if (error.message && error.message.includes("invoked without 'new'")) {
+                    console.log('PDFParse is a class, instantiating...');
+                    const parser = new PDFParseClass();
+                    // Log methods to debug if parseBuffer is missing
+                    console.log('Parser methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(parser)));
+
+                    if (typeof parser.parseBuffer === 'function') {
+                        data = await parser.parseBuffer(buffer);
+                    } else {
+                        throw new Error('PDFParse instance has no parseBuffer method');
+                    }
+                } else {
+                    throw error;
+                }
+            }
+
             console.log('PDF Parsed, length:', data.text?.length);
             return data.text;
         } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
