@@ -447,6 +447,7 @@ const translations: Translations = {
         "auth.error.missing": "Please fill in all fields",
 
         // Mind Maps
+        "mindmap": "Mind Map",
         "nav.mindmaps": "Mind Maps",
         "mindmap.title": "Mind Maps",
         "mindmap.subtitle": "Visualize your knowledge with AI-generated diagrams.",
@@ -933,6 +934,7 @@ const translations: Translations = {
         "nav.explore": "Explorer",
 
         // Mind Maps (FR)
+        "mindmap": "Mind Map",
         "nav.mindmaps": "Mind Maps",
         "mindmap.title": "Mind Maps",
         "mindmap.subtitle": "Visualisez vos connaissances avec des diagrammes générés par IA.",
@@ -1343,7 +1345,9 @@ const translations: Translations = {
         "changelog.v010.graph": "Map Room: Visualized knowledge graph.",
         "changelog.current": "LIVE",
         // Mind Maps
+        "mindmap": "Mind Map",
         "nav.mindmaps": "Realm Maps",
+
         "mindmap.title": "Map Room",
         "mindmap.subtitle": "Cartography of your knowledge base.",
         "mindmap.new": "Craft Map",

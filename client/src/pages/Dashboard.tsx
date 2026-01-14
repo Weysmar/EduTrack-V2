@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, Target, PenTool, Layout, CheckCircle2 } from 'lucide-react'
+import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, Target, PenTool, Layout, CheckCircle2, Network } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { useState, useMemo } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
@@ -8,7 +8,7 @@ import { CalendarWidget } from '@/components/CalendarWidget'
 import { useProfileStore } from '@/store/profileStore'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useQuery } from '@tanstack/react-query'
-import { courseQueries, itemQueries, analyticsQueries } from '@/lib/api/queries'
+import { courseQueries, itemQueries, analyticsQueries, mindmapQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 
 export function Dashboard() {
@@ -27,6 +27,12 @@ export function Dashboard() {
     const { data: allItems } = useQuery({
         queryKey: ['items'],
         queryFn: itemQueries.getAll,
+        enabled: !!activeProfile
+    })
+
+    const { data: mindMaps } = useQuery({
+        queryKey: ['mindmaps'],
+        queryFn: mindmapQueries.getAll,
         enabled: !!activeProfile
     })
 
@@ -141,7 +147,13 @@ export function Dashboard() {
     const lastActiveCourse = recentCourses[0];
 
     // Enrich activity
-    const activity = [...itemList].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5).map((item: any) => {
+    const mixedActivity = [
+        ...itemList.map((i: any) => ({ ...i, sortDate: i.createdAt, activityType: i.type })),
+        ...(mindMaps || []).map((m: any) => ({ ...m, sortDate: m.createdAt, activityType: 'mindmap', title: m.name, courseTitle: 'AI Generated' }))
+    ];
+
+    const activity = mixedActivity.sort((a: any, b: any) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime()).slice(0, 5).map((item: any) => {
+        if (item.activityType === 'mindmap') return item;
         const course = courseList.find((c: any) => c.id === item.courseId)
         return { ...item, courseTitle: course?.title }
     })
@@ -349,10 +361,11 @@ export function Dashboard() {
                                                     {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
                                                     {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
                                                     {item.type === 'resource' && <Folder className="h-4 w-4 text-blue-500" />}
+                                                    {item.activityType === 'mindmap' && <Network className="h-4 w-4 text-indigo-500" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</h4>
-                                                    <p className="text-xs text-muted-foreground truncate">{item.courseTitle} • <span className="lowercase">{t(`common.in`)} {t(item.type)}</span></p>
+                                                    <p className="text-xs text-muted-foreground truncate">{item.courseTitle || t('common.noDesc')} • <span className="lowercase">{t('common.in')} {t(item.activityType || item.type)}</span></p>
                                                 </div>
                                                 <div className="text-xs text-muted-foreground whitespace-nowrap">
                                                     {new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
