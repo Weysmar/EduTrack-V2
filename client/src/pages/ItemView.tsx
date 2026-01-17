@@ -1,5 +1,5 @@
 
-import { Fragment, useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -14,7 +14,6 @@ import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLef
 import ReactMarkdown from 'react-markdown'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
-import { Menu, Transition } from '@headlessui/react'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { PDFViewer } from '@/components/PDFViewer'
@@ -65,6 +64,7 @@ export function ItemView() {
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+    const [isAIMenuOpen, setIsAIMenuOpen] = useState(false) // Manual control for mobile compatibility
 
     const [isPdfFullscreen, setIsPdfFullscreen] = useState(false)
 
@@ -603,9 +603,11 @@ export function ItemView() {
                                 </button>
                             )}
 
-                            <Menu as="div" className="relative flex-shrink-0">
-                                <Menu.Button
+                            {/* AI Generation Menu - Custom implementation for mobile compatibility */}
+                            <div className="relative flex-shrink-0">
+                                <button
                                     disabled={isExtracting}
+                                    onClick={() => setIsAIMenuOpen(!isAIMenuOpen)}
                                     className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 active:from-violet-800 active:to-indigo-800 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                                 >
                                     {isExtracting ? (
@@ -621,81 +623,69 @@ export function ItemView() {
                                             <span className="md:hidden">IA</span>
                                         </>
                                     )}
-                                </Menu.Button>
-                                <Transition
-                                    as={Fragment}
-                                    enter="transition ease-out duration-100"
-                                    enterFrom="transform opacity-0 scale-95"
-                                    enterTo="transform opacity-100 scale-100"
-                                    leave="transition ease-in duration-75"
-                                    leaveFrom="transform opacity-100 scale-100"
-                                    leaveTo="transform opacity-0 scale-95"
-                                >
-                                    <Menu.Items className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100] divide-y divide-border">
-                                        <div className="p-1">
-                                            <Menu.Item>
-                                                {({ active }) => (
-                                                    <button
-                                                        onClick={() => handleOpenExercise('flashcards')}
-                                                        className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
-                                                            active ? "bg-accent text-accent-foreground" : "text-foreground"
-                                                        )}
-                                                    >
-                                                        <BrainCircuit className="h-4 w-4 text-purple-500" />
-                                                        Générer Flashcards
-                                                    </button>
-                                                )}
-                                            </Menu.Item>
-                                            <Menu.Item>
-                                                {({ active }) => (
-                                                    <button
-                                                        onClick={() => handleOpenExercise('quiz')}
-                                                        className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
-                                                            active ? "bg-accent text-accent-foreground" : "text-foreground"
-                                                        )}
-                                                    >
-                                                        <CheckSquare className="h-4 w-4 text-green-500" />
-                                                        Générer QCM
-                                                    </button>
-                                                )}
-                                            </Menu.Item>
-                                            <Menu.Item>
-                                                {({ active }) => (
-                                                    <button
-                                                        onClick={() => setIsMindMapModalOpen(true)}
-                                                        className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
-                                                            active ? "bg-accent text-accent-foreground" : "text-foreground"
-                                                        )}
-                                                    >
-                                                        <BrainCircuit className="h-4 w-4 text-blue-500" />
-                                                        Générer Mind Map
-                                                    </button>
-                                                )}
-                                            </Menu.Item>
-                                            <Menu.Item>
-                                                {({ active }) => (
-                                                    <button
-                                                        onClick={() => {
-                                                            if (summary) setShowSummary(true)
-                                                            else setIsSummaryOptionsOpen(true)
-                                                        }}
-                                                        className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
-                                                            active ? "bg-accent text-accent-foreground" : "text-foreground"
-                                                        )}
-                                                    >
-                                                        <FileText className="h-4 w-4 text-blue-500" />
-                                                        {summary ? "Voir le résumé" : "Générer un résumé"}
-                                                    </button>
-                                                )}
-                                            </Menu.Item>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isAIMenuOpen && (
+                                    <>
+                                        {/* Backdrop */}
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setIsAIMenuOpen(false)}
+                                        />
+
+                                        {/* Menu Items */}
+                                        <div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 z-50 divide-y divide-border">
+                                            <div className="p-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsAIMenuOpen(false)
+                                                        handleOpenExercise('flashcards')
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                >
+                                                    <BrainCircuit className="h-4 w-4 text-purple-500" />
+                                                    Générer Flashcards
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setIsAIMenuOpen(false)
+                                                        handleOpenExercise('quiz')
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                >
+                                                    <CheckSquare className="h-4 w-4 text-green-500" />
+                                                    Générer QCM
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setIsAIMenuOpen(false)
+                                                        setIsMindMapModalOpen(true)
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                >
+                                                    <BrainCircuit className="h-4 w-4 text-blue-500" />
+                                                    Générer Mind Map
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setIsAIMenuOpen(false)
+                                                        if (summary) setShowSummary(true)
+                                                        else setIsSummaryOptionsOpen(true)
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                >
+                                                    <FileText className="h-4 w-4 text-blue-500" />
+                                                    {summary ? "Voir le résumé" : "Générer un résumé"}
+                                                </button>
+                                            </div>
                                         </div>
-                                    </Menu.Items>
-                                </Transition>
-                            </Menu>
+                                    </>
+                                )}
+                            </div>
 
                             <button
                                 onClick={handleDelete}
