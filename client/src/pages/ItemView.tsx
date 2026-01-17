@@ -280,8 +280,10 @@ export function ItemView() {
                 const extractionResult = await extractText(file)
                 const textContent = extractionResult.text
 
-                if (!textContent || textContent.length < 50) {
-                    alert("Attention : Le texte extrait semble vide ou très court. La génération peut échouer.");
+                if (!textContent || textContent.trim().length < 50) {
+                    toast.warning("Le texte extrait est très court. La génération peut échouer.", {
+                        description: `Longueur: ${textContent?.trim().length || 0} caractères`
+                    });
                 }
 
                 try {
@@ -294,7 +296,9 @@ export function ItemView() {
 
             } catch (e: any) {
                 console.error("Auto-extraction failed:", e);
-                alert(`Erreur d'analyse du document : ${e.message || "Impossible d'extraire le texte"}.`);
+                toast.error("Erreur d'extraction du document", {
+                    description: e.message || "Impossible d'extraire le texte du fichier."
+                });
                 setIsExtracting(false);
                 return; // Stop here, don't open modal if extraction failed completely
             } finally {
@@ -302,11 +306,23 @@ export function ItemView() {
             }
         }
 
-        if (!effectiveContent) {
-            alert("Aucun contenu n'est disponible pour la génération. Veuillez vérifier que le document contient du texte sélectionnable.");
+        // Stricter validation: check trim() and minimum length
+        const trimmedContent = effectiveContent.trim();
+        if (!trimmedContent || trimmedContent.length < 50) {
+            console.warn("Content too short:", trimmedContent.length, "characters");
+            if (trimmedContent.length === 0) {
+                toast.error("Aucun contenu disponible", {
+                    description: "Ajoutez du texte à votre note ou document avant de générer du contenu IA."
+                });
+            } else {
+                toast.error("Contenu trop court pour la génération", {
+                    description: `${trimmedContent.length} caractères détectés. Minimum requis: 50 caractères.`
+                });
+            }
             return;
         }
 
+        console.log("Opening exercise modal with content length:", trimmedContent.length);
         setExerciseMode(mode)
         setIsExerciseModalOpen(true)
     }
@@ -587,12 +603,24 @@ export function ItemView() {
                                 </button>
                             )}
 
-                            {/* Unified Generation Menu */}
                             <Menu as="div" className="relative flex-shrink-0">
-                                <Menu.Button className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm whitespace-nowrap">
-                                    <Sparkles className="h-4 w-4" />
-                                    <span className="hidden md:inline">Génération</span>
-                                    <span className="md:hidden">IA</span>
+                                <Menu.Button
+                                    disabled={isExtracting}
+                                    className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isExtracting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span className="hidden md:inline">Extraction...</span>
+                                            <span className="md:hidden">...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="h-4 w-4" />
+                                            <span className="hidden md:inline">Génération</span>
+                                            <span className="md:hidden">IA</span>
+                                        </>
+                                    )}
                                 </Menu.Button>
                                 <Transition
                                     as={Fragment}
