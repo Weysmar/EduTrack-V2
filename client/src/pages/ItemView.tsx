@@ -606,7 +606,7 @@ export function ItemView() {
                             <Menu as="div" className="relative flex-shrink-0">
                                 <Menu.Button
                                     disabled={isExtracting}
-                                    className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 active:from-violet-800 active:to-indigo-800 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                                 >
                                     {isExtracting ? (
                                         <>
@@ -631,14 +631,14 @@ export function ItemView() {
                                     leaveFrom="transform opacity-100 scale-100"
                                     leaveTo="transform opacity-0 scale-95"
                                 >
-                                    <Menu.Items className="absolute right-0 bottom-full md:bottom-auto md:top-full mt-2 w-56 origin-bottom-right md:origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 divide-y divide-border mb-2 md:mb-0">
+                                    <Menu.Items className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100] divide-y divide-border">
                                         <div className="p-1">
                                             <Menu.Item>
                                                 {({ active }) => (
                                                     <button
                                                         onClick={() => handleOpenExercise('flashcards')}
                                                         className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
+                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
                                                             active ? "bg-accent text-accent-foreground" : "text-foreground"
                                                         )}
                                                     >
@@ -652,7 +652,7 @@ export function ItemView() {
                                                     <button
                                                         onClick={() => handleOpenExercise('quiz')}
                                                         className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
+                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
                                                             active ? "bg-accent text-accent-foreground" : "text-foreground"
                                                         )}
                                                     >
@@ -666,7 +666,7 @@ export function ItemView() {
                                                     <button
                                                         onClick={() => setIsMindMapModalOpen(true)}
                                                         className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
+                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
                                                             active ? "bg-accent text-accent-foreground" : "text-foreground"
                                                         )}
                                                     >
@@ -683,7 +683,7 @@ export function ItemView() {
                                                             else setIsSummaryOptionsOpen(true)
                                                         }}
                                                         className={cn(
-                                                            "flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm",
+                                                            "flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px]",
                                                             active ? "bg-accent text-accent-foreground" : "text-foreground"
                                                         )}
                                                     >
