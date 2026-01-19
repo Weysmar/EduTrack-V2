@@ -47,6 +47,7 @@ export interface SummaryResult {
     stats: SummaryStats
     options: SummaryOptions
     createdAt: number // timestamp
+    courseId?: string
 }
 
 export interface ScoringWeights {

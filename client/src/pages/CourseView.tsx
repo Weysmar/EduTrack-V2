@@ -64,7 +64,7 @@ export function CourseView() {
     const [dragActive, setDragActive] = useState(false)
     const [droppedFile, setDroppedFile] = useState<File | null>(null)
 
-    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating } = useSummary(id, 'course')
+    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating } = useSummary(id, 'course', undefined, id)
 
     // --- Handlers ---
     const deleteCourseMutation = useMutation({
