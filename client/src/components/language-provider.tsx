@@ -43,7 +43,7 @@ const translations: Translations = {
         "filter.exercises": "Exercises",
         "filter.notes": "Notes",
         "filter.flashcards": "Flashcards",
-        "filter.quiz": "Quiz",
+        "filter.quiz": "QCM",
         "filter.mindmaps": "Mind Maps",
         "filter.summaries": "Summaries",
         "view.thumbnails_on": "Hide Thumbnails",

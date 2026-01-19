@@ -31,7 +31,7 @@ export function CourseView() {
     // --- Hooks ---
     const { course, isLoading: isCourseLoading, allItems, refetch: refetchContent } = useCourseContent(id)
     const {
-        activeTab, setActiveTab,
+        activeFilters, toggleFilter,
         filteredItems,
         sortOption, setSortOption,
         selectedItems, toggleSelection, clearSelection, handleSelectAll
@@ -217,7 +217,7 @@ export function CourseView() {
                     </div>
                 </div>
 
-                <CourseFilters activeTab={activeTab} onTabChange={setActiveTab} />
+                <CourseFilters activeFilters={activeFilters} onToggle={toggleFilter} />
 
                 <CourseToolbar
                     sortOption={sortOption}
@@ -227,7 +227,7 @@ export function CourseView() {
                     showThumbnails={showThumbnails}
                     onToggleThumbnails={toggleThumbnails}
                     gridColumns={gridColumns}
-                    onGridColumnsChange={setGridColumns}
+                    onGridColumnsChange={(cols) => setGridColumns(cols as 4 | 5 | 6 | 10)}
                     currentCount={filteredItems.length}
                     selectedCount={selectedItems.size}
                     onSelectAll={handleSelectAll}
