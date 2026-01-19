@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",
@@ -50,7 +51,7 @@
     "react-markdown": "^10.1.0",
     "react-pdf": "^10.3.0",
     "react-router-dom": "^6.18.0",
-    "react-zoom-pan-pinch": "^3.4.3",
+    "react-zoom-pan-pinch": "^3.7.0",
     "reactflow": "^11.11.4",
     "recharts": "^3.6.0",
     "socket.io-client": "^4.8.3",
@@ -64,6 +65,10 @@
     "zustand": "^4.4.6"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^25.0.3",
     "@types/react": "^18.2.37",
@@ -76,9 +81,12 @@
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
+    "happy-dom": "^20.3.3",
+    "jsdom": "^27.4.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.2.2",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vitest": "^4.0.17"
   }
 }

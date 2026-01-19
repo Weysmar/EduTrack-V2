@@ -140,7 +140,11 @@ export const folderQueries = {
 export const summaryQueries = {
     getOne: async (itemId: string) => {
         const { data } = await apiClient.get(`/summaries?itemId=${itemId}`);
-        return data; // Should return { summary: ... } or array? Let's say it returns list and we pick first, or endpoint returns one.
+        return data;
+    },
+    getByCourse: async (courseId: string) => {
+        const { data } = await apiClient.get(`/summaries?courseId=${courseId}`);
+        return data;
     },
     save: async (data: any) => {
         const { data: res } = await apiClient.post('/summaries', data);
@@ -220,7 +224,7 @@ export const analyticsQueries = {
     unlockAchievement: async (data: any) => {
         const { data: res } = await apiClient.post('/analytics/achievements', data);
         return res;
-    }
+    },
 };
 
 export const mindmapQueries = {
@@ -230,12 +234,13 @@ export const mindmapQueries = {
         name?: string;
         apiKey?: string;
         model?: string;
+        courseId?: string; // Added optional courseId
     }) => {
         const { data: res } = await apiClient.post('/mindmaps/generate', data);
         return res;
     },
-    getAll: async () => {
-        const { data } = await apiClient.get('/mindmaps');
+    getAll: async (courseId?: string) => {
+        const { data } = await apiClient.get(courseId ? `/mindmaps?courseId=${courseId}` : '/mindmaps');
         return data;
     },
     getOne: async (id: string) => {

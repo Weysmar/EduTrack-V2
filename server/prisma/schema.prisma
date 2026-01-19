@@ -62,6 +62,8 @@ model Course {
   items   Item[]
   studyPlans StudyPlan[]
   studySessions StudySession[]
+  summaries Summary[]
+  mindmaps  MindMap[]
 }
 
 model Folder {
@@ -158,6 +160,7 @@ model QuizQuestion {
 model Summary {
   id        String   @id @default(uuid())
   profileId String
+  courseId  String?
   itemId    String
   itemType  String
   content   String   @db.Text
@@ -167,6 +170,7 @@ model Summary {
   updatedAt DateTime @updatedAt
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id])
 }
 
 model StudyPlan {
@@ -216,6 +220,7 @@ model StudyTask {
 model MindMap {
   id          String   @id @default(uuid())
   profileId   String
+  courseId    String?
   name        String
   description String?
   content     String   @db.Text // Mermaid syntax
@@ -224,4 +229,5 @@ model MindMap {
   updatedAt   DateTime @updatedAt
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id])
 }
