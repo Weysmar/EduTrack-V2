@@ -4,7 +4,7 @@ import { summaryQueries } from '@/lib/api/queries'
 import { SummaryOptions, SummaryResult, SummaryType, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { toast } from "sonner"
 
-export function useSummary(itemId: string | number, itemType: SummaryType, initialText?: string) {
+export function useSummary(itemId: string | number, itemType: SummaryType, initialText?: string, courseId?: string) {
     const [summary, setSummary] = useState<SummaryResult | null>(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -46,6 +46,7 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
                 id: uuidv4(),
                 itemId: String(itemId),
                 itemType: itemType,
+                courseId: courseId, // Include courseId
                 content: generatedText,
                 stats: {
                     originalWordCount: textToProcess.split(' ').length,
