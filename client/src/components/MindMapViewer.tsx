@@ -17,18 +17,26 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
         mermaid.initialize({
             startOnLoad: false,
             // Use 'base' theme to allow custom variables
+            // @ts-ignore - 'look' is valid in v11 but types might be lagging
+            look: 'hand',
             theme: 'base',
             securityLevel: 'loose',
             themeVariables: {
-                // Modern Dark Theme Palette
-                primaryColor: '#1e293b', // Dark Slate (Background of nodes)
-                primaryTextColor: '#f8fafc', // Very bright text
-                primaryBorderColor: '#6366f1', // Indigo Border (Pop color)
-                lineColor: '#94a3b8', // Slate-400 for edges (visible on dark)
-                secondaryColor: '#334155',
-                tertiaryColor: '#0f172a',
-                fontFamily: 'Inter, system-ui, sans-serif',
-                fontSize: '16px', // Readable text
+                // Hand-drawn Pastel Theme Palette
+                background: '#fafaf9', // Stone-50 warm white
+                mainBkg: '#ffebd3', // Pastel Orange (Root/Primary default)
+                primaryColor: '#ffebd3',
+                primaryTextColor: '#475569', // Slate-600
+                primaryBorderColor: '#475569',
+
+                lineColor: '#475569', // Dark Slate for edges
+
+                // Secondary/Tertiary for other levels
+                secondaryColor: '#e0f2fe', // Pastel Blue
+                tertiaryColor: '#dcfce7', // Pastel Green
+
+                fontFamily: '"Caveat", "Kalam", handwriting',
+                fontSize: '20px',
             },
             mindmap: {
                 // @ts-ignore
@@ -50,6 +58,15 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                     mermaidRef.current.innerHTML = ''; // Clear
                     const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
+                    // Inject Caveat font if not present
+                    if (!document.getElementById('font-caveat')) {
+                        const link = document.createElement('link');
+                        link.id = 'font-caveat';
+                        link.rel = 'stylesheet';
+                        link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap';
+                        document.head.appendChild(link);
+                    }
+
                     // Render SVG
                     const { svg } = await mermaid.render(id, content);
                     mermaidRef.current.innerHTML = svg;
@@ -59,8 +76,9 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                     if (svgElement) {
                         svgElement.style.maxWidth = 'none';
                         svgElement.style.height = '100%';
-                        // Ensure text is readable - sometimes mermaid overrides styles
-                        svgElement.style.fontFamily = 'Inter, system-ui, sans-serif';
+                        svgElement.style.fontFamily = '"Caveat", handwriting';
+                        // Force background to be transparent or match container
+                        svgElement.style.backgroundColor = 'transparent';
                     }
 
                 } catch (error) {
@@ -81,8 +99,8 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
     }, [content]);
 
     return (
-        <div className={cn("relative border rounded-xl bg-slate-950/50 overflow-hidden w-full h-full min-h-[500px]", className)}>
-            <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" /> {/* Subtle background grid */}
+        <div className={cn("relative border rounded-xl bg-[#fdfbf7] overflow-hidden w-full h-full min-h-[500px]", className)}>
+            <div className="absolute inset-0 bg-grid-black/[0.02] pointer-events-none" /> {/* Subtle background grid */}
 
             <TransformWrapper
                 initialScale={1}
@@ -94,15 +112,15 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                 {({ zoomIn, zoomOut, resetTransform }) => (
                     <>
                         {/* Controls */}
-                        <div className="absolute top-4 right-4 z-10 flex gap-1 bg-black/40 backdrop-blur-md p-1 rounded-lg border border-white/10">
-                            <button onClick={() => zoomIn()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Zoom In">
+                        <div className="absolute top-4 right-4 z-10 flex gap-1 bg-white/80 backdrop-blur-md p-1 rounded-lg border border-black/5 shadow-sm">
+                            <button onClick={() => zoomIn()} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-black/5 rounded-md transition-all" title="Zoom In">
                                 <Maximize className="h-4 w-4" />
                             </button>
-                            <button onClick={() => zoomOut()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Zoom Out">
+                            <button onClick={() => zoomOut()} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-black/5 rounded-md transition-all" title="Zoom Out">
                                 <Minimize className="h-4 w-4" />
                             </button>
-                            <div className="w-px bg-white/10 mx-1 my-1" />
-                            <button onClick={() => resetTransform()} className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-md transition-all" title="Reset">
+                            <div className="w-px bg-black/5 mx-1 my-1" />
+                            <button onClick={() => resetTransform()} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-black/5 rounded-md transition-all" title="Reset">
                                 <RotateCcw className="h-4 w-4" />
                             </button>
                         </div>

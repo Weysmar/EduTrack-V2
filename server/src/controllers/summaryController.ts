@@ -31,7 +31,7 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
 
 export const saveSummary = async (req: AuthRequest, res: Response) => {
     try {
-        const { itemId, itemType, content, stats, options } = req.body;
+        const { itemId, itemType, content, stats, options, courseId } = req.body;
         // Use req.user.id because that's what's in the token and it IS the profile ID
         const profileId = req.user?.id;
 
@@ -49,6 +49,7 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
         const summary = await prisma.summary.create({
             data: {
                 profileId,
+                courseId,
                 itemId,
                 itemType,
                 content,
@@ -64,5 +65,32 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error("Save Summary Error:", error);
         res.status(500).json({ error: "Failed to save summary" });
+    }
+};
+
+export const getSummaries = async (req: AuthRequest, res: Response) => {
+    try {
+        const { courseId } = req.query;
+        const profileId = req.user?.id;
+
+        if (!profileId) return res.status(401).json({ error: "Unauthorized" });
+
+        const where: any = { profileId };
+        if (courseId) {
+            where.courseId = String(courseId);
+        }
+
+        const summaries = await prisma.summary.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                // Optionally include item title if needed, but summary is linked to generic item
+            }
+        });
+
+        res.json(summaries);
+    } catch (error) {
+        console.error("Get Summaries Error:", error);
+        res.status(500).json({ error: "Failed to fetch summaries" });
     }
 };

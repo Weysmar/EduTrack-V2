@@ -58,11 +58,21 @@ const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<st
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
         // Updated to remove 'files' for direct upload
-        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-1.5-flash' } = req.body;
+        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-1.5-flash', courseId } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {
             return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        // Validate course access if provided
+        if (courseId) {
+            const course = await prisma.course.findFirst({
+                where: { id: courseId, profileId }
+            });
+            if (!course) {
+                return res.status(404).json({ error: 'Course not found' });
+            }
         }
 
         // Resolve usage context
@@ -172,6 +182,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
         const mindMap = await prisma.mindMap.create({
             data: {
                 profileId,
+                courseId,
                 name: name || `Mind Map - ${new Date().toLocaleDateString()}`,
                 content: cleanedContent.trim(),
                 sources: {
@@ -197,14 +208,20 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
 export const getMindMaps = async (req: AuthRequest, res: Response) => {
     try {
+        const { courseId } = req.query;
         const profileId = req.user?.id;
 
         if (!profileId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
+        const where: any = { profileId };
+        if (courseId) {
+            where.courseId = String(courseId);
+        }
+
         const mindMaps = await prisma.mindMap.findMany({
-            where: { profileId },
+            where,
             orderBy: { createdAt: 'desc' }
         });
 

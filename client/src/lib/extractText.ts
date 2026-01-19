@@ -173,7 +173,7 @@ async function extractPdfText(file: File): Promise<ExtractionResult> {
  * Extract text from PDF using OCR (for scanned documents)
  * Renders each page as canvas and uses Tesseract.js
  */
-async function extractPdfViaOCR(pdf: pdfjsLib.PDFDocumentProxy): Promise<ExtractionResult> {
+async function extractPdfViaOCR(pdf: any): Promise<ExtractionResult> {
     const { createWorker } = await import('tesseract.js');
     const worker = await createWorker('eng+fra');
     let fullText = '';
