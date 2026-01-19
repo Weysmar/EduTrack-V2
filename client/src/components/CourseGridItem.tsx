@@ -38,7 +38,17 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                 isSelected ? "ring-2 ring-primary ring-inset border-transparent z-10" : "border-border"
             )}
             onClick={(e) => {
-                navigate(`/course/${courseId}/item/${item.id}`)
+                if (item.type === 'quiz') {
+                    navigate(`/quiz/study/${item.id}`);
+                } else if (item.type === 'flashcards') {
+                    navigate(`/flashcards/study/${item.id}`);
+                } else if (item.type === 'mindmap') {
+                    navigate('/mindmaps');
+                } else if (item.type === 'summary' && item.itemId) {
+                    navigate(`/course/${courseId}/item/${item.itemId}`);
+                } else {
+                    navigate(`/course/${courseId}/item/${item.id}`)
+                }
             }}
         >
             {/* Selection Checkbox (Visible on hover or if selected) */}
