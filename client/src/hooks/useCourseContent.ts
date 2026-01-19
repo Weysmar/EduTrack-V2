@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { courseQueries, itemQueries, mindmapQueries, flashcardQueries, quizQueries, summaryQueries } from '@/lib/api/queries'
 
@@ -49,7 +50,7 @@ export function useCourseContent(courseId: string): CourseContentHook {
     })
 
     // 3. Aggregate All Content
-    const allItems = [
+    const allItems = useMemo(() => [
         ...(items || []),
         ...(mindMaps?.map((m: any) => ({ ...m, type: 'mindmap', title: m.name })) || []),
         ...(flashcardSets?.map((f: any) => ({ ...f, type: 'flashcards', title: f.name })) || []),
@@ -61,7 +62,7 @@ export function useCourseContent(courseId: string): CourseContentHook {
                 ? `Résumé: ${items.find((i: any) => i.id === s.itemId)?.title}`
                 : 'Résumé (Sans titre)'
         })) || [])
-    ];
+    ], [items, mindMaps, flashcardSets, quizzes, summaries]);
 
     const refetch = () => {
         refetchItems()
