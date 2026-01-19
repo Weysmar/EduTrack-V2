@@ -68,6 +68,16 @@ export const aiService = {
             if (!fullPrompt || fullPrompt.length === 0) {
                 throw new Error('Prompt is empty');
             }
+
+            // Validate prompt length (security: prevent excessive costs)
+            const MAX_PROMPT_LENGTH = 50000;
+            if (fullPrompt.length > MAX_PROMPT_LENGTH) {
+                throw new Error(
+                    `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
+                    `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
+                    `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
+                );
+            }
             const apiModel = mapModelName(model);
             console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars. Key contents: ${effectiveKey.substring(0, 4)}...`);
 
@@ -78,8 +88,8 @@ export const aiService = {
                 safetySettings: [
                     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
                 ]
             }, {
                 timeout: 120000 // 2 minutes timeout for large PDFs
@@ -144,6 +154,16 @@ export const aiService = {
                     // but Gemini 1.5 supports systemInstruction. 
                     // We'll combine it for compatibility.
                     const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
+
+                    // Validate prompt length (security: prevent excessive costs)
+                    const MAX_PROMPT_LENGTH = 50000;
+                    if (fullPrompt.length > MAX_PROMPT_LENGTH) {
+                        throw new Error(
+                            `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
+                            `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
+                            `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
+                        );
+                    }
                     const result = await modelInstance.generateContent(fullPrompt);
                     const response = await result.response;
                     text = response.text();

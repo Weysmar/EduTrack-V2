@@ -19,6 +19,7 @@ model Profile {
   createdAt    DateTime @default(now())
   lastAccessed DateTime @updatedAt
   settings     Json?    // Stores API keys, preferences, etc.
+  aiGenerationsCount Int @default(0) // Track AI usage for rate limiting
   
   courses    Course[]
   folders    Folder[]

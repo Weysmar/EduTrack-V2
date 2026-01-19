@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { aiRateLimit } from '../middleware/aiRateLimit';
 import {
     generateMindMap,
     getMindMaps,
@@ -14,7 +15,7 @@ const router = Router();
 router.use(authenticate);
 
 // POST /api/mindmaps/generate
-router.post('/generate', generateMindMap);
+router.post('/generate', aiRateLimit, generateMindMap);
 
 // GET /api/mindmaps
 router.get('/', getMindMaps);
