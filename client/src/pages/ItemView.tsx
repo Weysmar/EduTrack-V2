@@ -137,7 +137,7 @@ export function ItemView() {
     }, [isImageFullscreen, isPdfFullscreen])
 
     // Summary Hook
-    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(id, item?.type || 'note')
+    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(id, item?.type || 'note', undefined, courseId)
 
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
