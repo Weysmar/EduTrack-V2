@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, Calendar } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck } from 'lucide-react';
 import { FilePreview } from '@/components/FilePreview';
 import { useLanguage } from '@/components/language-provider';
 import { API_URL } from '@/config';
@@ -24,7 +24,11 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
     const typeKey = {
         note: 'item.create.type.note',
         exercise: 'item.create.type.exercise',
-        resource: 'item.create.type.resource'
+        resource: 'item.create.type.resource',
+        quiz: 'filter.quiz',
+        flashcards: 'filter.flashcards',
+        mindmap: 'filter.mindmaps',
+        summary: 'filter.summaries'
     }[item.type] || item.type;
 
     return (
@@ -87,10 +91,18 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                     <div className={cn(
                         "w-full h-full flex items-center justify-center",
                         item.type === 'note' && "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
-                        item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500"
+                        item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500",
+                        item.type === 'quiz' && "bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-500",
+                        item.type === 'flashcards' && "bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500",
+                        item.type === 'mindmap' && "bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-500",
+                        item.type === 'summary' && "bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500"
                     )}>
                         {item.type === 'note' && <FileText className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                         {item.type === 'exercise' && <Dumbbell className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
+                        {item.type === 'quiz' && <CheckSquare className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
+                        {item.type === 'flashcards' && <Layers className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
+                        {item.type === 'mindmap' && <Brain className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
+                        {item.type === 'summary' && <FileCheck className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                     </div>
                 )}
 
@@ -100,7 +112,11 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md border border-white/10",
                         item.type === 'resource' && "bg-blue-500/90 text-white",
                         item.type === 'note' && "bg-yellow-500/90 text-white",
-                        item.type === 'exercise' && "bg-green-500/90 text-white"
+                        item.type === 'exercise' && "bg-green-500/90 text-white",
+                        item.type === 'quiz' && "bg-purple-500/90 text-white",
+                        item.type === 'flashcards' && "bg-orange-500/90 text-white",
+                        item.type === 'mindmap' && "bg-pink-500/90 text-white",
+                        item.type === 'summary' && "bg-cyan-500/90 text-white"
                     )}>
                         {t(typeKey)}
                     </span>
