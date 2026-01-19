@@ -4,14 +4,32 @@ export type FilterTab = 'all' | 'exercise' | 'note' | 'resource' | 'flashcards' 
 export type SortOption = 'alpha' | 'date' | 'last_opened';
 
 export function useCourseFilters(items: any[]) {
-    const [activeTab, setActiveTab] = useState<FilterTab>('all')
+    const [activeFilters, setActiveFilters] = useState<FilterTab[]>(['all'])
     const [searchQuery, setSearchQuery] = useState('')
     const [sortOption, setSortOption] = useState<SortOption>('date')
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
 
+    const toggleFilter = useCallback((filter: FilterTab) => {
+        setActiveFilters(prev => {
+            if (filter === 'all') return ['all']
+
+            const isAll = prev.includes('all')
+            let newFilters = isAll ? [] : [...prev]
+
+            if (newFilters.includes(filter)) {
+                newFilters = newFilters.filter(f => f !== filter)
+            } else {
+                newFilters.push(filter)
+            }
+
+            if (newFilters.length === 0) return ['all']
+            return newFilters
+        })
+    }, [])
+
     const filteredItems = useMemo(() => {
         let result = items.filter((item: any) => {
-            const matchesTab = activeTab === 'all' || item.type === activeTab
+            const matchesTab = activeFilters.includes('all') || activeFilters.includes(item.type as FilterTab)
             const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase())
             return matchesTab && matchesSearch
         })
@@ -30,7 +48,7 @@ export function useCourseFilters(items: any[]) {
         })
 
         return result
-    }, [items, activeTab, searchQuery, sortOption])
+    }, [items, activeFilters, searchQuery, sortOption])
 
     const toggleSelection = useCallback((itemId: string) => {
         setSelectedItems(prev => {
@@ -59,8 +77,8 @@ export function useCourseFilters(items: any[]) {
     }, [filteredItems])
 
     return {
-        activeTab,
-        setActiveTab,
+        activeFilters,
+        toggleFilter,
         searchQuery,
         setSearchQuery,
         sortOption,
