@@ -67,7 +67,7 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
         } finally {
             setIsGenerating(false)
         }
-    }, [itemId, itemType, initialText])
+    }, [itemId, itemType, initialText, courseId])
 
     const saveSummary = async (result: SummaryResult) => {
         try {
