@@ -73,7 +73,19 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
 
     const saveSummary = async (result: SummaryResult) => {
         try {
-            await summaryQueries.save(result);
+            // CRITICAL FIX: Ensure courseId is explicitly included in the payload
+            // Axios strips undefined values, so we need to ensure it's either a string or explicitly null
+            const dataToSave = {
+                ...result,
+                courseId: result.courseId || courseId || null
+            };
+
+            console.log('🔍 DEBUG: About to save summary with result:', dataToSave);
+            console.log('🔍 DEBUG: courseId in payload:', dataToSave.courseId);
+            console.log('🔍 DEBUG: courseId hook param:', courseId);
+
+            await summaryQueries.save(dataToSave);
+
             // Invalidate queries to refresh lists
             queryClient.invalidateQueries({ queryKey: ['summaries'] });
             if (courseId) {
