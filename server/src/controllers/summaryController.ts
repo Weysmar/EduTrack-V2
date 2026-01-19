@@ -82,10 +82,7 @@ export const getSummaries = async (req: AuthRequest, res: Response) => {
 
         const summaries = await prisma.summary.findMany({
             where,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                // Optionally include item title if needed, but summary is linked to generic item
-            }
+            orderBy: { createdAt: 'desc' }
         });
 
         res.json(summaries);

@@ -172,6 +172,9 @@ model Summary {
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course? @relation(fields: [courseId], references: [id])
+
+  @@index([profileId, courseId])
+  @@index([itemId])
 }
 
 model StudyPlan {
