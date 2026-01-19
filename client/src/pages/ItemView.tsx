@@ -142,12 +142,19 @@ export function ItemView() {
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
 
-    // Auto-open summary when loaded (Moved here to avoid Hooks Rule violation)
+    // Auto-open summary when loaded
     useEffect(() => {
         if (summary && !showSummary && !isExtracting) {
             setShowSummary(true);
         }
     }, [summary]);
+
+    // Handle Summary Errors
+    useEffect(() => {
+        if (summaryError) {
+            toast.error("Erreur de génération", { description: summaryError });
+        }
+    }, [summaryError]);
 
     // File Type Detection (Lifted to Component Scope)
     const filename = item?.fileName || '';
@@ -727,6 +734,13 @@ export function ItemView() {
                                     "bg-card border rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-300 flex flex-col",
                                     isFocusMode ? "fixed inset-0 z-50 rounded-none border-0 h-screen w-screen m-0" : "min-h-[50vh]"
                                 )}>
+                                    {isSummaryGenerating && (
+                                        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+                                            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                            <p className="text-lg font-medium animate-pulse">{t('summary.generating') || "Génération du résumé..."}</p>
+                                            <p className="text-sm text-muted-foreground mt-2">Cela peut prendre quelques secondes</p>
+                                        </div>
+                                    )}
                                     {/* Summary Header / Toolbar inside the card */}
                                     <div className="border-b bg-muted/30 p-4 flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur z-10 supports-[backdrop-filter]:bg-card/60">
                                         <div className="flex items-center gap-3">
