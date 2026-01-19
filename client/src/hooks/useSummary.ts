@@ -3,11 +3,13 @@ import { v4 as uuidv4 } from 'uuid'
 import { summaryQueries } from '@/lib/api/queries'
 import { SummaryOptions, SummaryResult, SummaryType, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { toast } from "sonner"
+import { useQueryClient } from '@tanstack/react-query'
 
 export function useSummary(itemId: string | number, itemType: SummaryType, initialText?: string, courseId?: string) {
     const [summary, setSummary] = useState<SummaryResult | null>(null)
     const [isGenerating, setIsGenerating] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const queryClient = useQueryClient()
 
     // Load existing summary from API on mount
     useEffect(() => {
@@ -67,11 +69,16 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
         } finally {
             setIsGenerating(false)
         }
-    }, [itemId, itemType, initialText, courseId])
+    }, [itemId, itemType, initialText, courseId, queryClient])
 
     const saveSummary = async (result: SummaryResult) => {
         try {
             await summaryQueries.save(result);
+            // Invalidate queries to refresh lists
+            queryClient.invalidateQueries({ queryKey: ['summaries'] });
+            if (courseId) {
+                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
+            }
             toast.success("Résumé sauvegardé avec succès")
         } catch (dbErr) {
             console.error("Failed to save summary", dbErr)
