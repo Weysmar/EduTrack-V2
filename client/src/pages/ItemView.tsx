@@ -383,14 +383,34 @@ export function ItemView() {
                                 />
                             </div>
                         ) : (
-                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
-                                {/* Default to Iframe/PDF logic */}
-                                <iframe
-                                    src={`${pdfUrl}#view=FitH`}
-                                    title={t('document.fullscreen')}
-                                    className="w-full h-full border-0 bg-white"
-                                    allowFullScreen
-                                />
+                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden relative">
+                                {/* Enhanced Mobile PDF Handling */}
+                                {(() => {
+                                    // Detect if mobile user agent (simple check)
+                                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                                    // Option 1: Use Google Docs Viewer for mobile (very reliable)
+                                    if (isMobile) {
+                                        return (
+                                            <iframe
+                                                src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl || '')}&embedded=true`}
+                                                title={t('document.fullscreen')}
+                                                className="w-full h-full border-0 bg-white"
+                                                allowFullScreen
+                                            />
+                                        );
+                                    }
+
+                                    // Option 2: Desktop PDF.js / Native
+                                    return (
+                                        <iframe
+                                            src={`${pdfUrl}#view=FitH`}
+                                            title={t('document.fullscreen')}
+                                            className="w-full h-full border-0 bg-white"
+                                            allowFullScreen
+                                        />
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
@@ -643,8 +663,15 @@ export function ItemView() {
                                         />
 
                                         {/* Menu Items */}
-                                        <div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 z-50 divide-y divide-border">
-                                            <div className="p-1">
+                                        {/* Menu Items - Bottom Sheet on Mobile, Dropdown on Desktop */}
+                                        <div className={cn(
+                                            "z-50 bg-card shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-border",
+                                            // Mobile: Fixed Bottom Sheet
+                                            "fixed left-0 right-0 bottom-0 w-full rounded-t-xl border-t pb-safe animate-in slide-in-from-bottom duration-200",
+                                            // Desktop: Absolute Dropdown
+                                            "md:absolute md:right-0 md:top-full md:bottom-auto md:left-auto md:w-56 md:mt-2 md:rounded-md md:origin-top-right md:animate-in md:fade-in md:zoom-in-95"
+                                        )}>
+                                            <div className="p-2 md:p-1 space-y-1 md:space-y-0">
                                                 <button
                                                     onClick={() => {
                                                         setIsAIMenuOpen(false)
@@ -706,12 +733,12 @@ export function ItemView() {
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-4 md:p-10">
-                        <div className={cn("w-full space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
+                    <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10">
+                        <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
 
-                            {/* Metadata Badges */}
+                            {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
                             {item.type === 'exercise' && item.status && item.difficulty && (
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 p-4 md:p-0">
                                     <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
                                         item.difficulty === 'easy' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
                                             item.difficulty === 'medium' ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30" :
@@ -732,7 +759,7 @@ export function ItemView() {
                             {/* Content Logic: Summary VS Original Content */}
                             <div className={cn(
                                 "w-full transition-all",
-                                isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-6 max-w-5xl mx-auto"
+                                isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-0 md:space-y-6 max-w-5xl mx-auto"
                             )}>
 
                                 {/* Mobile Focus Tab Header */}
@@ -765,13 +792,13 @@ export function ItemView() {
                                     <div className={cn(
                                         (!showSummary || isFocusMode) ? "block" : "hidden",
                                         (isFocusMode && mobileTab === 'summary') ? "hidden md:block" : "",
-                                        isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-2 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden -mx-4 md:mx-0"
+                                        isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden w-full"
                                     )}>
 
                                         {/* PDF VIEWER Integration */}
                                         {pdfUrl ? (
                                             <div className={cn(
-                                                "border-0 rounded-none overflow-hidden bg-card shadow-none relative",
+                                                "border-0 rounded-none overflow-hidden bg-card shadow-none relative w-full",
                                                 isFocusMode ? "h-full shadow-sm md:rounded-lg border" : "md:border md:rounded-lg md:shadow-sm"
                                             )}>
 
