@@ -161,6 +161,7 @@ export function MindMapsPage() {
             <GenerateMindMapModal
                 isOpen={isGenerateModalOpen}
                 onClose={() => setIsGenerateModalOpen(false)}
+                onSuccess={(mindMap) => setSelectedMindMap(mindMap)}
             />
 
             {/* Detail Modal */}

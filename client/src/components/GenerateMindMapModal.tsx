@@ -14,10 +14,11 @@ interface GenerateMindMapModalProps {
     onClose: () => void;
     courseId?: string; // Optional: prepopulate notes from this course
     initialSelectedNotes?: any[];
-    initialSelectedFile?: any; // Add initial file item
+    initialSelectedFile?: any;
+    onSuccess?: (mindMap: any) => void;
 }
 
-export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile }: GenerateMindMapModalProps) {
+export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile, onSuccess }: GenerateMindMapModalProps) {
     const { t } = useLanguage();
     const queryClient = useQueryClient();
 
@@ -68,16 +69,18 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     // Mutation for generation
     const generateMutation = useMutation({
         mutationFn: async () => {
-            return mindmapQueries.generate({
+            const data = await mindmapQueries.generate({
                 noteIds: selectedNotes.map(n => n.id),
                 fileItemIds: selectedFiles.map(f => f.id),
                 name: name || `Mind Map ${new Date().toLocaleDateString()}`,
-                model
+                model,
+                courseId // Pass courseId to link the mind map
             });
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             toast.success(t('mindmap.gen.success'));
             queryClient.invalidateQueries({ queryKey: ['mindmaps'] });
+            if (onSuccess) onSuccess(data);
             handleClose();
         },
         onError: (error: any) => {
