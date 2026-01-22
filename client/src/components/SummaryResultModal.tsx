@@ -209,7 +209,7 @@ export function SummaryResultModal({ summary, isOpen, onClose }: SummaryResultMo
 
     // Full screen overlay with sidebar spacing
     return (
-        <div className="fixed inset-0 z-[100] bg-background flex flex-col md:pl-64 animate-in slide-in-from-right-10 duration-200">
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col animate-in slide-in-from-right-10 duration-200 safe-left safe-right">
             {/* Header Toolbar */}
             <div className="h-16 border-b flex items-center justify-between px-6 bg-card/80 backdrop-blur-md sticky top-0 z-20 shadow-sm">
                 <div className="flex items-center gap-4">

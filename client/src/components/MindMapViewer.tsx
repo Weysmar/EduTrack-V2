@@ -174,7 +174,9 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
                 limitToBounds={false}
                 wheel={{ step: 0.1, smoothStep: 0.002 }}
                 // Fix for Ctrl+Wheel disappearing: prevent browser zoom and handle internal zoom
-                panning={{ velocityDisabled: true }}
+                panning={{ disabled: false, velocityDisabled: false }}
+                doubleClick={{ mode: 'zoomIn' }}
+                pinch={{ step: 0.05 }}
             >
                 {({ zoomIn, zoomOut, resetTransform }) => (
                     <>
