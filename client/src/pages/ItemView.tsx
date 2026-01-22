@@ -10,7 +10,7 @@ import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
@@ -1312,16 +1312,17 @@ export function ItemView() {
                 courseId={courseId || ""}
             />
 
-            {item && (
-                <GenerateMindMapModal
-                    isOpen={isMindMapModalOpen}
-                    onClose={() => setIsMindMapModalOpen(false)}
-                    courseId={courseId}
-                    initialSelectedNotes={item.type === 'note' ? [item] : []}
-                    initialSelectedFile={item.type === 'resource' ? item : undefined}
-                />
-            )}
-        </div>
+            <GenerateMindMapModal
+                isOpen={isMindMapModalOpen}
+                onClose={() => setIsMindMapModalOpen(false)}
+                courseId={courseId}
+                initialSelectedNotes={item.type === 'note' ? [item] : []}
+                initialSelectedFile={item.type === 'resource' ? item : undefined}
+            />
+        </>
     )
+}
+    </div >
+  )
 }
 
