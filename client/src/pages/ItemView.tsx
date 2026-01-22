@@ -862,9 +862,7 @@ export function ItemView() {
                     </div>
                 </div>
             )}
-        </div>
-
-            {/* Main Content Area */ }
+            {/* Main Content Area */}
             <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10 pb-24 md:pb-10">
                 <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
 
