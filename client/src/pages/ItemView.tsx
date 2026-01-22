@@ -523,8 +523,8 @@ export function ItemView() {
                             </div>
                         </div>
 
-                        {/* Actions Toolbar - Scrollable on mobile */}
-                        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto md:overflow-visible -mx-3 px-3 md:mx-0 md:px-0 pt-2 border-t md:border-t-0 md:pt-0 no-scrollbar md:justify-end">
+                        {/* Actions Toolbar - Desktop Only */}
+                        <div className="hidden md:flex items-center gap-2 justify-end">
                             {/* TTS Controls */}
                             {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
                                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -532,7 +532,7 @@ export function ItemView() {
                                         text={item.content || item.extractedContent || ''}
                                         lang={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
                                     />
-                                    <div className="h-6 w-px bg-border mx-1 hidden md:block" />
+                                    <div className="h-6 w-px bg-border mx-1" />
                                 </div>
                             )}
 
@@ -567,7 +567,7 @@ export function ItemView() {
                                             >
                                                 <ExternalLink className="h-5 w-5" />
                                             </a>
-                                            <div className="h-6 w-px bg-border mx-1 hidden md:block" />
+                                            <div className="h-6 w-px bg-border mx-1" />
                                         </>
                                     );
                                 })()
@@ -631,53 +631,41 @@ export function ItemView() {
                                 </button>
                             )}
 
-                            {/* AI Generation Menu - Custom implementation for mobile compatibility */}
+                            {/* AI Generation Menu - Desktop Dropdown */}
                             <div className="relative flex-shrink-0">
                                 <button
                                     disabled={isExtracting}
                                     onClick={() => setIsAIMenuOpen(!isAIMenuOpen)}
-                                    className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 active:from-violet-800 active:to-indigo-800 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                                    className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 active:from-violet-800 active:to-indigo-800 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isExtracting ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span className="hidden md:inline">Extraction...</span>
-                                            <span className="md:hidden">...</span>
+                                            <span>Extraction...</span>
                                         </>
                                     ) : (
                                         <>
                                             <Sparkles className="h-4 w-4" />
-                                            <span className="hidden md:inline">Génération</span>
-                                            <span className="md:hidden">IA</span>
+                                            <span>Génération IA</span>
                                         </>
                                     )}
                                 </button>
 
-                                {/* Dropdown Menu */}
+                                {/* Desktop Dropdown Menu */}
                                 {isAIMenuOpen && (
                                     <>
-                                        {/* Backdrop */}
                                         <div
                                             className="fixed inset-0 z-40"
                                             onClick={() => setIsAIMenuOpen(false)}
                                         />
-
-                                        {/* Menu Items */}
-                                        {/* Menu Items - Bottom Sheet on Mobile, Dropdown on Desktop */}
-                                        <div className={cn(
-                                            "z-50 bg-card shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-border",
-                                            // Mobile: Fixed Bottom Sheet
-                                            "fixed left-0 right-0 bottom-0 w-full rounded-t-xl border-t pb-safe animate-in slide-in-from-bottom duration-200",
-                                            // Desktop: Absolute Dropdown
-                                            "md:absolute md:right-0 md:top-full md:bottom-auto md:left-auto md:w-56 md:mt-2 md:rounded-md md:origin-top-right md:animate-in md:fade-in md:zoom-in-95"
-                                        )}>
-                                            <div className="p-2 md:p-1 space-y-1 md:space-y-0">
+                                        <div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 z-50 divide-y divide-border animate-in fade-in zoom-in-95">
+                                            <div className="p-1">
                                                 <button
                                                     onClick={() => {
                                                         setIsAIMenuOpen(false)
                                                         handleOpenExercise('flashcards')
                                                     }}
-                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                                 >
                                                     <BrainCircuit className="h-4 w-4 text-purple-500" />
                                                     Générer Flashcards
@@ -688,7 +676,7 @@ export function ItemView() {
                                                         setIsAIMenuOpen(false)
                                                         handleOpenExercise('quiz')
                                                     }}
-                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                                 >
                                                     <CheckSquare className="h-4 w-4 text-green-500" />
                                                     Générer QCM
@@ -699,7 +687,7 @@ export function ItemView() {
                                                         setIsAIMenuOpen(false)
                                                         setIsMindMapModalOpen(true)
                                                     }}
-                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                                 >
                                                     <BrainCircuit className="h-4 w-4 text-blue-500" />
                                                     Générer Mind Map
@@ -711,7 +699,7 @@ export function ItemView() {
                                                         if (summary) setShowSummary(true)
                                                         else setIsSummaryOptionsOpen(true)
                                                     }}
-                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-sm touch-manipulation min-h-[44px] hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                                 >
                                                     <FileText className="h-4 w-4 text-blue-500" />
                                                     {summary ? "Voir le résumé" : "Générer un résumé"}
@@ -732,454 +720,598 @@ export function ItemView() {
                         </div>
                     </div>
 
-                    {/* Main Content Area */}
-                    <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10">
-                        <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
-
-                            {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
-                            {item.type === 'exercise' && item.status && item.difficulty && (
-                                <div className="flex gap-2 p-4 md:p-0">
-                                    <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                        item.difficulty === 'easy' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
-                                            item.difficulty === 'medium' ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30" :
-                                                "bg-red-100 text-red-700 dark:bg-red-900/30"
-                                    )}>
-                                        {t(`diff.${item.difficulty}`)}
-                                    </span>
-                                    <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                        item.status === 'completed' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
-                                            item.status === 'in-progress' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30" :
-                                                "bg-muted text-muted-foreground"
-                                    )}>
-                                        {t(`status.${item.status}`)}
-                                    </span>
-                                </div>
+                    {/* FIXED MOBILE BOTTOM BAR */}
+                    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t pb-safe">
+                        <div className="flex items-center justify-around p-2 h-16">
+                            {/* 1. Edit / Tools */}
+                            {item.type === 'note' ? (
+                                <button
+                                    onClick={() => isEditMode ? setIsEditMode(false) : setIsEditMode(true)}
+                                    className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
+                                >
+                                    {isEditMode ? <Check className="h-6 w-6" /> : <Pencil className="h-6 w-6" />}
+                                    <span className="text-[10px] font-medium">{isEditMode ? 'Sauver' : 'Éditer'}</span>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
+                                >
+                                    <Edit className="h-6 w-6" />
+                                    <span className="text-[10px] font-medium">Éditer</span>
+                                </button>
                             )}
 
-                            {/* Content Logic: Summary VS Original Content */}
+                            {/* 2. MAIN ACTION: AI (Center, Prominent) */}
+                            <div className="relative -top-5">
+                                <button
+                                    onClick={() => setIsAIMenuOpen(true)}
+                                    disabled={isExtracting}
+                                    className="h-14 w-14 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 flex items-center justify-center text-white touch-manipulation transform active:scale-95 transition-all"
+                                >
+                                    {isExtracting ? (
+                                        <Loader2 className="h-6 w-6 animate-spin" />
+                                    ) : (
+                                        <Sparkles className="h-6 w-6" />
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* 3. More Actions (Sheet) */}
+                            <button
+                                onClick={() => {
+                                    // Simple toggle for a "More" sheet potentially, or just use delete for now as placeholder
+                                    // For now, let's put TTS/Fullscreen here or just Delete?
+                                    // Let's make "Delete" accessible.
+                                    if (confirm(t('item.delete.confirm'))) handleDelete()
+                                }}
+                                className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-destructive touch-manipulation"
+                            >
+                                <Trash2 className="h-6 w-6" />
+                                <span className="text-[10px] font-medium">Supprimer</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* MOBILE AI BOTTOM SHEET (Controlled by isAIMenuOpen) */}
+                    {isAIMenuOpen && (
+                        <div className="md:hidden fixed inset-0 z-[60] flex items-end justify-center">
+                            {/* Backdrop */}
+                            <div
+                                className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
+                                onClick={() => setIsAIMenuOpen(false)}
+                            />
+
+                            {/* Bottom Sheet Content */}
+                            <div className="relative w-full bg-card rounded-t-2xl shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom duration-300 pb-safe space-y-4">
+                                <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-2 opacity-50" />
+                                <h3 className="text-lg font-bold text-center mb-4">Que voulez-vous générer ?</h3>
+
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setIsAIMenuOpen(false)
+                                            handleOpenExercise('flashcards')
+                                        }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    >
+                                        <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                            <Layers className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-semibold">Flashcards</div>
+                                            <div className="text-xs text-muted-foreground">Pour mémoriser les concepts clés</div>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsAIMenuOpen(false)
+                                            handleOpenExercise('quiz')
+                                        }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    >
+                                        <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                            <CheckSquare className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-semibold">QCM</div>
+                                            <div className="text-xs text-muted-foreground">Testez vos connaissances</div>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsAIMenuOpen(false)
+                                            setIsMindMapModalOpen(true)
+                                        }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    >
+                                        <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                            <BrainCircuit className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-semibold">Mind Map</div>
+                                            <div className="text-xs text-muted-foreground">Visualisez les relations</div>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsAIMenuOpen(false)
+                                            if (summary) setShowSummary(true)
+                                            else setIsSummaryOptionsOpen(true)
+                                        }}
+                                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    >
+                                        <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                                            <FileText className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="font-semibold">Résumé</div>
+                                            <div className="text-xs text-muted-foreground">Synthèse du document</div>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={() => setIsAIMenuOpen(false)}
+                                    className="w-full py-3 mt-4 text-center font-medium text-muted-foreground hover:text-foreground"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10 pb-24 md:pb-10">
+                <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
+
+                    {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
+                    {item.type === 'exercise' && item.status && item.difficulty && (
+                        <div className="flex gap-2 p-4 md:p-0">
+                            <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                                item.difficulty === 'easy' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
+                                    item.difficulty === 'medium' ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30" :
+                                        "bg-red-100 text-red-700 dark:bg-red-900/30"
+                            )}>
+                                {t(`diff.${item.difficulty}`)}
+                            </span>
+                            <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                                item.status === 'completed' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
+                                    item.status === 'in-progress' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30" :
+                                        "bg-muted text-muted-foreground"
+                            )}>
+                                {t(`status.${item.status}`)}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Content Logic: Summary VS Original Content */}
+                    <div className={cn(
+                        "w-full transition-all",
+                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-0 md:space-y-6 max-w-5xl mx-auto"
+                    )}>
+
+                        {/* Mobile Focus Tab Header */}
+                        {isFocusMode && (
+                            <div className="md:hidden flex items-center border-b bg-card shrink-0 pt-safe-top">
+                                <button
+                                    onClick={() => setMobileTab('pdf')}
+                                    className={cn("flex-1 py-3 text-sm font-medium border-b-2 transition-colors", mobileTab === 'pdf' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
+                                >
+                                    Document
+                                </button>
+                                <button
+                                    onClick={() => setMobileTab('summary')}
+                                    className={cn("flex-1 py-3 text-sm font-medium border-b-2 transition-colors", mobileTab === 'summary' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
+                                >
+                                    Résumé
+                                </button>
+                                <button
+                                    onClick={() => { setIsFocusMode(false); setMobileTab('pdf'); }}
+                                    className="px-4 border-l bg-muted/50 text-muted-foreground hover:bg-muted"
+                                >
+                                    <Minimize className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "grid md:grid-cols-2 gap-0 overflow-hidden" : "block")}>
+
+                            {/* ===== ORIGINAL CONTENT VIEW ===== */}
                             <div className={cn(
-                                "w-full transition-all",
-                                isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-0 md:space-y-6 max-w-5xl mx-auto"
+                                (!showSummary || isFocusMode) ? "block" : "hidden",
+                                (isFocusMode && mobileTab === 'summary') ? "hidden md:block" : "",
+                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden w-full"
                             )}>
 
-                                {/* Mobile Focus Tab Header */}
-                                {isFocusMode && (
-                                    <div className="md:hidden flex items-center border-b bg-card shrink-0 pt-safe-top">
-                                        <button
-                                            onClick={() => setMobileTab('pdf')}
-                                            className={cn("flex-1 py-3 text-sm font-medium border-b-2 transition-colors", mobileTab === 'pdf' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
-                                        >
-                                            Document
-                                        </button>
-                                        <button
-                                            onClick={() => setMobileTab('summary')}
-                                            className={cn("flex-1 py-3 text-sm font-medium border-b-2 transition-colors", mobileTab === 'summary' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
-                                        >
-                                            Résumé
-                                        </button>
-                                        <button
-                                            onClick={() => { setIsFocusMode(false); setMobileTab('pdf'); }}
-                                            className="px-4 border-l bg-muted/50 text-muted-foreground hover:bg-muted"
-                                        >
-                                            <Minimize className="h-4 w-4" />
-                                        </button>
+                                {/* PDF VIEWER Integration */}
+                                {pdfUrl ? (
+                                    <div className={cn(
+                                        "border-0 rounded-none overflow-hidden bg-card shadow-none relative w-full",
+                                        isFocusMode ? "h-full shadow-sm md:rounded-lg border" : "md:border md:rounded-lg md:shadow-sm"
+                                    )}>
+
+                                        {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
+                                        {(() => {
+                                            // Variables are now defined at component scope (lines ~100)
+                                            // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
+
+                                            if (isImage) {
+                                                return <ImageViewer url={pdfUrl} alt={item.title} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
+                                            }
+
+                                            if (isOffice) {
+                                                return (
+                                                    <OfficeViewer
+                                                        url={pdfUrl}
+                                                        storageKey={item.storageKey}
+                                                        className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
+                                                        engine={officeEngine}
+                                                        onEngineChange={setOfficeEngine}
+                                                    />
+                                                );
+                                            }
+                                            // Office logic ends here, continue to next check
+
+                                            // Text/Markdown files
+                                            if (isText || isMarkdown) {
+                                                return (
+                                                    <TextViewer
+                                                        url={pdfUrl}
+                                                        fileName={item.fileName}
+                                                        isMarkdown={isMarkdown}
+                                                        className="min-h-full"
+                                                    />
+                                                );
+                                            }
+
+                                            // Explicitly check for PDF
+                                            const isPdf = ext === 'pdf';
+
+                                            if (isPdf) {
+                                                return (
+                                                    <>
+                                                        {/* Desktop: Native Iframe for best performance */}
+                                                        <div className={cn("hidden lg:block", isFocusMode ? "h-full" : "h-[80vh]")}>
+                                                            <iframe
+                                                                src={`${pdfUrl}#view=FitH`}
+                                                                title="PDF Document"
+                                                                className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
+                                                                allowFullScreen
+                                                            />
+                                                        </div>
+
+                                                        {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
+                                                        <div className="block lg:hidden">
+                                                            <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />
+                                                        </div>
+
+                                                        {/* PDF Fullscreen Modal (Logic remains) */}
+                                                        {/* OLD Fullscreen Modal (Disabled - Moved to Root) */}
+                                                        {false && isPdfFullscreen && (
+                                                            <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
+                                                                <div className="absolute top-4 right-6 z-10 flex gap-2">
+                                                                    <button
+                                                                        onClick={() => setIsPdfFullscreen(false)}
+                                                                        className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
+                                                                    >
+                                                                        <Minimize className="h-4 w-4" />
+                                                                        <span className="text-sm font-medium hidden sm:inline">Fermer</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
+                                                                    {isOffice ? (
+                                                                        <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
+                                                                            <OfficeViewer
+                                                                                url={pdfUrl}
+                                                                                storageKey={item.storageKey}
+                                                                                className="h-full w-full shadow-2xl"
+                                                                                engine={officeEngine}
+                                                                                onEngineChange={setOfficeEngine}
+                                                                            />
+                                                                        </div>
+                                                                    ) : isImage ? (
+                                                                        <div className="w-full h-full flex items-center justify-center bg-black/90 p-4">
+                                                                            <img
+                                                                                src={pdfUrl}
+                                                                                alt={item.title}
+                                                                                className="max-w-full max-h-full object-contain"
+                                                                            />
+                                                                        </div>
+                                                                    ) : (isText || isMarkdown) ? (
+                                                                        <div className="w-full h-full bg-white dark:bg-zinc-950 p-8 overflow-auto max-w-4xl mx-auto my-8 rounded-lg shadow-xl">
+                                                                            <TextViewer
+                                                                                url={pdfUrl}
+                                                                                fileName={item.fileName}
+                                                                                isMarkdown={isMarkdown}
+                                                                                className="min-h-full"
+                                                                            />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-full h-full">
+                                                                            {/* Fullscreen PDF: Iframe on Desktop, Viewer on Mobile */}
+                                                                            <iframe
+                                                                                src={`${pdfUrl}#view=FitH`}
+                                                                                title="PDF Document Fullscreen"
+                                                                                className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
+                                                                                allowFullScreen
+                                                                            />
+                                                                            <div className="block lg:hidden w-full h-full bg-slate-100 dark:bg-slate-900 overflow-auto">
+                                                                                <PDFViewer url={pdfUrl} className="min-h-full" />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            }
+
+                                            // Fallback for Unknown Types
+                                            return <GenericFileViewer url={pdfUrl} filename={item.fileName} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
+                                        })()}
+                                    </div>
+
+                                ) : (item.content || isEditMode) ? (
+                                    <div className="w-full h-full">
+                                        {item.type === 'note' ? (
+                                            isEditMode ? (
+                                                <Editor
+                                                    content={editedContent}
+                                                    onChange={setEditedContent}
+                                                    editable={true}
+                                                    className={isFocusMode ? "h-full" : "min-h-[50vh]"}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className={cn(
+                                                        "border rounded-md bg-background overflow-hidden p-6 md:p-10 prose dark:prose-invert max-w-none",
+                                                        isFocusMode ? "min-h-full" : "min-h-[50vh]",
+                                                        "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold",
+                                                        "[&_h1]:mt-6 [&_h2]:mt-4 [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
+                                                    )}
+                                                    dangerouslySetInnerHTML={{ __html: item.content }}
+                                                />
+                                            )
+                                        ) : (
+                                            <div className="prose dark:prose-invert max-w-none">
+                                                <p className="whitespace-pre-wrap">{item.content}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                        <div className="text-center text-muted-foreground italic">
+                                            {t('item.noContent')}
+                                        </div>
+                                        {item.type === 'note' && (
+                                            <button
+                                                onClick={() => {
+                                                    setIsEditMode(true)
+                                                    setEditedContent('')
+                                                }}
+                                                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-2"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                                <span>{t('item.startWriting')}</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
-                                <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "grid md:grid-cols-2 gap-0 overflow-hidden" : "block")}>
-
-                                    {/* ===== ORIGINAL CONTENT VIEW ===== */}
-                                    <div className={cn(
-                                        (!showSummary || isFocusMode) ? "block" : "hidden",
-                                        (isFocusMode && mobileTab === 'summary') ? "hidden md:block" : "",
-                                        isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden w-full"
-                                    )}>
-
-                                        {/* PDF VIEWER Integration */}
-                                        {pdfUrl ? (
-                                            <div className={cn(
-                                                "border-0 rounded-none overflow-hidden bg-card shadow-none relative w-full",
-                                                isFocusMode ? "h-full shadow-sm md:rounded-lg border" : "md:border md:rounded-lg md:shadow-sm"
-                                            )}>
-
-                                                {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
-                                                {(() => {
-                                                    // Variables are now defined at component scope (lines ~100)
-                                                    // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
-
-                                                    if (isImage) {
-                                                        return <ImageViewer url={pdfUrl} alt={item.title} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
-                                                    }
-
-                                                    if (isOffice) {
-                                                        return (
-                                                            <OfficeViewer
-                                                                url={pdfUrl}
-                                                                storageKey={item.storageKey}
-                                                                className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
-                                                                engine={officeEngine}
-                                                                onEngineChange={setOfficeEngine}
-                                                            />
-                                                        );
-                                                    }
-                                                    // Office logic ends here, continue to next check
-
-                                                    // Text/Markdown files
-                                                    if (isText || isMarkdown) {
-                                                        return (
-                                                            <TextViewer
-                                                                url={pdfUrl}
-                                                                fileName={item.fileName}
-                                                                isMarkdown={isMarkdown}
-                                                                className="min-h-full"
-                                                            />
-                                                        );
-                                                    }
-
-                                                    // Explicitly check for PDF
-                                                    const isPdf = ext === 'pdf';
-
-                                                    if (isPdf) {
-                                                        return (
-                                                            <>
-                                                                {/* Desktop: Native Iframe for best performance */}
-                                                                <div className={cn("hidden lg:block", isFocusMode ? "h-full" : "h-[80vh]")}>
-                                                                    <iframe
-                                                                        src={`${pdfUrl}#view=FitH`}
-                                                                        title="PDF Document"
-                                                                        className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
-                                                                        allowFullScreen
-                                                                    />
-                                                                </div>
-
-                                                                {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
-                                                                <div className="block lg:hidden">
-                                                                    <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />
-                                                                </div>
-
-                                                                {/* PDF Fullscreen Modal (Logic remains) */}
-                                                                {/* OLD Fullscreen Modal (Disabled - Moved to Root) */}
-                                                                {false && isPdfFullscreen && (
-                                                                    <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                                                                        <div className="absolute top-4 right-6 z-10 flex gap-2">
-                                                                            <button
-                                                                                onClick={() => setIsPdfFullscreen(false)}
-                                                                                className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
-                                                                            >
-                                                                                <Minimize className="h-4 w-4" />
-                                                                                <span className="text-sm font-medium hidden sm:inline">Fermer</span>
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                                            {isOffice ? (
-                                                                                <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
-                                                                                    <OfficeViewer
-                                                                                        url={pdfUrl}
-                                                                                        storageKey={item.storageKey}
-                                                                                        className="h-full w-full shadow-2xl"
-                                                                                        engine={officeEngine}
-                                                                                        onEngineChange={setOfficeEngine}
-                                                                                    />
-                                                                                </div>
-                                                                            ) : isImage ? (
-                                                                                <div className="w-full h-full flex items-center justify-center bg-black/90 p-4">
-                                                                                    <img
-                                                                                        src={pdfUrl}
-                                                                                        alt={item.title}
-                                                                                        className="max-w-full max-h-full object-contain"
-                                                                                    />
-                                                                                </div>
-                                                                            ) : (isText || isMarkdown) ? (
-                                                                                <div className="w-full h-full bg-white dark:bg-zinc-950 p-8 overflow-auto max-w-4xl mx-auto my-8 rounded-lg shadow-xl">
-                                                                                    <TextViewer
-                                                                                        url={pdfUrl}
-                                                                                        fileName={item.fileName}
-                                                                                        isMarkdown={isMarkdown}
-                                                                                        className="min-h-full"
-                                                                                    />
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="w-full h-full">
-                                                                                    {/* Fullscreen PDF: Iframe on Desktop, Viewer on Mobile */}
-                                                                                    <iframe
-                                                                                        src={`${pdfUrl}#view=FitH`}
-                                                                                        title="PDF Document Fullscreen"
-                                                                                        className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
-                                                                                        allowFullScreen
-                                                                                    />
-                                                                                    <div className="block lg:hidden w-full h-full bg-slate-100 dark:bg-slate-900 overflow-auto">
-                                                                                        <PDFViewer url={pdfUrl} className="min-h-full" />
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        );
-                                                    }
-
-                                                    // Fallback for Unknown Types
-                                                    return <GenericFileViewer url={pdfUrl} filename={item.fileName} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
-                                                })()}
-                                            </div>
-
-                                        ) : (item.content || isEditMode) ? (
-                                            <div className="w-full h-full">
-                                                {item.type === 'note' ? (
-                                                    isEditMode ? (
-                                                        <Editor
-                                                            content={editedContent}
-                                                            onChange={setEditedContent}
-                                                            editable={true}
-                                                            className={isFocusMode ? "h-full" : "min-h-[50vh]"}
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            className={cn(
-                                                                "border rounded-md bg-background overflow-hidden p-6 md:p-10 prose dark:prose-invert max-w-none",
-                                                                isFocusMode ? "min-h-full" : "min-h-[50vh]",
-                                                                "[&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold",
-                                                                "[&_h1]:mt-6 [&_h2]:mt-4 [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
-                                                            )}
-                                                            dangerouslySetInnerHTML={{ __html: item.content }}
-                                                        />
-                                                    )
-                                                ) : (
-                                                    <div className="prose dark:prose-invert max-w-none">
-                                                        <p className="whitespace-pre-wrap">{item.content}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                                <div className="text-center text-muted-foreground italic">
-                                                    {t('item.noContent')}
+                                {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
+                                {(!isFocusMode && (item.fileData || item.type === 'resource')) && (
+                                    <div className="mt-8 border-t pt-6">
+                                        <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-3 bg-background rounded-md border">
+                                                    <FolderOpen className="h-8 w-8 text-primary" />
                                                 </div>
-                                                {item.type === 'note' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setIsEditMode(true)
-                                                            setEditedContent('')
-                                                        }}
-                                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity flex items-center gap-2"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                        <span>{t('item.startWriting')}</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
-                                        {(!isFocusMode && (item.fileData || item.type === 'resource')) && (
-                                            <div className="mt-8 border-t pt-6">
-                                                <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-3 bg-background rounded-md border">
-                                                            <FolderOpen className="h-8 w-8 text-primary" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={handleDownload}
-                                                        className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
-                                                    >
-                                                        <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-                                                        <span>{t('file.download')}</span>
-                                                    </button>
+                                                <div>
+                                                    <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
+                                                    </p>
                                                 </div>
                                             </div>
-                                        )}
+                                            <button
+                                                onClick={handleDownload}
+                                                className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
+                                            >
+                                                <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
+                                                <span>{t('file.download')}</span>
+                                            </button>
+                                        </div>
                                     </div>
+                                )}
+                            </div>
 
-                                    {/* ===== SUMMARY VIEW ===== */}
-                                    {showSummary && (
-                                        <div className={cn(
-                                            (isFocusMode && mobileTab === 'pdf') ? "hidden md:block" : "block",
-                                            isFocusMode ? "h-full overflow-y-auto" : ""
-                                        )}>
-                                            <div className={cn(
-                                                "bg-card overflow-hidden animate-in fade-in duration-300 flex flex-col",
-                                                isFocusMode ? "h-full rounded-none border-l" : "border rounded-xl shadow-sm min-h-[50vh]"
-                                            )}>
-                                                {isSummaryGenerating && (
-                                                    <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
-                                                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                                                        <p className="text-lg font-medium animate-pulse">{t('summary.generating') || "Génération du résumé..."}</p>
-                                                        <p className="text-sm text-muted-foreground mt-2">Cela peut prendre quelques secondes</p>
+                            {/* ===== SUMMARY VIEW ===== */}
+                            {showSummary && (
+                                <div className={cn(
+                                    (isFocusMode && mobileTab === 'pdf') ? "hidden md:block" : "block",
+                                    isFocusMode ? "h-full overflow-y-auto" : ""
+                                )}>
+                                    <div className={cn(
+                                        "bg-card overflow-hidden animate-in fade-in duration-300 flex flex-col",
+                                        isFocusMode ? "h-full rounded-none border-l" : "border rounded-xl shadow-sm min-h-[50vh]"
+                                    )}>
+                                        {isSummaryGenerating && (
+                                            <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-200">
+                                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                                <p className="text-lg font-medium animate-pulse">{t('summary.generating') || "Génération du résumé..."}</p>
+                                                <p className="text-sm text-muted-foreground mt-2">Cela peut prendre quelques secondes</p>
+                                            </div>
+                                        )}
+                                        {/* Summary Header / Toolbar inside the card */}
+                                        <div className="border-b bg-muted/30 p-4 flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur z-10 supports-[backdrop-filter]:bg-card/60">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2 text-primary font-semibold">
+                                                    <FileText className="h-5 w-5" />
+                                                    <span>{t('summary.generated')}</span>
+                                                </div>
+                                                {summary && (
+                                                    <div className="flex gap-2 text-xs">
+                                                        {summary.options?.compression && (
+                                                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                                                {Math.round(summary.options.compression * 100)}%
+                                                            </span>
+                                                        )}
+                                                        {summary.stats?.summaryWordCount && (
+                                                            <span className="text-muted-foreground">
+                                                                {summary.stats.summaryWordCount} {t('summary.stats.words')}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 )}
-                                                {/* Summary Header / Toolbar inside the card */}
-                                                <div className="border-b bg-muted/30 p-4 flex items-center justify-between sticky top-0 bg-card/95 backdrop-blur z-10 supports-[backdrop-filter]:bg-card/60">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex items-center gap-2 text-primary font-semibold">
-                                                            <FileText className="h-5 w-5" />
-                                                            <span>{t('summary.generated')}</span>
-                                                        </div>
-                                                        {summary && (
-                                                            <div className="flex gap-2 text-xs">
-                                                                {summary.options?.compression && (
-                                                                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                                                                        {Math.round(summary.options.compression * 100)}%
-                                                                    </span>
-                                                                )}
-                                                                {summary.stats?.summaryWordCount && (
-                                                                    <span className="text-muted-foreground">
-                                                                        {summary.stats.summaryWordCount} {t('summary.stats.words')}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => setIsFocusMode(!isFocusMode)}
-                                                            className={cn(
-                                                                "text-xs border px-3 py-1.5 rounded-md transition-all flex items-center gap-2",
-                                                                isFocusMode
-                                                                    ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
-                                                                    : "hover:bg-background border-transparent hover:border-border text-muted-foreground"
-                                                            )}
-                                                            title={isFocusMode ? t('focus.exit.tooltip') : t('focus.enter.tooltip')}
-                                                        >
-                                                            {isFocusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                                                            <span className="hidden sm:inline">{isFocusMode ? t('focus.exit') : t('focus.enter')}</span>
-                                                        </button>
-                                                        <div className="w-px h-6 bg-border mx-1" />
-                                                        <button
-                                                            onClick={handleExportPDF}
-                                                            disabled={isExporting}
-                                                            className="text-xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                                            title={t('export.pdf')}
-                                                        >
-                                                            <FileText className="h-4 w-4" />
-                                                            <span className="hidden sm:inline">PDF</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={handleExportDOCX}
-                                                            disabled={isExporting}
-                                                            className="text-xs hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                                            title={t('export.word')}
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                            <span className="hidden sm:inline">DOCX</span>
-                                                        </button>
-                                                        <div className="w-px h-6 bg-border mx-1" />
-                                                        <button
-                                                            onClick={() => setIsSummaryOptionsOpen(true)}
-                                                            className="text-xs hover:bg-background border border-transparent hover:border-border px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                                        >
-                                                            <MonitorPlay className="h-4 w-4" />
-                                                            <span>{t('summary.regenerate')}</span>
-                                                        </button>
-                                                        <div className="w-px h-6 bg-border mx-1" />
-                                                        <button
-                                                            onClick={() => setShowSummary(false)}
-                                                            className="text-xs hover:bg-background border border-transparent hover:border-border px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
-                                                            title={t('summary.viewOriginal')}
-                                                        >
-                                                            <FileText className="h-4 w-4" />
-                                                            <span>Voir le contenu</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Summary Body */}
-                                                <div className="flex-1 overflow-y-auto w-full">
-                                                    <div className={cn(
-                                                        "flex justify-center bg-white dark:bg-zinc-950 transition-all",
-                                                        isFocusMode ? "p-8 md:p-16 min-h-full" : "p-8 md:p-16"
-                                                    )}>
-                                                        {isSummaryGenerating || isExtracting ? (
-                                                            <div className="space-y-6 animate-pulse w-full max-w-4xl">
-                                                                <div className="h-10 bg-muted rounded w-3/4 mb-10"></div>
-                                                                <div className="space-y-4">
-                                                                    <div className="h-4 bg-muted rounded w-full"></div>
-                                                                    <div className="h-4 bg-muted rounded w-full"></div>
-                                                                    <div className="h-4 bg-muted rounded w-5/6"></div>
-                                                                </div>
-                                                                <div className="space-y-4 mt-10">
-                                                                    <div className="h-6 bg-muted rounded w-1/2 mb-4"></div>
-                                                                    <div className="h-4 bg-muted rounded w-full"></div>
-                                                                    <div className="h-4 bg-muted rounded w-full"></div>
-                                                                    <div className="h-4 bg-muted rounded w-4/5"></div>
-                                                                </div>
-                                                                <p className="mt-12 text-sm text-center text-muted-foreground animate-pulse">
-                                                                    {isExtracting ? "Lecture du document en cours..." : t('summary.generating')}
-                                                                </p>
-                                                            </div>
-                                                        ) : (summary && summary.content) ? (
-                                                            <div ref={contentRef} className="w-full max-w-4xl bg-white dark:bg-zinc-950 p-8 rounded-lg">
-                                                                <ReactMarkdown
-                                                                    components={{
-                                                                        h1: ({ children }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
-                                                                        h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
-                                                                        h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
-                                                                        p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}</p>,
-                                                                        ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-                                                                        li: ({ children }) => <li className="text-lg text-slate-700 dark:text-slate-300">{children}</li>,
-                                                                        strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
-                                                                        input: (props) => {
-                                                                            // Ensure safe boolean for checked
-                                                                            const isChecked = !!props.checked;
-                                                                            return (
-                                                                                <div className="flex items-center gap-2 my-1">
-                                                                                    <input type="checkbox" checked={isChecked} readOnly className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                                                    <span className="text-lg text-slate-700 dark:text-slate-300">
-                                                                                    </span>
-                                                                                </div>
-                                                                            )
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    {typeof summary.content === 'string'
-                                                                        ? summary.content.replace(/•\s?/g, '\n- ')
-                                                                        : ''}
-                                                                </ReactMarkdown>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
-                                                                {summaryError ? (
-                                                                    <>
-                                                                        <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-full">
-                                                                            <AlertCircle className="h-6 w-6" />
-                                                                        </div>
-                                                                        <div className="text-center max-w-md">
-                                                                            <p className="font-semibold text-foreground mb-1">Erreur de génération</p>
-                                                                            <p className="text-sm">{summaryError}</p>
-                                                                        </div>
-                                                                    </>
-                                                                ) : (
-                                                                    <p>{t('summary.error.display')}</p>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setIsFocusMode(!isFocusMode)}
+                                                    className={cn(
+                                                        "text-xs border px-3 py-1.5 rounded-md transition-all flex items-center gap-2",
+                                                        isFocusMode
+                                                            ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
+                                                            : "hover:bg-background border-transparent hover:border-border text-muted-foreground"
+                                                    )}
+                                                    title={isFocusMode ? t('focus.exit.tooltip') : t('focus.enter.tooltip')}
+                                                >
+                                                    {isFocusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                                                    <span className="hidden sm:inline">{isFocusMode ? t('focus.exit') : t('focus.enter')}</span>
+                                                </button>
+                                                <div className="w-px h-6 bg-border mx-1" />
+                                                <button
+                                                    onClick={handleExportPDF}
+                                                    disabled={isExporting}
+                                                    className="text-xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
+                                                    title={t('export.pdf')}
+                                                >
+                                                    <FileText className="h-4 w-4" />
+                                                    <span className="hidden sm:inline">PDF</span>
+                                                </button>
+                                                <button
+                                                    onClick={handleExportDOCX}
+                                                    disabled={isExporting}
+                                                    className="text-xs hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
+                                                    title={t('export.word')}
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    <span className="hidden sm:inline">DOCX</span>
+                                                </button>
+                                                <div className="w-px h-6 bg-border mx-1" />
+                                                <button
+                                                    onClick={() => setIsSummaryOptionsOpen(true)}
+                                                    className="text-xs hover:bg-background border border-transparent hover:border-border px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
+                                                >
+                                                    <MonitorPlay className="h-4 w-4" />
+                                                    <span>{t('summary.regenerate')}</span>
+                                                </button>
+                                                <div className="w-px h-6 bg-border mx-1" />
+                                                <button
+                                                    onClick={() => setShowSummary(false)}
+                                                    className="text-xs hover:bg-background border border-transparent hover:border-border px-3 py-1.5 rounded-md transition-all flex items-center gap-2 text-muted-foreground"
+                                                    title={t('summary.viewOriginal')}
+                                                >
+                                                    <FileText className="h-4 w-4" />
+                                                    <span>Voir le contenu</span>
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
 
+                                        {/* Summary Body */}
+                                        <div className="flex-1 overflow-y-auto w-full">
+                                            <div className={cn(
+                                                "flex justify-center bg-white dark:bg-zinc-950 transition-all",
+                                                isFocusMode ? "p-8 md:p-16 min-h-full" : "p-8 md:p-16"
+                                            )}>
+                                                {isSummaryGenerating || isExtracting ? (
+                                                    <div className="space-y-6 animate-pulse w-full max-w-4xl">
+                                                        <div className="h-10 bg-muted rounded w-3/4 mb-10"></div>
+                                                        <div className="space-y-4">
+                                                            <div className="h-4 bg-muted rounded w-full"></div>
+                                                            <div className="h-4 bg-muted rounded w-full"></div>
+                                                            <div className="h-4 bg-muted rounded w-5/6"></div>
+                                                        </div>
+                                                        <div className="space-y-4 mt-10">
+                                                            <div className="h-6 bg-muted rounded w-1/2 mb-4"></div>
+                                                            <div className="h-4 bg-muted rounded w-full"></div>
+                                                            <div className="h-4 bg-muted rounded w-full"></div>
+                                                            <div className="h-4 bg-muted rounded w-4/5"></div>
+                                                        </div>
+                                                        <p className="mt-12 text-sm text-center text-muted-foreground animate-pulse">
+                                                            {isExtracting ? "Lecture du document en cours..." : t('summary.generating')}
+                                                        </p>
+                                                    </div>
+                                                ) : (summary && summary.content) ? (
+                                                    <div ref={contentRef} className="w-full max-w-4xl bg-white dark:bg-zinc-950 p-8 rounded-lg">
+                                                        <ReactMarkdown
+                                                            components={{
+                                                                h1: ({ children }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
+                                                                h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
+                                                                h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
+                                                                p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}</p>,
+                                                                ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+                                                                li: ({ children }) => <li className="text-lg text-slate-700 dark:text-slate-300">{children}</li>,
+                                                                strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
+                                                                input: (props) => {
+                                                                    // Ensure safe boolean for checked
+                                                                    const isChecked = !!props.checked;
+                                                                    return (
+                                                                        <div className="flex items-center gap-2 my-1">
+                                                                            <input type="checkbox" checked={isChecked} readOnly className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                                                            <span className="text-lg text-slate-700 dark:text-slate-300">
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                }
+                                                            }}
+                                                        >
+                                                            {typeof summary.content === 'string'
+                                                                ? summary.content.replace(/•\s?/g, '\n- ')
+                                                                : ''}
+                                                        </ReactMarkdown>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
+                                                        {summaryError ? (
+                                                            <>
+                                                                <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-full">
+                                                                    <AlertCircle className="h-6 w-6" />
+                                                                </div>
+                                                                <div className="text-center max-w-md">
+                                                                    <p className="font-semibold text-foreground mb-1">Erreur de génération</p>
+                                                                    <p className="text-sm">{summaryError}</p>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <p>{t('summary.error.display')}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                         </div>
                     </div>
 
-                    <EditItemModal
-                        isOpen={isEditModalOpen}
-                        onClose={() => setIsEditModalOpen(false)}
-                        item={item}
-                        courseId={courseId || ""}
-                    />
-                </>
-            )}
+                </div>
+            </div>
+
+            <EditItemModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                item={item}
+                courseId={courseId || ""}
+            />
+
             {item && (
                 <GenerateMindMapModal
                     isOpen={isMindMapModalOpen}
