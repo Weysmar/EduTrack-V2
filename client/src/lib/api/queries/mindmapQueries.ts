@@ -8,6 +8,7 @@ export const mindmapQueries = {
         name?: string;
         apiKey?: string;
         model?: string;
+        courseId?: string;
     }) => {
         const response = await apiClient.post('/mindmaps/generate', data);
         return response.data;

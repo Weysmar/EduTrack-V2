@@ -23,20 +23,21 @@ export function MindMapViewer({ content, className }: MindMapViewerProps) {
             securityLevel: 'loose',
             themeVariables: {
                 // Hand-drawn Pastel Theme Palette
-                background: '#fafaf9', // Stone-50 warm white
-                mainBkg: '#ffebd3', // Pastel Orange (Root/Primary default)
-                primaryColor: '#ffebd3',
-                primaryTextColor: '#475569', // Slate-600
-                primaryBorderColor: '#475569',
+                background: '#fdfbf7', // Warm Paper White
+                mainBkg: '#c7d2fe', // Pastel Indigo/Purple (Root) as requested
+                primaryColor: '#c7d2fe',
+                primaryTextColor: '#1e293b', // Slate-800 for better readability
+                primaryBorderColor: '#1e293b',
 
-                lineColor: '#475569', // Dark Slate for edges
+                lineColor: '#334155', // Slate-700 edge lines
 
-                // Secondary/Tertiary for other levels
-                secondaryColor: '#e0f2fe', // Pastel Blue
+                // Secondary/Tertiary for other levels - Soft Pastels
+                secondaryColor: '#fef3c7', // Pastel Amber
                 tertiaryColor: '#dcfce7', // Pastel Green
+                // tertiaryColor: '#ffedd5', // Pastel Orange (if needed)
 
-                fontFamily: '"Caveat", "Kalam", handwriting',
-                fontSize: '20px',
+                fontFamily: '"Caveat", "Kalam", cursive',
+                fontSize: '28px', // Increased size for readability
             },
             mindmap: {
                 // @ts-ignore
