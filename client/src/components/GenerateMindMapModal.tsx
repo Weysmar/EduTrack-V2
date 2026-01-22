@@ -130,7 +130,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-card p-6 text-left align-middle shadow-xl transition-all border border-border">
+                            <Dialog.Panel className="w-full max-w-2xl transform rounded-2xl bg-card p-6 text-left align-middle shadow-xl transition-all border border-border">
                                 <div className="flex justify-between items-center mb-6">
                                     <Dialog.Title as="h3" className="text-lg font-medium leading-6 flex items-center gap-2">
                                         <BrainCircuit className="h-5 w-5 text-purple-500" />
@@ -210,7 +210,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                                 <Combobox.Option
                                                                     key={note.id}
                                                                     className={({ active }) =>
-                                                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-primary/20 text-primary' : 'text-foreground'
+                                                                        `relative cursor-default select-none py-3 pl-10 pr-4 ${active ? 'bg-primary/20 text-primary' : 'text-foreground'
                                                                         }`
                                                                     }
                                                                     value={note}
@@ -243,9 +243,9 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     {note.title}
                                                     <button
                                                         onClick={() => setSelectedNotes(selectedNotes.filter(n => n.id !== note.id))}
-                                                        className="ml-1 hover:text-destructive"
+                                                        className="ml-1 hover:text-destructive p-1 min-h-[28px] min-w-[28px] flex items-center justify-center rounded hover:bg-destructive/10 transition-colors"
                                                     >
-                                                        <X className="h-3 w-3" />
+                                                        <X className="h-4 w-4" />
                                                     </button>
                                                 </span>
                                             ))}
@@ -293,7 +293,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                                 <Combobox.Option
                                                                     key={file.id}
                                                                     className={({ active }) =>
-                                                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-primary/20 text-primary' : 'text-foreground'
+                                                                        `relative cursor-default select-none py-3 pl-10 pr-4 ${active ? 'bg-primary/20 text-primary' : 'text-foreground'
                                                                         }`
                                                                     }
                                                                     value={file}
@@ -326,9 +326,9 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                                     {file.title || file.fileName}
                                                     <button
                                                         onClick={() => setSelectedFiles(selectedFiles.filter(f => f.id !== file.id))}
-                                                        className="ml-1 hover:text-destructive"
+                                                        className="ml-1 hover:text-destructive p-1 min-h-[28px] min-w-[28px] flex items-center justify-center rounded hover:bg-destructive/10 transition-colors"
                                                     >
-                                                        <X className="h-3 w-3" />
+                                                        <X className="h-4 w-4" />
                                                     </button>
                                                 </span>
                                             ))}

@@ -7,6 +7,7 @@ import { Loader2, Brain, AlertCircle, CheckSquare, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useProfileStore } from '@/store/profileStore'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 interface GenerateExerciseModalProps {
     isOpen: boolean
@@ -32,6 +33,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
     const [count, setCount] = useState<number>(10)
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['concept', 'fact'])
     const [error, setError] = useState<string | null>(null)
+    const isOnline = useOnlineStatus()
 
     useEffect(() => {
         if (isOpen) {
@@ -166,7 +168,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
         } catch (e: any) {
             console.error(e)
-            setError(e.message || "Failed to generate. Please try again.")
+            setError(e.message || "Échec de génération. Vérifiez votre connexion internet et réessayez.")
         } finally {
             setIsLoading(false)
         }
@@ -198,13 +200,13 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                             leaveFrom="opacity-100 scale-100"
                             leaveTo="opacity-0 scale-95"
                         >
-                            <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl bg-card border p-6 shadow-xl transition-all">
-                                <Dialog.Title className="text-2xl font-bold flex items-center gap-2 mb-6">
+                            <Dialog.Panel className="w-full max-w-lg md:max-w-xl transform rounded-xl bg-card border shadow-xl transition-all max-h-[90vh] flex flex-col">
+                                <Dialog.Title className="text-2xl font-bold flex items-center gap-2 p-6 pb-4 border-b shrink-0">
                                     <Brain className="h-6 w-6 text-primary" />
                                     Génération d'Exercice IA
                                 </Dialog.Title>
 
-                                <div className="space-y-6">
+                                <div className="overflow-y-auto flex-1 p-6 space-y-6">
                                     {/* Mode Selection */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <button
@@ -235,6 +237,12 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                                     {/* Provider & Model Selection */}
                                     <div className="space-y-4">
+                                        {!isOnline && (
+                                            <div className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-600 p-3 rounded-md mb-4 flex items-center gap-2 text-sm">
+                                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                                <span>Vous êtes hors ligne. La génération nécessite une connexion internet.</span>
+                                            </div>
+                                        )}
                                         <div>
                                             <label className="block text-sm font-medium mb-2">Moteur IA</label>
                                             <div className="grid grid-cols-2 gap-2">
@@ -278,26 +286,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             </div>
                                         )}
 
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium">{t('summary.provider')}</label>
-                                            <select
-                                                value={model || (provider === 'perplexity' ? 'sonar-pro' : 'gemini-1.5-flash')}
-                                                onChange={(e) => setModel(e.target.value)}
-                                                className="w-full px-3 py-2 border rounded-md bg-background"
-                                            >
-                                                {provider === 'perplexity' ? (
-                                                    <>
-                                                        <option value="sonar-pro">Sonar Pro (Smart)</option>
-                                                        <option value="sonar">Sonar (Fast)</option>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <option value="gemini-2.5-flash">🚀 Gemini 2.5 Flash (Recommandé)</option>
-                                                        <option value="gemini-2.5-pro">🧠 Gemini 2.5 Pro (Intelligence Max)</option>
-                                                    </>
-                                                )}
-                                            </select>
-                                        </div>
+
                                     </div>
 
                                     {/* Count */}
@@ -311,7 +300,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     key={n}
                                                     onClick={() => setCount(n)}
                                                     className={cn(
-                                                        "px-3 py-1.5 rounded-md border text-sm transition-colors",
+                                                        "px-4 py-3 rounded-md border text-sm transition-colors min-h-[44px] min-w-[44px] touch-manipulation",
                                                         count === n
                                                             ? "bg-primary text-primary-foreground border-primary"
                                                             : "hover:bg-muted"
@@ -348,12 +337,12 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                 { id: 'calculation', label: 'Calculs' },
                                                 { id: 'application', label: 'Applications' }
                                             ].map(type => (
-                                                <label key={type.id} className="flex items-center gap-3 text-sm p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                                                <label key={type.id} className="flex items-center gap-3 text-sm p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors min-h-[44px]">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTypes.includes(type.id)}
                                                         onChange={() => handleTypeToggle(type.id)}
-                                                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                                        className="rounded border-gray-300 text-primary focus:ring-primary h-5 w-5"
                                                     />
                                                     <span>{type.label}</span>
                                                 </label>
@@ -367,30 +356,30 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             {error}
                                         </div>
                                     )}
+                                </div>
 
-                                    <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-                                        <button
-                                            onClick={onClose}
-                                            disabled={isLoading}
-                                            className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
-                                        >
-                                            Annuler
-                                        </button>
-                                        <button
-                                            onClick={handleGenerate}
-                                            disabled={isLoading}
-                                            className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50"
-                                        >
-                                            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                            {isLoading ? 'Génération...' : `Générer ${mode === 'flashcards' ? 'Flashcards' : 'QCM'}`}
-                                        </button>
-                                    </div>
+                                <div className="flex justify-end gap-2 p-6 pt-4 border-t shrink-0 pb-safe">
+                                    <button
+                                        onClick={onClose}
+                                        disabled={isLoading}
+                                        className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={isLoading || !isOnline}
+                                        className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                        {isLoading ? 'Génération...' : `Générer ${mode === 'flashcards' ? 'Flashcards' : 'QCM'}`}
+                                    </button>
                                 </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
                 </div>
             </Dialog>
-        </Transition>
+        </Transition >
     )
 }

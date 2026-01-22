@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Calendar, Clock, Target, BookOpen, Brain, Loader2, X, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, Target, BookOpen, Brain, Loader2, X, RefreshCw, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { generateStudyPlan } from '@/lib/plans/generator'
 import { useCalendarStore } from '@/store/calendarStore'
@@ -7,6 +7,7 @@ import { fetchICalFeed } from '@/lib/ical-parser'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
 import { toast } from 'sonner'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 interface GeneratePlanModalProps {
     isOpen: boolean
@@ -29,6 +30,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
     const [flashcardsRatio, setFlashcardsRatio] = useState(0.4)
     const [quizRatio, setQuizRatio] = useState(0.4)
     const [readingRatio, setReadingRatio] = useState(0.2)
+    const isOnline = useOnlineStatus()
 
     if (!isOpen) return null
 
@@ -99,120 +101,128 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
     }
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-lg bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <div>
-                        <h2 className="text-lg font-semibold">Generate Intelligent Study Plan</h2>
-                        <p className="text-sm text-muted-foreground">AI will analyze your course content and schedule.</p>
-                    </div>
-                    <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors">
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-
-                <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                    {/* Deadline */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium flex items-center gap-2">
-                                <Calendar className="h-4 w-4" /> Exam Deadline
-                            </label>
-                            <button
-                                onClick={handleSyncCalendar}
-                                className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-600 transition-colors"
-                                title="Auto-detect from Google Calendar"
-                            >
-                                <RefreshCw className={cn("h-3 w-3", isLoading && "animate-spin")} />
-                                Sync from Calendar
-                            </button>
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="flex min-h-full items-center justify-center">
+                <div className="w-full max-w-lg md:max-w-xl bg-card rounded-lg shadow-lg border animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                    <div className="flex items-center justify-between p-4 border-b shrink-0">
+                        <div>
+                            <h2 className="text-lg font-semibold">Generate Intelligent Study Plan</h2>
+                            <p className="text-sm text-muted-foreground">AI will analyze your course content and schedule.</p>
                         </div>
-                        <input
-                            type="date"
-                            className="w-full p-2 border rounded-md bg-transparent focus:ring-2 focus:ring-primary/50 outline-none"
-                            value={deadline}
-                            onChange={(e) => setDeadline(e.target.value)}
-                            min={new Date().toISOString().split('T')[0]}
-                        />
-                        <p className="text-[10px] text-muted-foreground">
-                            Tip: Name your event "Examen {`{Course Name}`}" in Google Calendar.
-                        </p>
+                        <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors">
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    {/* Hours per Week */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium flex items-center justify-between">
-                            <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Weekly Availability</span>
-                            <span className="text-primary font-bold">{hours}h / week</span>
-                        </label>
-                        <input
-                            type="range"
-                            min="1" max="30"
-                            value={hours}
-                            onChange={(e) => setHours(parseInt(e.target.value))}
-                            className="w-full accent-primary"
-                        />
-                    </div>
-
-                    {/* Goal */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium flex items-center gap-2">
-                            <Target className="h-4 w-4" /> Goal
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {['mastery', 'exam-prep', 'review', 'catch-up'].map((g) => (
+                    <div className="overflow-y-auto flex-1 p-6 space-y-6">
+                        {!isOnline && (
+                            <div className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-600 p-3 rounded-md mb-4 flex items-center gap-2 text-sm">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                <span>Vous êtes hors ligne. La génération nécessite une connexion internet.</span>
+                            </div>
+                        )}
+                        {/* Deadline */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium flex items-center gap-2">
+                                    <Calendar className="h-4 w-4" /> Exam Deadline
+                                </label>
                                 <button
-                                    key={g}
-                                    onClick={() => setGoal(g)}
-                                    className={cn(
-                                        "p-3 rounded-lg border text-left text-sm transition-all",
-                                        goal === g ? "bg-primary/10 border-primary ring-1 ring-primary" : "hover:bg-muted hover:border-muted-foreground/30"
-                                    )}
+                                    onClick={handleSyncCalendar}
+                                    className="text-sm px-3 py-2 flex items-center gap-2 border rounded-md hover:bg-muted min-h-[44px] text-blue-500 hover:text-blue-600 transition-colors"
+                                    title="Auto-detect from Google Calendar"
                                 >
-                                    <div className="font-semibold capitalize">{g.replace('-', ' ')}</div>
+                                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                                    Sync from Calendar
                                 </button>
-                            ))}
+                            </div>
+                            <input
+                                type="date"
+                                className="w-full p-2 border rounded-md bg-transparent focus:ring-2 focus:ring-primary/50 outline-none"
+                                value={deadline}
+                                onChange={(e) => setDeadline(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                                Tip: Name your event "Examen {`{Course Name}`}" in Google Calendar.
+                            </p>
+                        </div>
+
+                        {/* Hours per Week */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium flex items-center justify-between">
+                                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Weekly Availability</span>
+                                <span className="text-primary font-bold">{hours}h / week</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="1" max="30"
+                                value={hours}
+                                onChange={(e) => setHours(parseInt(e.target.value))}
+                                className="w-full accent-primary"
+                            />
+                        </div>
+
+                        {/* Goal */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                                <Target className="h-4 w-4" /> Goal
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {['mastery', 'exam-prep', 'review', 'catch-up'].map((g) => (
+                                    <button
+                                        key={g}
+                                        onClick={() => setGoal(g)}
+                                        className={cn(
+                                            "p-3 rounded-lg border text-left text-sm transition-all min-h-[44px]",
+                                            goal === g ? "bg-primary/10 border-primary ring-1 ring-primary" : "hover:bg-muted hover:border-muted-foreground/30"
+                                        )}
+                                    >
+                                        <div className="font-semibold capitalize">{g.replace('-', ' ')}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Learning Style */}
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                                <Brain className="h-4 w-4" /> Learning Style Mix
+                            </label>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex-1 text-center p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                    <div>Flashcards</div>
+                                    <div className="font-bold text-blue-500">{(flashcardsRatio * 100).toFixed(0)}%</div>
+                                </div>
+                                <div className="flex-1 text-center p-2 bg-purple-500/10 rounded border border-purple-500/20">
+                                    <div>Quizzes</div>
+                                    <div className="font-bold text-purple-500">{(quizRatio * 100).toFixed(0)}%</div>
+                                </div>
+                                <div className="flex-1 text-center p-2 bg-green-500/10 rounded border border-green-500/20">
+                                    <div>Reading</div>
+                                    <div className="font-bold text-green-500">{(readingRatio * 100).toFixed(0)}%</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Learning Style */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium flex items-center gap-2">
-                            <Brain className="h-4 w-4" /> Learning Style Mix
-                        </label>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex-1 text-center p-2 bg-blue-500/10 rounded border border-blue-500/20">
-                                <div>Flashcards</div>
-                                <div className="font-bold text-blue-500">{(flashcardsRatio * 100).toFixed(0)}%</div>
-                            </div>
-                            <div className="flex-1 text-center p-2 bg-purple-500/10 rounded border border-purple-500/20">
-                                <div>Quizzes</div>
-                                <div className="font-bold text-purple-500">{(quizRatio * 100).toFixed(0)}%</div>
-                            </div>
-                            <div className="flex-1 text-center p-2 bg-green-500/10 rounded border border-green-500/20">
-                                <div>Reading</div>
-                                <div className="font-bold text-green-500">{(readingRatio * 100).toFixed(0)}%</div>
-                            </div>
-                        </div>
+                    <div className="border-t p-4 flex justify-end gap-2 bg-muted/20 shrink-0 pb-safe">
+                        <button
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleGenerate}
+                            disabled={isLoading || !isOnline}
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {isLoading ? "Analyzing..." : "Generate Plan"}
+                        </button>
                     </div>
-                </div>
-
-                <div className="border-t p-4 flex justify-end gap-2 bg-muted/20">
-                    <button
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isLoading}
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {isLoading ? "Analyzing..." : "Generate Plan"}
-                    </button>
                 </div>
             </div>
         </div>
