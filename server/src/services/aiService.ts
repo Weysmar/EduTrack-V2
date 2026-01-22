@@ -9,9 +9,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
         // Stable models (2026)
-        'gemini-1.5-flash': 'gemini-2.5-flash',
-        'gemini-1.5-pro': 'gemini-2.5-pro',
-        'gemini-2.0-flash': 'gemini-2.5-flash',
+        'gemini-1.5-flash': 'gemini-1.5-flash',
+        'gemini-1.5-pro': 'gemini-1.5-pro',
+        'gemini-2.0-flash': 'gemini-2.0-flash',
         'gemini-2.5-flash': 'gemini-2.5-flash',
         'gemini-2.5-pro': 'gemini-2.5-pro',
 
@@ -112,6 +112,9 @@ export const aiService = {
             if (message.includes('401') || message.includes('API key')) {
                 message = `Clé API Gemini invalide.`;
             }
+            if (message.includes('429') || message.includes('Quota')) {
+                message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de modèle.`;
+            }
             throw new Error(message);
         }
     },
@@ -198,6 +201,7 @@ export const aiService = {
             if (message.includes('404')) message = `Modèle IA indisponible (${model})`;
             if (message.includes('401')) message = `Clé API Gemini invalide`;
             if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
+            if (message.includes('429') || message.includes('Quota')) message = `Quota d'IA dépassé. Veuillez patienter une minute.`;
 
             throw new Error(`AI JSON Error: ${message}`);
         }

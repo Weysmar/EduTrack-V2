@@ -74,7 +74,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
 
             {/* TOP: File Preview / Header Area */}
             <div className="w-full aspect-video bg-muted border-b relative group-hover:opacity-95 transition-opacity">
-                {item.type === 'resource' ? (
+                {(item.thumbnailUrl || item.fileName) ? (
                     item.thumbnailUrl ? (
                         <div className="w-full h-full relative overflow-hidden">
                             <img
