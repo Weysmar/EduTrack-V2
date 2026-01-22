@@ -168,7 +168,9 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
         } catch (e: any) {
             console.error(e)
-            setError(e.message || "Échec de génération. Vérifiez votre connexion internet et réessayez.")
+            const msg = e.message || "Échec de génération. Vérifiez votre connexion internet et réessayez."
+            setError(msg)
+            toast.error(msg)
         } finally {
             setIsLoading(false)
         }
