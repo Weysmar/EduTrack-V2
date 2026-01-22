@@ -37,7 +37,66 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
 
         if (!profileId) return res.status(401).json({ error: "Profile not found" });
 
-        // Delete existing?
+        // 1. Check if summary exists to get generatedItemId
+        const existingSummary = await prisma.summary.findFirst({
+            where: {
+                profileId,
+                itemId,
+                itemType
+            }
+        });
+
+        // 2. Resolve or Create the Standalone Item
+        let generatedItemId = existingSummary?.generatedItemId;
+
+        // Fetch source item title for naming
+        let sourceTitle = "Document";
+        if (itemId) {
+            const sourceItem = await prisma.item.findUnique({
+                where: { id: itemId },
+                select: { title: true, fileName: true }
+            });
+            if (sourceItem) sourceTitle = sourceItem.title || sourceItem.fileName || "Document";
+        }
+
+        const summaryTitle = `Résumé : ${sourceTitle}`;
+
+        if (generatedItemId) {
+            // Update existing Item
+            await prisma.item.update({
+                where: { id: generatedItemId },
+                data: {
+                    content,
+                    title: summaryTitle,
+                    updatedAt: new Date()
+                }
+            }).catch(async () => {
+                // If update fails (e.g. item deleted), recreate it
+                generatedItemId = undefined;
+            });
+        }
+
+        if (!generatedItemId) {
+            // Create new Item
+            const newItem = await prisma.item.create({
+                data: {
+                    profileId,
+                    courseId: courseId || (existingSummary?.courseId) || "", // Should have courseId
+                    type: 'summary',
+                    title: summaryTitle,
+                    content: content,
+                    status: 'generated'
+                }
+            });
+            generatedItemId = newItem.id;
+        }
+
+        // 3. Upsert Summary Record with link to Item
+        // Delete existing to handle upsert cleanly or just update
+        // Logic from before was deleteMany, but we want to preserve ID if possible? 
+        // Actually the previous logic was deleteMany then create. Let's stick to that but keeping the link maybe?
+        // No, let's use upsert or just deleteMany as before but pass generatedItemId.
+
         await prisma.summary.deleteMany({
             where: {
                 profileId,
@@ -54,7 +113,8 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
                 itemType,
                 content,
                 stats,
-                options
+                options,
+                generatedItemId // Link to the standalone item
             }
         });
 

@@ -164,6 +164,7 @@ model Summary {
   courseId  String?
   itemId    String
   itemType  String
+  generatedItemId String? // ID of the standalone Item created for this summary
   content   String   @db.Text
   stats     Json?
   options   Json?
