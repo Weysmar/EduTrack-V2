@@ -20,7 +20,7 @@ export function MindMapsPage() {
 
     const { data: mindMaps, isLoading } = useQuery({
         queryKey: ['mindmaps'],
-        queryFn: mindmapQueries.getAll
+        queryFn: () => mindmapQueries.getAll()
     });
 
     const deleteMutation = useMutation({

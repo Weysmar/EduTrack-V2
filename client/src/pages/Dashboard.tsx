@@ -34,7 +34,7 @@ export function Dashboard() {
 
     const { data: mindMaps } = useQuery({
         queryKey: ['mindmaps'],
-        queryFn: mindmapQueries.getAll,
+        queryFn: () => mindmapQueries.getAll(),
         enabled: !!activeProfile
     })
 
