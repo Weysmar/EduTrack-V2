@@ -5,7 +5,7 @@ export function RequireAuth() {
     const { isAuthenticated } = useAuthStore();
 
     if (!isAuthenticated) {
-        return <Navigate to="/auth" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return <Outlet />;
