@@ -359,7 +359,7 @@ export function ItemView() {
             />
 
             {/* Header */}
-            <div className="min-h-[4rem] h-auto border-b flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-3 md:py-2 bg-card sticky top-0 z-40 gap-3 md:gap-4 transition-all">
+            <div className="min-h-[4rem] h-auto border-b flex flex-col gap-3 px-3 md:px-6 py-3 md:py-2 bg-card sticky top-0 z-40 transition-all">
                 <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0 w-full">
                     <button
                         onClick={() => navigate(`/course/${courseId}`)}
@@ -381,11 +381,11 @@ export function ItemView() {
 
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-base md:text-xl font-bold whitespace-normal leading-snug break-words">{item.title}</h1>
-                        <div className="flex flex-col mt-0.5">
-                            {course && <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed">{course.title}</p>}
+                        <h1 className="text-base md:text-xl font-bold truncate leading-snug">{item.title}</h1>
+                        <div className="flex flex-col gap-1 mt-0.5">
+                            {course && <p className="text-xs text-muted-foreground truncate leading-relaxed">{course.title}</p>}
                             {item.type === 'resource' && (
-                                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                                     {(() => {
                                         const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
                                         const isWord = ['DOC', 'DOCX'].includes(ext);
