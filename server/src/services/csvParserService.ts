@@ -10,13 +10,21 @@ export interface ParsedTransaction {
 }
 
 export const parseCsv = async (fileBuffer: Buffer): Promise<ParsedTransaction[]> => {
-    const csvString = fileBuffer.toString('utf-8');
+    // Try to detect encoding or fallback to utf-8. 
+    // Ideally we'd use iconv-lite but standard library only supports utf8/latin1 (binary)
+    // For now assuming UTF-8 but stripping BOM if present
+    let csvString = fileBuffer.toString('utf-8');
+    if (csvString.charCodeAt(0) === 0xFEFF) {
+        csvString = csvString.slice(1);
+    }
 
     return new Promise((resolve, reject) => {
         Papa.parse(csvString, {
             header: true,
-            skipEmptyLines: true,
-            transformHeader: (h) => h.toLowerCase().trim(),
+            skipEmptyLines: 'greedy', // Better than true
+            delimiter: "", // Auto-detect
+            transformHeader: (h) => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""), // Remove accents for safer matching
+
             complete: (results) => {
                 const transactions: ParsedTransaction[] = [];
                 const errors: any[] = [];
@@ -44,42 +52,86 @@ export const parseCsv = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
 };
 
 function mapRowToTransaction(row: any): ParsedTransaction | null {
-    // Flexible mapping strategy
+    // Helper to find value by fuzzy key match
+    const getValue = (keywords: string[]): string | undefined => {
+        const keys = Object.keys(row);
+        for (const keyword of keywords) {
+            // Exact match first
+            if (row[keyword]) return row[keyword];
+            // Fuzzy match (key contains keyword) - strict enough to avoid false positives
+            const match = keys.find(k => k.includes(keyword));
+            if (match) return row[match];
+        }
+        return undefined;
+    };
+
     // 1. Date
-    const dateStr = row['date'] || row['date operation'] || row['dt'] || row['libelle date'];
+    // Keywords: date, dt, op
+    const dateStr = getValue(['date', 'dt', 'date operation', 'date val']);
     if (!dateStr) return null; // Skip invalid lines
 
     const date = parseDate(dateStr);
+    if (!date || isNaN(date.getTime())) return null;
 
     // 2. Description
-    const description = row['description'] || row['libelle'] || row['libellé'] || row['tiers'] || row['objet'] || 'Import';
+    // Keywords: libelle, description, objet, tiers, label
+    const description = getValue(['libelle', 'libellé', 'description', 'objet', 'tiers', 'label']) || 'Import';
 
     // 3. Amount
-    let amountStr = row['amount'] || row['montant'] || row['credit'] || row['debit'] || row['valeur'];
-
-    // Handle separate Credit/Debit columns (Common in French banks)
+    // Keywords: montant, amount, credit, debit, valeur, solde shouldn't be matched
     let amount = 0;
-    if (row['credit'] && row['credit'] !== '') {
-        amount = parseFloat(row['credit'].replace(',', '.').replace(/[^\d.-]/g, ''));
-    } else if (row['debit'] && row['debit'] !== '') {
-        amount = -Math.abs(parseFloat(row['debit'].replace(',', '.').replace(/[^\d.-]/g, '')));
-    } else if (amountStr) {
-        amount = parseFloat(amountStr.replace(',', '.').replace(/[^\d.-]/g, ''));
-    } else {
-        return null; // No amount found
-    }
 
-    if (isNaN(amount)) return null;
+    // Explicit Credit/Debit check first (often separate columns)
+    const creditStr = getValue(['credit', 'crédit']);
+    const debitStr = getValue(['debit', 'débit']);
+
+    if (creditStr && creditStr.trim() !== '') {
+        amount = parseAmount(creditStr);
+    } else if (debitStr && debitStr.trim() !== '') {
+        amount = -Math.abs(parseAmount(debitStr));
+    } else {
+        // Single column check
+        const amountStr = getValue(['montant', 'amount', 'valeur', 'solde']); // Care with solde being balance
+        if (amountStr) {
+            amount = parseAmount(amountStr);
+        } else {
+            return null;
+        }
+    }
 
     // Type logic
     const type = amount >= 0 ? 'INCOME' : 'EXPENSE';
 
     return {
         date,
-        description: description.trim(),
-        amount: new Prisma.Decimal(amount).toNumber(), // Helper to keep it numeric for now, Controller handles Decimal
+        description: description.replace(/\s+/g, ' ').trim(), // Clean up spaces
+        amount: new Prisma.Decimal(amount).toNumber(),
         type
     };
+}
+
+function parseAmount(str: string): number {
+    // Handle "1 200,50" -> 1200.50 (French format)
+    // Handle "1,200.50" -> 1200.50 (US format)
+
+    // Remove spaces first
+    let clean = str.replace(/\s/g, '');
+
+    // If comma is decimal separator (last separator is comma)
+    if (clean.includes(',') && !clean.includes('.')) {
+        clean = clean.replace(',', '.');
+    } else if (clean.includes(',') && clean.includes('.')) {
+        // "1.200,50" or "1,200.50"
+        if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
+            // 1.200,50 -> Remove dots, replace comma
+            clean = clean.replace(/\./g, '').replace(',', '.');
+        } else {
+            // 1,200.50 -> Remove commas
+            clean = clean.replace(/,/g, '');
+        }
+    }
+
+    return parseFloat(clean.replace(/[^\d.-]/g, ''));
 }
 
 function parseDate(dateStr: string): Date {
