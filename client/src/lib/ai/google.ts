@@ -71,7 +71,7 @@ INSTRUCTIONS DE CONTENU :
 -   Vérifie qu'aucun caractère Markdown brut (#, *) ne reste visible s'il n'est pas interprété par le rendu final.
 `;
 
-        const model = geminiOptions.model || 'gemini-1.5-flash';
+        const model = geminiOptions.model || 'gemini-2.0-flash-exp';
 
         try {
             const { data } = await apiClient.post('/ai/generate', {
@@ -107,7 +107,7 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
             prompt: prompt,
             systemPrompt: systemPrompt,
             provider: 'google',
-            model: model || 'gemini-1.5-flash',
+            model: model || 'gemini-2.0-flash-exp',
             apiKey: API_KEY
         });
         return data.text;
