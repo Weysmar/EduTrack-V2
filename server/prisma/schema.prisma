@@ -41,65 +41,7 @@ model Profile {
 
 // FinanceTrack Models
 
-model FinancialAccount {
-  id        String   @id @default(uuid())
-  profileId String
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  name      String   // ex: "Compte Courant", "Livret A"
-  type      String   // "CHECKING", "SAVINGS", "CASH"
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  transactions Transaction[]
-}
-
-model Transaction {
-  id          String   @id @default(uuid())
-  profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  accountId   String?
-  account     FinancialAccount? @relation(fields: [accountId], references: [id])
-  
-  amount      Float    // Positif pour revenu, Négatif pour dépense
-  type        String   // "INCOME", "EXPENSE"
-  date        DateTime @default(now())
-  description String?
-  
-  categoryId  String?
-  category    TransactionCategory? @relation(fields: [categoryId], references: [id])
-  
-  isRecurring    Boolean @default(false)
-  recurringRule  String? // Règle de récurrence (ex: "MONTHLY")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model TransactionCategory {
-  id        String   @id @default(uuid())
-  name      String   // ex: "Alimentation", "Loyer", "Salaire"
-  type      String   // "INCOME", "EXPENSE"
-  icon      String?  // Nom de l'icône Lucide
-  color     String?  // Code couleur Tailwind ou Hex
-  
-  transactions Transaction[]
-  budgets      Budget[]
-}
-
-model Budget {
-  id          String   @id @default(uuid())
-  profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  categoryId  String
-  category    TransactionCategory @relation(fields: [categoryId], references: [id])
-  
-  amount      Float    // Montant limite mensuel
-  period      String   @default("MONTHLY") // "MONTHLY", "WEEKLY"
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+// FinanceTrack Models removed (defined at end of file)
 
 model StudySession {
   id              String   @id @default(uuid())
@@ -304,4 +246,92 @@ model MindMap {
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course? @relation(fields: [courseId], references: [id])
+}
+// FinanceTrack Models
+
+model FinancialAccount {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name      String   // "Compte Courant", "Livret A"
+  type      String   // "CHECKING", "SAVINGS", "CASH"
+  balance   Float    @default(0)
+  icon      String?  // Emoji
+  color     String   @default("#10b981")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  transactions Transaction[]
+  
+  @@index([profileId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  accountId   String?
+  account     FinancialAccount? @relation(fields: [accountId], references: [id])
+  
+  amount      Float    // Positif = revenu, Négatif = dépense
+  type        String   // "INCOME", "EXPENSE"
+  date        DateTime @default(now())
+  description String?
+  
+  categoryId  String?
+  category    TransactionCategory? @relation(fields: [categoryId], references: [id])
+  
+  // Justificatifs
+  receiptUrl  String?  // MinIO S3 URL
+  storageKey  String?  // S3 key pour cleanup
+  
+  // Récurrence
+  isRecurring    Boolean @default(false)
+  recurringRule  String? // "MONTHLY", "WEEKLY", "YEARLY"
+  
+  // IA Metadata
+  aiEnriched     Boolean @default(false)
+  aiSuggestions  Json?   // { betterOffer: "...", category: "auto" }
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([profileId, date])
+  @@index([categoryId])
+}
+
+model TransactionCategory {
+  id          String   @id @default(uuid())
+  name        String   // "Alimentation", "Loyer", "Salaire"
+  type        String   // "INCOME", "EXPENSE"
+  icon        String?  // Emoji
+  color       String?  // Tailwind color class
+  parentId    String?  // Hiérarchie (Biomes)
+  
+  parent       TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     TransactionCategory[] @relation("CategoryHierarchy")
+  transactions Transaction[]
+  budgets      Budget[]
+  
+  @@unique([name, type])
+}
+
+model Budget {
+  id          String   @id @default(uuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  categoryId  String
+  category    TransactionCategory @relation(fields: [categoryId], references: [id])
+  
+  amount      Float    // Montant limite
+  period      String   @default("MONTHLY") // "MONTHLY", "WEEKLY", "YEARLY"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([profileId, categoryId])
 }

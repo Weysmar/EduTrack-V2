@@ -16,6 +16,7 @@ import profileRoutes from './profileRoutes';
 
 import analyticsRoutes from './analyticsRoutes';
 import mindmapRoutes from './mindmapRoutes';
+import financeRoutes from './financeRoutes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/planning', planningRoutes);
 router.use('/plans', studyPlanRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/mindmaps', mindmapRoutes);
+router.use('/finance', financeRoutes);
 
 export default router;
