@@ -541,9 +541,36 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// Reports
+import { reportService } from '../services/reportService';
+
+export const generateReport = async (req: AuthRequest, res: Response) => {
+    try {
+        const { month, year } = req.query;
+        const profileId = req.user!.id;
+
+        if (!month || !year) return res.status(400).json({ error: "Month and Year required" });
+
+        const pdfBuffer = await reportService.generateMonthlyReport({
+            profileId,
+            month: parseInt(String(month)),
+            year: parseInt(String(year))
+        });
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=rapport_financier_${month}_${year}.pdf`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        res.send(pdfBuffer);
+    } catch (error) {
+        console.error("Report Generation Error:", error);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+};
+
 export const scanReceipt = async (req: AuthRequest, res: Response) => {
-    // Placeholder - OCR logic usually client-side (Tesseract) or backend with specialized lib
-    // Implementation planned for client-side Tesseract.js in Phase 4.
-    // This route could accept extracted text + image URL.
+    // Placeholder 
     res.status(501).json({ message: "Not implemented backend-side yet" });
 };

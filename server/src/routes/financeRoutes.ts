@@ -32,5 +32,6 @@ router.put('/budgets/:id', auth, financeController.updateBudget);
 // AI Features
 router.post('/transactions/:id/enrich', auth, financeController.enrichTransaction);
 router.post('/audit', auth, financeController.generateAudit);
+router.get('/report', auth, financeController.generateReport);
 
 export default router;
