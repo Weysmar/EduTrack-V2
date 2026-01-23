@@ -1,5 +1,5 @@
 import { SummaryResult } from '@/lib/summary/types'
-import { Download, FileText, Copy, Check, ArrowLeft } from 'lucide-react'
+import { Download, FileText, Copy, Check, ArrowLeft, Trash2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import html2pdf from 'html2pdf.js'
@@ -10,9 +10,10 @@ interface SummaryResultModalProps {
     summary: SummaryResult | null
     isOpen: boolean
     onClose: () => void
+    onDelete?: () => void
 }
 
-export function SummaryResultModal({ summary, isOpen, onClose }: SummaryResultModalProps) {
+export function SummaryResultModal({ summary, isOpen, onClose, onDelete }: SummaryResultModalProps) {
     // const { t } = useLanguage()
     const [copied, setCopied] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
@@ -207,6 +208,7 @@ export function SummaryResultModal({ summary, isOpen, onClose }: SummaryResultMo
         }
     }
 
+
     // Full screen overlay with sidebar spacing
     return (
         <div className="fixed inset-0 z-[100] bg-background flex flex-col animate-in slide-in-from-right-10 duration-200 safe-left safe-right">
@@ -236,6 +238,19 @@ export function SummaryResultModal({ summary, isOpen, onClose }: SummaryResultMo
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {onDelete && (
+                        <>
+                            <button
+                                onClick={onDelete}
+                                className="px-3 py-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-md border border-transparent hover:border-destructive/20 flex items-center gap-2 text-sm transition-colors"
+                                title="Supprimer le résumé"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="hidden sm:inline">Supprimer</span>
+                            </button>
+                            <div className="w-px h-4 bg-border mx-1 hidden sm:block" />
+                        </>
+                    )}
                     <button
                         onClick={handleCopy}
                         className="px-3 py-1.5 hover:bg-muted rounded-md border flex items-center gap-2 text-sm transition-colors"

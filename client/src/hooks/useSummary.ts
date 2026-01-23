@@ -98,9 +98,28 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
         }
     }
 
+    const remove = useCallback(async () => {
+        if (!summary?.id) return;
+        if (!confirm("Voulez-vous vraiment supprimer ce résumé ?")) return;
+
+        try {
+            await summaryQueries.delete(summary.id);
+            setSummary(null);
+            toast.success("Résumé supprimé");
+            queryClient.invalidateQueries({ queryKey: ['summaries'] });
+            if (courseId) {
+                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
+            }
+        } catch (e) {
+            console.error("Failed to delete summary", e);
+            toast.error("Erreur lors de la suppression du résumé");
+        }
+    }, [summary, courseId, queryClient]);
+
     return {
         summary,
         generate,
+        remove,
         isGenerating,
         error
     }

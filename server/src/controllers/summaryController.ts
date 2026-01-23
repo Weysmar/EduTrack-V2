@@ -150,4 +150,37 @@ export const getSummaries = async (req: AuthRequest, res: Response) => {
         console.error("Get Summaries Error:", error);
         res.status(500).json({ error: "Failed to fetch summaries" });
     }
+
+};
+
+export const deleteSummary = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const profileId = req.user?.id;
+
+        if (!profileId) return res.status(401).json({ error: "Unauthorized" });
+
+        const summary = await prisma.summary.findUnique({
+            where: { id }
+        });
+
+        if (!summary) return res.status(404).json({ error: "Summary not found" });
+        if (summary.profileId !== profileId) return res.status(403).json({ error: "Forbidden" });
+
+        // Optionally delete the generated item linked to this summary
+        if (summary.generatedItemId) {
+            await prisma.item.delete({
+                where: { id: summary.generatedItemId }
+            }).catch(e => console.error("Failed to delete generated item linked to summary", e));
+        }
+
+        await prisma.summary.delete({
+            where: { id }
+        });
+
+        res.json({ message: "Summary deleted successfully" });
+    } catch (error) {
+        console.error("Delete Summary Error:", error);
+        res.status(500).json({ error: "Failed to delete summary" });
+    }
 };
