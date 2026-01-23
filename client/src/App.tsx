@@ -133,17 +133,21 @@ const router = createBrowserRouter([
                         path: 'dashboard',
                         element: <LazyPage><FinanceDashboard /></LazyPage>,
                     },
+const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings').then(m => ({ default: m.FinanceSettings })))
+
+// ...
+
                     {
-                        path: 'settings',
-                        element: <div className="p-8">Settings (Work in Progress)</div> // Placeholder
-                    }
-                ]
+                path: 'settings',
+                element: <LazyPage><FinanceSettings /></LazyPage>,
             }
         ]
+    }
+]
     },
-    // Fallback
-    {
-        path: '*',
+// Fallback
+{
+    path: '*',
         element: <Navigate to="/" replace />,
     }
 ])
