@@ -207,6 +207,11 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
             await storageService.deleteFile(item.storageKey);
         }
 
+        // Cascade delete: Remove any Summary linked to this item as generatedItemId
+        await prisma.summary.deleteMany({
+            where: { generatedItemId: item.id }
+        });
+
         await prisma.item.delete({ where: { id: item.id } });
 
         socketService.emitToProfile(req.user!.id, 'item:deleted', { id: item.id, courseId: item.courseId });
@@ -247,7 +252,14 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
 
         await Promise.allSettled(deletePromises);
 
-        // 3. Delete from DB
+        // 3. Cascade delete summaries
+        await prisma.summary.deleteMany({
+            where: {
+                generatedItemId: { in: validIds }
+            }
+        });
+
+        // 4. Delete from DB
         await prisma.item.deleteMany({
             where: {
                 id: { in: validIds }
