@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { Sparkles, ArrowRight, ShieldCheck, Wallet, BrainCircuit } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { AuthPage } from './AuthPage'; // Reuse Auth component logic basically
+import { AuthPage } from './AuthPage';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
 
 export function LandingPage() {
     const { isAuthenticated } = useAuthStore();
-    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    const controls = useAnimation();
+
+    // Trigger animation handler
+    const handleAccessClick = () => {
+        controls.start({
+            x: [0, -10, 10, -10, 10, 0],
+            borderColor: ["rgba(0,0,0,0)", "rgba(59, 130, 246, 0.5)", "rgba(0,0,0,0)"],
+            transition: { duration: 0.6, ease: "easeInOut" }
+        });
+        // Optional: Focus the email input if possible, but visual cue is often enough
+        document.querySelector('input[name="email"]')?.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => document.querySelector('input[name="email"]')?.classList.remove('ring-2', 'ring-primary'), 1000);
+    };
 
     if (isAuthenticated) {
         return <Navigate to="/hub" replace />;
@@ -27,7 +39,7 @@ export function LandingPage() {
                     <div className="flex items-center gap-4">
                         <ModeToggle />
                         <button
-                            onClick={() => document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' })}
+                            onClick={handleAccessClick}
                             className="bg-primary text-primary-foreground px-4 py-2 rounded-full font-medium hover:opacity-90 transition-all font-sans text-sm"
                         >
                             Accéder à mon espace
@@ -97,7 +109,7 @@ export function LandingPage() {
                         {/* Login Card */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            animate={controls}
                             transition={{ duration: 0.5, delay: 0.2 }}
                             id="auth-section"
                             className="w-full max-w-md mx-auto"
