@@ -20,6 +20,8 @@ interface FinanceState {
     fetchAccounts: () => Promise<void>;
     addTransaction: (data: Omit<Transaction, 'id' | 'createdAt' | 'aiEnriched'>) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>;
+    enrichTransaction: (id: string) => Promise<void>;
+    generateLocalAudit: () => Promise<string>;
     setFilters: (filters: Partial<FinanceFilters>) => void;
 
     // Computed Methods (can perform on currently loaded transactions)
@@ -175,5 +177,49 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             category,
             amount
         }));
+    },
+
+    enrichTransaction: async (id: string) => {
+        const tx = get().transactions.find(t => t.id === id);
+        if (!tx) return;
+
+        try {
+            const { financeApi } = await import('@/lib/api/financeApi');
+            const result = await financeApi.enrich(tx.description || '', tx.amount);
+
+            if (result.success && result.suggestions) {
+                await db.transactions.update(id, {
+                    aiEnriched: true,
+                    aiSuggestions: result.suggestions
+                });
+
+                set(state => ({
+                    transactions: state.transactions.map(t =>
+                        t.id === id ? { ...t, aiEnriched: true, aiSuggestions: result.suggestions } : t
+                    )
+                }));
+            }
+        } catch (error) {
+            console.error("Enrichment error", error);
+        }
+    },
+
+    generateLocalAudit: async () => {
+        try {
+            set({ isLoading: true });
+            const { financeApi } = await import('@/lib/api/financeApi');
+
+            // Send last 50 transactions to AI
+            const recentTx = get().transactions.slice(0, 50);
+
+            const result = await financeApi.audit(recentTx);
+
+            return result.audit; // Return string (Markdown)
+        } catch (error) {
+            console.error("Audit error", error);
+            return "Erreur lors de la génération de l'audit.";
+        } finally {
+            set({ isLoading: false });
+        }
     }
 }));
