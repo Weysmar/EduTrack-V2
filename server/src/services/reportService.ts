@@ -62,7 +62,8 @@ export const reportService = {
             doc.fontSize(20).text(`Rapport Financier - ${monthName}`, { align: 'center' });
             doc.moveDown();
 
-            doc.fontSize(12).text(`Généré par FinanceTrack le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center', color: 'gray' });
+            // Fix: Use fillColor instead of deprecated color option in text
+            doc.fontSize(12).fillColor('gray').text(`Généré par FinanceTrack le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' });
             doc.moveDown(2);
 
             // Summary Box
