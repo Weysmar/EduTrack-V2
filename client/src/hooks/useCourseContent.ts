@@ -51,7 +51,7 @@ export function useCourseContent(courseId: string): CourseContentHook {
 
     // 3. Aggregate All Content
     const allItems = useMemo(() => [
-        ...(items || []),
+        ...(items?.filter((i: any) => i.type !== 'summary') || []),
         ...(mindMaps?.map((m: any) => ({ ...m, type: 'mindmap', title: m.name })) || []),
         ...(flashcardSets?.map((f: any) => ({ ...f, type: 'flashcards', title: f.name })) || []),
         ...(quizzes?.map((q: any) => ({ ...q, type: 'quiz', title: q.name })) || []),
