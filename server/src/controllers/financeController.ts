@@ -413,6 +413,79 @@ export const generateAudit = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// Import Features
+import { parseCsv } from '../services/csvParserService';
+
+export const uploadTransactions = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const profileId = req.user!.id;
+        const { accountId } = req.body; // Optional: Assign all to one account
+
+        // Determine File Type
+        const ext = req.file.originalname.split('.').pop()?.toLowerCase();
+        let transactions: any[] = [];
+
+        if (ext === 'csv') {
+            transactions = await parseCsv(req.file.buffer);
+        } else {
+            return res.status(400).json({ error: "Unsupported file format. Only CSV supported for now." });
+        }
+
+        // Deduplication & Insertion Logic
+        let importedCount = 0;
+        let duplicateCount = 0;
+
+        for (const tx of transactions) {
+            try {
+                // Determine Amount Sign if needed (Parser mostly handles it, but verify)
+                const amount = new Prisma.Decimal(tx.amount);
+
+                await prisma.transaction.create({
+                    data: {
+                        profileId,
+                        accountId: accountId || undefined,
+                        date: tx.date,
+                        description: tx.description,
+                        amount: amount,
+                        type: tx.type,
+                        // Unique Constraint will trigger on duplicates
+                    }
+                });
+                importedCount++;
+
+                // Update Balance if account linked
+                if (accountId) {
+                    await prisma.financialAccount.update({
+                        where: { id: accountId },
+                        data: { balance: { increment: amount } }
+                    });
+                }
+
+            } catch (e: any) {
+                if (e.code === 'P2002') { // Unique constraint violation
+                    duplicateCount++;
+                } else {
+                    console.error("Import Error Row:", e);
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            message: "Import processing complete",
+            stats: { total: transactions.length, imported: importedCount, duplicates: duplicateCount }
+        });
+
+    } catch (error) {
+        console.error("Upload Error:", error);
+        res.status(500).json({ error: 'Failed to process upload' });
+    }
+};
+
 export const scanReceipt = async (req: AuthRequest, res: Response) => {
     // Placeholder - OCR logic usually client-side (Tesseract) or backend with specialized lib
     // Implementation planned for client-side Tesseract.js in Phase 4.

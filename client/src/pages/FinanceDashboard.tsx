@@ -34,12 +34,14 @@ export default function FinanceDashboard() {
         getCategoryBreakdown,
         deleteTransaction,
         generateLocalAudit,
-        enrichTransaction
+        enrichTransaction,
+        importTransactions // New action
     } = useFinanceStore();
 
     const { t } = useLanguage();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
     const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
