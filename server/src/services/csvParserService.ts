@@ -10,20 +10,23 @@ export interface ParsedTransaction {
 }
 
 export const parseCsv = async (fileBuffer: Buffer): Promise<ParsedTransaction[]> => {
-    // Try to detect encoding or fallback to utf-8. 
-    // Ideally we'd use iconv-lite but standard library only supports utf8/latin1 (binary)
-    // For now assuming UTF-8 but stripping BOM if present
+    // UTF-8 with BOM Handling
     let csvString = fileBuffer.toString('utf-8');
     if (csvString.charCodeAt(0) === 0xFEFF) {
         csvString = csvString.slice(1);
     }
 
     return new Promise((resolve, reject) => {
+        // First, detecting presence of header
+        // Heuristic: Does the first row contain date/amount keywords?
+        const firstLine = csvString.split('\n')[0].toLowerCase();
+        const hasHeader = firstLine.includes('date') || firstLine.includes('montant') || firstLine.includes('libell');
+
         Papa.parse(csvString, {
-            header: true,
-            skipEmptyLines: 'greedy', // Better than true
+            header: hasHeader,
+            skipEmptyLines: 'greedy',
             delimiter: "", // Auto-detect
-            transformHeader: (h) => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""), // Remove accents for safer matching
+            transformHeader: hasHeader ? (h) => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : undefined,
 
             complete: (results) => {
                 const transactions: ParsedTransaction[] = [];
@@ -31,17 +34,15 @@ export const parseCsv = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
 
                 results.data.forEach((row: any) => {
                     try {
-                        const tx = mapRowToTransaction(row);
+                        const tx = hasHeader ? mapRowToTransaction(row) : mapIndexToTransaction(row as string[]);
                         if (tx) transactions.push(tx);
                     } catch (e) {
                         errors.push(e);
                     }
                 });
 
-                if (transactions.length === 0 && results.data.length > 0) {
-                    // Fallback: try headerless detection or different logic?
-                    // For now, strict mapping
-                    reject(new Error("Aucune transaction valide trouvée. Vérifiez le format CSV (Date;Description;Montant)."));
+                if (transactions.length === 0) {
+                    reject(new Error("Aucune transaction valide trouvée. Vérifiez que le fichier est un CSV valide (LCL, Bourso, etc.)."));
                 } else {
                     resolve(transactions);
                 }
@@ -50,6 +51,52 @@ export const parseCsv = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
         });
     });
 };
+
+function mapIndexToTransaction(row: string[]): ParsedTransaction | null {
+    // Strategy: Detect Date and Amount columns dynamically or use fixed LCL pattern
+    if (!row || row.length < 2) return null;
+
+    // LCL Export Format often like: 
+    // 0: Date (DD/MM/YYYY)
+    // 1: Amount (1234,56)
+    // 2: Type (Virement, Carte...)
+    // 3: Empty?
+    // 4: Description 1 ? 
+    // 5: Description 2 ?
+
+    // 1. Find Date (Column 0 usually)
+    const date = parseDate(row[0]);
+    if (!date || isNaN(date.getTime())) return null;
+
+    // 2. Find Amount (Column 1 usually)
+    let amount = parseAmount(row[1]);
+    if (isNaN(amount)) return null;
+
+    // 3. Find Description
+    // In the sample:
+    // Row 3: ...;;COTISATION... (Col 4)
+    // Row 4: ...;;;VIREMENT... (Col 5?)
+    // Row 23: ...;;Revolut... (Col 4)
+    // Let's concatenate meaningful columns for description
+    // Avoid columns that are just Date/Amount/Type
+    // Indices 4, 5, 6 seem to contain description parts in LCL sample
+    const potentialDescIds = [2, 3, 4, 5, 6, 7];
+    let description = potentialDescIds
+        .map(i => row[i])
+        .filter(s => s && s.trim().length > 0 && s !== row[1]) // Avoid repeating amount if accidentally matched
+        .join(' ');
+
+    if (!description || description.trim() === '') description = row[2] || "Import LCL"; // Fallback to Type
+
+    const type = amount >= 0 ? 'INCOME' : 'EXPENSE';
+
+    return {
+        date,
+        description: description.replace(/\s+/g, ' ').trim(),
+        amount: new Prisma.Decimal(amount).toNumber(),
+        type
+    };
+}
 
 function mapRowToTransaction(row: any): ParsedTransaction | null {
     // Helper to find value by fuzzy key match
@@ -111,6 +158,7 @@ function mapRowToTransaction(row: any): ParsedTransaction | null {
 }
 
 function parseAmount(str: string): number {
+    if (!str) return 0;
     // Handle "1 200,50" -> 1200.50 (French format)
     // Handle "1,200.50" -> 1200.50 (US format)
 
@@ -135,6 +183,7 @@ function parseAmount(str: string): number {
 }
 
 function parseDate(dateStr: string): Date {
+    if (!dateStr) return new Date('Invalid');
     // Handle DD/MM/YYYY or YYYY-MM-DD
     if (dateStr.includes('/')) {
         const [day, month, year] = dateStr.split('/');
