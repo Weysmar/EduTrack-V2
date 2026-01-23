@@ -269,6 +269,13 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
             }
         });
 
+        // C. Delete FlashcardSets linked to this item
+        await prisma.flashcardSet.deleteMany({
+            where: {
+                itemId: { in: validIds }
+            }
+        });
+
         // 4. Delete from DB
         await prisma.item.deleteMany({
             where: {
