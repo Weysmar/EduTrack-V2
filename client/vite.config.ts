@@ -23,24 +23,26 @@ export default defineConfig({
     build: {
         target: 'esnext',
         rollupOptions: {
-            manualChunks: {
-                ui: ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
-                // Separate heavy document processing libraries
-                'docx-processing': ['mammoth', 'docx-preview', 'docx'],
-                // Separate PDF processing (already lazy in extractText but main.tsx has worker)
-                'pdf-lib': ['pdfjs-dist', 'react-pdf'],
-                // ReactFlow for knowledge maps
-                'reactflow-lib': ['reactflow', '@xyflow/react'],
-                // TipTap editor
-                'editor-lib': [
-                    '@tiptap/react',
-                    '@tiptap/starter-kit',
-                    '@tiptap/extension-color',
-                    '@tiptap/extension-highlight',
-                    '@tiptap/extension-text-style',
-                    '@tiptap/extension-underline',
-                    '@tiptap/extension-placeholder'
-                ]
+            output: {
+                manualChunks: {
+                    ui: ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
+                    // Separate heavy document processing libraries
+                    'docx-processing': ['mammoth', 'docx-preview', 'docx'],
+                    // Separate PDF processing (already lazy in extractText but main.tsx has worker)
+                    'pdf-lib': ['pdfjs-dist', 'react-pdf'],
+                    // ReactFlow for knowledge maps
+                    'reactflow-lib': ['reactflow', '@xyflow/react'],
+                    // TipTap editor
+                    'editor-lib': [
+                        '@tiptap/react',
+                        '@tiptap/starter-kit',
+                        '@tiptap/extension-color',
+                        '@tiptap/extension-highlight',
+                        '@tiptap/extension-text-style',
+                        '@tiptap/extension-underline',
+                        '@tiptap/extension-placeholder'
+                    ]
+                }
             }
         },
     },
