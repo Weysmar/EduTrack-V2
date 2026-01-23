@@ -148,6 +148,17 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         }
     },
 
+    importTransactions: async (file: File) => {
+        try {
+            await financeApi.uploadTransactions(file); // Ensure API has this method exposed
+            // Fetch is handled by caller or we can do it here
+            // get().fetchTransactions(); 
+        } catch (error) {
+            console.error("Import error", error);
+            throw error; // Re-throw to let UI show error
+        }
+    },
+
     // Rename needed? Kept 'generateLocalAudit' for compat, but now fetches from store which matches API state
     generateLocalAudit: async () => {
         try {
