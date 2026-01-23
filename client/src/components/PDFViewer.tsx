@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react'
 import { useLanguage } from './language-provider'
@@ -16,6 +16,23 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
     const [isZenMode, setIsZenMode] = useState(false)
+    const [pageWidth, setPageWidth] = useState<number | null>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!containerRef.current) return
+
+        const observer = new ResizeObserver((entries) => {
+            const entry = entries[0]
+            if (entry) {
+                // Subtracting a small buffer to avoid horizontal scrollbar appearing due to rounding issues
+                setPageWidth(entry.contentRect.width - 2)
+            }
+        })
+
+        observer.observe(containerRef.current)
+        return () => observer.disconnect()
+    }, [])
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages)
@@ -73,7 +90,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
 
             {/* PDF Document - Scrollable Area */}
             <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-4">
-                <div className="flex flex-col items-center gap-4 min-h-full">
+                <div ref={containerRef} className="flex flex-col items-center gap-4 min-h-full w-full">
                     <Document
                         file={url}
                         onLoadSuccess={onDocumentLoadSuccess}
@@ -96,6 +113,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                                 key={`page_${index + 1}`}
                                 pageNumber={index + 1}
                                 scale={scale}
+                                width={pageWidth || undefined}
                                 renderTextLayer={false}
                                 renderAnnotationLayer={false}
                                 className="shadow-lg bg-white"
