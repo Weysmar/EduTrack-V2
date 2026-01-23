@@ -260,7 +260,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     🤖 Perplexity Pro (Sonar)
                                                 </button>
                                                 <button
-                                                    onClick={() => { setProvider('google'); setModel('gemini-2.0-flash-exp') }}
+                                                    onClick={() => { setProvider('google'); setModel('gemini-2.5-flash') }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
                                                         provider === 'google'
@@ -268,7 +268,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                             : "hover:bg-accent border-muted"
                                                     )}
                                                 >
-                                                    ⚡ Google Gemini 2.0 Flash
+                                                    ⚡ Google Gemini 2.5
                                                 </button>
                                             </div>
                                         </div>
@@ -282,9 +282,12 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     onChange={(e) => setModel(e.target.value)}
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
-                                                    <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Rapide)</option>
+                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommandé)</option>
+                                                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Rapide)</option>
+                                                    <option value="gemini-3-flash">Gemini 3.0 Flash (Preview)</option>
+                                                    <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
                                                     <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
-                                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
+                                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Expert)</option>
                                                 </select>
                                             </div>
                                         )}
