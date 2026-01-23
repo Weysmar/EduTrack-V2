@@ -30,7 +30,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
-    const [model, setModel] = useState('gemini-1.5-flash');
+    const [model, setModel] = useState('gemini-2.0-flash-exp');
 
     useEffect(() => {
         if (isOpen) {
@@ -344,7 +344,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                         >
                                             <optgroup label="Google Gemini">
-                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash-Exp (Fast)</option>
                                                 <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
                                                 <option value="gemini-2.0-flash">Gemini 2.0 Flash (New)</option>
                                             </optgroup>

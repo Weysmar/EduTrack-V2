@@ -9,7 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
         // Stable models (2026)
-        'gemini-1.5-flash': 'gemini-1.5-flash',
+        'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
         'gemini-1.5-pro': 'gemini-1.5-pro',
         'gemini-2.0-flash': 'gemini-2.0-flash',
         'gemini-2.5-flash': 'gemini-2.5-flash',
@@ -24,7 +24,7 @@ const mapModelName = (model: string): string => {
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash-exp', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         if (provider === 'perplexity') {
             const effectiveKey = apiKey || process.env.PERPLEXITY_API_KEY;
             if (!effectiveKey) throw new Error('No Perplexity API key provided.');
@@ -119,7 +119,7 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash-exp', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
         if (provider === 'perplexity') {
             const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, apiKey, 'perplexity');
             // Clean markdown json blocks if present

@@ -109,7 +109,7 @@ export const generatePlan = async (req: AuthRequest, res: Response) => {
 
         // 3. Call AI
         console.log(`[Planning] Calling AI service (${provider})...`);
-        const model = provider === 'perplexity' ? 'llama-3.1-sonar-small-128k-online' : 'gemini-1.5-flash';
+        const model = provider === 'perplexity' ? 'llama-3.1-sonar-small-128k-online' : 'gemini-2.0-flash-exp';
 
         // Fix: Cast provider to expected type
         const aiProvider = provider as 'google' | 'perplexity';
