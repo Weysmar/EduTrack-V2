@@ -240,7 +240,9 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
         });
 
         if (items.length === 0) {
-            return res.status(404).json({ message: 'No items found matching criteria' });
+            console.log("Bulk delete: Items not found in DB, assuming already deleted.");
+            // Return success to allow frontend to update/invalidate cache
+            return res.json({ message: 'Items already deleted', count: 0 });
         }
 
         const validIds = items.map(i => i.id);
@@ -253,9 +255,17 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
         await Promise.allSettled(deletePromises);
 
         // 3. Cascade delete summaries
+        // A. Delete summaries where this item was the GENERATED item (e.g. deleting a Note/Summary)
         await prisma.summary.deleteMany({
             where: {
                 generatedItemId: { in: validIds }
+            }
+        });
+
+        // B. Delete summaries where this item was the SOURCE item (e.g. deleting a PDF)
+        await prisma.summary.deleteMany({
+            where: {
+                itemId: { in: validIds }
             }
         });
 
