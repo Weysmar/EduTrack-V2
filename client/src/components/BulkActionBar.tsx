@@ -1,4 +1,4 @@
-import { Trash2, X, CheckSquare, Loader2, Brain, ChevronDown } from 'lucide-react'
+import { Trash2, X, CheckSquare, Loader2, Brain, ChevronDown, FileText } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { createPortal } from 'react-dom'
 import { useState, useRef, useEffect } from 'react'
@@ -34,7 +34,7 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
     }
 
     return createPortal(
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-foreground text-background px-6 py-3 rounded-full shadow-2xl animate-in slide-in-from-bottom-8 duration-200">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 md:gap-4 bg-foreground text-background px-3 md:px-6 py-3 rounded-full shadow-2xl animate-in slide-in-from-bottom-8 duration-200 max-w-[95vw]">
             <div className="flex items-center gap-3 border-r border-background/20 pr-4">
                 <div className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full min-w-[1.5rem] text-center">
                     {selectedCount}
@@ -76,7 +76,7 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
                                     onClick={() => handleGenerateClick('summary')}
                                     className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
                                 >
-                                    <Trash2 className="h-4 w-4" />
+                                    <FileText className="h-4 w-4" />
                                     {t('bulk.generate.summary')}
                                 </button>
                             </div>
