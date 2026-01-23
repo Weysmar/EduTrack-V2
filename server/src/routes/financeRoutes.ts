@@ -10,8 +10,11 @@ router.post('/accounts', auth, financeController.createAccount);
 router.put('/accounts/:id', auth, financeController.updateAccount);
 router.delete('/accounts/:id', auth, financeController.deleteAccount);
 
+import { upload } from '../middleware/upload';
+
 // Transactions
 router.get('/transactions', auth, financeController.getTransactions);
+router.post('/transactions/upload', auth, upload.single('file'), financeController.uploadTransactions);
 router.post('/transactions', auth, financeController.createTransaction);
 router.put('/transactions/:id', auth, financeController.updateTransaction);
 router.delete('/transactions/:id', auth, financeController.deleteTransaction);

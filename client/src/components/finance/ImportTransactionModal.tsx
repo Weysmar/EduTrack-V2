@@ -17,6 +17,14 @@ export function ImportTransactionModal({ isOpen, onClose, onImport }: ImportTran
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Reset state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setFile(null);
+            setIsUploading(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleDragOver = (e: React.DragEvent) => {
