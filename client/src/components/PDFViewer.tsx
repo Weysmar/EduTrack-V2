@@ -49,25 +49,25 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     return (
         <div className={`w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative flex flex-col ${className}`}>
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-3 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium px-2">
+            <div className="flex items-center justify-between p-2 md:p-3 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10 gap-2">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                    <div className="text-xs md:text-sm font-medium px-1 md:px-2 truncate">
                         {loading ? 'Chargement...' : `${numPages} pages`}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                     <button
                         onClick={zoomOut}
-                        className="p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
                         title={t('action.zoomOut')}
                     >
                         <ZoomOut className="h-4 w-4" />
                     </button>
-                    <span className="text-sm font-medium px-2">{Math.round(scale * 100)}%</span>
+                    <span className="text-xs md:text-sm font-medium px-1 md:px-2 min-w-[3ch]">{Math.round(scale * 100)}%</span>
                     <button
                         onClick={zoomIn}
-                        className="p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
                         title={t('action.zoomIn')}
                     >
                         <ZoomIn className="h-4 w-4" />
