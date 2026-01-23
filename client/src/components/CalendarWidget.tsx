@@ -66,7 +66,26 @@ export function CalendarWidget() {
     const weekStart = startOfWeek(currentDate, { locale })
     const weekEnd = endOfWeek(currentDate, { locale })
 
-    const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
+    const allDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
+
+    // Mobile: Show only 3 days (today + 2 next days)
+    // Desktop: Show full week (7 days)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768)
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
+
+    const days = isMobile
+        ? (() => {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            return eachDayOfInterval({ start: today, end: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000) })
+        })()
+        : allDays
+
     const weekDays = days.map(d => format(d, 'EEEE', { locale }))
 
     return (
@@ -104,9 +123,9 @@ export function CalendarWidget() {
                 </div>
             )}
 
-            {/* Week Grid - Horizontal scroll on mobile */}
+            {/* Week Grid - 3 days on mobile, 7 days on desktop */}
             <div className="flex-1 p-2 md:p-4 overflow-x-auto">
-                <div className="grid grid-cols-7 gap-1 md:gap-4 w-full h-full">
+                <div className="grid grid-cols-3 md:grid-cols-7 gap-1 md:gap-4 w-full h-full">
                     {days.map((day, idx) => {
                         const dayEvents = events.filter(e => {
                             if (!e.start) return false
