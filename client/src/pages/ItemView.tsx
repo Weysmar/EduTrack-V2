@@ -742,17 +742,18 @@ export function ItemView() {
                     )}
 
                     {/* 2. MAIN ACTION: AI (Center, Prominent) */}
-                    <div className="relative -top-5">
+                    <div className="flex items-center justify-center">
                         <button
                             onClick={() => setIsAIMenuOpen(true)}
                             disabled={isExtracting}
-                            className="h-14 w-14 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30 flex items-center justify-center text-white touch-manipulation transform active:scale-95 transition-all"
+                            className="flex flex-col items-center gap-1 p-2 text-violet-500 active:text-violet-700 touch-manipulation"
                         >
                             {isExtracting ? (
                                 <Loader2 className="h-6 w-6 animate-spin" />
                             ) : (
                                 <Sparkles className="h-6 w-6" />
                             )}
+                            <span className="text-[10px] font-medium">IA</span>
                         </button>
                     </div>
 
