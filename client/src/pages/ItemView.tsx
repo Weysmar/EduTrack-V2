@@ -67,7 +67,6 @@ export function ItemView() {
     const [isAIMenuOpen, setIsAIMenuOpen] = useState(false) // Manual control for mobile compatibility
     const [mobileTab, setMobileTab] = useState<'pdf' | 'summary'>('pdf')
 
-    const [isPdfFullscreen, setIsPdfFullscreen] = useState(false)
 
     // Inline Edit Mode
     const [isEditMode, setIsEditMode] = useState(false)
@@ -126,8 +125,6 @@ export function ItemView() {
             if (e.key === 'Escape') {
                 if (isImageFullscreen) {
                     setIsImageFullscreen(false)
-                } else if (isPdfFullscreen) {
-                    setIsPdfFullscreen(false)
                 } else {
                     setIsFocusMode(false)
                 }
@@ -135,7 +132,7 @@ export function ItemView() {
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isImageFullscreen, isPdfFullscreen])
+    }, [isImageFullscreen])
 
     // Summary Hook
     const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError } = useSummary(id, item?.type || 'note', undefined, courseId)
@@ -337,85 +334,7 @@ export function ItemView() {
 
     return (
         <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-right-5 duration-300">
-            {/* HOISTED Fullscreen Modal (Works for ALL file types now) */}
-            {isPdfFullscreen && (
-                <div className="fixed inset-0 z-[999] bg-black flex flex-col animate-in fade-in duration-200">
-                    {/* Toolbar */}
-                    <div className="h-14 bg-black/90 border-b border-white/10 flex items-center justify-between px-4 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-white font-medium text-sm">{item?.title || t('document.fullscreen')}</h3>
-                        </div>
-                        <button
-                            onClick={() => setIsPdfFullscreen(false)}
-                            className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md transition-colors"
-                        >
-                            <Minimize className="h-4 w-4" />
-                            <span className="text-sm font-medium hidden sm:inline">{t('action.close')}</span>
-                        </button>
-                    </div>
-                    {/* Content Area */}
-                    <div className="flex-1 overflow-hidden">
-                        {isOffice ? (
-                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
-                                <OfficeViewer
-                                    url={pdfUrl || ''}
-                                    storageKey={item?.storageKey}
-                                    className="h-full w-full"
-                                    engine={officeEngine}
-                                    onEngineChange={setOfficeEngine}
-                                />
-                            </div>
-                        ) : isImage ? (
-                            <div className="w-full h-full flex items-center justify-center bg-black p-4 relative">
-                                <img
-                                    src={pdfUrl || ''}
-                                    alt={item?.title || "Image"}
-                                    className="max-w-full max-h-full object-contain"
-                                />
-                            </div>
-                        ) : (isText || isMarkdown) ? (
-                            <div className="w-full h-full bg-card p-4 md:p-8 overflow-auto shadow-2xl">
-                                <TextViewer
-                                    url={pdfUrl || ''}
-                                    fileName={item?.fileName}
-                                    isMarkdown={isMarkdown}
-                                    className="min-h-full"
-                                />
-                            </div>
-                        ) : (
-                            <div className="w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden relative">
-                                {/* Enhanced Mobile PDF Handling */}
-                                {(() => {
-                                    // Detect if mobile user agent (simple check)
-                                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-                                    // Option 1: Use Google Docs Viewer for mobile (very reliable)
-                                    if (isMobile) {
-                                        return (
-                                            <iframe
-                                                src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl || '')}&embedded=true`}
-                                                title={t('document.fullscreen')}
-                                                className="w-full h-full border-0 bg-white"
-                                                allowFullScreen
-                                            />
-                                        );
-                                    }
-
-                                    // Option 2: Desktop PDF.js / Native
-                                    return (
-                                        <iframe
-                                            src={`${pdfUrl}#view=FitH`}
-                                            title={t('document.fullscreen')}
-                                            className="w-full h-full border-0 bg-white"
-                                            allowFullScreen
-                                        />
-                                    );
-                                })()}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            {/* HOISTED Fullscreen Modal REMOVED - Unified with Focus Mode */}
 
             <SummaryResultModal
                 summary={summary}
@@ -575,7 +494,10 @@ export function ItemView() {
                     {/* Universal Fullscreen Button - Available for all items with files */}
                     {pdfUrl && (
                         <button
-                            onClick={() => setIsPdfFullscreen(true)}
+                            onClick={() => {
+                                setMobileTab('pdf')
+                                setIsFocusMode(true)
+                            }}
                             className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                             title={t('action.fullscreen')}
                         >
@@ -917,13 +839,14 @@ export function ItemView() {
                             </div>
                         )}
 
-                        <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "grid md:grid-cols-2 gap-0 overflow-hidden" : "block")}>
+                        <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden" : "block")}>
 
                             {/* ===== ORIGINAL CONTENT VIEW ===== */}
                             <div className={cn(
-                                (!showSummary || isFocusMode) ? "block" : "hidden",
-                                (isFocusMode && mobileTab === 'summary') ? "hidden md:block" : "",
-                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden w-full"
+                                "w-full transition-all",
+                                // Logic: Show if (Standard Mode AND !ShowSummary) OR (FocusMode AND Tab == 'pdf')
+                                ((!showSummary && !isFocusMode) || (isFocusMode && mobileTab === 'pdf')) ? "block" : "hidden",
+                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden"
                             )}>
 
                                 {/* PDF VIEWER Integration */}
@@ -987,65 +910,6 @@ export function ItemView() {
                                                         <div className="block lg:hidden">
                                                             <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />
                                                         </div>
-
-                                                        {/* PDF Fullscreen Modal (Logic remains) */}
-                                                        {/* OLD Fullscreen Modal (Disabled - Moved to Root) */}
-                                                        {false && isPdfFullscreen && (
-                                                            <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col animate-in fade-in duration-200">
-                                                                <div className="absolute top-4 right-6 z-10 flex gap-2">
-                                                                    <button
-                                                                        onClick={() => setIsPdfFullscreen(false)}
-                                                                        className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 text-white rounded-md backdrop-blur-sm transition-colors"
-                                                                    >
-                                                                        <Minimize className="h-4 w-4" />
-                                                                        <span className="text-sm font-medium hidden sm:inline">Fermer</span>
-                                                                    </button>
-                                                                </div>
-                                                                <div className="flex-1 w-full h-full overflow-hidden flex items-center justify-center p-4">
-                                                                    {isOffice ? (
-                                                                        <div className="w-full h-full bg-slate-100 dark:bg-slate-900 p-4 md:p-8 overflow-hidden">
-                                                                            <OfficeViewer
-                                                                                url={pdfUrl}
-                                                                                storageKey={item.storageKey}
-                                                                                className="h-full w-full shadow-2xl"
-                                                                                engine={officeEngine}
-                                                                                onEngineChange={setOfficeEngine}
-                                                                            />
-                                                                        </div>
-                                                                    ) : isImage ? (
-                                                                        <div className="w-full h-full flex items-center justify-center bg-black/90 p-4">
-                                                                            <img
-                                                                                src={pdfUrl}
-                                                                                alt={item.title}
-                                                                                className="max-w-full max-h-full object-contain"
-                                                                            />
-                                                                        </div>
-                                                                    ) : (isText || isMarkdown) ? (
-                                                                        <div className="w-full h-full bg-white dark:bg-zinc-950 p-8 overflow-auto max-w-4xl mx-auto my-8 rounded-lg shadow-xl">
-                                                                            <TextViewer
-                                                                                url={pdfUrl}
-                                                                                fileName={item.fileName}
-                                                                                isMarkdown={isMarkdown}
-                                                                                className="min-h-full"
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="w-full h-full">
-                                                                            {/* Fullscreen PDF: Iframe on Desktop, Viewer on Mobile */}
-                                                                            <iframe
-                                                                                src={`${pdfUrl}#view=FitH`}
-                                                                                title="PDF Document Fullscreen"
-                                                                                className="w-full h-full border-0 rounded-lg bg-white hidden lg:block"
-                                                                                allowFullScreen
-                                                                            />
-                                                                            <div className="block lg:hidden w-full h-full bg-slate-100 dark:bg-slate-900 overflow-auto">
-                                                                                <PDFViewer url={pdfUrl} className="min-h-full" />
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </>
                                                 );
                                             }
@@ -1132,7 +996,8 @@ export function ItemView() {
                             {/* ===== SUMMARY VIEW ===== */}
                             {showSummary && (
                                 <div className={cn(
-                                    (isFocusMode && mobileTab === 'pdf') ? "hidden md:block" : "block",
+                                    // Logic: Show if (Standard Mode) OR (FocusMode AND Tab == 'summary')
+                                    (isFocusMode && mobileTab !== 'summary') ? "hidden" : "block w-full",
                                     isFocusMode ? "h-full overflow-y-auto" : ""
                                 )}>
                                     <div className={cn(
@@ -1170,7 +1035,10 @@ export function ItemView() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => setIsFocusMode(!isFocusMode)}
+                                                    onClick={() => {
+                                                        setMobileTab('summary')
+                                                        setIsFocusMode(!isFocusMode)
+                                                    }}
                                                     className={cn(
                                                         "text-xs border px-3 py-1.5 rounded-md transition-all flex items-center gap-2",
                                                         isFocusMode
