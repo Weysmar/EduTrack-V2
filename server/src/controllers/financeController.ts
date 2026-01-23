@@ -337,35 +337,26 @@ export const updateBudget = async (req: AuthRequest, res: Response) => {
 // AI Features
 export const enrichTransaction = async (req: AuthRequest, res: Response) => {
     try {
-        const { id } = req.params;
-        const profileId = req.user!.id;
+        const { description, amount } = req.body;
 
-        const transaction = await prisma.transaction.findFirst({ where: { id, profileId } });
-        if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+        if (!description || !amount) {
+            return res.status(400).json({ error: 'Description and amount required in body' });
+        }
 
-        const prompt = `Analyze this expense: "${transaction.description}" amount ${Math.abs(transaction.amount)} EUR. 
+        const prompt = `Analyze this expense: "${description}" amount ${Math.abs(parseFloat(amount))} EUR. 
         Suggestion in French JSON format: { "betterOffer": "alternative service name", "savings": estimated_monthly_savings_number, "advice": "short advice string" }.
         If no specific alternative, provide general advice.`;
 
-        // Assuming aiService can handle this. Fallback if not implemented.
         let result;
         try {
-            // Mocking provider selection if needed
             result = await aiService.generateJSON(prompt, "You are a financial advisor helper.");
         } catch (e) {
             console.warn("AI enrichment failed, using mock", e);
             result = { betterOffer: null, savings: 0, advice: "Service indisponible" };
         }
 
-        const updated = await prisma.transaction.update({
-            where: { id },
-            data: {
-                aiEnriched: true,
-                aiSuggestions: result
-            }
-        });
-
-        res.json(updated);
+        // Return result directly to client (Local-First pattern)
+        res.json({ success: true, suggestions: result });
     } catch (error) {
         res.status(500).json({ error: 'Enrichment failed' });
     }
@@ -373,27 +364,24 @@ export const enrichTransaction = async (req: AuthRequest, res: Response) => {
 
 export const generateAudit = async (req: AuthRequest, res: Response) => {
     try {
-        const profileId = req.user!.id;
-        const { startDate, endDate } = req.body;
+        const { transactions } = req.body;
 
-        const transactions = await prisma.transaction.findMany({
-            where: {
-                profileId,
-                date: {
-                    gte: new Date(startDate),
-                    lte: new Date(endDate)
-                }
-            },
-            include: { category: true }
-        });
+        if (!transactions || !Array.isArray(transactions)) {
+            return res.status(400).json({ error: "Transactions array required" });
+        }
 
-        if (transactions.length === 0) return res.json({ audit: "Aucune transaction sur cette période." });
+        if (transactions.length === 0) return res.json({ audit: "Aucune transaction à analyser." });
 
-        const summary = transactions.map(t =>
-            `${t.date.toISOString().split('T')[0]}: ${t.description} (${t.amount}€) [${t.category?.name}]`
+        const summary = transactions.map((t: any) =>
+            `${new Date(t.date).toISOString().split('T')[0]}: ${t.description} (${t.amount}€) [${t.category || 'Uncategorized'}]`
         ).join('\n');
 
-        const prompt = `Rédige un audit financier concis et bienveillant (style coach) basé sur ces transactions :\n${summary}\n. Fais ressortir les points positifs et les axes d'amélioration.`;
+        const prompt = `Rédige un audit financier concis et bienveillant (style coach) basé sur ces transactions :\n${summary}\n. 
+        Structure:
+        1. 📊 Analyse Globale
+        2. 🚨 Points d'Attention (Dépenses superflues)
+        3. 💡 Conseils d'Optimisation
+        Mets en page avec du Markdown élégant.`;
 
         const audit = await aiService.generateText(prompt, "Tu es un expert en finances personnelles.");
 
