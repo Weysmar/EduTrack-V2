@@ -89,10 +89,10 @@ export default function FinanceDashboard() {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Placeholder import handler - will connect to backend API later
-    const handleImport = async (file: File) => {
+    const handleImport = async (file: File): Promise<void> => {
         // TODO: Call API endpoint
         console.log("Importing file:", file.name);
-        return new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
     };
 
     return (
