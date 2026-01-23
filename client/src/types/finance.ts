@@ -1,53 +1,47 @@
-export type TransactionType = 'INCOME' | 'EXPENSE';
-
 export interface FinancialAccount {
     id: string;
     profileId: string;
     name: string;
-    type: string;
+    type: 'CHECKING' | 'SAVINGS' | 'CASH';
     balance: number;
+    icon?: string;
+    color: string;
     createdAt: Date;
     updatedAt: Date;
-}
-
-export interface TransactionCategory {
-    id: string;
-    name: string;
-    type: string;
-    icon?: string | null;
-    color?: string | null;
 }
 
 export interface Transaction {
     id: string;
     profileId: string;
-    accountId?: string | null;
-    account?: FinancialAccount | null;
-
+    accountId?: string;
     amount: number;
-    type: TransactionType;
+    type: 'INCOME' | 'EXPENSE';
     date: Date;
-    description?: string | null;
-
-    categoryId?: string | null;
-    category?: TransactionCategory | null;
-
+    description?: string;
+    categoryId?: string;
+    receiptUrl?: string;
     isRecurring: boolean;
-    recurringRule?: string | null;
-
+    recurringRule?: string;
+    aiEnriched: boolean;
+    aiSuggestions?: any;
     createdAt: Date;
-    updatedAt: Date;
+}
+
+export interface TransactionCategory {
+    id: string;
+    name: string;
+    type: 'INCOME' | 'EXPENSE';
+    icon?: string;
+    color?: string;
+    parentId?: string;
 }
 
 export interface Budget {
     id: string;
     profileId: string;
     categoryId: string;
-    category: TransactionCategory;
-
     amount: number;
-    period: string; // "MONTHLY"
-
-    createdAt: Date;
-    updatedAt: Date;
+    period: 'MONTHLY' | 'WEEKLY' | 'YEARLY';
+    startDate: Date;
+    endDate?: Date;
 }
