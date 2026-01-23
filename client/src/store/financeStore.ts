@@ -62,7 +62,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             const parsedData = data.map(t => ({
                 ...t,
                 date: new Date(t.date),
-                createdAt: new Date(t.createdAt)
+                createdAt: new Date(t.createdAt),
+                amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount)
             }));
 
             set({ transactions: parsedData, isLoading: false });
