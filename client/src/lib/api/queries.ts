@@ -149,6 +149,10 @@ export const summaryQueries = {
     save: async (data: any) => {
         const { data: res } = await apiClient.post('/summaries', data);
         return res;
+    },
+    delete: async (id: string) => {
+        const { data } = await apiClient.delete(`/summaries/${id}`);
+        return data;
     }
 };
 

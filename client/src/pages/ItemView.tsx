@@ -340,6 +340,10 @@ export function ItemView() {
                 summary={summary}
                 isOpen={showSummaryModal}
                 onClose={() => setShowSummaryModal(false)}
+                onDelete={() => {
+                    remove()
+                    setShowSummaryModal(false)
+                }}
             />
             <SummaryOptionsModal
                 isOpen={isSummaryOptionsOpen}
