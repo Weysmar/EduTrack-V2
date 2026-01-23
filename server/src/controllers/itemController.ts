@@ -276,12 +276,34 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        // 4. Delete from DB
-        await prisma.item.deleteMany({
-            where: {
-                id: { in: validIds }
+        // 4. Delete from DB with Fallback Strategy
+        try {
+            await prisma.item.deleteMany({
+                where: {
+                    id: { in: validIds }
+                }
+            });
+        } catch (error) {
+            console.error("Bulk deleteMany failed, switching to sequential deletion:", error);
+            // Fallback: Delete one by one to isolate the problematic item
+            let deletedCount = 0;
+            const errors = [];
+
+            for (const id of validIds) {
+                try {
+                    await prisma.item.delete({ where: { id } });
+                    deletedCount++;
+                } catch (e: any) {
+                    console.error(`Failed to delete item ${id}:`, e.message);
+                    errors.push({ id, error: e.message });
+                }
             }
-        });
+
+            if (deletedCount === 0) {
+                throw new Error(`Failed to delete items. Errors: ${JSON.stringify(errors)}`);
+            }
+            console.log(`Sequential delete finished. Deleted: ${deletedCount}/${validIds.length}`);
+        }
 
         // 4. Notify client
         socketService.emitToProfile(req.user!.id, 'items:bulk-deleted', { ids: validIds });
