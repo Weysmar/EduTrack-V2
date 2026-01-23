@@ -256,7 +256,7 @@ model FinancialAccount {
   
   name      String   // "Compte Courant", "Livret A"
   type      String   // "CHECKING", "SAVINGS", "CASH"
-  balance   Float    @default(0)
+  balance   Decimal  @default(0) @db.Decimal(10, 2)
   icon      String?  // Emoji
   color     String   @default("#10b981")
   
@@ -276,10 +276,10 @@ model Transaction {
   accountId   String?
   account     FinancialAccount? @relation(fields: [accountId], references: [id])
   
-  amount      Float    // Positif = revenu, Négatif = dépense
+  amount      Decimal  @db.Decimal(10, 2) // Positif = revenu, Négatif = dépense
   type        String   // "INCOME", "EXPENSE"
   date        DateTime @default(now())
-  description String?
+  description String
   
   categoryId  String?
   category    TransactionCategory? @relation(fields: [categoryId], references: [id])
@@ -298,9 +298,30 @@ model Transaction {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  importId    String?
+  importLog   ImportLog? @relation(fields: [importId], references: [id])
   
   @@index([profileId, date])
   @@index([categoryId])
+  // Strict Deduplication Constraint
+  @@unique([profileId, accountId, date, amount, description, type], name: "unique_transaction")
+}
+
+model ImportLog {
+  id          String   @id @default(uuid())
+  profileId   String
+  filename    String
+  status      String   // "SUCCESS", "PARTIAL", "ERROR"
+  
+  totalRows   Int
+  imported    Int
+  duplicates  Int
+  errors      Int
+  
+  createdAt   DateTime @default(now())
+  
+  transactions Transaction[]
 }
 
 model TransactionCategory {
@@ -327,7 +348,7 @@ model Budget {
   categoryId  String
   category    TransactionCategory @relation(fields: [categoryId], references: [id])
   
-  amount      Float    // Montant limite
+  amount      Decimal  @db.Decimal(10, 2)    // Montant limite
   period      String   @default("MONTHLY") // "MONTHLY", "WEEKLY", "YEARLY"
   
   createdAt   DateTime @default(now())
