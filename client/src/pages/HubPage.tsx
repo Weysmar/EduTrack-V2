@@ -85,7 +85,10 @@ export function HubPage() {
 
                 {/* Footer Actions */}
                 <div className="flex justify-center gap-6 mt-12">
-                    <button className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm">
+                    <button
+                        onClick={() => navigate('/edu/settings')}
+                        className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
+                    >
                         <Settings className="h-4 w-4" /> Paramètres
                     </button>
                     <div className="w-px h-4 bg-border self-center" />
