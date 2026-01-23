@@ -1,4 +1,4 @@
-import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen, BrainCircuit } from 'lucide-react'
+import { Plus, FolderPlus, Settings, Trash2, Map as MapIcon, RotateCcw, PanelLeftClose, PanelLeftOpen, BrainCircuit, Wallet } from 'lucide-react'
 import { toast } from "sonner"
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -147,6 +147,18 @@ export function Sidebar() {
                             >
                                 <MapIcon className="h-4 w-4 shrink-0" />
                                 {!isCollapsed && <span className="text-sm font-medium">{t('board.mapTitle') || "Tableau d'Enquête"}</span>}
+                            </Link>
+
+                            <Link
+                                to="/finance"
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                                    isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                                )}
+                                title="FinanceTrack"
+                            >
+                                <Wallet className="h-4 w-4 shrink-0" />
+                                {!isCollapsed && <span className="text-sm font-medium">FinanceTrack</span>}
                             </Link>
                         </>
                     )}
