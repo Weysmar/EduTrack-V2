@@ -415,6 +415,7 @@ export const generateAudit = async (req: AuthRequest, res: Response) => {
 
 // Import Features
 import { parseCsv } from '../services/csvParserService';
+import { categorizerService } from '../services/categorizerService';
 
 export const uploadTransactions = async (req: AuthRequest, res: Response) => {
     try {
@@ -423,9 +424,17 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
         }
 
         const profileId = req.user!.id;
-        const { accountId } = req.body; // Optional: Assign all to one account
+        const { accountId } = req.body;
 
-        // Determine File Type
+        // 1. Fetch User Settings for API Key
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { settings: true }
+        });
+        const settings = profile?.settings as any || {};
+        const userApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+
+        // 2. Parse File
         const ext = req.file.originalname.split('.').pop()?.toLowerCase();
         let transactions: any[] = [];
 
@@ -435,14 +444,55 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: "Unsupported file format. Only CSV supported for now." });
         }
 
-        // Deduplication & Insertion Logic
+        // 3. AI Categorization (Batch)
+        let categoriesMap: Record<string, string> = {};
+        if (userApiKey || process.env.GEMINI_API_KEY) {
+            try {
+                // Prepare small batch for AI (Limit to 50 to avoid timeouts for now)
+                const toCategorize = transactions.slice(0, 50).map(t => ({
+                    description: t.description,
+                    amount: t.amount
+                }));
+
+                categoriesMap = await categorizerService.categorizeBatch(toCategorize, userApiKey);
+            } catch (e) {
+                console.warn("Auto-categorization skipped due to error:", e);
+            }
+        }
+
+        // 4. Get or Create Categories in DB
+        const existingCategories = await prisma.transactionCategory.findMany();
+        const categoryNameIdMap = new Map(existingCategories.map(c => [c.name.toLowerCase(), c.id]));
+
+        const getCategoryId = async (name: string): Promise<string | null> => {
+            const normalized = name.toLowerCase();
+            if (categoryNameIdMap.has(normalized)) return categoryNameIdMap.get(normalized)!;
+
+            try {
+                const newCat = await prisma.transactionCategory.create({
+                    data: { name: name, type: 'EXPENSE', icon: 'tag', color: '#94a3b8' }
+                });
+                categoryNameIdMap.set(normalized, newCat.id);
+                return newCat.id;
+            } catch (e) {
+                return null;
+            }
+        };
+
+        // 5. Deduplication & Insertion Logic
         let importedCount = 0;
         let duplicateCount = 0;
 
-        for (const tx of transactions) {
+        for (let i = 0; i < transactions.length; i++) {
+            const tx = transactions[i];
             try {
-                // Determine Amount Sign if needed (Parser mostly handles it, but verify)
                 const amount = new Prisma.Decimal(tx.amount);
+
+                // Determine Category
+                let categoryId = null;
+                if (categoriesMap[i]) {
+                    categoryId = await getCategoryId(categoriesMap[i]);
+                }
 
                 await prisma.transaction.create({
                     data: {
@@ -451,13 +501,12 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
                         date: tx.date,
                         description: tx.description,
                         amount: amount,
-                        type: tx.type,
-                        // Unique Constraint will trigger on duplicates
+                        type: tx.type, // Parser detected sign
+                        categoryId: categoryId
                     }
                 });
                 importedCount++;
 
-                // Update Balance if account linked
                 if (accountId) {
                     await prisma.financialAccount.update({
                         where: { id: accountId },
@@ -466,7 +515,8 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
                 }
 
             } catch (e: any) {
-                if (e.code === 'P2002') { // Unique constraint violation
+                if (e.code === 'P2002') {
+                    // Unique constraint violation - Skip
                     duplicateCount++;
                 } else {
                     console.error("Import Error Row:", e);
@@ -477,7 +527,12 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
         res.json({
             success: true,
             message: "Import processing complete",
-            stats: { total: transactions.length, imported: importedCount, duplicates: duplicateCount }
+            stats: {
+                total: transactions.length,
+                imported: importedCount,
+                duplicates: duplicateCount,
+                categorized: Object.keys(categoriesMap).length
+            }
         });
 
     } catch (error) {
