@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useFinanceStore } from '@/store/financeStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload } from 'lucide-react';
