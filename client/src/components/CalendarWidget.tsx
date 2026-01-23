@@ -125,7 +125,7 @@ export function CalendarWidget() {
                                     <div className="text-xs font-medium text-muted-foreground uppercase hidden md:block">{format(day, 'EEE', { locale })}</div>
                                     <div className="text-xs font-medium text-muted-foreground uppercase md:hidden">{format(day, 'EEEEE', { locale })}</div>
                                     <div className={cn(
-                                        "text-base md:text-lg font-bold w-7 h-7 md:w-8 md:h-8 mx-auto flex items-center justify-center rounded-full mt-1",
+                                        "text-lg md:text-lg font-bold w-8 h-8 md:w-8 md:h-8 mx-auto flex items-center justify-center rounded-full mt-1",
                                         isToday(day) && "bg-primary text-primary-foreground"
                                     )}>
                                         {format(day, 'd')}
@@ -150,7 +150,7 @@ export function CalendarWidget() {
                                     ))}
                                     {dayEvents.length === 0 && (
                                         <div className="flex-1 flex items-center justify-center">
-                                            <span className="text-[10px] text-muted-foreground/30 italic">{t('calendar.noEvents')}</span>
+                                            <span className="text-[10px] text-muted-foreground/30 italic hidden md:block">{t('calendar.noEvents')}</span>
                                         </div>
                                     )}
                                 </div>
