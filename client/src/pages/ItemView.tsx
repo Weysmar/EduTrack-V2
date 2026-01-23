@@ -498,10 +498,11 @@ export function ItemView() {
                                 setMobileTab('pdf')
                                 setIsFocusMode(true)
                             }}
+                            aria-label={t('action.fullscreen')}
                             className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
                             title={t('action.fullscreen')}
                         >
-                            <Maximize className="h-5 w-5" />
+                            <Maximize className="h-5 w-5" aria-hidden="true" />
                         </button>
                     )}
 

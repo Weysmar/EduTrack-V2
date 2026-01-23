@@ -49,34 +49,40 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
                     <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setIsGenerateMenuOpen(!isGenerateMenuOpen)}
+                            aria-label={t('bulk.generate')}
+                            aria-expanded={isGenerateMenuOpen}
+                            aria-haspopup="true"
                             className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary hover:text-primary-foreground rounded-md transition-colors text-sm font-medium"
                         >
-                            <Brain className="h-4 w-4" />
+                            <Brain className="h-4 w-4" aria-hidden="true" />
                             {t('bulk.generate')}
-                            <ChevronDown className={`h-3 w-3 transition-transform ${isGenerateMenuOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`h-3 w-3 transition-transform ${isGenerateMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                         </button>
 
                         {isGenerateMenuOpen && (
                             <div className="absolute bottom-full mb-2 left-0 bg-card text-card-foreground border rounded-lg shadow-xl min-w-[200px] overflow-hidden animate-in slide-in-from-bottom-2 duration-150">
                                 <button
                                     onClick={() => handleGenerateClick('flashcards')}
+                                    aria-label={t('bulk.generate.flashcards')}
                                     className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
                                 >
-                                    <CheckSquare className="h-4 w-4" />
+                                    <CheckSquare className="h-4 w-4" aria-hidden="true" />
                                     {t('bulk.generate.flashcards')}
                                 </button>
                                 <button
                                     onClick={() => handleGenerateClick('quiz')}
+                                    aria-label={t('bulk.generate.quiz')}
                                     className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
                                 >
-                                    <Brain className="h-4 w-4" />
+                                    <Brain className="h-4 w-4" aria-hidden="true" />
                                     {t('bulk.generate.quiz')}
                                 </button>
                                 <button
                                     onClick={() => handleGenerateClick('summary')}
+                                    aria-label={t('bulk.generate.summary')}
                                     className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
                                 >
-                                    <FileText className="h-4 w-4" />
+                                    <FileText className="h-4 w-4" aria-hidden="true" />
                                     {t('bulk.generate.summary')}
                                 </button>
                             </div>
@@ -87,18 +93,21 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
                 <button
                     onClick={onDelete}
                     disabled={isDeleting}
+                    aria-label={t('common.delete')}
+                    aria-busy={isDeleting}
                     className="flex items-center gap-2 px-3 py-1.5 hover:bg-destructive hover:text-destructive-foreground rounded-md transition-colors text-sm font-medium"
                 >
-                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Trash2 className="h-4 w-4" aria-hidden="true" />}
                     {t('common.delete')}
                 </button>
 
                 <button
                     onClick={onClearSelection}
+                    aria-label={t('common.cancel')}
                     className="p-1.5 hover:bg-background/20 rounded-full transition-colors ml-1"
                     title={t('common.cancel')}
                 >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" aria-hidden="true" />
                 </button>
             </div>
         </div>,
