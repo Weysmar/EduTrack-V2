@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useFinanceStore } from '@/store/financeStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
+import { ImportTransactionModal } from '@/components/finance/ImportTransactionModal';
 import { cn } from '@/lib/utils';
 // import ReactMarkdown from 'react-markdown'; // Removed for stability
 import { useLanguage } from '@/components/language-provider';
@@ -232,6 +233,11 @@ export default function FinanceDashboard() {
             </div>
 
             <CreateTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ImportTransactionModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImport={handleImport}
+            />
 
             {/* Audit Modal Overlay */}
             {isAuditOpen && (
