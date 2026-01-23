@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useFinanceStore } from '@/store/financeStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload } from 'lucide-react';
@@ -6,7 +6,6 @@ import { TransactionList } from '@/components/finance/TransactionList';
 import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
 import { ImportTransactionModal } from '@/components/finance/ImportTransactionModal';
 import { cn } from '@/lib/utils';
-// import ReactMarkdown from 'react-markdown'; // Removed for stability
 import { useLanguage } from '@/components/language-provider';
 
 // Custom Card Component for stats
@@ -35,18 +34,18 @@ export default function FinanceDashboard() {
         deleteTransaction,
         generateLocalAudit,
         enrichTransaction,
-        importTransactions // New action
+        importTransactions
     } = useFinanceStore();
 
     const { t } = useLanguage();
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isAuditOpen, setIsAuditOpen] = useState(false);
-    const [auditContent, setAuditContent] = useState<string | null>(null);
-    const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
+    const [isAuditOpen, setIsAuditOpen] = React.useState(false);
+    const [auditContent, setAuditContent] = React.useState<string | null>(null);
+    const [isGeneratingAudit, setIsGeneratingAudit] = React.useState(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         fetchTransactions();
     }, []);
 
@@ -90,6 +89,7 @@ export default function FinanceDashboard() {
 
     const handleImport = async (file: File): Promise<void> => {
         await importTransactions(file);
+        // Refresh handled by store or can be explicit here if needed
         await fetchTransactions();
     };
 
