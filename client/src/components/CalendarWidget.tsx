@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon, ExternalLink, Loader2 } from 'lucide-react'
-import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
+import { format, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
 import { fr, enUS } from 'date-fns/locale'
 import { useProfileStore } from '@/store/profileStore'
 import { fetchICalFeed, ICalEvent } from '@/lib/ical-parser'
@@ -80,9 +80,9 @@ export function CalendarWidget() {
 
     const days = isMobile
         ? (() => {
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            return eachDayOfInterval({ start: today, end: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000) })
+            const startDay = new Date(currentDate)
+            startDay.setHours(0, 0, 0, 0)
+            return eachDayOfInterval({ start: startDay, end: addDays(startDay, 2) })
         })()
         : allDays
 
@@ -95,7 +95,7 @@ export function CalendarWidget() {
                 <div className="flex items-center gap-2">
                     <h3 className="font-bold text-base md:text-lg capitalize">
                         <span className="hidden sm:inline">{format(weekStart, 'd MMM', { locale })} - {format(weekEnd, 'd MMM yyyy', { locale })}</span>
-                        <span className="sm:hidden">{format(weekStart, 'd MMM', { locale })}</span>
+                        <span className="sm:hidden">{format(currentDate, 'd MMM yyyy', { locale })}</span>
                     </h3>
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
@@ -105,13 +105,21 @@ export function CalendarWidget() {
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                     </button>
                     <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-                    <button onClick={prevWeek} className="p-1.5 hover:bg-muted rounded">
+                    <button
+                        onClick={() => setCurrentDate(isMobile ? subDays(currentDate, 3) : subWeeks(currentDate, 1))}
+                        className="p-1.5 hover:bg-muted rounded"
+                        aria-label={isMobile ? "3 jours précédents" : "Semaine précédente"}
+                    >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
                         Today
                     </button>
-                    <button onClick={nextWeek} className="p-1.5 hover:bg-muted rounded">
+                    <button
+                        onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 3) : addWeeks(currentDate, 1))}
+                        className="p-1.5 hover:bg-muted rounded"
+                        aria-label={isMobile ? "3 jours suivants" : "Semaine suivante"}
+                    >
                         <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>
