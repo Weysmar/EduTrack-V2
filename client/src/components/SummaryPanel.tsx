@@ -97,6 +97,15 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
 
                 <div className="flex items-center gap-1">
                     <button
+                        onClick={() => onRegenerate()}
+                        disabled={isLoading}
+                        className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                        title={t('summary.regenerate')}
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <div className="w-px h-4 bg-border mx-1 hidden sm:block" />
+                    <button
                         onClick={handleCopy}
                         className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
                         title={t('summary.copy')}
@@ -112,14 +121,6 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                             <Maximize2 className="h-4 w-4" />
                         </button>
                     )}
-                    <button
-                        onClick={() => onRegenerate()}
-                        disabled={isLoading}
-                        className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                        title={t('summary.regenerate')}
-                    >
-                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    </button>
                     <button
                         onClick={onConfigure}
                         className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
