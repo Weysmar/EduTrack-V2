@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { useFinanceStore } from '@/store/financeStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload } from 'lucide-react';
@@ -43,13 +43,14 @@ export default function FinanceDashboard() {
 
     const { t } = useLanguage();
 
-    const [isModalOpen, setIsModalOpen] = React.useState(false);
-    const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
-    const [isAuditOpen, setIsAuditOpen] = React.useState(false);
-    const [auditContent, setAuditContent] = React.useState<string | null>(null);
-    const [isGeneratingAudit, setIsGeneratingAudit] = React.useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isAuditOpen, setIsAuditOpen] = useState(false);
+    const [auditContent, setAuditContent] = useState<string | null>(null);
+    const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
+        console.log("💰 FinanceDashboard V2.2 (Chunk Fix) Loaded");
         fetchTransactions();
     }, []);
 
