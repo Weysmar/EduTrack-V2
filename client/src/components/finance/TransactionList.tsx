@@ -1,5 +1,5 @@
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+// import { format } from 'date-fns'; // Removed for stability
+// import { fr } from 'date-fns/locale';
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles } from 'lucide-react';
 import { Transaction } from '@/types/finance';
 import { useState } from 'react';
@@ -15,7 +15,7 @@ interface TransactionListProps {
 
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     const handleEnrich = async (id: string) => {
         if (!onEnrich) return;
@@ -31,6 +31,15 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
             </div>
         );
     }
+
+    // Helper for safe date formatting
+    const formatDate = (date: Date) => {
+        try {
+            return new Date(date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return 'Invalid Date';
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -51,7 +60,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                                     {tx.aiEnriched && <Sparkles className="h-3 w-3 text-purple-500 animate-pulse" />}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{format(tx.date, 'dd MMM yyyy', { locale: fr })}</span>
+                                    <span>{formatDate(tx.date)}</span>
                                     {tx.categoryId && (
                                         <span className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded text-xs">
                                             <Tag className="h-3 w-3" />

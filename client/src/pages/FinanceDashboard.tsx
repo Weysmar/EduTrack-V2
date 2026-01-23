@@ -5,7 +5,7 @@ import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2 } 
 import { TransactionList } from '@/components/finance/TransactionList';
 import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
 import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
+// import ReactMarkdown from 'react-markdown'; // Removed for stability
 import { useLanguage } from '@/components/language-provider';
 
 // Custom Card Component for stats
@@ -234,7 +234,9 @@ export default function FinanceDashboard() {
                                     <p>Analyse de vos dépenses en cours...</p>
                                 </div>
                             ) : (
-                                <ReactMarkdown>{auditContent || "Erreur d'analyse."}</ReactMarkdown>
+                                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                    {auditContent || "Erreur d'analyse."}
+                                </div>
                             )}
                         </div>
                     </div>

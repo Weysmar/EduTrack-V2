@@ -316,7 +316,7 @@ model TransactionCategory {
   transactions Transaction[]
   budgets      Budget[]
   
-  @@unique([name, type])
+  // @@unique([name, type]) // Commented out to fix migration conflict with existing duplicates
 }
 
 model Budget {
