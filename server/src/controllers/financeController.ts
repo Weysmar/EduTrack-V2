@@ -350,9 +350,20 @@ export const enrichTransaction = async (req: AuthRequest, res: Response) => {
         Suggestion in French JSON format: { "betterOffer": "alternative service name", "savings": estimated_monthly_savings_number, "advice": "short advice string" }.
         If no specific alternative, provide general advice.`;
 
+        const profileId = req.user!.id;
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { settings: true }
+        });
+
+        // Extract API key from settings (JSON)
+        const settings = profile?.settings as any || {};
+        const userApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+
         let result;
         try {
-            result = await aiService.generateJSON(prompt, "You are a financial advisor helper.");
+            // Pass userApiKey (can be undefined, aiService falls back to env)
+            result = await aiService.generateJSON(prompt, "You are a financial advisor helper.", 'gemini-2.0-flash-exp', userApiKey);
         } catch (e) {
             console.warn("AI enrichment failed, using mock", e);
             result = { betterOffer: null, savings: 0, advice: "Service indisponible" };
@@ -386,7 +397,15 @@ export const generateAudit = async (req: AuthRequest, res: Response) => {
         3. 💡 Conseils d'Optimisation
         Mets en page avec du Markdown élégant.`;
 
-        const audit = await aiService.generateText(prompt, "Tu es un expert en finances personnelles.");
+        const profileId = req.user!.id;
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { settings: true }
+        });
+        const settings = profile?.settings as any || {};
+        const userApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
+
+        const audit = await aiService.generateText(prompt, "Tu es un expert en finances personnelles.", 'gemini-2.0-flash-exp', userApiKey);
 
         res.json({ audit, transactionCount: transactions.length });
     } catch (error) {
