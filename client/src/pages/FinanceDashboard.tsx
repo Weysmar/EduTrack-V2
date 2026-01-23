@@ -85,8 +85,13 @@ export default function FinanceDashboard() {
         }, [])
         .slice(-30);
 
-    const pieData = getCategoryBreakdown();
-    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    const handleImport = async (file: File): Promise<void> => {
+        await importTransactions(file);
+        // Refresh handled by store or can be explicit here if needed
+        await fetchTransactions();
+    };
 
 
 
