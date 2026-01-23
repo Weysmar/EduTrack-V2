@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 
@@ -142,7 +142,10 @@ export const createTransaction = async (req: AuthRequest, res: Response) => {
             // Update transaction to store signed amount if desired?
             // Schema comment: "Positif = revenu, Négatif = dépense".
             // So we should store signed amount.
-            if ((type === 'EXPENSE' && transaction.amount > 0) || (type === 'INCOME' && transaction.amount < 0)) {
+            // Ensure transaction.amount is treated as number for comparison
+            const txAmount = new Prisma.Decimal(transaction.amount).toNumber();
+
+            if ((type === 'EXPENSE' && txAmount > 0) || (type === 'INCOME' && txAmount < 0)) {
                 // Fix sign in DB if needed, or assume frontend sends correct sign.
                 // Let's enforce sign based on type
                 const signedAmount = type === 'EXPENSE' ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
@@ -159,7 +162,7 @@ export const createTransaction = async (req: AuthRequest, res: Response) => {
             } else {
                 await prisma.financialAccount.update({
                     where: { id: accountId },
-                    data: { balance: { increment: transaction.amount } }
+                    data: { balance: { increment: txAmount } }
                 });
             }
         }
