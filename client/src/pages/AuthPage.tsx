@@ -6,7 +6,11 @@ import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 
 
-export function AuthPage() {
+interface AuthPageProps {
+    isEmbedded?: boolean;
+}
+
+export function AuthPage({ isEmbedded = false }: AuthPageProps) {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -14,8 +18,7 @@ export function AuthPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const { login, register, user } = useAuthStore();
-    const { loadProfile } = useProfileStore();
+    const { login, register } = useAuthStore();
     const navigate = useNavigate();
     const { t } = useLanguage();
     const logoSrc = '/logo.svg';
@@ -31,12 +34,7 @@ export function AuthPage() {
             } else {
                 await register(name, email, password);
             }
-
-            // Navigate
-            // The authStore/profileStore should handle fetching the profile data
-            // loadProfile(currentUser.profileId); // Handled in store or AppLayout
-
-            navigate('/');
+            navigate('/hub'); // Navigate to Hub after login
         } catch (err: any) {
             setError(err.message || t('auth.error.default'));
         } finally {
@@ -44,17 +42,28 @@ export function AuthPage() {
         }
     };
 
+    const Container = isEmbedded ? 'div' : 'main';
+    const containerClasses = isEmbedded
+        ? "w-full"
+        : "flex min-h-screen items-center justify-center bg-background px-4";
+
+    const cardClasses = isEmbedded
+        ? "w-full space-y-6"
+        : "w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg";
+
     return (
-        <main className="flex min-h-screen items-center justify-center bg-background px-4">
-            <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-lg">
+        <Container className={containerClasses}>
+            <div className={cardClasses}>
                 <div className="text-center">
-                    <div className="flex justify-center mb-6">
-                        <div className="flex items-center gap-3">
-                            <img src={logoSrc} alt="EduTrack Logo" className="h-10 w-10 object-contain" />
-                            <span className="font-bold text-2xl tracking-tight text-white">EduTrack</span>
+                    {!isEmbedded && (
+                        <div className="flex justify-center mb-6">
+                            <div className="flex items-center gap-3">
+                                <img src={logoSrc} alt="EduTrack Logo" className="h-10 w-10 object-contain" />
+                                <span className="font-bold text-2xl tracking-tight text-foreground">EduTrack</span>
+                            </div>
                         </div>
-                    </div>
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                    )}
+                    <h2 className={`font-bold tracking-tight text-foreground ${isEmbedded ? 'text-xl' : 'text-3xl'}`}>
                         {isLogin ? t('auth.welcome.back') : t('auth.create.account')}
                     </h2>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -64,8 +73,8 @@ export function AuthPage() {
                     </p>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="space-y-4 rounded-md shadow-sm">
+                <form className={`space-y-4 ${isEmbedded ? 'mt-4' : 'mt-8'}`} onSubmit={handleSubmit}>
+                    <div className="space-y-4">
                         {!isLogin && (
                             <div>
                                 <label htmlFor="auth-name" className="block text-sm font-medium text-foreground">{t('auth.name')}</label>
@@ -131,6 +140,6 @@ export function AuthPage() {
                     </button>
                 </div>
             </div>
-        </main>
+        </Container>
     );
 }

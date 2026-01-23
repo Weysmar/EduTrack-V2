@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
-import { AppLayout } from '@/layouts/AppLayout'
+import { EduLayout } from '@/layouts/EduLayout'
+import { FinanceLayout } from '@/layouts/FinanceLayout'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { ThemeProvider } from "@/components/theme-provider"
@@ -9,10 +10,13 @@ import { LanguageProvider } from "@/components/language-provider"
 import { Toaster } from "sonner"
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 
-// Lazy load pages to split bundle
+// Lazy load pages
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })))
+const HubPage = lazy(() => import('@/pages/HubPage').then(m => ({ default: m.HubPage })))
+
 const Dashboard = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.Dashboard })))
 const LibraryPage = lazy(() => import('@/pages/LibraryPage').then(m => ({ default: m.LibraryPage })))
-const FocusPage = lazy(() => import('@/pages/FocusPage').then(m => ({ default: m.FocusPage }))) // Added
+const FocusPage = lazy(() => import('@/pages/FocusPage').then(m => ({ default: m.FocusPage })))
 const CourseView = lazy(() => import('@/pages/CourseView').then(m => ({ default: m.CourseView })))
 const ItemView = lazy(() => import('@/pages/ItemView').then(m => ({ default: m.ItemView })))
 const FolderView = lazy(() => import('@/pages/FolderView').then(m => ({ default: m.FolderView })))
@@ -23,9 +27,8 @@ const CalendarPage = lazy(() => import('@/pages/CalendarPage').then(m => ({ defa
 const ProfileManager = lazy(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const MindMapsPage = lazy(() => import('@/pages/MindMapsPage').then(m => ({ default: m.MindMapsPage })))
-const AuthPage = lazy(() => import('@/pages/AuthPage').then(m => ({ default: m.AuthPage })))
 const InvestigationBoard = lazy(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
-const FinanceDashboard = lazy(() => import('@/pages/finance/FinanceDashboard').then(m => ({ default: m.FinanceDashboard }))) // Added
+const FinanceDashboard = lazy(() => import('@/pages/FinanceDashboard').then(m => ({ default: m.default })))
 
 // Suspense Wrapper
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
@@ -36,20 +39,31 @@ const LazyPage = ({ children }: { children: React.ReactNode }) => (
 
 const router = createBrowserRouter([
     {
-        path: '/auth',
-        element: <LazyPage><AuthPage /></LazyPage>
+        path: '/',
+        element: <LazyPage><LandingPage /></LazyPage>
     },
     {
-        path: '/',
+        path: '/auth',
+        element: <Navigate to="/" replace />
+    },
+    {
         element: <RequireAuth />,
         children: [
             {
-                element: (
-                    <AppLayout />
-                ),
+                path: '/hub',
+                element: <LazyPage><HubPage /></LazyPage>
+            },
+            // EduTrack Routes
+            {
+                path: '/edu',
+                element: <EduLayout />,
                 children: [
                     {
                         index: true,
+                        element: <Navigate to="/edu/dashboard" replace />
+                    },
+                    {
+                        path: 'dashboard',
                         element: <LazyPage><Dashboard /></LazyPage>,
                     },
                     {
@@ -61,15 +75,11 @@ const router = createBrowserRouter([
                         element: <LazyPage><FocusPage /></LazyPage>,
                     },
                     {
-                        path: 'finance', // New Finance Route
-                        element: <LazyPage><FinanceDashboard /></LazyPage>,
-                    },
-                    {
                         path: 'settings',
                         element: <LazyPage><SettingsPage /></LazyPage>,
                     },
                     {
-                        path: 'board', // New Route
+                        path: 'board',
                         element: <LazyPage><InvestigationBoard /></LazyPage>,
                     },
                     {
@@ -107,14 +117,34 @@ const router = createBrowserRouter([
                     {
                         path: 'profiles',
                         element: <LazyPage><ProfileManager /></LazyPage>,
+                    }
+                ]
+            },
+            // FinanceTrack Routes
+            {
+                path: '/finance',
+                element: <FinanceLayout />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="/finance/dashboard" replace />
                     },
                     {
-                        path: '*',
-                        element: <Navigate to="/" replace />,
+                        path: 'dashboard',
+                        element: <LazyPage><FinanceDashboard /></LazyPage>,
+                    },
+                    {
+                        path: 'settings',
+                        element: <div className="p-8">Settings (Work in Progress)</div> // Placeholder
                     }
                 ]
             }
         ]
+    },
+    // Fallback
+    {
+        path: '*',
+        element: <Navigate to="/" replace />,
     }
 ])
 
