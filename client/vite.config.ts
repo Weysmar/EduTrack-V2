@@ -25,7 +25,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+                    vendor: ['react', 'react-dom', 'scheduler', 'react-router-dom', '@tanstack/react-query'],
                     ui: ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
                     // Separate heavy document processing libraries
                     'docx-processing': ['mammoth', 'docx-preview', 'docx'],

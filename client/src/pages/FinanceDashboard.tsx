@@ -24,6 +24,10 @@ function StatCard({ title, value, icon, color }: any) {
 }
 
 export default function FinanceDashboard() {
+    React.useEffect(() => {
+        console.log("💰 FinanceDashboard V2.1 Fix Loaded");
+    }, []);
+
     const {
         transactions,
         fetchTransactions,
