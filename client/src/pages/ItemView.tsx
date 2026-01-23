@@ -922,31 +922,29 @@ export function ItemView() {
 
                                 ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">
-                                        {item.type === 'note' ? (
-                                            isEditMode ? (
-                                                <Editor
-                                                    content={editedContent}
-                                                    onChange={setEditedContent}
-                                                    editable={true}
-                                                    className={isFocusMode ? "h-full" : "min-h-[50vh]"}
-                                                />
-                                            ) : (
-
-                                                <div className="w-full max-w-4xl bg-card p-8 rounded-lg">
-                                                    <ReactMarkdown
-                                                        className="prose dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-lg prose-p:leading-relaxed prose-li:text-lg"
-                                                        components={{
-                                                            h1: ({ children }) => <h1 className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
-                                                            h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
-                                                            h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
-                                                            ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-                                                            li: ({ children }) => <li className="marker:text-primary">{children}</li>,
-                                                        }}
-                                                    >
-                                                        {item.content || ''}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            ) : (
+                                        {item.type === 'note' && isEditMode ? (
+                                            <Editor
+                                                content={editedContent}
+                                                onChange={setEditedContent}
+                                                editable={true}
+                                                className={isFocusMode ? "h-full" : "min-h-[50vh]"}
+                                            />
+                                        ) : item.type === 'note' ? (
+                                            <div className="w-full max-w-4xl bg-card p-8 rounded-lg">
+                                                <ReactMarkdown
+                                                    className="prose dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-lg prose-p:leading-relaxed prose-li:text-lg"
+                                                    components={{
+                                                        h1: ({ children }) => <h1 className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
+                                                        h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
+                                                        h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
+                                                        ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
+                                                        li: ({ children }) => <li className="marker:text-primary">{children}</li>,
+                                                    }}
+                                                >
+                                                    {item.content || ''}
+                                                </ReactMarkdown>
+                                            </div>
+                                        ) : (
                                             <div className="w-full max-w-4xl bg-card p-8 rounded-lg">
                                                 <ReactMarkdown className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
                                                     {item.content || ''}
