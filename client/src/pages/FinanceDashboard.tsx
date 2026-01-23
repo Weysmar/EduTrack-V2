@@ -88,14 +88,7 @@ export default function FinanceDashboard() {
     const pieData = getCategoryBreakdown();
     const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-    // Placeholder import handler - will connect to backend API later
-    const handleImport = async (file: File): Promise<void> => {
-        // TODO: Call API endpoint
-        console.log("Importing file:", file.name);
-        await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
-    };
 
     return (
         <div className="min-h-screen p-4 md:p-8 space-y-8 animate-in fade-in">
