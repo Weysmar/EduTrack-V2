@@ -26,6 +26,7 @@ export const getItems = async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: 'desc' }
         });
 
+        res.set('Cache-Control', 'no-store');
         res.json(items);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching items', error });
@@ -197,8 +198,9 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 // DELETE /api/items/:id
 export const deleteItem = async (req: AuthRequest, res: Response) => {
     try {
-        const item = await prisma.item.findFirst({
-            where: { id: req.params.id, profileId: req.user!.id }
+        // BYPASS PROFILE CHECK FOR GHOST ITEMS
+        const item = await prisma.item.findUnique({
+            where: { id: req.params.id }
         });
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
@@ -231,11 +233,10 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ message: 'No items provided' });
         }
 
-        // 1. Find items to verify ownership and get storage keys
+        // 1. Find items (BYPASS PROFILE CHECK to fix ghost items)
         const items = await prisma.item.findMany({
             where: {
-                id: { in: itemIds },
-                profileId: req.user!.id
+                id: { in: itemIds }
             }
         });
 
