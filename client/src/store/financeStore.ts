@@ -21,6 +21,7 @@ interface FinanceState {
     addTransaction: (data: Partial<Transaction>) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>;
     enrichTransaction: (id: string) => Promise<void>;
+    importTransactions: (file: File) => Promise<void>;
     generateLocalAudit: () => Promise<string>;
     setFilters: (filters: Partial<FinanceFilters>) => void;
 
