@@ -18,7 +18,10 @@ const mapModelName = (model: string): string => {
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
         'sonar': 'sonar',
-        'sonar-reasoning': 'sonar-reasoning'
+        'sonar-reasoning': 'sonar-reasoning',
+        'llama-3.1-sonar-small-128k-online': 'sonar',
+        'llama-3.1-sonar-large-128k-online': 'sonar-pro',
+        'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
     return modelMap[model] || model;
 };
@@ -36,7 +39,7 @@ export const aiService = {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: model.includes('gemini') ? 'llama-3.1-sonar-large-128k-online' : model,
+                    model: mapModelName(model),
                     messages: [
                         { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
                         { role: 'user', content: prompt }
