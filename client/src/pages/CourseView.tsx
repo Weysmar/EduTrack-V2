@@ -90,18 +90,56 @@ export function CourseView() {
 
         setIsBulkDeleting(true)
         try {
-            const { itemQueries } = await import('@/lib/api/queries')
-            await itemQueries.bulkDelete(Array.from(selectedItems))
-            toast.success(t('bulk.delete_success') || "Éléments supprimés")
-            await refetchContent() // Refresh content
+            // Import all necessary queries
+            const { itemQueries, summaryQueries, flashcardQueries, quizQueries, mindmapQueries } = await import('@/lib/api/queries')
+
+            // Map IDs back to Objects to check type
+            const itemsToDelete = allItems.filter(i => selectedItems.has(i.id))
+
+            // Categorize by type
+            // Note: 'note', 'resource', 'exercise' are stored in Item table -> use itemQueries
+            // 'summary' -> summaryQueries (Table Summary)
+            // 'flashcards' -> flashcardQueries (Table FlashcardSet)
+            // 'quiz' -> quizQueries (Table Quiz)
+            // 'mindmap' -> mindmapQueries (Table MindMap)
+
+            const regularItems = itemsToDelete.filter(i => !['summary', 'flashcards', 'quiz', 'mindmap'].includes(i.type))
+            const summaries = itemsToDelete.filter(i => i.type === 'summary')
+            const flashcards = itemsToDelete.filter(i => i.type === 'flashcards')
+            const quizzes = itemsToDelete.filter(i => i.type === 'quiz')
+            const mindmaps = itemsToDelete.filter(i => i.type === 'mindmap')
+
+            const promises = []
+
+            // Bulk Delete for Items (if any)
+            if (regularItems.length > 0) {
+                promises.push(itemQueries.bulkDelete(regularItems.map(i => i.id)))
+            }
+
+            // Individual Deletes for other types (No bulk API yet)
+            summaries.forEach(s => promises.push(summaryQueries.delete(s.id)))
+            flashcards.forEach(f => promises.push(flashcardQueries.delete(f.id)))
+            quizzes.forEach(q => promises.push(quizQueries.delete(q.id)))
+            mindmaps.forEach(m => promises.push(mindmapQueries.delete(m.id)))
+
+            // Execute all deletions
+            const results = await Promise.allSettled(promises)
+
+            // Log results for debugging
+            const failures = results.filter(r => r.status === 'rejected')
+            if (failures.length > 0) {
+                console.error("Some deletions failed:", failures)
+                toast.warning(t('bulk.delete_partial_error') || "Certains éléments n'ont pas pu être supprimés")
+            } else {
+                toast.success(t('bulk.delete_success') || "Éléments supprimés")
+            }
+
+            // Always refetch to sync UI state
+            refetchContent()
             clearSelection()
         } catch (error: any) {
-            console.error('Failed to bulk delete:', error)
-            toast.error(t('bulk.delete_error') || "Erreur lors de la suppression", {
-                description: error.response?.data?.message || "Une erreur est survenue"
-            })
-            // Even if failed, try refetching to see if partial delete worked
-            refetchContent()
+            console.error('Critical failure in bulk delete:', error)
+            toast.error(t('bulk.delete_error') || "Erreur critique lors de la suppression")
         } finally {
             setIsBulkDeleting(false)
         }

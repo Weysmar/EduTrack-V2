@@ -198,9 +198,8 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 // DELETE /api/items/:id
 export const deleteItem = async (req: AuthRequest, res: Response) => {
     try {
-        // BYPASS PROFILE CHECK FOR GHOST ITEMS
-        const item = await prisma.item.findUnique({
-            where: { id: req.params.id }
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
         });
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
@@ -233,10 +232,11 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ message: 'No items provided' });
         }
 
-        // 1. Find items (BYPASS PROFILE CHECK to fix ghost items)
+        // 1. Find items to verify ownership and get storage keys
         const items = await prisma.item.findMany({
             where: {
-                id: { in: itemIds }
+                id: { in: itemIds },
+                profileId: req.user!.id
             }
         });
 
