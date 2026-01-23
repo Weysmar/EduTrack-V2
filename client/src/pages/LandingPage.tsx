@@ -11,6 +11,10 @@ export function LandingPage() {
     const { isAuthenticated } = useAuthStore();
     const controls = useAnimation();
 
+    useEffect(() => {
+        controls.start({ opacity: 1, scale: 1, transition: { duration: 0.5, delay: 0.2 } });
+    }, []);
+
     // Trigger animation handler
     const handleAccessClick = () => {
         controls.start({
