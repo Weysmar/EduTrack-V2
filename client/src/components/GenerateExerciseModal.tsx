@@ -249,7 +249,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             <label className="block text-sm font-medium mb-2">Moteur IA</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
-                                                    onClick={() => { setProvider('perplexity'); setModel('llama-3.1-sonar-large-128k-online') }}
+                                                    onClick={() => { setProvider('perplexity'); setModel('sonar-pro') }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
                                                         provider === 'perplexity'
@@ -260,7 +260,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     🤖 Perplexity Pro (Sonar)
                                                 </button>
                                                 <button
-                                                    onClick={() => { setProvider('google'); setModel('gemini-2.5-flash') }}
+                                                    onClick={() => { setProvider('google'); setModel('gemini-2.0-flash-exp') }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
                                                         provider === 'google'
@@ -268,7 +268,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                             : "hover:bg-accent border-muted"
                                                     )}
                                                 >
-                                                    ⚡ Google Gemini 2.5
+                                                    ⚡ Google Gemini 2.0 Flash
                                                 </button>
                                             </div>
                                         </div>
@@ -282,8 +282,24 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     onChange={(e) => setModel(e.target.value)}
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
-                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultra-rapide)</option>
-                                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Expert)</option>
+                                                    <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Rapide)</option>
+                                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+                                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {provider === 'perplexity' && (
+                                            <div>
+                                                <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
+                                                <select
+                                                    value={model}
+                                                    onChange={(e) => setModel(e.target.value)}
+                                                    className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
+                                                >
+                                                    <option value="sonar-pro">Sonar Pro (Recommandé)</option>
+                                                    <option value="sonar">Sonar (Rapide)</option>
+                                                    <option value="sonar-reasoning">Sonar Reasoning (Expert)</option>
                                                 </select>
                                             </div>
                                         )}
