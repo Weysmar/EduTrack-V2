@@ -43,12 +43,13 @@ export default defineConfig({
                 ]
             }
         },
-        optimizeDeps: {
-            esbuildOptions: {
-                target: 'esnext'
-            }
-        },
-        server: {
-            host: '0.0.0.0',
+    },
+    optimizeDeps: {
+        esbuildOptions: {
+            target: 'esnext'
         }
-    })
+    },
+    server: {
+        host: '0.0.0.0',
+    }
+})
