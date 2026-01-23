@@ -156,6 +156,20 @@ export function CourseView() {
         const content: string[] = []
         for (const i of itemsToProcess) {
             let itemText = i.content || i.extractedContent || ''
+
+            // Smart Fallback: Check if there is a summary for this item
+            // This handles cases where PDF extraction failed but a summary exists
+            const relatedSummary = allItems.find(s => s.type === 'summary' && s.itemId === i.id)
+
+            if (!itemText && relatedSummary && relatedSummary.content) {
+                console.log(`Using summary content for ${i.title} as fallback`)
+                itemText = relatedSummary.content
+                toast.info(`Utilisation du résumé pour "${i.title}" (PDF non extrait)`)
+            } else if (itemText && relatedSummary && relatedSummary.content) {
+                // Enrich: Add summary to context
+                itemText += `\n\n--- Résumé Associé ---\n${relatedSummary.content}`
+            }
+
             if (itemText) {
                 content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
             }
