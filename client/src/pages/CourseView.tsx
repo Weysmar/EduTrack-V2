@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { CreateItemModal } from '@/components/CreateItemModal'
 import { EditCourseModal } from '@/components/EditCourseModal'
@@ -81,6 +82,8 @@ export function CourseView() {
         }
     }, [t, deleteCourseMutation, id])
 
+
+
     const handleBulkDelete = async () => {
         if (selectedItems.size === 0) return
         if (!confirm(t('bulk.delete_confirm') || 'Confirmer la suppression ?')) return
@@ -89,10 +92,16 @@ export function CourseView() {
         try {
             const { itemQueries } = await import('@/lib/api/queries')
             await itemQueries.bulkDelete(Array.from(selectedItems))
-            refetchContent() // Refresh content
+            toast.success(t('bulk.delete_success') || "Éléments supprimés")
+            await refetchContent() // Refresh content
             clearSelection()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to bulk delete:', error)
+            toast.error(t('bulk.delete_error') || "Erreur lors de la suppression", {
+                description: error.response?.data?.message || "Une erreur est survenue"
+            })
+            // Even if failed, try refetching to see if partial delete worked
+            refetchContent()
         } finally {
             setIsBulkDeleting(false)
         }
