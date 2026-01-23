@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles } from 'lucide-react';
-import { Transaction } from '@/lib/db';
+import { Transaction } from '@/types/finance';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
