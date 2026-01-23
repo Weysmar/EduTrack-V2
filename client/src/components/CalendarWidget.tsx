@@ -106,7 +106,7 @@ export function CalendarWidget() {
 
             {/* Week Grid - Horizontal scroll on mobile */}
             <div className="flex-1 p-2 md:p-4 overflow-x-auto">
-                <div className="grid grid-cols-7 gap-2 md:gap-4 min-w-[600px] md:min-w-0 h-full">
+                <div className="grid grid-cols-7 gap-1 md:gap-4 w-full h-full">
                     {days.map((day, idx) => {
                         const dayEvents = events.filter(e => {
                             if (!e.start) return false
