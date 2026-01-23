@@ -4,6 +4,7 @@ import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles } from
 import { Transaction } from '@/lib/db';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/language-provider';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -14,6 +15,7 @@ interface TransactionListProps {
 
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
+    const { t } = useLanguage();
 
     const handleEnrich = async (id: string) => {
         if (!onEnrich) return;
@@ -25,7 +27,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
     if (transactions.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                Aucune transaction trouvée.
+                {t('finance.chart.activity')} - {t('item.noContent')}
             </div>
         );
     }
@@ -45,7 +47,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
 
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <p className="font-medium">{tx.description || "Sans description"}</p>
+                                    <p className="font-medium">{tx.description || t('finance.tx.desc')}</p>
                                     {tx.aiEnriched && <Sparkles className="h-3 w-3 text-purple-500 animate-pulse" />}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -74,7 +76,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                                             "p-1.5 text-muted-foreground hover:bg-purple-100 hover:text-purple-600 rounded-md transition-colors",
                                             loadingMap[tx.id] && "animate-spin opacity-50"
                                         )}
-                                        title="Optimiser avec IA"
+                                        title={t('finance.optimize')}
                                     >
                                         <Wand2 className="h-4 w-4" />
                                     </button>
@@ -84,19 +86,19 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                                     <button
                                         onClick={() => onEdit(tx)}
                                         className="p-1.5 text-muted-foreground hover:bg-background hover:text-foreground rounded-md transition-colors"
-                                        title="Modifier"
+                                        title={t('item.edit')}
                                     >
                                         <Edit2 className="h-4 w-4" />
                                     </button>
                                 )}
                                 <button
                                     onClick={() => {
-                                        if (confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
+                                        if (confirm(t('item.delete.confirm'))) {
                                             onDelete(tx.id);
                                         }
                                     }}
                                     className="p-1.5 text-muted-foreground hover:bg-background hover:text-red-500 rounded-md transition-colors"
-                                    title="Supprimer"
+                                    title={t('action.delete')}
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -109,18 +111,18 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                         <div className="bg-purple-50/5 dark:bg-purple-900/10 border-t p-3 text-sm flex flex-col gap-1 mx-4 mb-4 rounded-lg animate-in fade-in slide-in-from-top-2">
                             <p className="font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-2 text-xs uppercase tracking-wider">
                                 <Sparkles className="h-3 w-3" />
-                                Conseil IA
+                                {t('finance.suggestion')}
                             </p>
                             {tx.aiSuggestions.advice && <p className="text-muted-foreground italic">"{tx.aiSuggestions.advice}"</p>}
                             {tx.aiSuggestions.betterOffer && (
                                 <p className="text-foreground font-medium mt-1">
-                                    Alternative : <span className="underline decoration-purple-500/50">{tx.aiSuggestions.betterOffer}</span>
+                                    {t('finance.betterOffer')} : <span className="underline decoration-purple-500/50">{tx.aiSuggestions.betterOffer}</span>
                                 </p>
                             )}
                             {tx.aiSuggestions.savings > 0 && (
                                 <p className="text-green-600 font-medium text-xs flex items-center gap-1">
                                     <ArrowDownLeft className="h-3 w-3" />
-                                    Économie potentielle : {tx.aiSuggestions.savings}€ / mois
+                                    {t('finance.savings', { amount: tx.aiSuggestions.savings })}
                                 </p>
                             )}
                         </div>

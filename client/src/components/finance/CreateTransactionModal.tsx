@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
 import { useFinanceStore } from '@/store/financeStore';
+import { useLanguage } from '@/components/language-provider';
 
 interface CreateTransactionModalProps {
     isOpen: boolean;
@@ -9,6 +10,7 @@ interface CreateTransactionModalProps {
 
 export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionModalProps) {
     const { addTransaction, accounts } = useFinanceStore();
+    const { t } = useLanguage();
 
     const [amount, setAmount] = useState('');
     const [type, setType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
@@ -41,7 +43,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
             categoryId: category || undefined,
             accountId: accountId || undefined,
             isRecurring: false,
-            profileId: 'current-profile', // handled by store usually or auth context
+            profileId: 'current-profile',
         });
 
         onClose();
@@ -53,7 +55,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="w-full max-w-md bg-card rounded-xl shadow-xl border animate-in zoom-in-95">
                 <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">Nouvelle Transaction</h2>
+                    <h2 className="text-lg font-semibold">{t('finance.modal.title')}</h2>
                     <button onClick={onClose} className="p-1 hover:bg-muted rounded-full">
                         <X className="h-4 w-4" />
                     </button>
@@ -68,20 +70,20 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
                             onClick={() => setType('INCOME')}
                             className={`py-2 text-sm font-medium rounded-md transition-all ${type === 'INCOME' ? 'bg-background shadow text-green-500' : 'text-muted-foreground'}`}
                         >
-                            Revenu
+                            {t('finance.tx.income')}
                         </button>
                         <button
                             type="button"
                             onClick={() => setType('EXPENSE')}
                             className={`py-2 text-sm font-medium rounded-md transition-all ${type === 'EXPENSE' ? 'bg-background shadow text-red-500' : 'text-muted-foreground'}`}
                         >
-                            Dépense
+                            {t('finance.tx.expense')}
                         </button>
                     </div>
 
                     {/* Amount */}
                     <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase">Montant</label>
+                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('finance.tx.amount')}</label>
                         <div className="relative">
                             <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                             <input
@@ -99,7 +101,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
 
                     {/* Description */}
                     <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase">Description</label>
+                        <label className="text-xs font-medium text-muted-foreground uppercase">{t('finance.tx.desc')}</label>
                         <input
                             type="text"
                             value={description}
@@ -113,7 +115,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
                     {/* Date & Category Row */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground uppercase">Date</label>
+                            <label className="text-xs font-medium text-muted-foreground uppercase">{t('finance.tx.date')}</label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <input
@@ -126,7 +128,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground uppercase">Catégorie</label>
+                            <label className="text-xs font-medium text-muted-foreground uppercase">{t('finance.tx.category')}</label>
                             <div className="relative">
                                 <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <input
@@ -152,7 +154,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
                     {/* OCR / File Upload Stub */}
                     <div className="border border-dashed rounded-lg p-3 flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-muted cursor-not-allowed opacity-50">
                         <FileText className="h-4 w-4" />
-                        <span>Scanner un reçu (Bientôt disponible)</span>
+                        <span>Scanner (Coming Soon)</span>
                     </div>
 
                     <div className="pt-2">
@@ -160,7 +162,7 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
                             type="submit"
                             className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-opacity"
                         >
-                            Valider
+                            {t('finance.tx.submit')}
                         </button>
                     </div>
                 </form>

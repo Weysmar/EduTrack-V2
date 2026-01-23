@@ -6,6 +6,7 @@ import { TransactionList } from '@/components/finance/TransactionList';
 import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { useLanguage } from '@/components/language-provider';
 
 // Custom Card Component for stats
 function StatCard({ title, value, icon, color }: any) {
@@ -35,6 +36,8 @@ export default function FinanceDashboard() {
         enrichTransaction
     } = useFinanceStore();
 
+    const { t } = useLanguage();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export default function FinanceDashboard() {
 
     const handleGenerateAudit = async () => {
         setIsAuditOpen(true);
-        if (!auditContent) { // Only generate if empty or requested? Let's regen every time button clicked? No, button opens modal.
+        if (!auditContent) {
             setIsGeneratingAudit(true);
             const result = await generateLocalAudit();
             setAuditContent(result);
@@ -87,23 +90,23 @@ export default function FinanceDashboard() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Portefeuille 💰</h1>
-                    <p className="text-muted-foreground">Audit IA & Gestion locale.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('finance.title')} 💰</h1>
+                    <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
-                        title="Générer un audit IA"
+                        title={t('finance.audit')}
                     >
                         <Sparkles className="h-4 w-4" />
-                        <span className="hidden sm:inline">Audit IA</span>
+                        <span className="hidden sm:inline">{t('finance.audit')}</span>
                     </button>
 
                     <button
                         onClick={() => fetchTransactions()}
                         className="p-2 text-muted-foreground hover:bg-muted rounded-md"
-                        title="Actualiser"
+                        title={t('finance.refresh')}
                     >
                         <RefreshCw className="h-5 w-5" />
                     </button>
@@ -112,7 +115,7 @@ export default function FinanceDashboard() {
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
                     >
                         <Plus className="h-4 w-4" />
-                        Nouvelle Transaction
+                        {t('finance.tx.new')}
                     </button>
                 </div>
             </div>
@@ -120,19 +123,19 @@ export default function FinanceDashboard() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
-                    title="Solde Actuel"
+                    title={t('finance.balance')}
                     value={`${balance.toFixed(2)} €`}
                     icon={<Wallet className="h-6 w-6 text-primary" />}
                     color="text-primary"
                 />
                 <StatCard
-                    title="Revenus (Mois)"
+                    title={t('finance.income')}
                     value={`+${income.toFixed(2)} €`}
                     icon={<TrendingUp className="h-6 w-6 text-green-500" />}
                     color="text-green-500"
                 />
                 <StatCard
-                    title="Dépenses (Mois)"
+                    title={t('finance.expense')}
                     value={`-${expenses.toFixed(2)} €`}
                     icon={<TrendingDown className="h-6 w-6 text-red-500" />}
                     color="text-red-500"
@@ -142,7 +145,7 @@ export default function FinanceDashboard() {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-4">Activité Récente</h2>
+                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
@@ -158,16 +161,19 @@ export default function FinanceDashboard() {
                                 </defs>
                                 <XAxis dataKey="date" hide />
                                 <YAxis hide />
-                                <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }} />
-                                <Area type="monotone" dataKey="income" stroke="#10b981" fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} />
-                                <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                                    formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                                />
+                                <Area type="monotone" dataKey="income" stroke="#10b981" fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
+                                <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-4">Répartition Dépenses</h2>
+                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.categories')}</h2>
                     <div className="h-[300px] w-full relative">
                         {pieData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
@@ -186,12 +192,12 @@ export default function FinanceDashboard() {
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
+                                    <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                                Pas assez de données
+                                {t('item.noContent')}
                             </div>
                         )}
                     </div>
@@ -200,7 +206,7 @@ export default function FinanceDashboard() {
 
             {/* Transaction List */}
             <div className="bg-card border rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-semibold mb-6">Historique & Optimisation</h2>
+                <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
                 <TransactionList
                     transactions={transactions}
                     onDelete={deleteTransaction}
@@ -217,9 +223,9 @@ export default function FinanceDashboard() {
                         <div className="flex items-center justify-between p-4 border-b bg-muted/30">
                             <div className="flex items-center gap-2">
                                 <Sparkles className="h-5 w-5 text-purple-500" />
-                                <h2 className="text-lg font-semibold">Audit Financier IA</h2>
+                                <h2 className="text-lg font-semibold">{t('finance.audit')}</h2>
                             </div>
-                            <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">Fermer</button>
+                            <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">{t('action.close')}</button>
                         </div>
                         <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none">
                             {isGeneratingAudit ? (
