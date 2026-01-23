@@ -24,17 +24,17 @@ export function LanguageToggle() {
         {
             code: "fr",
             label: "Français",
-            icon: <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-5 h-3.5 object-cover rounded-[1px]" />
+            icon: <img src="https://flagcdn.com/w40/fr.png" alt="FR" loading="lazy" decoding="async" className="w-5 h-3.5 object-cover rounded-[1px]" />
         },
         {
             code: "en",
             label: "English",
-            icon: <img src="https://flagcdn.com/w40/gb.png" alt="UK" className="w-5 h-3.5 object-cover rounded-[1px]" />
+            icon: <img src="https://flagcdn.com/w40/gb.png" alt="UK" loading="lazy" decoding="async" className="w-5 h-3.5 object-cover rounded-[1px]" />
         },
         {
             code: "mc",
             label: "Minecraft",
-            icon: <img src="/assets/minecraft_grass_block.webp" alt="MC" className="w-5 h-5 object-contain" />
+            icon: <img src="/assets/minecraft_grass_block.webp" alt="MC" loading="lazy" decoding="async" className="w-5 h-5 object-contain" />
         },
     ]
 

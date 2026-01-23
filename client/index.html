@@ -13,10 +13,25 @@
     content="EduTrack - Votre compagnon d'apprentissage personnel pour suivre vos cours, notes et devoirs." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
+
+  <!-- Preload critical Inter font -->
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@400;700&display=swap">
+
+  <!-- Async load fonts (non-blocking) -->
+  <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@400;700&display=swap"
-    rel="stylesheet">
-  <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@400;700&display=swap">
+  </noscript>
+
+  <!-- Minecraftia font (low priority, async only) -->
+  <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/minecraftia" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/minecraftia">
+  </noscript>
 </head>
 
 <body>
