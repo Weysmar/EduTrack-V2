@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { courseQueries, itemQueries, mindmapQueries, flashcardQueries, quizQueries, summaryQueries } from '@/lib/api/queries'
 
 export interface CourseContentHook {
@@ -64,10 +64,16 @@ export function useCourseContent(courseId: string): CourseContentHook {
         })) || [])
     ], [items, mindMaps, flashcardSets, quizzes, summaries]);
 
+    const queryClient = useQueryClient()
+
     const refetch = () => {
-        refetchItems()
-        // Invalidate others if needed via queryClient in parent, or return all refetches.
-        // For simplicity, we assume generic invalidation handles most, but we expose one main refetch.
+        // Invalidate all content queries for this course
+        queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+        queryClient.invalidateQueries({ queryKey: ['mindmaps', courseId] })
+        queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] })
+        queryClient.invalidateQueries({ queryKey: ['quizzes', courseId] })
+        queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
+        queryClient.invalidateQueries({ queryKey: ['plans', courseId] }) // Good measure
     }
 
     return {
