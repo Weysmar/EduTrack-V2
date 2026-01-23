@@ -58,5 +58,16 @@ export const financeApi = {
     getCategories: async () => {
         const { data } = await apiClient.get<TransactionCategory[]>('/finance/categories');
         return data;
+    },
+
+    // Import
+    uploadTransactions: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const { data } = await apiClient.post('/finance/transactions/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return data;
     }
 };
