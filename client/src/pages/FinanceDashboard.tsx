@@ -85,6 +85,15 @@ export default function FinanceDashboard() {
     const pieData = getCategoryBreakdown();
     const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    // Placeholder import handler - will connect to backend API later
+    const handleImport = async (file: File) => {
+        // TODO: Call API endpoint
+        console.log("Importing file:", file.name);
+        return new Promise(resolve => setTimeout(resolve, 1500));
+    };
+
     return (
         <div className="min-h-screen p-4 md:p-8 space-y-8 animate-in fade-in">
             {/* Header */}
@@ -94,6 +103,14 @@ export default function FinanceDashboard() {
                     <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
+                        title="Importer"
+                    >
+                        <Upload className="h-4 w-4" />
+                        <span className="hidden sm:inline">Importer</span>
+                    </button>
                     <button
                         onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
