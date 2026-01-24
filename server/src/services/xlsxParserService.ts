@@ -139,6 +139,15 @@ export const parseXlsx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]
 
                     if (!description) description = "Import XLSX";
 
+                    // Skip rows that look like Balance summaries or headers
+                    const descLower = description.toLowerCase();
+                    if (descLower.startsWith('solde ') ||
+                        descLower.startsWith('ancien solde') ||
+                        descLower.includes('solde au') ||
+                        descLower.match(/^\d{5}[\s.-]?\d{6,}[A-Z]?$/)) { // Account number pattern detection
+                        continue;
+                    }
+
                     const type = amount >= 0 ? 'INCOME' : 'EXPENSE';
 
                     transactions.push({

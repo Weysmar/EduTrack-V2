@@ -3,10 +3,12 @@ import { financeApi } from '@/lib/api/financeApi';
 import { Transaction, FinancialAccount } from '@/types/finance';
 
 interface FinanceFilters {
-    month: number;
-    year: number;
+    month: number | null;
+    year: number | null;
     accountId: string | null;
     categoryId: string | null;
+    minAmount?: number | null;
+    maxAmount?: number | null;
 }
 
 interface FinanceState {
@@ -30,6 +32,13 @@ interface FinanceState {
     getTotalExpenses: () => number;
     getBalance: () => number;
     getCategoryBreakdown: () => { category: string; amount: number }[];
+
+    // Bank Actions
+    banks: any[]; // Replace with Bank type
+    fetchBanks: () => Promise<void>;
+    createBank: (data: any) => Promise<void>;
+    updateBank: (id: string, data: any) => Promise<void>;
+    deleteBank: (id: string) => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
@@ -48,14 +57,22 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         try {
             const { month, year, accountId, categoryId } = get().filters;
 
-            const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+            let startDate: Date | undefined;
+            let endDate: Date | undefined;
 
+            if (month !== null && year !== null) { // Fix: Checks if filtering is active
+                startDate = new Date(year, month, 1);
+                endDate = new Date(year, month + 1, 0, 23, 59, 59);
+            }
+
+            // API supports missing start/end for "all time"
             const data = await financeApi.getTransactions({
                 startDate,
                 endDate,
                 accountId: accountId || undefined,
-                categoryId: categoryId || undefined
+                categoryId: categoryId || undefined,
+                minAmount: get().filters.minAmount || undefined,
+                maxAmount: get().filters.maxAmount || undefined
             });
 
             // Ensure dates are Date objects (API sends strings)
@@ -151,12 +168,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
     importTransactions: async (file: File) => {
         try {
-            await financeApi.uploadTransactions(file); // Ensure API has this method exposed
-            // Fetch is handled by caller or we can do it here
-            // get().fetchTransactions(); 
+            await financeApi.uploadTransactions(file);
+            // Refresh everything
+            await get().fetchTransactions();
+            await get().fetchAccounts();
         } catch (error) {
             console.error("Import error", error);
-            throw error; // Re-throw to let UI show error
+            throw error;
         }
     },
 
@@ -218,5 +236,28 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             category,
             amount
         }));
+    },
+
+    // Bank Implementation
+    banks: [],
+    fetchBanks: async () => {
+        try {
+            const banks = await financeApi.getBanks();
+            set({ banks });
+        } catch (error) {
+            console.error('Failed to fetch banks', error);
+        }
+    },
+    createBank: async (data) => {
+        await financeApi.createBank(data);
+        get().fetchBanks();
+    },
+    updateBank: async (id, data) => {
+        await financeApi.updateBank(id, data);
+        get().fetchBanks();
+    },
+    deleteBank: async (id) => {
+        await financeApi.deleteBank(id);
+        get().fetchBanks();
     }
 }));

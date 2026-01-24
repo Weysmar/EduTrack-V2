@@ -6,22 +6,74 @@ import { fr } from 'date-fns/locale';
 import { ExpenseDistributionChart } from './ExpenseDistributionChart';
 import { TransactionList } from './TransactionList';
 import { AddTransactionModal } from './AddTransactionModal';
+import { AdvancedFilterBar } from '../../components/finance/AdvancedFilterBar';
+import { BankManager } from '../../components/finance/BankManager';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const FinanceDashboard: React.FC = () => {
-    const { currentDate, setCurrentDate, getMonthlyStats } = useFinanceStore();
-    const { income, expenses, balance } = getMonthlyStats();
-    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const { filters, setFilters, transactions, accounts, getTotalIncome, getTotalExpenses, getBalance } = useFinanceStore();
 
-    // Mock data pour le graphique d'évolution (à remplacer par data réelle)
+    // Derived state for display
+    const currentDate = (filters.month !== null && filters.year !== null)
+        ? new Date(filters.year, filters.month)
+        : new Date();
+
+    const isAllTime = filters.month === null;
+
+    // Actions
+    const handlePrevMonth = () => {
+        if (isAllTime) {
+            const now = new Date();
+            setFilters({ month: now.getMonth(), year: now.getFullYear() });
+            return;
+        }
+        const d = new Date(currentDate);
+        d.setMonth(d.getMonth() - 1);
+        setFilters({ month: d.getMonth(), year: d.getFullYear() });
+    };
+
+    const handleNextMonth = () => {
+        if (isAllTime) {
+            const now = new Date();
+            setFilters({ month: now.getMonth(), year: now.getFullYear() });
+            return;
+        }
+        const d = new Date(currentDate);
+        d.setMonth(d.getMonth() + 1);
+        setFilters({ month: d.getMonth(), year: d.getFullYear() });
+    };
+
+    const toggleAllTime = () => {
+        if (isAllTime) {
+            const now = new Date();
+            setFilters({ month: now.getMonth(), year: now.getFullYear() });
+        } else {
+            setFilters({ month: null, year: null });
+        }
+    };
+
+    const balanceAmount = getBalance();
+    const incomeAmount = getTotalIncome();
+    const expenseAmount = getTotalExpenses();
+
+    // Chart data based on transactions
+    // (Simplified for now, using mock or existing transactions)
+    // Ideally we aggregate transactions by month from the store
     const chartData = [
         { name: 'Jan', solde: 1200 },
         { name: 'Fév', solde: 1900 },
         { name: 'Mar', solde: 1500 },
         { name: 'Avr', solde: 2100 },
         { name: 'Mai', solde: 2400 },
-        { name: 'Juin', solde: balance }, // Mois actuel
+        { name: 'Juin', solde: balanceAmount }, // Current
     ];
+
+
+    // ... existing imports ...
+
+    // ... inside FinanceDashboard ...
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isBankModalOpen, setIsBankModalOpen] = React.useState(false);
 
     return (
         <div className="p-6 space-y-6 bg-slate-950 min-h-screen text-slate-100 pb-24 md:pb-6">
@@ -29,37 +81,65 @@ export const FinanceDashboard: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                        Finances
+                        Portefeuille
                     </h1>
-                    <p className="text-slate-400 text-sm">Vue d'ensemble de votre patrimoine</p>
+                    <p className="text-slate-400 text-sm">Gérez vos finances comme un pro avec l'IA.</p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                        onClick={toggleAllTime}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isAllTime ? 'bg-blue-600 text-white' : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800'}`}
                     >
-                        <ChevronLeft className="w-5 h-5 text-slate-400" />
+                        Tout
                     </button>
-                    <span className="font-medium min-w-[120px] text-center capitalize">
-                        {format(currentDate, 'MMMM yyyy', { locale: fr })}
-                    </span>
-                    <button
-                        onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-                    >
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
-                    </button>
+
+                    <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
+                        <button
+                            onClick={handlePrevMonth}
+                            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-400" />
+                        </button>
+                        <span className="font-medium min-w-[120px] text-center capitalize">
+                            {isAllTime ? "Historique complet" : format(currentDate, 'MMMM yyyy', { locale: fr })}
+                        </span>
+                        <button
+                            onClick={handleNextMonth}
+                            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                            <ChevronRight className="w-5 h-5 text-slate-400" />
+                        </button>
+                    </div>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-500/20"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>Transaction</span>
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsBankModalOpen(true)}
+                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl transition-all border border-slate-700"
+                    >
+                        <Wallet className="w-5 h-5" />
+                        <span className="hidden md:inline">Banques</span>
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-500/20"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span>Transaction</span>
+                    </button>
+                </div>
             </div>
+
+            {/* Advanced Filters */}
+            <div className="w-full">
+                <AdvancedFilterBar />
+            </div>
+
+            {/* ... rest of grid ... */}
+
+
+
 
             {/* KPIs Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -73,7 +153,7 @@ export const FinanceDashboard: React.FC = () => {
                         <span className="text-sm font-medium">Reste à vivre</span>
                     </div>
                     <div className="text-3xl font-bold tracking-tight">
-                        {balance.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        {balanceAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </div>
                     <div className="text-xs text-slate-500 mt-2">Solde actuel disponible</div>
                 </div>
@@ -85,7 +165,7 @@ export const FinanceDashboard: React.FC = () => {
                         <span className="text-sm font-medium">Entrées</span>
                     </div>
                     <div className="text-2xl font-bold text-emerald-400/90">
-                        +{income.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        +{incomeAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </div>
                     <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
                         <div className="bg-emerald-500 h-full rounded-full" style={{ width: '100%' }} />
@@ -99,12 +179,12 @@ export const FinanceDashboard: React.FC = () => {
                         <span className="text-sm font-medium">Sorties</span>
                     </div>
                     <div className="text-2xl font-bold text-rose-400/90">
-                        -{expenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        -{expenseAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </div>
                     <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
                         <div
                             className="bg-rose-500 h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min((expenses / (income || 1)) * 100, 100)}%` }}
+                            style={{ width: `${Math.min((expenseAmount / (incomeAmount || 1)) * 100, 100)}%` }}
                         />
                     </div>
                 </div>
@@ -192,6 +272,7 @@ export const FinanceDashboard: React.FC = () => {
             </div>
 
             <AddTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-        </div>
+            {isBankModalOpen && <BankManager onClose={() => setIsBankModalOpen(false)} />}
+        </div >
     );
 };
