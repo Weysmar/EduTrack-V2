@@ -1,6 +1,6 @@
 // import { format } from 'date-fns'; // Removed for stability
 // import { fr } from 'date-fns/locale';
-import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles, ArrowRightLeft } from 'lucide-react';
 import { Transaction } from '@/types/finance';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,18 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         }
     };
 
+    const getTypeColor = (type: string) => {
+        if (type === 'INCOME') return 'text-green-500 bg-green-500/10';
+        if (type === 'EXPENSE') return 'text-red-500 bg-red-500/10';
+        return 'text-blue-500 bg-blue-500/10'; // TRANSFER
+    };
+
+    const getTypeIcon = (type: string) => {
+        if (type === 'INCOME') return <ArrowUpRight className="h-5 w-5" />;
+        if (type === 'EXPENSE') return <ArrowDownLeft className="h-5 w-5" />;
+        return <ArrowRightLeft className="h-5 w-5" />; // TRANSFER
+    };
+
     return (
         <div className="space-y-4">
             {transactions.map((tx) => (
@@ -50,8 +62,8 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                 >
                     <div className="flex items-center justify-between p-4">
                         <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-full ${tx.type === 'INCOME' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                {tx.type === 'INCOME' ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownLeft className="h-5 w-5" />}
+                            <div className={`p-2 rounded-full ${getTypeColor(tx.type)}`}>
+                                {getTypeIcon(tx.type)}
                             </div>
 
                             <div>
@@ -72,8 +84,8 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <span className={`font-bold ${tx.type === 'INCOME' ? 'text-green-500' : 'text-red-500'}`}>
-                                {tx.type === 'INCOME' ? '+' : '-'}{Math.abs(tx.amount).toFixed(2)} €
+                            <span className={`font-bold ${tx.type === 'INCOME' ? 'text-green-500' : (tx.type === 'EXPENSE' ? 'text-red-500' : 'text-blue-500')}`}>
+                                {tx.type === 'INCOME' ? '+' : (tx.type === 'EXPENSE' ? '-' : '')}{Math.abs(tx.amount).toFixed(2)} €
                             </span>
 
                             <div className="flex gap-2">

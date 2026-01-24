@@ -15,7 +15,7 @@ export interface Transaction {
     profileId: string;
     accountId?: string;
     amount: number;
-    type: 'INCOME' | 'EXPENSE';
+    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
     date: Date;
     description?: string;
     categoryId?: string;

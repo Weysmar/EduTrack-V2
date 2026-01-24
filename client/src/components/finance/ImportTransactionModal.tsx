@@ -50,10 +50,10 @@ export function ImportTransactionModal({ isOpen, onClose, onImport }: ImportTran
 
     const validateAndSetFile = (f: File) => {
         const ext = f.name.split('.').pop()?.toLowerCase();
-        if (['csv', 'ofx', 'qif'].includes(ext || '')) {
+        if (['csv', 'ofx', 'xlsx', 'qif'].includes(ext || '')) {
             setFile(f);
         } else {
-            toast.error(t('import.error.format') || "Format non supporté. Utilisez CSV, OFX ou QIF.");
+            toast.error(t('import.error.format') || "Format non supporté. Utilisez CSV, XLSX, OFX ou QIF.");
         }
     };
 
@@ -98,7 +98,7 @@ export function ImportTransactionModal({ isOpen, onClose, onImport }: ImportTran
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".csv,.ofx,.qif"
+                            accept=".csv,.ofx,.xlsx,.qif"
                             className="hidden"
                             onChange={handleFileSelect}
                         />
@@ -126,7 +126,7 @@ export function ImportTransactionModal({ isOpen, onClose, onImport }: ImportTran
                                 </div>
                                 <div className="space-y-1">
                                     <p className="font-medium">Cliquez ou glissez un fichier ici</p>
-                                    <p className="text-xs text-muted-foreground">Supporte CSV (Point-virgule), OFX, QIF</p>
+                                    <p className="text-xs text-muted-foreground">Supporte CSV, XLSX, OFX</p>
                                 </div>
                             </>
                         )}
