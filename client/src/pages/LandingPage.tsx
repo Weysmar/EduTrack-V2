@@ -70,7 +70,7 @@ export function LandingPage() {
                         >
                             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
                                 Une Suite Complète pour <br />
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-violet-500 dark:from-blue-400 dark:to-purple-400">
                                     Vos Études & Vos Finances
                                 </span>
                             </h1>

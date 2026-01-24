@@ -7,25 +7,18 @@ import { CreateTransactionModal } from '@/components/finance/CreateTransactionMo
 import { ImportTransactionModal } from '@/components/finance/ImportTransactionModal';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
+import { StatCardVariant } from '@/components/ui/StatCard';
 
-// Custom Card Component for stats
-function StatCard({ title, value, icon, color }: any) {
-    return (
-        <div className="bg-card border rounded-xl p-6 shadow-sm flex items-center justify-between">
-            <div>
-                <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                <h3 className={cn("text-2xl font-bold mt-1", color)}>{value}</h3>
-            </div>
-            <div className={cn("p-3 rounded-full bg-muted/50", color ? `bg-${color.split('-')[1]}-500/10` : '')}>
-                {icon}
-            </div>
-        </div>
-    );
-}
+// Helper to get HSL values from CSS variables
+const getHslColor = (variable: string) => {
+    const root = document.documentElement;
+    const value = getComputedStyle(root).getPropertyValue(variable).trim();
+    return value ? `hsl(${value})` : '#64748b'; // fallback
+};
 
 export default function FinanceDashboard() {
     useEffect(() => {
-        console.log("💰 FinanceDashboard V2.3 (Final Fix) Loaded");
+        console.log("💰 FinanceDashboard V3.0 (UI Consistent) Loaded");
     }, []);
 
     const {
@@ -48,6 +41,30 @@ export default function FinanceDashboard() {
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
     const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
+
+    // Theme-aware colors
+    const [colors, setColors] = useState({
+        primary: '#3b82f6',
+        green: '#10b981',
+        red: '#ef4444'
+    });
+
+    useEffect(() => {
+        // Update colors on mount and when theme changes could happen (simplest is on mount or via observer, 
+        // but for now mount + timeout usually catches initial theme load)
+        const updateColors = () => {
+            // We can read directly or rely on hardcoded Tailwind HSL maps if we know them.
+            // Best dynamic way:
+            setColors({
+                primary: getHslColor('--primary'),
+                green: '#10b981', // These standard colors might not change with theme, unlike primary
+                red: '#ef4444'
+            });
+        };
+        updateColors();
+        // A simple way to react to theme change is listening to class changes on HTML, but useEffect dependency on nothing usually runs once.
+        // We can re-calc if needed.
+    }, []);
 
     useEffect(() => {
         console.log("💰 FinanceDashboard V2.2 (Chunk Fix) Loaded");
@@ -90,15 +107,13 @@ export default function FinanceDashboard() {
         .slice(-30);
 
     const pieData = getCategoryBreakdown();
-    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    const COLORS = [colors.green, colors.primary, '#f59e0b', colors.red, '#8b5cf6', '#ec4899'];
 
     const handleImport = async (file: File): Promise<void> => {
         await importTransactions(file);
         // Refresh handled by store or can be explicit here if needed
         await fetchTransactions();
     };
-
-
 
     return (
         <div className="min-h-screen p-4 md:p-8 space-y-8 animate-in fade-in">
@@ -145,23 +160,23 @@ export default function FinanceDashboard() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard
+                <StatCardVariant
                     title={t('finance.balance')}
                     value={`${balance.toFixed(2)} €`}
-                    icon={<Wallet className="h-6 w-6 text-primary" />}
-                    color="text-primary"
+                    icon={<Wallet className="h-6 w-6" />}
+                    variant="primary"
                 />
-                <StatCard
+                <StatCardVariant
                     title={t('finance.income')}
                     value={`+${income.toFixed(2)} €`}
-                    icon={<TrendingUp className="h-6 w-6 text-green-500" />}
-                    color="text-green-500"
+                    icon={<TrendingUp className="h-6 w-6" />}
+                    variant="green"
                 />
-                <StatCard
+                <StatCardVariant
                     title={t('finance.expense')}
                     value={`-${expenses.toFixed(2)} €`}
-                    icon={<TrendingDown className="h-6 w-6 text-red-500" />}
-                    color="text-red-500"
+                    icon={<TrendingDown className="h-6 w-6" />}
+                    variant="red"
                 />
             </div>
 
@@ -174,12 +189,12 @@ export default function FinanceDashboard() {
                             <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={colors.green} stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor={colors.green} stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={colors.red} stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor={colors.red} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <XAxis dataKey="date" hide />
@@ -188,8 +203,8 @@ export default function FinanceDashboard() {
                                     contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
                                     formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
                                 />
-                                <Area type="monotone" dataKey="income" stroke="#10b981" fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
-                                <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
+                                <Area type="monotone" dataKey="income" stroke={colors.green} fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
+                                <Area type="monotone" dataKey="expense" stroke={colors.red} fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
