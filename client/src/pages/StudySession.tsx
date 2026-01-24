@@ -114,7 +114,7 @@ export function StudySession() {
 
                     <div className="space-y-2">
                         <button
-                            onClick={() => navigate('/flashcards')}
+                            onClick={() => navigate('/edu/flashcards')}
                             className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90"
                         >
                             Return to Deck List
@@ -131,7 +131,7 @@ export function StudySession() {
                 <h2 className="text-2xl font-bold mb-2">All caught up! 🎉</h2>
                 <p className="text-muted-foreground mb-6 max-w-sm">No cards due for review.</p>
                 <div className="flex gap-4">
-                    <button onClick={() => navigate('/flashcards')} className="px-6 py-2 bg-muted rounded-lg font-medium hover:bg-muted/80 transition-colors">
+                    <button onClick={() => navigate('/edu/flashcards')} className="px-6 py-2 bg-muted rounded-lg font-medium hover:bg-muted/80 transition-colors">
                         Return to list
                     </button>
                     <button
