@@ -51,14 +51,45 @@ export const parseXlsx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]
                     amountCol = header.findIndex(c => c.includes('montant') || c.includes('solde') === false); // Avoid Solde
                 }
             } else {
-                // No Header found, use column indices logic similar to CSV parser for LCL
-                // Usually Col 0 = Date, Col 1 or 2 = Description, Col 3+ = Amount
-                // Let's assume standard first few rows are metadata and data starts later
-                // Fallback: Check types of first valid data row
-                headerRowIndex = 0; // Assume data starts immediately if no header found? Or retry heuristics
-                dateCol = 0;
-                descCol = 2; // Guess
-                amountCol = 1; // Guess
+                // No Header found - Type-based detection on first data row
+                // Heuristic: 
+                // Date = number > 30000 (Excel serial) or Date object
+                // Amount = number (but not date-like)
+                // Description = string
+
+                headerRowIndex = -1; // Data starts at 0
+                const firstRow = jsonData[0]; // Sample first row
+
+                if (firstRow && Array.isArray(firstRow)) {
+                    // Reset defaults
+                    dateCol = -1;
+                    amountCol = -1;
+                    descCol = -1;
+
+                    firstRow.forEach((cell, idx) => {
+                        const type = typeof cell;
+                        if (type === 'number') {
+                            if (cell > 30000 && cell < 60000 && dateCol === -1) {
+                                // Likely a date
+                                dateCol = idx;
+                            } else if (amountCol === -1) {
+                                amountCol = idx;
+                            }
+                        } else if (type === 'string' && descCol === -1) {
+                            descCol = idx;
+                        }
+                    });
+
+                    // Defaults if detection fails
+                    if (dateCol === -1) dateCol = 0;
+                    if (amountCol === -1) amountCol = 2; // Common pattern: Date, Desc, Amount
+                    if (descCol === -1) descCol = 1;
+                } else {
+                    // Fallback default
+                    dateCol = 0;
+                    amountCol = 1;
+                    descCol = 2;
+                }
             }
 
             // Process Rows
