@@ -4,6 +4,10 @@ export interface Bank {
     icon?: string;
     color: string;
     profileId: string;
+    swiftCode?: string;
+    isActive: boolean;
+    isArchived: boolean;
+    metadata?: any;
 }
 
 export interface FinancialAccount {
@@ -13,10 +17,15 @@ export interface FinancialAccount {
     name: string;
     type: 'CHECKING' | 'SAVINGS' | 'CASH';
     balance: number;
+    currency: string;
     icon?: string;
     color: string;
     createdAt: Date;
     updatedAt: Date;
+    lastSyncedAt?: Date;
+    isArchived: boolean;
+    isAutoDetected: boolean;
+    metadata?: any;
 }
 
 export interface Transaction {
@@ -34,6 +43,11 @@ export interface Transaction {
     aiEnriched: boolean;
     aiSuggestions?: any;
     createdAt: Date;
+
+    // V2 Fields
+    classification: 'EXTERNAL' | 'INTERNAL_INTRA' | 'INTERNAL_INTER' | 'UNKNOWN';
+    confidenceScore: number;
+    beneficiaryIban?: string;
 }
 
 export interface TransactionCategory {

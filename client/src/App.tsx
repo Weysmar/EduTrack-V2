@@ -30,6 +30,7 @@ const MindMapsPage = lazy(() => import('@/pages/MindMapsPage').then(m => ({ defa
 const InvestigationBoard = lazy(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
 const FinanceDashboard = lazy(() => import('@/pages/FinanceDashboard').then(m => ({ default: m.default })))
 const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings').then(m => ({ default: m.FinanceSettings })))
+const ImportPage = lazy(() => import('@/pages/finance/ImportPage').then(m => ({ default: m.default })))
 
 // Suspense Wrapper
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
@@ -150,6 +151,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'settings',
                                 element: <LazyPage><FinanceSettings /></LazyPage>,
+                            },
+                            {
+                                path: 'import',
+                                element: <LazyPage><ImportPage /></LazyPage>,
                             }
                         ]
                     }
