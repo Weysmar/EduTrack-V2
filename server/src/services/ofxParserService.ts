@@ -8,7 +8,6 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
             let ofxString = fileBuffer.toString('utf-8');
 
             // Fix: Strip OFX Headers (everything before first <OFX> tag, case insensitive)
-            // OFX files often start with headers like OFXHEADER:100... which breaks XML parsers
             const ofxIndex = ofxString.search(/<OFX>/i);
             if (ofxIndex !== -1) {
                 ofxString = ofxString.substring(ofxIndex);
@@ -17,26 +16,17 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
             parse(ofxString).then((data: any) => {
                 const transactions: ParsedTransaction[] = [];
 
-                // Navigate OFX Structure
-                // OFX -> BANKMSGSRSV1 -> STMTTRNRS -> STMTRS -> BANKTRANLIST -> STMTTRN
-                // Note: ofx-parser usually camelCases or keeps tags. Let's dump structure ideally, but we guess.
+                // Recursive search for transaction lists (STMTTRN)
+                const stmtList = findTransactionNodes(data);
 
-                // Handle version difference (1.0.2 vs 2.0)
-                const bankMsgs = data.OFX?.BANKMSGSRSV1?.STMTTRNRS?.STMTRS?.BANKTRANLIST?.STMTTRN ||
-                    data.OFX?.CREDITCARDMSGSRSV1?.CCSTMTTRNRS?.CCSTMTRS?.BANKTRANLIST?.STMTTRN;
-
-                if (!bankMsgs) {
-                    console.error("OFX Structure Invalid (Keys found):", Object.keys(data?.OFX || {}));
-                    reject(new Error("Structure OFX non reconnue ou pas de transactions."));
+                if (!stmtList || stmtList.length === 0) {
+                    console.error("OFX Structure Valid keys:", Object.keys(data));
+                    reject(new Error("Aucune transaction trouvée (Structure incompatible)."));
                     return;
                 }
 
-                // Ensure it's an array (single transaction might be object)
-                const stmtList = Array.isArray(bankMsgs) ? bankMsgs : [bankMsgs];
-
                 stmtList.forEach((stmt: any) => {
                     try {
-                        // OFX Dates are YYYYMMDDHHMMSS usually
                         const dateStr = stmt.DTPOSTED;
                         const date = parseOfxDate(dateStr);
 
@@ -44,7 +34,7 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
                         const name = stmt.NAME || '';
                         const memo = stmt.MEMO || '';
                         const description = `${name} ${memo}`.trim();
-                        const fitId = stmt.FITID; // Could use as importedId
+                        const fitId = stmt.FITID;
 
                         if (date && !isNaN(amount)) {
                             transactions.push({
@@ -60,11 +50,7 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
                     }
                 });
 
-                if (transactions.length === 0) {
-                    reject(new Error("Aucune transaction trouvée dans le fichier OFX."));
-                } else {
-                    resolve(transactions);
-                }
+                resolve(transactions);
 
             }).catch((err: any) => {
                 console.error("OFX Parse Error:", err);
@@ -77,8 +63,35 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
     });
 };
 
+// Helper to recursively find STMTTRN nodes
+function findTransactionNodes(obj: any): any[] {
+    let results: any[] = [];
+
+    if (!obj || typeof obj !== 'object') return results;
+
+    // Check if current object represents a transaction list (BANKTRANLIST) containing STMTTRN
+    if (obj.STMTTRN) {
+        if (Array.isArray(obj.STMTTRN)) {
+            results = results.concat(obj.STMTTRN);
+        } else {
+            results.push(obj.STMTTRN);
+        }
+    }
+
+    // Recurse keys
+    Object.keys(obj).forEach(key => {
+        // Optimization: Don't recurse into strings/numbers
+        if (typeof obj[key] === 'object') {
+            const childResults = findTransactionNodes(obj[key]);
+            results = results.concat(childResults);
+        }
+    });
+
+    return results;
+}
+
 function parseOfxDate(dateStr: string): Date {
-    if (!dateStr || dateStr.length < 8) return new Date(); // Fallback
+    if (!dateStr || dateStr.length < 8) return new Date();
     // YYYYMMDD...
     const year = dateStr.substring(0, 4);
     const month = dateStr.substring(4, 6);
