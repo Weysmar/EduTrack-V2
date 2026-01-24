@@ -282,10 +282,19 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
                                             className="w-full h-full object-contain"
                                             loading="lazy"
                                             onError={(e) => {
-                                                // Fallback to text initials if image fails
                                                 e.currentTarget.style.display = 'none';
-                                                e.currentTarget.parentElement!.innerText = preset.name.substring(0, 2).toUpperCase();
-                                                e.currentTarget.parentElement!.className += " text-slate-900 font-bold text-sm bg-slate-200 flex items-center justify-center w-full h-full";
+                                                // Safer fallback: find the parent and append text if empty, or just rely on the fact that hiding img reveals parent bg
+                                                const parent = e.currentTarget.parentElement;
+                                                if (parent) {
+                                                    parent.classList.add('flex', 'items-center', 'justify-center', 'bg-slate-200');
+                                                    // Create a span for initials if not present
+                                                    if (!parent.querySelector('.initials-fallback')) {
+                                                        const span = document.createElement('span');
+                                                        span.className = 'initials-fallback text-slate-900 font-bold text-sm';
+                                                        span.innerText = preset.name.substring(0, 2).toUpperCase();
+                                                        parent.appendChild(span);
+                                                    }
+                                                }
                                             }}
                                         />
                                     </div>
