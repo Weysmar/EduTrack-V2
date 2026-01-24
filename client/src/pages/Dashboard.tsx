@@ -201,8 +201,8 @@ export function Dashboard() {
     // Quick Actions
     const quickActions = [
         { icon: Plus, label: "Nouveau Sujet", action: () => setIsCreateModalOpen(true), color: "bg-blue-500" },
-        { icon: PenTool, label: "Nouvelle Note", link: lastActiveCourse ? `/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" }, // Fallback logic
-        { icon: Zap, label: "Mode Focus", link: "/focus", color: "bg-violet-600" },
+        { icon: PenTool, label: "Nouvelle Note", link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" }, // Fallback logic
+        { icon: Zap, label: "Mode Focus", link: "/edu/focus", color: "bg-violet-600" },
         { icon: CalendarIcon, label: "Mon Planning", action: () => setIsRevisionModalOpen(true), color: "bg-emerald-500" },
     ]
 
@@ -243,7 +243,7 @@ export function Dashboard() {
                         {lastActiveCourse && (
                             <div className="pt-2">
                                 <Link
-                                    to={`/course/${lastActiveCourse.id}`}
+                                    to={`/edu/course/${lastActiveCourse.id}`}
                                     className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
                                 >
                                     <Zap className="w-4 h-4 fill-primary-foreground dark:fill-slate-900" />
@@ -357,7 +357,7 @@ export function Dashboard() {
                                         {recentCourses.slice(0, 4).map((course: any) => (
                                             <Link
                                                 key={course.id}
-                                                to={`/course/${course.id}`}
+                                                to={`/edu/course/${course.id}`} /** FIX: Add /edu prefix */
                                                 className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
                                             >
                                                 <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
@@ -396,7 +396,7 @@ export function Dashboard() {
                                 <div className="bg-card border rounded-2xl p-4 space-y-1 max-h-[400px] overflow-auto">
                                     {activity.length > 0 ? (
                                         activity.map((item: any) => (
-                                            <Link key={item.id} to={`/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
+                                            <Link key={item.id} to={`/edu/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
                                                 <div className="p-2 rounded-lg bg-background border shadow-sm group-hover:scale-105 transition-transform">
                                                     {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
                                                     {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
