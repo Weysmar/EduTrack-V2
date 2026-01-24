@@ -440,8 +440,14 @@ export const uploadTransactions = async (req: AuthRequest, res: Response) => {
 
         if (ext === 'csv') {
             transactions = await parseCsv(req.file.buffer);
+        } else if (ext === 'xlsx') {
+            const { parseXlsx } = await import('../services/xlsxParserService'); // Lazy import
+            transactions = await parseXlsx(req.file.buffer);
+        } else if (ext === 'ofx') {
+            const { parseOfx } = await import('../services/ofxParserService'); // Lazy import
+            transactions = await parseOfx(req.file.buffer);
         } else {
-            return res.status(400).json({ error: "Unsupported file format. Only CSV supported for now." });
+            return res.status(400).json({ error: "Unsupported file format. Only CSV, XLSX, OFX supported." });
         }
 
         // 3. AI Categorization (Batch)
