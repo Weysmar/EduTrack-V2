@@ -5,11 +5,14 @@ import { ParsedTransaction } from './csvParserService';
 export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]> => {
     return new Promise((resolve, reject) => {
         try {
-            const ofxString = fileBuffer.toString('utf-8');
+            let ofxString = fileBuffer.toString('utf-8');
 
-            // Clean up potentially invalid SGML/XML if needed, typically ofx-parser handles it well
-            // But sometimes OFX headers (before <OFX>) cause issues if parser expects pure XML.
-            // ofx-parser is robust enough usually.
+            // Fix: Strip OFX Headers (everything before first <OFX> tag, case insensitive)
+            // OFX files often start with headers like OFXHEADER:100... which breaks XML parsers
+            const ofxIndex = ofxString.search(/<OFX>/i);
+            if (ofxIndex !== -1) {
+                ofxString = ofxString.substring(ofxIndex);
+            }
 
             parse(ofxString).then((data: any) => {
                 const transactions: ParsedTransaction[] = [];
@@ -23,6 +26,7 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
                     data.OFX?.CREDITCARDMSGSRSV1?.CCSTMTTRNRS?.CCSTMTRS?.BANKTRANLIST?.STMTTRN;
 
                 if (!bankMsgs) {
+                    console.error("OFX Structure Invalid (Keys found):", Object.keys(data?.OFX || {}));
                     reject(new Error("Structure OFX non reconnue ou pas de transactions."));
                     return;
                 }
@@ -63,6 +67,7 @@ export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]>
                 }
 
             }).catch((err: any) => {
+                console.error("OFX Parse Error:", err);
                 reject(new Error("Erreur de parsing OFX: " + err.message));
             });
 
