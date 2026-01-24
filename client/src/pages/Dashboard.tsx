@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 import { courseQueries, itemQueries, analyticsQueries, mindmapQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
+import { StatCardVariant } from '@/components/ui/StatCard';
 
 export function Dashboard() {
     const { t } = useLanguage()
@@ -302,43 +303,37 @@ export function Dashboard() {
                     <div className="md:col-span-12 space-y-6">
 
                         {/* STATS ROW */}
+
+                        {/* STATS ROW */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                                <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-                                    <Book className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.courses')}</p>
-                                    <h2 className="text-2xl font-bold">{courseCount}</h2>
-                                </div>
-                            </div>
-                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                                <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
-                                    <Dumbbell className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.exercises')}</p>
-                                    <h2 className="text-2xl font-bold">{exerciseCount}</h2>
-                                </div>
-                            </div>
-                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                                <div className="p-3 bg-yellow-500/10 rounded-xl text-yellow-500">
-                                    <FileText className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.notes')}</p>
-                                    <h2 className="text-2xl font-bold">{noteCount}</h2>
-                                </div>
-                            </div>
-                            <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all hover:bg-card">
-                                <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500">
-                                    <Sparkles className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('dashboard.stats.aiGeneration')}</p>
-                                    <h2 className="text-2xl font-bold">{(activeProfile?.settings as any)?.aiGenerationCount || 0}</h2>
-                                </div>
-                            </div>
+                            <StatCardVariant
+                                title={t('dashboard.stats.courses')}
+                                value={courseCount}
+                                icon={<Book className="h-6 w-6" />}
+                                variant="blue"
+                                className="bg-card/50 backdrop-blur-sm"
+                            />
+                            <StatCardVariant
+                                title={t('dashboard.stats.exercises')}
+                                value={exerciseCount}
+                                icon={<Dumbbell className="h-6 w-6" />}
+                                variant="green"
+                                className="bg-card/50 backdrop-blur-sm"
+                            />
+                            <StatCardVariant
+                                title={t('dashboard.stats.notes')}
+                                value={noteCount}
+                                icon={<FileText className="h-6 w-6" />}
+                                variant="yellow"
+                                className="bg-card/50 backdrop-blur-sm"
+                            />
+                            <StatCardVariant
+                                title={t('dashboard.stats.aiGeneration')}
+                                value={(activeProfile?.settings as any)?.aiGenerationCount || 0}
+                                icon={<Sparkles className="h-6 w-6" />}
+                                variant="purple"
+                                className="bg-card/50 backdrop-blur-sm"
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
