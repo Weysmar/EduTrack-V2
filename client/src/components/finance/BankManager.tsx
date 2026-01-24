@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinanceStore } from '../../store/financeStore';
 import { BANK_PRESETS, getLogoUrl } from '../../constants/bankPresets';
-import { X, Plus, Trash2, Check, Building } from 'lucide-react';
+import { X, Plus, Trash2, Check, Building, ImageOff } from 'lucide-react';
 
 export const BankManager = ({ onClose }: { onClose: () => void }) => {
     const { banks, createBank, deleteBank } = useFinanceStore();
     const [selectedPreset, setSelectedPreset] = useState<any>(null);
     const [customName, setCustomName] = useState('');
+    const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
     // Derived value for preview
     const name = selectedPreset ? selectedPreset.name : customName;
@@ -25,9 +27,13 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
         setSelectedPreset(null);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+    const handleImageError = (id: string) => {
+        setImageError(prev => ({ ...prev, [id]: true }));
+    };
+
+    const modalContent = (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/90 backdrop-blur">
                     <div>
@@ -54,12 +60,17 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {banks.map((bank: any) => (
-                                    <div key={bank.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 group">
+                                    <div key={bank.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 group hover:border-blue-500/30 transition-all">
                                         <div className="flex items-center gap-3">
-                                            {bank.icon && bank.icon.startsWith('http') ? (
-                                                <img src={bank.icon} alt={bank.name} className="w-10 h-10 rounded-full bg-white p-1 object-contain" />
+                                            {bank.icon && bank.icon.startsWith('http') && !imageError[bank.id] ? (
+                                                <img
+                                                    src={bank.icon}
+                                                    alt={bank.name}
+                                                    className="w-10 h-10 rounded-full bg-white p-1 object-contain"
+                                                    onError={() => handleImageError(bank.id)}
+                                                />
                                             ) : (
-                                                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                                                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
                                                     <Building className="w-5 h-5 text-slate-300" />
                                                 </div>
                                             )}
@@ -90,19 +101,20 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
                             <div className="flex-1 relative">
                                 <input
                                     type="text"
-                                    placeholder="Nom de la banque"
+                                    placeholder="Nom de la banque ou recherche..."
                                     value={customName}
                                     onChange={(e) => {
                                         setCustomName(e.target.value);
                                         setSelectedPreset(null);
                                     }}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all pl-11"
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all pl-11 text-white placeholder:text-slate-500"
                                 />
                                 {selectedPreset && selectedPreset.domain ? (
                                     <img
                                         src={getLogoUrl(selectedPreset.domain)}
                                         className="w-6 h-6 absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white object-contain p-0.5"
                                         alt=""
+                                        onError={(e) => e.currentTarget.style.display = 'none'}
                                     />
                                 ) : (
                                     <Building className="w-5 h-5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -111,7 +123,7 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
                             <button
                                 onClick={handleCreate}
                                 disabled={!name}
-                                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 whitespace-nowrap"
                             >
                                 <Plus className="w-5 h-5" />
                                 Ajouter
@@ -127,21 +139,26 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
                                         setSelectedPreset(preset);
                                         setCustomName('');
                                     }}
-                                    className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-2 hover:bg-slate-800 ${selectedPreset?.name === preset.name
-                                            ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-                                            : 'border-slate-800 bg-slate-900/50'
+                                    className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-3 hover:bg-slate-800 group ${selectedPreset?.name === preset.name
+                                        ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
+                                        : 'border-slate-800 bg-slate-900/50'
                                         }`}
                                 >
-                                    <img
-                                        src={getLogoUrl(preset.domain)}
-                                        alt={preset.name}
-                                        className="w-10 h-10 rounded-full bg-white p-1 object-contain shadow-sm"
-                                        loading="lazy"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + preset.name + '&background=random';
-                                        }}
-                                    />
-                                    <span className="text-xs font-medium text-center text-slate-300 truncate w-full">
+                                    <div className="w-12 h-12 rounded-full bg-white p-1 shadow-sm flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                                        <img
+                                            src={getLogoUrl(preset.domain)}
+                                            alt={preset.name}
+                                            className="w-full h-full object-contain"
+                                            loading="lazy"
+                                            onError={(e) => {
+                                                // Fallback to text initials if image fails
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.parentElement!.innerText = preset.name.substring(0, 2).toUpperCase();
+                                                e.currentTarget.parentElement!.className += " text-slate-900 font-bold text-sm";
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-xs font-medium text-center text-slate-300 truncate w-full group-hover:text-white transition-colors">
                                         {preset.name}
                                     </span>
                                 </button>
@@ -153,4 +170,6 @@ export const BankManager = ({ onClose }: { onClose: () => void }) => {
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
