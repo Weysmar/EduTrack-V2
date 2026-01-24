@@ -152,7 +152,7 @@ export function StudySession() {
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
             {/* Top Bar */}
             <div className="h-14 border-b flex items-center justify-between px-4 bg-card">
-                <button onClick={() => navigate('/flashcards')} className="p-2 hover:bg-muted rounded-full">
+                <button onClick={() => navigate('/edu/flashcards')} className="p-2 hover:bg-muted rounded-full">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div className="font-semibold text-sm">

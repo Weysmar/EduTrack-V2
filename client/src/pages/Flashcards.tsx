@@ -82,7 +82,7 @@ export function Flashcards() {
 
                             <div className="flex gap-3">
                                 <Link
-                                    to={`/flashcards/study/${set.id}`}
+                                    to={`/edu/flashcards/study/${set.id}`}
                                     className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                 >
                                     <Play className="h-4 w-4 fill-current" />
