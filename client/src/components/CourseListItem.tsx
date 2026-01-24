@@ -58,7 +58,7 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
 
     return (
         <div
-            onClick={() => navigate(`/course/${courseId}/item/${item.id}`)}
+            onClick={() => navigate(`/edu/course/${courseId}/item/${item.id}`)}
             className={cn(
                 "group flex items-center justify-between p-4 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer",
                 isSelected ? "ring-2 ring-primary border-primary bg-primary/5 shadow-md" : "border-border shadow-sm"

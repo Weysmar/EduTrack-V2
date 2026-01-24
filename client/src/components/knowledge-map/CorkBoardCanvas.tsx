@@ -159,12 +159,12 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
         // Navigate on double click
         if (node.data.type === 'course') {
             onClose(); // Close modal before navigating
-            navigate(`/course/${node.id}`);
+            navigate(`/edu/course/${node.id}`);
         } else if (node.data.type === 'item') {
             const courseId = node.data.courseId || node.data.data?.courseId;
             if (courseId) {
                 onClose(); // Close modal before navigating
-                navigate(`/course/${courseId}/item/${node.id}`);
+                navigate(`/edu/course/${courseId}/item/${node.id}`);
             } else {
                 // Fallback if courseId is missing (should not happen if data is robust)
                 console.warn("Missing courseId for item navigation", node);
