@@ -119,7 +119,7 @@ export function QuizStudy() {
 
                     <div className="flex gap-4 justify-center">
                         <button
-                            onClick={() => navigate(`/course/${quiz.courseId}`)}
+                            onClick={() => navigate(`/edu/course/${quiz.courseId}`)}
                             className="px-6 py-3 rounded-xl border hover:bg-muted transition-colors font-medium flex items-center gap-2"
                         >
                             <LayoutGrid className="h-4 w-4" />

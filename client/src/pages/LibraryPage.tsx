@@ -69,7 +69,7 @@ export function LibraryPage() {
                     {filteredCourses.map((course: any) => (
                         <Link
                             key={course.id}
-                            to={`/course/${course.id}`}
+                            to={`/edu/course/${course.id}`}
                             className="group bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col h-full"
                         >
                             <div className="h-3 w-full" style={{ backgroundColor: course.color }} />
