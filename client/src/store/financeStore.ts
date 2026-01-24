@@ -39,6 +39,10 @@ interface FinanceState {
     createBank: (data: any) => Promise<void>;
     updateBank: (id: string, data: any) => Promise<void>;
     deleteBank: (id: string) => Promise<void>;
+
+    // Account Actions
+    updateAccount: (id: string, data: Partial<FinancialAccount>) => Promise<void>;
+    deleteAccount: (id: string) => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
@@ -264,5 +268,25 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     deleteBank: async (id) => {
         await financeApi.deleteBank(id);
         get().fetchBanks();
+    },
+
+    updateAccount: async (id, data) => {
+        try {
+            await financeApi.updateAccount(id, data);
+            get().fetchAccounts();
+            get().fetchBanks(); // Refresh banks too as they contain accounts
+        } catch (error) {
+            console.error('Failed to update account', error);
+        }
+    },
+
+    deleteAccount: async (id) => {
+        try {
+            await financeApi.deleteAccount(id);
+            get().fetchAccounts();
+            get().fetchBanks();
+        } catch (error) {
+            console.error('Failed to delete account', error);
+        }
     }
 }));
