@@ -35,6 +35,7 @@ model Profile {
   financialAccounts FinancialAccount[]
   transactions      Transaction[]
   budgets           Budget[]
+  banks             Bank[]
 }
 
 // ... existing models ...
