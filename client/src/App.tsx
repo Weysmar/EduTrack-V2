@@ -38,114 +38,129 @@ const LazyPage = ({ children }: { children: React.ReactNode }) => (
     </Suspense>
 )
 
+import { MetaManager } from '@/components/MetaManager';
+import { Outlet } from 'react-router-dom';
+
+const RootLayout = () => (
+    <>
+        <MetaManager />
+        <Outlet />
+    </>
+);
+
 const router = createBrowserRouter([
     {
-        path: '/',
-        element: <LazyPage><LandingPage /></LazyPage>
-    },
-    {
-        path: '/auth',
-        element: <Navigate to="/" replace />
-    },
-    {
-        element: <RequireAuth />,
+        element: <RootLayout />,
         children: [
             {
-                path: '/hub',
-                element: <LazyPage><HubPage /></LazyPage>
+                path: '/',
+                element: <LazyPage><LandingPage /></LazyPage>
             },
-            // EduTrack Routes
             {
-                path: '/edu',
-                element: <EduLayout />,
+                path: '/auth',
+                element: <Navigate to="/" replace />
+            },
+            {
+                element: <RequireAuth />,
                 children: [
                     {
-                        index: true,
-                        element: <Navigate to="/edu/dashboard" replace />
+                        path: '/hub',
+                        element: <LazyPage><HubPage /></LazyPage>
                     },
+                    // EduTrack Routes
                     {
-                        path: 'dashboard',
-                        element: <LazyPage><Dashboard /></LazyPage>,
+                        path: '/edu',
+                        element: <EduLayout />,
+                        children: [
+                            {
+                                index: true,
+                                element: <Navigate to="/edu/dashboard" replace />
+                            },
+                            {
+                                path: 'dashboard',
+                                element: <LazyPage><Dashboard /></LazyPage>,
+                            },
+                            {
+                                path: 'library',
+                                element: <LazyPage><LibraryPage /></LazyPage>,
+                            },
+                            {
+                                path: 'focus',
+                                element: <LazyPage><FocusPage /></LazyPage>,
+                            },
+                            {
+                                path: 'settings',
+                                element: <LazyPage><SettingsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'board',
+                                element: <LazyPage><InvestigationBoard /></LazyPage>,
+                            },
+                            {
+                                path: 'mindmaps',
+                                element: <LazyPage><MindMapsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'course/:courseId',
+                                element: <LazyPage><CourseView /></LazyPage>,
+                            },
+                            {
+                                path: 'course/:courseId/item/:itemId',
+                                element: <LazyPage><ItemView /></LazyPage>,
+                            },
+                            {
+                                path: 'folder/:folderId',
+                                element: <LazyPage><FolderView /></LazyPage>,
+                            },
+                            {
+                                path: 'flashcards',
+                                element: <LazyPage><Flashcards /></LazyPage>,
+                            },
+                            {
+                                path: 'flashcards/study/:setId',
+                                element: <LazyPage><StudySession /></LazyPage>,
+                            },
+                            {
+                                path: 'quiz/study/:id',
+                                element: <LazyPage><QuizStudy /></LazyPage>,
+                            },
+                            {
+                                path: 'calendar',
+                                element: <LazyPage><CalendarPage /></LazyPage>,
+                            },
+                            {
+                                path: 'profiles',
+                                element: <LazyPage><ProfileManager /></LazyPage>,
+                            }
+                        ]
                     },
+                    // FinanceTrack Routes
                     {
-                        path: 'library',
-                        element: <LazyPage><LibraryPage /></LazyPage>,
-                    },
-                    {
-                        path: 'focus',
-                        element: <LazyPage><FocusPage /></LazyPage>,
-                    },
-                    {
-                        path: 'settings',
-                        element: <LazyPage><SettingsPage /></LazyPage>,
-                    },
-                    {
-                        path: 'board',
-                        element: <LazyPage><InvestigationBoard /></LazyPage>,
-                    },
-                    {
-                        path: 'mindmaps',
-                        element: <LazyPage><MindMapsPage /></LazyPage>,
-                    },
-                    {
-                        path: 'course/:courseId',
-                        element: <LazyPage><CourseView /></LazyPage>,
-                    },
-                    {
-                        path: 'course/:courseId/item/:itemId',
-                        element: <LazyPage><ItemView /></LazyPage>,
-                    },
-                    {
-                        path: 'folder/:folderId',
-                        element: <LazyPage><FolderView /></LazyPage>,
-                    },
-                    {
-                        path: 'flashcards',
-                        element: <LazyPage><Flashcards /></LazyPage>,
-                    },
-                    {
-                        path: 'flashcards/study/:setId',
-                        element: <LazyPage><StudySession /></LazyPage>,
-                    },
-                    {
-                        path: 'quiz/study/:id',
-                        element: <LazyPage><QuizStudy /></LazyPage>,
-                    },
-                    {
-                        path: 'calendar',
-                        element: <LazyPage><CalendarPage /></LazyPage>,
-                    },
-                    {
-                        path: 'profiles',
-                        element: <LazyPage><ProfileManager /></LazyPage>,
+                        path: '/finance',
+                        element: <FinanceLayout />,
+                        children: [
+                            {
+                                index: true,
+                                element: <Navigate to="/finance/dashboard" replace />
+                            },
+                            {
+                                path: 'dashboard',
+                                element: <LazyPage><FinanceDashboard /></LazyPage>,
+                            },
+                            {
+                                path: 'settings',
+                                element: <LazyPage><FinanceSettings /></LazyPage>,
+                            }
+                        ]
                     }
                 ]
             },
-            // FinanceTrack Routes
+            // Fallback
             {
-                path: '/finance',
-                element: <FinanceLayout />,
-                children: [
-                    {
-                        index: true,
-                        element: <Navigate to="/finance/dashboard" replace />
-                    },
-                    {
-                        path: 'dashboard',
-                        element: <LazyPage><FinanceDashboard /></LazyPage>,
-                    },
-                    {
-                        path: 'settings',
-                        element: <LazyPage><FinanceSettings /></LazyPage>,
-                    }
-                ]
+                path: '*',
+                element: <Navigate to="/" replace />,
             }
         ]
-    },
-    // Fallback
-    {
-        path: '*',
-        element: <Navigate to="/" replace />,
     }
 ])
 
