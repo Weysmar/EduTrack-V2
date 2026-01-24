@@ -1,6 +1,15 @@
+export interface Bank {
+    id: string;
+    name: string;
+    icon?: string;
+    color: string;
+    profileId: string;
+}
+
 export interface FinancialAccount {
     id: string;
     profileId: string;
+    bankId?: string; // Link to Bank
     name: string;
     type: 'CHECKING' | 'SAVINGS' | 'CASH';
     balance: number;

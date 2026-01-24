@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { financeApi } from '@/lib/api/financeApi';
-import { Transaction, FinancialAccount } from '@/types/finance';
+import { Transaction, FinancialAccount, Bank } from '@/types/finance';
 
 interface FinanceFilters {
     month: number | null;
@@ -34,7 +34,7 @@ interface FinanceState {
     getCategoryBreakdown: () => { category: string; amount: number }[];
 
     // Bank Actions
-    banks: any[]; // Replace with Bank type
+    banks: Bank[];
     fetchBanks: () => Promise<void>;
     createBank: (data: any) => Promise<void>;
     updateBank: (id: string, data: any) => Promise<void>;
