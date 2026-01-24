@@ -98,13 +98,13 @@ export function CommandPalette() {
                     </Command.Empty>
 
                     <Command.Group heading="Suggestions" className="text-xs font-medium text-zinc-500 px-2 py-1.5 mb-2">
-                        <CommandItem icon={LayoutDashboard} onSelect={() => runCommand(() => navigate('/'))}>
+                        <CommandItem icon={LayoutDashboard} onSelect={() => runCommand(() => navigate('/edu/dashboard'))}>
                             Dashboard
                         </CommandItem>
-                        <CommandItem icon={MapIcon} onSelect={() => runCommand(() => navigate('/board'))}>
+                        <CommandItem icon={MapIcon} onSelect={() => runCommand(() => navigate('/edu/board'))}>
                             Investigation Board 🕵️
                         </CommandItem>
-                        <CommandItem icon={Calendar} onSelect={() => runCommand(() => navigate('/calendar'))}>
+                        <CommandItem icon={Calendar} onSelect={() => runCommand(() => navigate('/edu/calendar'))}>
                             Calendar
                         </CommandItem>
                         <CommandItem icon={Timer} onSelect={() => runCommand(() => isFocusActive ? pauseFocus() : startFocus())}>
@@ -118,7 +118,7 @@ export function CommandPalette() {
                                 <CommandItem
                                     key={course.id}
                                     icon={Briefcase}
-                                    onSelect={() => runCommand(() => navigate(`/course/${course.id}`))}
+                                    onSelect={() => runCommand(() => navigate(`/edu/course/${course.id}`))}
                                 >
                                     {course.title}
                                 </CommandItem>
@@ -135,7 +135,7 @@ export function CommandPalette() {
                                     // Navigate to item view? Or Course view? 
                                     // Currently we don't have a direct item page, usually it's in a course.
                                     // I'll assume we navigate to the course.
-                                    onSelect={() => runCommand(() => navigate(`/course/${item.courseId}`))}
+                                    onSelect={() => runCommand(() => navigate(`/edu/course/${item.courseId}`))}
                                     shortcut="↵"
                                 >
                                     <span className="truncate">{item.title}</span>
@@ -146,7 +146,7 @@ export function CommandPalette() {
                     )}
 
                     <Command.Group heading="System" className="text-xs font-medium text-zinc-500 px-2 py-1.5 mb-2">
-                        <CommandItem icon={Settings} onSelect={() => runCommand(() => navigate('/settings'))}>
+                        <CommandItem icon={Settings} onSelect={() => runCommand(() => navigate('/edu/settings'))}>
                             Settings
                         </CommandItem>
                         <CommandItem icon={Sun} onSelect={() => runCommand(() => toggleTheme('light'))}>
