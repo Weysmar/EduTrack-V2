@@ -20,13 +20,15 @@ export const financeApi = {
     },
 
     // Transactions
-    getTransactions: async (params?: { startDate?: Date; endDate?: Date; accountId?: string; categoryId?: string; type?: string }) => {
+    getTransactions: async (params?: { startDate?: Date; endDate?: Date; accountId?: string; categoryId?: string; type?: string; minAmount?: number; maxAmount?: number }) => {
         const queryParams = new URLSearchParams();
         if (params?.startDate) queryParams.append('startDate', params.startDate.toISOString());
         if (params?.endDate) queryParams.append('endDate', params.endDate.toISOString());
         if (params?.accountId) queryParams.append('accountId', params.accountId);
         if (params?.categoryId) queryParams.append('category', params.categoryId);
         if (params?.type) queryParams.append('type', params.type);
+        if (params?.minAmount) queryParams.append('minAmount', params.minAmount.toString());
+        if (params?.maxAmount) queryParams.append('maxAmount', params.maxAmount.toString());
 
         const { data } = await apiClient.get<Transaction[]>(`/finance/transactions?${queryParams.toString()}`);
         return data;
@@ -69,5 +71,22 @@ export const financeApi = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return data;
+    },
+
+    // Banks
+    getBanks: async () => {
+        const { data } = await apiClient.get<any[]>('/banks');
+        return data;
+    },
+    createBank: async (data: any) => {
+        const { data: res } = await apiClient.post<any>('/banks', data);
+        return res;
+    },
+    updateBank: async (id: string, data: any) => {
+        const { data: res } = await apiClient.put<any>(`/banks/${id}`, data);
+        return res;
+    },
+    deleteBank: async (id: string) => {
+        await apiClient.delete(`/banks/${id}`);
     }
 };

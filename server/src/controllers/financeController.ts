@@ -80,7 +80,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 export const getTransactions = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        const { accountId, startDate, endDate, category, type } = req.query;
+        const { accountId, startDate, endDate, category, type, minAmount, maxAmount } = req.query;
 
         const where: any = { profileId };
         if (accountId) where.accountId = String(accountId);
@@ -92,6 +92,36 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         }
         if (category) where.categoryId = String(category);
         if (type) where.type = String(type);
+
+        // Amount Filter (Absolute value comparison)
+        if (minAmount || maxAmount) {
+            // Complex filtering because amounts are signed (- for expense, + for income)
+            // But user wants "Transactions > 50€".
+            // We can filter by absolute amount if possible, but Prisma doesn't support ABS() in where easily on all DBs.
+            // Alternative: Filter in memory (fine for <1000 txs) OR handle ranges.
+            // If we filter in DB: 
+            // - If Min=50, Max=100. We want -100 to -50 AND 50 to 100.
+
+            const min = minAmount ? parseFloat(String(minAmount)) : 0;
+            const max = maxAmount ? parseFloat(String(maxAmount)) : Number.MAX_SAFE_INTEGER;
+
+            const OR = [];
+            // Positive (Income)
+            OR.push({
+                amount: {
+                    gte: min,
+                    lte: max
+                }
+            });
+            // Negative (Expense) - ranges become inverted: -100 (smaller) to -50 (larger)
+            OR.push({
+                amount: {
+                    gte: -max,
+                    lte: -min
+                }
+            });
+            where.OR = OR;
+        }
 
         const transactions = await prisma.transaction.findMany({
             where,

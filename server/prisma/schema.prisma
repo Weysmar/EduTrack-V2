@@ -249,10 +249,30 @@ model MindMap {
 }
 // FinanceTrack Models
 
+model Bank {
+  id        String   @id @default(uuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name      String   // "LCL", "Boursorama", "Revolut"
+  icon      String?  // Emoji or URL
+  color     String?  // Hex color
+  
+  accounts  FinancialAccount[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([profileId])
+}
+
 model FinancialAccount {
   id        String   @id @default(uuid())
   profileId String
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  bankId    String?
+  bank      Bank?    @relation(fields: [bankId], references: [id])
   
   name      String   // "Compte Courant", "Livret A"
   type      String   // "CHECKING", "SAVINGS", "CASH"
@@ -266,6 +286,7 @@ model FinancialAccount {
   transactions Transaction[]
   
   @@index([profileId])
+  @@index([bankId])
 }
 
 model Transaction {
