@@ -200,7 +200,7 @@ export function FolderView() {
                     {subFolders?.map((sub: any) => (
                         <Link
                             key={`sub-${sub.id}`}
-                            to={`/folder/${sub.id}`}
+                            to={`/edu/folder/${sub.id}`}
                             className="bg-card border rounded-lg p-4 hover:shadow-md transition-all flex items-center gap-3 group"
                         >
                             <FolderIcon className="h-8 w-8 text-muted-foreground group-hover:text-foreground fill-muted/10 group-hover:fill-muted/30 transition-colors" />

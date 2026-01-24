@@ -129,7 +129,7 @@ function CourseItem({ course, level }: { course: Course, level: number }) {
 
     return (
         <Link
-            to={`/course/${course.id}`}
+            to={`/edu/course/${course.id}`}
             draggable
             onDragStart={handleDragStart}
             className={cn(
