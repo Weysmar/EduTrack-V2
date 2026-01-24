@@ -255,9 +255,14 @@ model Bank {
   profileId String
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  name      String   // "LCL", "Boursorama", "Revolut"
-  icon      String?  // Emoji or URL
-  color     String?  // Hex color
+  swiftCode String?
+  name      String
+  icon      String?
+  color     String?
+  website   String?
+  isActive  Boolean  @default(true)
+  metadata  Json?    // phone, notes
+  isArchived Boolean @default(false)
   
   accounts  FinancialAccount[]
   
@@ -278,8 +283,16 @@ model FinancialAccount {
   name      String   // "Compte Courant", "Livret A"
   type      String   // "CHECKING", "SAVINGS", "CASH"
   balance   Decimal  @default(0) @db.Decimal(10, 2)
+  currency  String   @default("EUR")
   icon      String?  // Emoji
   color     String   @default("#10b981")
+  
+  // V2 Fields
+  lastSyncedAt   DateTime?
+  balanceDate    DateTime?
+  isArchived     Boolean   @default(false)
+  isAutoDetected Boolean   @default(false)
+  metadata       Json?     // import stats
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -288,6 +301,13 @@ model FinancialAccount {
   
   @@index([profileId])
   @@index([bankId])
+}
+
+enum TransactionClassification {
+  EXTERNAL
+  INTERNAL_INTRA
+  INTERNAL_INTER
+  UNKNOWN
 }
 
 model Transaction {
@@ -302,6 +322,11 @@ model Transaction {
   type        String   // "INCOME", "EXPENSE"
   date        DateTime @default(now())
   description String
+  
+  // V2 Fields
+  classification  TransactionClassification @default(EXTERNAL)
+  confidenceScore Float @default(0.0)
+  beneficiaryIban String?
   
   categoryId  String?
   category    TransactionCategory? @relation(fields: [categoryId], references: [id])

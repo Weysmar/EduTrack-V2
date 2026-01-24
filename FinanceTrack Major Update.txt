@@ -1,0 +1,1483 @@
+📊 FinanceTrack - Spécification Complète des Fonctionnalités
+Version: 1.0-draft
+Date: 24 janvier 2026
+Scope: Spécification fonctionnelle (aucun code, architecture uniquement)
+
+📋 Table des Matières
+Vue d'ensemble
+
+Architecture générale
+
+Gestion des banques
+
+Gestion des comptes
+
+Import et détection
+
+Classification des transactions
+
+Interface utilisateur
+
+Workflows et interactions
+
+Vue d'ensemble
+Principes fondamentaux
+FinanceTrack est une application de gestion financière personnelle basée sur une architecture où :
+
+Les banques sont des entités déclarées manuellement : Aucune donnée financière ne peut être importée d'une banque qui n'a pas été explicitement ajoutée par l'utilisateur à l'application.
+
+Les comptes sont détectés automatiquement : Lors de l'import d'un fichier OFX, l'application identifie automatiquement les comptes présents dans ce fichier et les lie à une banque déclarée.
+
+Les transactions sont catégorisées intelligemment : Chaque transaction reçoit une classification permettant de distinguer les mouvements externes (revenus, dépenses, virements vers des tiers) des mouvements internes (transferts entre comptes personnels).
+
+Objectifs utilisateur
+Visualiser rapidement quels comptes bancaires et quelles banques sont intégrés dans l'application
+
+Ajouter de nouvelles banques sans friction
+
+Importer automatiquement des transactions depuis fichiers OFX sans configuration complexe
+
+Filtrer les transactions pour masquer les virements internes (optionnel)
+
+Gagner une vision claire des flux financiers réels (externes) vs mouvements internes
+
+Architecture générale
+Hiérarchie des éléments
+text
+Profile (Utilisateur)
+├── Bank (Banque déclarée)
+│   ├── Account (Compte détecté/créé)
+│   │   └── Transaction (Mouvement financier)
+│   └── Account
+│       └── Transaction
+├── Bank
+└── Bank
+Relations fondamentales
+Bank → Account : Une banque peut avoir plusieurs comptes (un compte chèques, un compte épargne, un crédit, etc.)
+
+Account → Transaction : Un compte reçoit des transactions lors d'imports OFX ou lors de créations manuelles
+
+Transaction → Classification : Chaque transaction est classée comme :
+
+External : Revenu ou dépense (mouvement vers un tiers)
+
+Internal Intra-Bank : Virement entre deux comptes de la même banque
+
+Internal Inter-Bank : Virement entre deux comptes de banques différentes (toutes deux déclarées)
+
+Unknown : Impossible à classifier (compte destinataire non déclaré dans l'app)
+
+Scénarios de classification
+Exemple 1 - Paiement classique
+
+text
+Compte: Société Générale (Chèques)
+Libellé: AMAZON PAYMENT
+Montant: -49.99€
+
+Classification: External
+Raison: Le destinataire (Amazon) n'est pas un compte de l'utilisateur
+Exemple 2 - Virement intra-bancaire
+
+text
+Compte source: Société Générale (Chèques)
+Compte dest: Société Générale (Épargne)
+Libellé: VIREMENT INTERNE
+Montant: +500€
+
+Classification: Internal Intra-Bank
+Raison: Les deux comptes appartiennent au même utilisateur et à la même banque
+Exemple 3 - Virement inter-bancaire
+
+text
+Compte source: Société Générale (Chèques)
+Compte dest: BNP Paribas (Épargne)
+Libellé: VIREMENT ÉPARGNE
+Montant: +500€
+
+Classification: Internal Inter-Bank
+Raison: Même utilisateur mais banques différentes
+Exemple 4 - Compte non déclaré
+
+text
+Compte source: Société Générale (Chèques)
+Compte dest: ?????? (Inconnu)
+Libellé: VIREMENT À MARC
+Montant: -200€
+
+Classification: Unknown
+Raison: Le compte destinataire n'existe pas dans l'application
+Gestion des banques
+Entité Bank
+Une banque est un conteneur organisationnel qui regroupe les informations sur une institution financière déclarée par l'utilisateur.
+
+Attributs d'une Bank
+
+Identifiant unique : UUID généré à la création
+
+Nom : Chaîne de caractères (ex: "Société Générale", "BNP Paribas", "Revolut")
+
+Code bancaire optionnel : Numéro SWIFT/BIC ou code spécifique (ex: "SOGEDFF22" pour SG)
+
+Couleur d'affichage : Hex color pour UI (visuellement identifier chaque banque)
+
+Icône/Emoji : Représentation visuelle (ex: 🏦, 📱, etc.)
+
+Actif : Booléen indiquant si la banque est toujours utilisée
+
+Métadonnées : JSON pour info supplémentaire (site web, téléphone support, etc.)
+
+Date de création : Timestamp
+
+Date de modification : Timestamp
+
+Section de gestion des banques
+Emplacement : Panneau vertical sur le côté droit de la landing page (Dashboard principal)
+
+Hauteur et layout :
+
+Le panneau occupe une largeur fixe (ex: 280-320px) sur la droite de l'écran
+
+Il s'étend sur toute la hauteur de la page ou est scrollable indépendamment
+
+Responsive : sur mobile, peut glisser en overlay ou se positionner en haut
+
+Sections internes du panneau
+
+Section 1 : Titre et actions
+Titre : "Banques & Comptes" ou "Mes Banques"
+
+Bouton d'action : "Ajouter une banque" (icône + ou visible à droite du titre)
+
+Icône collapse/expand : Pour réduire le panneau (optionnel mais recommandé sur mobile)
+
+Section 2 : Liste des banques
+Affichage par banque :
+
+Icône/couleur de la banque
+
+Nom de la banque
+
+Nombre de comptes associés (ex: "3 comptes")
+
+État actif/inactif (indicateur visuel)
+
+Menu contextuel (trois points) pour : éditer, archiver, supprimer
+
+Interaction expansible :
+
+Clic sur une banque → expansion affichant ses comptes en dessous
+
+Flèche chevron indiquant l'état expanded/collapsed
+
+Affichage des comptes imbriqués avec indentation visuelle
+
+Section 3 : Liste des comptes (par banque)
+Affichage par compte (sous banque expandue) :
+
+Icône de type de compte (chèques, épargne, crédit, etc.)
+
+Nom du compte (ex: "Chèques Perso", "Épargne Projet")
+
+Solde actuel affiché petit (ex: "1,250.50€")
+
+Devise du compte
+
+Dernier import (date/heure)
+
+Menu contextuel pour : éditer le nom, archiver, supprimer
+
+Section 4 : Bouton "Ajouter une banque"
+Emplacement : En bas du panneau (toujours visible même scrollé)
+
+Texte : "Ajouter une banque" ou "+ Nouvelle banque"
+
+Action : Ouvre modal/formulaire d'ajout de banque
+
+Modal/Formulaire d'ajout de banque
+Déclenchement :
+
+Clic sur "Ajouter une banque" dans le panneau
+
+Ou au premier lancement de l'application (si aucune banque existante)
+
+Champs du formulaire
+
+Nom de la banque (champ texte, requis)
+
+Recherche parmi liste pré-remplie de banques populaires (Société Générale, BNP, Crédit Agricole, Revolut, Wise, etc.)
+
+Possibilité d'entrer un nom personnalisé
+
+Autocomplete activé
+
+Code SWIFT/BIC (champ texte, optionnel)
+
+Auto-rempli si banque sélectionnée dans liste pré-remplie
+
+Validé au format SWIFT (8 ou 11 caractères alphanumériques)
+
+Aide visuelle si format invalide
+
+Couleur d'affichage (color picker, requis)
+
+Palette prédéfinie de couleurs
+
+Ou color picker personnalisé
+
+Aperçu en temps réel sur une icône exemple
+
+Icône/Emoji (sélecteur emoji, optionnel)
+
+Sélection parmi emojis communs (🏦, 📱, 💳, 🏛️, etc.)
+
+Ou saisir emoji personnalisé
+
+Notes/Métadonnées (champ texte longue, optionnel)
+
+Pour ajouter site web, numéro support, etc.
+
+Actions
+
+Créer : Valide et crée la banque, ferme modal, actualise panneau
+
+Annuler : Ferme modal sans changement
+
+Modification d'une banque
+Accès : Menu contextuel → "Éditer" sur une banque
+
+Comportement : Ouvre la même modal avec les champs préremplis, permettant modification et sauvegarde
+
+Suppression d'une banque
+Accès : Menu contextuel → "Supprimer" sur une banque
+
+Validation :
+
+Si banque possède comptes avec transactions : confirmation avec avertissement
+
+Texte warning : "Supprimer cette banque supprimera aussi X comptes et Y transactions. Cette action est irréversible."
+
+Boutons : "Supprimer" (rouge) / "Annuler"
+
+Comportement :
+
+Suppression cascade : tous les comptes associés sont supprimés
+
+Toutes les transactions associées sont supprimées
+
+Rafraîchissement du panneau et du dashboard
+
+Archivage d'une banque
+Alternative à la suppression : "Archiver" au lieu de supprimer
+
+Comportement :
+
+Banque reste en base de données
+
+Apparaît sous section "Banques archivées" en bas du panneau (optionnel)
+
+Comptes et transactions restent intacts mais masqués par défaut
+
+Possibilité de "désarchiver" pour réafficher
+
+Gestion des comptes
+Entité Account
+Un compte est une entité financière spécifique au sein d'une banque déclarée. Un compte peut être un compte chèques, compte épargne, compte titre, crédit renouvelable, etc.
+
+Attributs d'un Account
+
+Identifiant unique : UUID généré
+
+Banque parente : Référence à Bank
+
+Nom : Chaîne de caractères (ex: "Chèques Perso", "Épargne Projet")
+
+Type de compte : Catégorie enum (checking, savings, credit, investment, loan, other)
+
+IBAN/Numéro de compte : Numéro de compte masquée partiellement (ex: "FR76 XXXXXXXX XXXX 1234")
+
+Devise : Devise du compte (EUR, USD, GBP, etc.)
+
+Solde actuel : Montant décimal (mis à jour après chaque import)
+
+Solde actuel date : Timestamp du dernier équilibrage
+
+Date de dernière transaction : Pour repérage rapidement comptes actifs
+
+Métadonnées d'import : JSON contenant info du dernier import OFX (date, nombre de transactions, source)
+
+Actif : Booléen (compte encore utilisé ou archivé)
+
+Détecté automatiquement : Booléen (créé par import OFX vs créé manuellement)
+
+Date de création : Timestamp
+
+Date de modification : Timestamp
+
+Création de comptes
+Automatique via import OFX :
+
+Lors de l'import d'un fichier OFX, l'application parcourt les comptes présents
+
+Pour chaque compte détecté :
+
+Vérifie si compte existe déjà dans la banque (par IBAN/numéro)
+
+Si existe : met à jour solde et métadonnées import
+
+Si n'existe pas : crée nouveau compte avec "détecté automatiquement = true"
+
+Affecte la banque correcte (voir section Import et détection)
+
+Manuelle via UI :
+
+Clic sur "Ajouter un compte" dans le panneau (accessible via menu banque ou après sélection banque)
+
+Ouvre formulaire avec champs name, type, IBAN (optionnel), devise
+
+Création compte avec "détecté automatiquement = false"
+
+Affichage des comptes
+Les comptes apparaissent dans le panneau vertical sous leur banque parente (quand banque est expandue).
+
+Informations affichées par compte
+
+Icône type compte (icône chèques, épargne, crédit selon type)
+
+Nom du compte
+
+Solde actuel (si connaissance du solde)
+
+Devise
+
+Dernière synchronisation (date/heure relative)
+
+Badge "Nouveau" si compte détecté lors dernier import (pendant 24h)
+
+Interactions sur compte
+
+Clic : Peut ouvrir vue détails compte OU aller à liste transactions filtrées par compte
+
+Menu contextuel : Éditer (renommer), archiver, supprimer, voir détails
+
+Suppression/Archivage compte
+Même logique que banque : suppression avec confirmation si transactions existent, ou archivage non-destructif.
+
+Import et détection
+Workflow d'import OFX
+Point d'entrée :
+
+Page dédiée "Importer des transactions" (accessible depuis menu principal)
+
+OU action rapide "Importer" depuis panneau bancaire (clic bouton avec icône upload)
+
+Étape 1 : Upload et sélection de la banque
+Formulaire d'upload
+
+Zone drag-and-drop : Accepte fichiers .ofx, .ofxheader
+
+Validations :
+
+Fichier doit être format OFX valide
+
+Message d'erreur si format invalide
+
+Limite de taille (ex: 10 MB)
+
+Sélection de la banque cible
+
+Après upload, utilisateur doit spécifier : "À quelle banque appartiennent ces données?"
+
+Dropdown/Sélecteur : Liste des banques déclarées
+
+Texte d'aide : "Sélectionnez la banque d'où proviennent ces transactions"
+
+Condition : Si aucune banque déclarée, rediriger vers formulaire d'ajout de banque (cf. section gestion banques)
+
+Raison de cette étape :
+
+Application ne fait pas confiance au fichier OFX pour identifier la banque
+
+Utilisateur doit valider explicitement : "oui, ces comptes sont de cette banque"
+
+Prévient les erreurs où deux fichiers OFX de banques différentes se mélangeraient
+
+Étape 2 : Parsing et détection des comptes
+Processus invisible à l'utilisateur (se déroulant côté serveur)
+
+Parse du fichier OFX : Extraction structure du fichier
+
+Chaque bloc <STMTRS> (statement response) = un compte
+
+Extraction : IBAN/numéro compte, solde, devise, liste transactions
+
+Appariement avec comptes existants
+
+Pour chaque compte détecté dans OFX :
+
+Cherche compte existant dans la banque avec même IBAN/numéro
+
+Si trouvé : lier les données du OFX à ce compte (update)
+
+Si non trouvé : marquer comme "nouveau compte à créer"
+
+Pré-traitement des transactions
+
+Pour chaque transaction du OFX :
+
+Extraire : date, montant, description, IBAN bénéficiaire (si présent)
+
+Vérifier doublon (via combinaison date+montant+description)
+
+Classer transaction (cf. section Classification des transactions)
+
+Étape 3 : Preview avant confirmation
+Affichage des modifications proposées
+
+Section "Comptes détectés" :
+
+Tableau avec comptes trouvés dans OFX
+
+Colonnes : IBAN (masqué), Nom compte (inféré ou suggestion), Solde, Devise, Statut (Nouveau / Existant)
+
+Permettre renommer comptes détectés avant import
+
+Section "Transactions à importer" :
+
+Nombre total de transactions détectées
+
+Nombre de transactions déjà importées (doublons détectés)
+
+Nombre de transactions nouvelles
+
+Tableau preview : premiers 10-20 transactions avec date, description, montant, classification
+
+Section "Transactions potentiellement problématiques" :
+
+Transactions classées "Unknown" (compte dest non déclaré)
+
+Transactions sans description
+
+Transactions avec montant = 0
+
+Affichage warning/info pour chacune
+
+Actions
+
+Importer : Valide les comptes renommés et procède à import en BD
+
+Annuler : Retour sans changement
+
+Éditer noms comptes : Formulaire rapide pour renommer avant import
+
+Étape 4 : Import et création données
+Processus atomique
+
+Création de nouveaux comptes détectés
+
+Création de toutes transactions nouvelles (rejet des doublons silencieusement)
+
+Mise à jour solde des comptes
+
+Enregistrement métadonnées import (date, nombre, source)
+
+Transaction DB : tout réussit ou tout échoue
+
+Feedback utilisateur
+
+Écran confirmation : "X transactions importées, Y comptes créés, Z doublons ignorés"
+
+Redirection vers dashboard OU liste transactions filtrée par comptes importer
+
+Détection de la banque depuis OFX
+Contexte : Le fichier OFX contient-il des indices permettant identifier la banque?
+
+Réalité technique :
+
+Standard OFX ne contient pas toujours identifiant bancaire explicite
+
+Certains OFX incluent code bancaire (BIC/SWIFT) ou URL
+
+Mais ce n'est pas garantie
+
+Approche FinanceTrack :
+
+Ne pas essayer de déduire automatiquement la banque
+
+Toujours demander utilisateur de spécifier la banque (étape 1)
+
+Optionnel : afficher suggestion si OFX contient un code BIC reconnaissable (ex: "Semble être Société Générale - SOGEDFF22. Correct?")
+
+But : garantir utilisateur contrôle quels données vont à quelle banque
+
+Classification des transactions
+Système de classification
+Chaque transaction reçoit une classification qui détermine :
+
+Comment elle s'affiche dans les filtres
+
+Si elle est masquée par filtre "masquer virements internes"
+
+Comment elle impacte les statistiques budgétaires
+
+Types de classification
+1. External (Externe)
+Définition : Transaction entre le compte et une entité externe (non gérée dans l'app)
+
+Cas d'usage
+
+Paiement commercial : achat Amazon, restaurant, supermarché
+
+Revenu externe : salaire, allocation, remboursement d'ami
+
+Virement vers compte tiers non déclaré dans l'app
+
+Règles de détection
+
+Compte bénéficiaire ne figure pas dans la BD de comptes de l'utilisateur
+
+OU aucune tentative de matching avec compte existant
+
+OU description indique tiers (AMAZON, SNCF, etc.)
+
+Impacte :
+
+Comptabilisée dans budgets et statistiques
+
+Apparaît toujours dans listes transactions
+
+Pas affectée par filtre "masquer virements internes"
+
+Exemples
+
+text
+Compte: SG Chèques
+Description: PAIEMENT AMAZON
+Montant: -49.99€
+Classification: External
+text
+Compte: SG Chèques  
+Description: SALAIRE JANVIER
+Montant: +2500€
+Classification: External
+2. Internal Intra-Bank (Interne intra-bancaire)
+Définition : Virement entre deux comptes du même utilisateur au sein de la même banque
+
+Cas d'usage
+
+Transfert compte chèques → compte épargne (même banque)
+
+Transfert compte courant → compte crédit (même banque)
+
+Quelconque virement entre comptes d'une même banque
+
+Règles de détection
+
+Compte bénéficiaire existe dans BD ET appartient à même banque que compte source
+
+Description contient indices virement (VIREMENT, TRANSFER, VERSEMENT)
+
+Impacte :
+
+Ne comptabilisée PAS dans budgets/statistiques par défaut (virement interne)
+
+Masquée si filtre "masquer virements internes" activé
+
+Mais visible dans détails compte si "show all transactions"
+
+Exemples
+
+text
+Compte source: SG Chèques
+Compte dest: SG Épargne (détectée dans BD)
+Description: VIREMENT ÉPARGNE
+Montant: +500€
+Classification: Internal Intra-Bank
+3. Internal Inter-Bank (Interne inter-bancaire)
+Définition : Virement entre deux comptes du même utilisateur dans des banques différentes
+
+Cas d'usage
+
+Transfert SG Chèques → BNP Épargne
+
+Transfert Revolut → Société Générale
+
+Quelconque virement entre banques déclarées
+
+Règles de détection
+
+Compte bénéficiaire existe dans BD
+
+Compte source et bénéficiaire appartiennent à banques différentes (mais même user)
+
+Description suggère virement
+
+Impacte :
+
+Même comportement que Intra-Bank : ne comptabilisée pas, masquée avec filtre
+
+Traité identiquement pour filtrage (virements internes = Intra-Bank + Inter-Bank)
+
+Exemples
+
+text
+Compte source: SG Chèques
+Compte dest: BNP Épargne (détectée dans BD, banque différente)
+Description: VIREMENT BNP
+Montant: +500€
+Classification: Internal Inter-Bank
+4. Unknown (Inconnu)
+Définition : Transaction où compte bénéficiaire ne peut pas être identifié
+
+Cas d'usage
+
+Virement vers compte externe (tiers non déclaré)
+
+IBAN/numéro de compte mal formaté ou non extractible
+
+Description ambiguë
+
+Données manquantes
+
+Règles de détection
+
+Tentative de matching avec comptes BD retourne zéro résultat
+
+IBAN/numéro bénéficiaire non extractible du OFX
+
+Impacte :
+
+Comptabilisée comme transaction External (par défaut)
+
+Affichage warning/badge "Compte destinataire non identifié"
+
+Utilisateur peut corriger classification manuelle (si souhaite marquer comme interne)
+
+Utile pour tracer tentatives virements vers comptes oubliés
+
+Exemples
+
+text
+Compte source: SG Chèques
+Description: VIREMENT À MARC
+Montant: -200€
+Compte dest: ????? (pas trouvé dans BD)
+Classification: Unknown
+Extraction de l'IBAN bénéficiaire depuis OFX
+Comment l'app détermine le compte bénéficiaire?
+
+Le standard OFX est limité pour data structurée. L'app doit utiliser plusieurs stratégies :
+
+Champs structurés du OFX
+
+Si OFX contient bloc <XFERINFO> avec IBAN bénéficiaire : utiliser directement
+
+Format : <XFERINFO><BANKID>SOGEDFFXXX</BANKID><ACCTID>FR1234567890</ACCTID></XFERINFO>
+
+Analyse du champ description
+
+Certains fichiers OFX incluent IBAN/BIC en description
+
+Regex pattern pour détecter IBAN (FR76 XXXX XXXX XXXX XXXX)
+
+Extraction du premier IBAN trouvé en description
+
+Matching par numéro de compte partiel
+
+Si description contient "4 derniers chiffres" : chercher compte BD finissant par ces chiffres
+
+Exemple : "VIR À COMPTE 1234" + compte BNP finissant 1234 = match probable
+
+Fallback : lecture manuelle
+
+Si aucune méthode réussit : marquer Unknown
+
+Affichage description brute à utilisateur
+
+Possibilité post-import d'éditer transaction et spécifier manuellement le compte
+
+Matching du compte bénéficiaire
+Logique de matching
+
+Pour chaque transaction analysée :
+
+Extraire IBAN/numéro de compte bénéficiaire (via stratégies ci-dessus)
+
+Requête BD : chercher compte avec :
+
+WHERE profileId = {current_user} AND account.iban = {extracted_iban}
+
+OU : WHERE profileId = {current_user} AND account.accountNumber LIKE '%{last4digits}%'
+
+Résultats :
+
+Exactement 1 compte trouvé = match, classification External/Intra/Inter décidée
+
+Zéro compte trouvé = Unknown
+
+Plusieurs comptes trouvés (cas rare) = utiliser le plus récent / demander clarification
+
+Masquage partiel des IBAN en affichage
+
+Lors affichage du compte bénéficiaire : afficher "FR76 XXXX XXXX XXXX 1234" (masquer les chiffres du milieu)
+
+Prévenir vol IBAN en affichage accidentel
+
+Classification des transactions (détails algorithmiques)
+Algorithme de classification
+Entrée : Transaction extraite de OFX avec :
+
+sourceAccount: Compte source
+
+amount: Montant signé (+/-)
+
+description: Libellé
+
+extractedBeneficiaryIban: IBAN bénéficiaire (ou null)
+
+Sortie : Classification enum + confiance score 0-1
+
+Logique
+
+text
+Étape 1: Analyser description pour indices
+  - Si description contient ("VIREMENT", "TRANSFER", "VIR", "VERSEMENT"):
+      est_probablement_virement = true
+  - Sinon:
+      est_probablement_virement = false
+
+Étape 2: Chercher compte bénéficiaire
+  Si extractedBeneficiaryIban existe:
+    beneficiary_account = rechercherCompte(extractedBeneficiaryIban)
+    Si beneficiary_account existe:
+      Étape 3A: Comptes trouvés
+    Sinon:
+      Étape 3B: Compte non trouvé
+  Sinon:
+    Étape 3B: Pas d'IBAN extractible
+
+Étape 3A: Comptes trouvés
+  Si sourceAccount.bankId == beneficiary_account.bankId:
+    Classification = Internal Intra-Bank
+    Confiance = 0.95
+  Sinon:
+    Classification = Internal Inter-Bank  
+    Confiance = 0.95
+
+Étape 3B: Compte non trouvé OU pas d'IBAN
+  Classification = Unknown
+  Confiance = 0.30
+  Note: Sera affiché comme "potentially external" dans UI
+
+Étape 4: Enrichissement description
+  Si est_probablement_virement ET classification == Unknown:
+    # C'est un virement mais vers tiers
+    Classification = External (virement)
+    Confiance = 0.70
+  Sinon si NOT est_probablement_virement ET classification == Unknown:
+    Classification = External (paiement)  
+    Confiance = 0.65
+Scenarios de test de classification
+Scenario 1: Paiement classique
+
+Compte source: SG Chèques
+
+Description: "PAIEMENT AMAZON"
+
+IBAN bénéficiaire: non extractible
+
+Classification: External ✓
+
+Confiance: 0.65
+
+Scenario 2: Virement intra-bancaire
+
+Compte source: SG Chèques (ID: sg-1)
+
+Description: "VIREMENT ÉPARGNE"
+
+IBAN bénéficiaire: FR1234567890 (compte SG Épargne dans BD)
+
+Étape 3A: banques identiques
+
+Classification: Internal Intra-Bank ✓
+
+Confiance: 0.95
+
+Scenario 3: Virement inter-bancaire
+
+Compte source: SG Chèques (bank_id: sg)
+
+Description: "VIREMENT BNP"
+
+IBAN bénéficiaire: FR9876543210 (compte BNP Épargne dans BD, bank_id: bnp)
+
+Étape 3A: banques différentes
+
+Classification: Internal Inter-Bank ✓
+
+Confiance: 0.95
+
+Scenario 4: Virement vers tiers (non déclaré)
+
+Compte source: SG Chèques
+
+Description: "VIREMENT À MARC"
+
+IBAN bénéficiaire: null (non extractible)
+
+Étape 3B: pas d'IBAN
+
+But: est_probablement_virement=true
+
+Classification: External (virement) ✓
+
+Confiance: 0.70
+
+Scenario 5: Inconnu
+
+Compte source: SG Chèques
+
+Description: "DIVERS"
+
+IBAN bénéficiaire: null
+
+est_probablement_virement: false
+
+Classification: Unknown
+
+Confiance: 0.30
+
+Interface utilisateur
+Layout global de la landing page (Dashboard)
+Structure générale
+
+text
+┌────────────────────────────────────────────────────────────┬──────────────┐
+│                                                            │              │
+│                   ZONE PRINCIPALE                         │  PANNEAU     │
+│                 (Dashboard + Analytics)                   │  VERTICAL    │
+│                                                            │              │
+│                                                            │  Banques &   │
+│                                                            │  Comptes     │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+│                                                            │              │
+└────────────────────────────────────────────────────────────┴──────────────┘
+Zone principale (Dashboard)
+Contenu
+
+Top section : Overview financier
+
+Solde total (toutes banques/comptes combinés)
+
+Revenus ce mois
+
+Dépenses ce mois
+
+Variation ce mois vs mois précédent
+
+Graphiques/Charts
+
+Pie chart : répartition dépenses par catégorie
+
+Line chart : évolution solde sur 3 mois
+
+Bar chart : revenus vs dépenses par mois
+
+Liste transactions récentes
+
+Dernières 10-20 transactions
+
+Colonnes : date, description, montant, compte, catégorie
+
+Filtres/tri rapides : par compte, par catégorie, par type (dépense/revenu)
+
+Panneau vertical (droite)
+Dimensions et positionnement
+
+Largeur fixe : 280-320px
+
+Position : fixed ou sticky à droite
+
+Hauteur : 100vh (full viewport height) ou scrollable indépendamment
+
+Responsive : sur mobile, devient overlay/drawer ou s'affiche en haut
+
+Contenu du panneau
+
+Header du panneau
+Titre "Banques & Comptes"
+
+Icône collapse/expand pour réduire panneau (mobile)
+
+Spacing cohérent avec zone principale
+
+Zone de banques
+Titre section : "Banques" (petit, grisé)
+
+Barre de recherche (optionnel) : Chercher une banque par nom
+
+Liste des banques
+
+text
+🏦 Société Générale                    [⋮]
+   └─ Chèques Perso        1,250.50€
+   └─ Épargne Projet         500.00€
+
+🏪 BNP Paribas                         [⋮]
+   └─ Chèques              2,100.00€
+
+📱 Revolut                             [⋮]
+   └─ Revolut EUR             200.00€
+Chaque banque
+
+Icône + couleur (couleur hex de la banque)
+
+Nom de la banque
+
+Badge/indication du nombre de comptes
+
+Chevron expand/collapse
+
+Menu (⋮) : éditer, archiver, supprimer
+
+Comptes imbriqués (visibles si banque expandue)
+
+Indentation visuelle (padding-left)
+
+Icône type compte
+
+Nom du compte
+
+Solde actuel (ou "---" si inconnu)
+
+Date dernière synchronisation (ex: "Il y a 2 jours")
+
+Menu contextuel : éditer, archiver, supprimer
+
+Bouton d'action
+"Ajouter une banque" (ou "+ Nouvelle")
+
+Position : bas du panneau, largeur 100%
+
+Style : button primary
+
+Action : ouvre modal d'ajout
+
+Filtrage des transactions
+Filtre "Masquer virements internes"
+Emplacement : Barre de filtres au-dessus liste transactions (zone principale)
+
+Comportement
+
+Checkbox ou toggle switch : "Masquer les virements internes"
+
+Quand activé : les transactions classées Internal Intra-Bank ET Internal Inter-Bank disparaissent de l'affichage
+
+Les transactions Unknown sont TOUJOURS affichées (non certains qu'elles soient internes)
+
+Persisten : préférence sauvegardée dans localStorage/BD user
+
+Impact
+
+List transactions : filtre automatiquement
+
+Graphiques : recalculés sans virements internes (statistiques "vraies")
+
+Budgets : non affectés (budgets ne comptabilisent déjà que virements externes)
+
+Exemples avec filtre activé
+
+text
+Avant filtrage:
+- 50€ Amazon (External) ✓ Affiché
+- 500€ VIR ÉPARGNE (Intra-Bank) ✗ Masqué
+- 200€ VIR MARC (Unknown) ✓ Affiché
+- 300€ RESTO (External) ✓ Affiché
+
+Après filtrage (avec "Masquer virements internes" ON):
+- 50€ Amazon (External)
+- 200€ VIR MARC (Unknown)
+- 300€ RESTO (External)
+
+Après filtrage (avec "Masquer virements internes" OFF):
+- 50€ Amazon (External)
+- 500€ VIR ÉPARGNE (Intra-Bank)
+- 200€ VIR MARC (Unknown)
+- 300€ RESTO (External)
+Autres filtres (cohabitation avec "Masquer virements")
+Par compte
+
+Par catégorie
+
+Par date
+
+Par montant
+
+Par description (recherche)
+
+Par type (dépense/revenu/virement)
+
+Tous les filtres se composent : un filtre "type" qui masque virements internes ET un filtre par catégorie par exemple = résultats filtrés sur les deux critères.
+
+Workflows et interactions
+Workflow 1 : Premier démarrage (onboarding)
+Étapes
+
+Utilisateur se connecte pour la première fois
+
+Dashboard vide, panneau "Banques & Comptes" vide
+
+Prompt automatique : "Commençons! Ajoutez votre première banque"
+
+Clic : ouvre modal d'ajout de banque
+
+Utilisateur remplit formulaire (nom, couleur, emoji)
+
+Banque créée
+
+Prompt : "Prêt à importer vos transactions?"
+
+Clic : redirige vers page Import
+
+Upload fichier OFX
+
+Sélectionne banque (déjà créée)
+
+Preview comptes/transactions
+
+Import confirmé
+
+Comptes créés automatiquement
+
+Transactions affichées dans dashboard
+
+Panneau "Banques & Comptes" maintenant peuplé
+
+Workflow 2 : Import régulier de transactions
+Entrée : Utilisateur a déjà banques et comptes, reçoit fichier OFX mensuel
+
+Étapes
+
+Accès à page "Importer" (via menu ou bouton "Importer" depuis panneau)
+
+Upload fichier OFX
+
+Sélectionne banque source (dropdown, proposée par défaut si une seule)
+
+Parsing et détection des comptes existants
+
+Preview : "X transactions nouvelles, Y doublons, Z problèmes"
+
+Utilisateur revoit les comptes (pré-remplis, pas de renommage si existant)
+
+Clic "Importer" : transactions + soldes actualisés
+
+Feedback : "100 transactions importées!"
+
+Redirection vers liste transactions (filtrée par comptes importer)
+
+Workflow 3 : Ajouter une banque en cours d'utilisation
+Entrée : Utilisateur utilise app depuis plusieurs mois, ouvre nouveau compte dans nouvelle banque
+
+Étapes
+
+Reçoit fichier OFX de la nouvelle banque
+
+Essaie importer : dropdown "Quelle banque?" vide pour nouvelle banque
+
+Clic "Ajouter une banque"
+
+Modal s'ouvre
+
+Remplit formulaire (ex: "Crédit Agricole")
+
+Création banque
+
+Retour à import avec la nouvelle banque pré-sélectionnée
+
+Continue import (cf. Workflow 2)
+
+Workflow 4 : Identifier un virement interne non détecté (correction)
+Entrée : Utilisateur voit transaction classée "External" qu'il sait être interne (par exemple, compte bénéficiaire n'a pas été créé au moment de l'import)
+
+Étapes
+
+Utilisateur va dans liste transactions
+
+Voit transaction "VIREMENT À MA NOUVEAU ÉPARGNE -500€" classée External (badge rouge/warning)
+
+Clic sur transaction : ouvre détails/édition
+
+Possibilité de changer la classification (dropdown) : "Interne vers compte..." avec auto-complete des comptes
+
+Sélectionne le compte bénéficiaire correct
+
+Classification mise à jour automatiquement : Internal Intra-Bank ou Inter-Bank
+
+Sauvegarde
+
+Graphiques/statistiques recalculés sans cette transaction si filtre "masquer virements" actif
+
+Workflow 5 : Gestion des comptes détectés vs manuels
+Contexte : L'app crée comptes automatiquement lors imports, mais utilisateur peut aussi créer manuellement
+
+Créé automatiquement (badge "Auto-détecté")
+
+Solde à jour après chaque import
+
+Éditable (renommable)
+
+Métadonnées import visibles (dernière date, source)
+
+Archivable
+
+Créé manuellement
+
+Pas de solde autom. (à saisir manuellement)
+
+Éditable
+
+No métadonnées import
+
+Archivable
+
+Différenciation visuelle (optionnel) : Badge petit "Auto" sur comptes détectés
+
+Workflow 6 : Masquer comptes/banques archivés
+Entrée : Utilisateur veut "nettoyer" l'affichage en archivant ancienne banque
+
+Étapes
+
+Clic menu (⋮) sur banque dans panneau
+
+Sélectionne "Archiver" (ou "Supprimer")
+
+Si "Archiver" :
+
+Banque move à section "Banques archivées" (section repliée en bas du panneau)
+
+Comptes et transactions restent en BD (non supprimés)
+
+Comptes n'apparaissent plus dans listes filtrées par compte
+
+Solde total dashboard = exclut banques archivées par défaut
+
+Si besoin, utilisateur peut "Désarchiver" pour réafficher
+
+Workflow 7 : Comparaison virements internes vs externes
+Entrée : Utilisateur génère rapport mensuel pour comprendre flux financiers réels
+
+Étapes
+
+Va page Analytics/Rapports
+
+Voit deux affichages possibles :
+
+Avec virements internes : flux bruts (moins utile pour analyser dépenses réelles)
+
+Sans virements internes : flux nets (ce qui "quitte réellement" mon patrimoine)
+
+Toggle/bouton pour basculer entre les deux vues
+
+Graphiques, statistiques mises à jour
+
+Exemple : "Dépenses réelles = 2,500€ (sans virements internes)" vs "Mouvements totaux = 4,500€"
+
+Détails des interactions
+Menu contextuel d'une banque
+Accès : Clic sur icône (⋮) à droite du nom de la banque
+
+Options affichées
+
+Éditer → Ouvre modal d'édition (champs préremplis)
+
+Importer depuis OFX (optionnel) → Accès rapide import avec banque pré-sélectionnée
+
+Voir solde total (optionnel) → Tooltip affichant somme comptes de cette banque
+
+Archiver → Confirmation + archivage
+
+Supprimer → Confirmation + suppression cascade
+
+Menu contextuel d'un compte
+Accès : Clic sur icône (⋮) à droite du compte (quand banque expandue)
+
+Options affichées
+
+Éditer → Modal pour renommer, changer type, etc.
+
+Voir détails → Page détails compte (solde, historique, métadonnées import)
+
+Aller aux transactions → Liste transactions filtrée par ce compte
+
+Archiver → Confirmation + archivage
+
+Supprimer → Confirmation avec warning sur nombre transactions
+
+Modal d'édition d'une banque
+Champs pré-remplis
+
+Nom
+
+Couleur
+
+Emoji/Icône
+
+Notes
+
+Actions
+
+Sauvegarder → Met à jour BD, ferme modal, refresh panneau
+
+Annuler → Ferme sans changement
+
+Modal d'édition d'un compte
+Champs pré-remplis
+
+Nom du compte
+
+Type (dropdown : Chèques, Épargne, Crédit, etc.)
+
+IBAN/Numéro (lecture seule ou éditable selon contexte)
+
+Devise
+
+Actif (toggle)
+
+Affichage supplémentaire
+
+Statut : "Détecté automatiquement" ou "Créé manuellement"
+
+Solde actuel (si connu) + date
+
+Dernière synchronisation
+
+Nombre de transactions
+
+Actions
+
+Sauvegarder → Mise à jour, ferme modal
+
+Annuler → Ferme sans changement
+
+Restrictions et contraintes métier
+Immuabilité de certaines données
+Les données suivantes ne peuvent pas être modifiées après création :
+
+IBAN/Numéro de compte (immuable, clé d'identification)
+
+Devise du compte (immuable)
+
+Bank d'un compte (immuable)
+
+Justification : Ce sont les clés d'identification. Les modifier casserait lien entre comptes/transactions.
+
+Suppression en cascade
+Suppression banque → supprime comptes + transactions
+Suppression compte → supprime transactions
+Suppression transaction → isolée (aucun impact)
+
+Confirmation requise pour suppressions destructives (données > 5 ou transactions > 0)
+
+Archivage vs suppression
+Privilégier l'archivage à la suppression pour data conservatrice :
+
+Données jamais perdues
+
+Possibilité "undo" via désarchivage
+
+Audit trail préservé
+
+Unicité et doublons
+Transactions uniques par : (accountId, date, amount, description)
+
+Empêche doublons lors imports répétés
+
+Autres informations peuvent varier
+
+Banques uniques par : (profileId, name) - impossible avoir deux "Société Générale"
+
+Comptes uniques par : (bankId, IBAN) - impossible avoir deux comptes avec même IBAN dans une banque
+
+Sécurité et confidentialité
+Masquage des IBANs
+Affichage :
+
+IBAN complet jamais affiché sauf dans modal d'édition compte
+
+Partout ailleurs : "FR76 XXXX XXXX XXXX 1234" (masquer les 8 chiffres du milieu)
+
+Stockage :
+
+IBAN stocké en BD normal (pas de chiffrement spécial)
+
+Mais transmission HTTPS obligatoire
+
+Isolation des données par utilisateur
+Rule fondamentale :
+
+Utilisateur ne peut voir/modifier que ses propres banques, comptes, transactions
+
+Chaque requête API filtrée par profileId = req.user.id
+
+Pas d'accès "transversal" entre users
+
+Audit logs (optionnel mais recommandé)
+Events à logger :
+
+Création/suppression/archivage de banque
+
+Création/suppression/édition de compte
+
+Imports (date, nombre transactions, source)
+
+Modifications classifications de transactions
+
+Interactions cross-features
+Dashboard et classifications
+Graphiques affectées par filtre "Masquer virements internes" :
+
+Pie chart dépenses par catégorie : recalculé sans Internal Intra-Bank/Inter-Bank
+
+Line chart solde : recalculé (moins fluidifie par virements)
+
+Statistiques "Dépenses ce mois" : exclut virements internes
+
+Exemple
+
+text
+Avant filtrage:
+- Dépenses brutes : 3,500€
+- Dont : 500€ virement épargne interne, 3,000€ externe
+
+Après filtrage (Masquer virements ON):
+- Dépenses affichées : 3,000€
+Catégorisation IA et virements internes
+Fluxe
+
+Import OFX détecte comptes + crée transactions
+
+Algorithme classification assigne type (External/Internal/Unknown)
+
+Si Internal : pas d'utilité de catégorie (il n'y a pas d'objet à catégoriser)
+
+Champ catégorie : null ou "Transfer" générique
+
+Si External : IA catégorise en fonction description (Amazon → Shopping, SNCF → Transport, etc.)
+
+Si Unknown : IA essaie catégoriser mais confiance basse
+
+Implication UX :
+
+Transactions Intra-Bank/Inter-Bank n'ont PAS de dropdown catégorie (champ grisé/désactivé)
+
+Ou catégorie auto-set à "Transfer" (non modifiable)
+
+Analytics et virements
+Reports mensuels :
+
+Montrent deux variantes : "avec virements internes" et "sans"
+
+Utilisateur comprend différence entre flux bruts et nets
+
+Cas limites et edge cases
+E1 : Compte destinataire créé après la transaction
+Scenario :
+
+Janvier : Import SG avec transaction vers BNP, BNP pas encore créée
+
+Classification: Unknown
+
+Février : Utilisateur ajoute BNP
+
+Même transaction reste Unknown (non re-classifiée automatiquement)
+
+Solution :
+
+Option "Re-classifier toutes transactions" (bouton) pour re-analyser toutes Unknown
+
+OU : User édite manuellement la transaction et spécifie compte dest
+
+E2 : Compte avec même 4 derniers chiffres dans deux banques
+Scenario :
+
+SG Chèques : ...1234
+
+BNP Épargne : ...1234
+
+Transaction décrit seulement "VIR À COMPTE 1234"
+
+Solution :
+
+Extraction IBAN complète prioritaire (pas juste derniers chiffres)
+
+Si ambiguité : marquer Unknown et demander user clarifier
+
+Ou : afficher warning lors import "plusieurs comptes match description, lequel?"
+
+E3 : Transaction nulle (montant = 0)
+Classification :
+
+Montant 0 = probablement erreur d'import ou placeholder
+
+Affichage warning dans preview import
+
+Importer quand même mais flag pour révision
+
+E4 : IBAN invalide ou malformé
+Parsing OFX :
+
+Validation IBAN selon standard (21-34 caractères, checksum IBAN)
+
+Si invalide : skip extraction IBAN, classification -> Unknown
+
+Warning affiché lors preview
+
+E5 : Virement réciproque (auto-paiement)
+Scenario :
+
+Utilisateur transfère de SG à BNP : -500€
+
+Puis reçoit crédit BNP : +500€
+
+Deux transactions, même montant, dates proches, même description?
+
+Comportement :
+
+Chaque transaction classée séparément (c'est techniquement deux transactions)
+
+Utilisateur verra : -500€ (Out) et +500€ (In)
+
+Filtre "Masquer virements" masquera les deux (car toutes deux Internal)
+
+Correct car c'est effectivement deux mouvements (même si réciproques)
+
+Summary des éléments clés
+Élément	Description	Emplacement
+Panel Banques/Comptes	Vue hiérarchique banques → comptes, gestion ajout/édition/suppression	Panneau vertical droit du Dashboard
+Modal Ajout Banque	Formulaire nom, couleur, emoji, notes	Déclenché depuis panel ou onboarding
+Import OFX	Upload → sélection banque → preview → confirmation	Page dédiée "Importer"
+Détection comptes	Auto-création comptes depuis OFX, lien à banque sélectionnée	Pendant preview import
+Classification transactions	External / Intra-Bank / Inter-Bank / Unknown	Transparent (backend)
+Filtre virements	Toggle "Masquer virements internes" (Intra + Inter)	Barre filtres au-dessus liste transactions
+Matching IBAN	Extraction depuis OFX + matching BD pour identifier comptes dest	Backend parsing
+Métadonnées import	Stockage date/nombre/source par compte	Visible dans détails compte
+Menu contexte	Options éditer/archiver/supprimer sur banques/comptes	Icons (⋮) à droite dans panel
+Graphiques	Recalculés selon filtre virements	Dashboard Analytics
+Conclusion
+FinanceTrack est conçu autour d'un modèle déclaratif :
+
+L'utilisateur déclare ses banques (contrôle explicite)
+
+L'application détecte ses comptes depuis OFX (automatisation)
+
+L'application classifie ses transactions (intelligence)
+
+L'utilisateur filtre et visualise (contrôle final)
