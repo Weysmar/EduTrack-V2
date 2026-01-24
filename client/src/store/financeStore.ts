@@ -106,7 +106,12 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 });
                 set({ accounts: [defaultAccount] });
             } else {
-                set({ accounts });
+                // Ensure balance is a number (Prisma Decimal returns string)
+                const parsedAccounts = accounts.map(a => ({
+                    ...a,
+                    balance: typeof a.balance === 'string' ? parseFloat(a.balance) : Number(a.balance)
+                }));
+                set({ accounts: parsedAccounts });
             }
         } catch (error) {
             console.error('Failed to fetch accounts', error);
