@@ -214,7 +214,7 @@ export function ItemView() {
                 try {
                     await itemQueries.delete(item.id)
                     // Prefetch/Wait slightly to ensure backend consistency if needed, but navigate should handle it
-                    navigate(`/course/${courseId}`)
+                    navigate(`/edu/course/${courseId}`)
                 } catch (error) {
                     console.error("Deletion failed", error)
                     setIsDeleting(false)
@@ -366,7 +366,7 @@ export function ItemView() {
             <div className="min-h-[3rem] h-auto border-b flex flex-col gap-2 px-3 md:px-6 py-2 bg-card sticky top-0 z-40 transition-all">
                 <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0 w-full">
                     <button
-                        onClick={() => navigate(`/course/${courseId}`)}
+                        onClick={() => navigate(`/edu/course/${courseId}`)}
                         className="p-2 mt-1 md:mt-0 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground flex-shrink-0"
                     >
                         <ArrowLeft className="h-5 w-5" />
