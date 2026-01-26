@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, Wallet, CreditCard } from 'lucide-react';
 import { Bank, Account } from '@/types/finance';
 import { BankFormModal } from './BankFormModal';
 import { AccountFormModal } from './AccountFormModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 export function BankManager() {
     const { banks, createBank, updateBank, deleteBank, createAccount, updateAccount, deleteAccount } = useFinance();

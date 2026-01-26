@@ -1,5 +1,5 @@
 import { Transaction } from '@/types/finance';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
 import { useMemo } from 'react';
 import clsx from 'clsx';

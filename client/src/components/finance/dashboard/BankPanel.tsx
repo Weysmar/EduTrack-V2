@@ -1,5 +1,5 @@
 import { Bank, Account } from '@/types/finance';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { ChevronDown, ChevronRight, PlusCircle, CreditCard } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
