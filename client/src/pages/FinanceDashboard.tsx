@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload, Filter, X } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ const getHslColor = (variable: string) => {
 
 export default function FinanceDashboard() {
     useEffect(() => {
-        console.log("💰 FinanceDashboard V3.0 (UI Consistent) Loaded");
+        console.log("💰 FinanceDashboard V3.1 (Account Filter) Loaded");
     }, []);
 
     const {
@@ -31,10 +31,13 @@ export default function FinanceDashboard() {
         deleteTransaction,
         generateLocalAudit,
         enrichTransaction,
-        importTransactions
+        importTransactions,
+        accounts
     } = useFinanceStore();
 
     const { t } = useLanguage();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const accountIdParam = searchParams.get('accountId');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
@@ -83,13 +86,18 @@ export default function FinanceDashboard() {
     const navigate = useNavigate();
     const [hideInternal, setHideInternal] = useState(false);
 
-    // Filter transactions based on 'hideInternal'
-    const filteredTransactions = transactions.filter(t => {
-        if (hideInternal) {
-            return t.classification !== 'INTERNAL_INTRA' && t.classification !== 'INTERNAL_INTER';
-        }
-        return true;
-    });
+    // Filter transactions based on 'hideInternal' and 'accountId'
+    const filteredTransactions = useMemo(() => {
+        return transactions.filter(t => {
+            if (hideInternal) {
+                if (t.classification === 'INTERNAL_INTRA' || t.classification === 'INTERNAL_INTER') return false;
+            }
+            if (accountIdParam) {
+                return t.accountId === accountIdParam;
+            }
+            return true;
+        });
+    }, [transactions, hideInternal, accountIdParam]);
 
     // Helper to calculate totals based on filtered view
     const calculateTotals = (txs: typeof transactions) => {
@@ -98,14 +106,17 @@ export default function FinanceDashboard() {
         return { income, expense };
     };
 
-    const balance = getBalance();
+    // Calculate dynamic balance
+    // If accountId is present, we should find that specific account's balance from store (if available) or calculate from transactions (less accurate for bank sync).
+    // Better: use the account object from store if available.
+    const selectedAccount = accountIdParam ? accounts?.find(a => a.id === accountIdParam) : null;
+
+    // If filtering by account, use its specific balance. Otherwise use global calculated balance.
+    const displayedBalance = selectedAccount
+        ? selectedAccount.balance
+        : getBalance(); // Global balance (sum of all accounts)
+
     const { income: filteredIncome, expense: filteredExpenses } = calculateTotals(filteredTransactions);
-    // Balance should arguably remain real balance (all txs), but for "Spending View" maybe we filter?
-    // Spec says: "Line chart solde : recalculé (moins fluidifié par virements)"
-    // So let's use filtered for everything visual.
-    // However, REAL balance of account doesn't change just because we hide transfers. 
-    // But "Revenue vs Expenses" stats definitely change.
-    // For simplicity and spec alignment ("Graphiques/statistiques recalculés"), we use filteredTransactions for charts/stats.
 
     // Re-calculate chart data
     const chartData = filteredTransactions
@@ -230,11 +241,29 @@ export default function FinanceDashboard() {
                 </div>
             )}
 
+            {/* Header / Active Filter */}
+            {accountIdParam && selectedAccount && (
+                <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <span className="font-medium">Filtré par compte : <strong>{selectedAccount.name}</strong></span>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setSearchParams({}); // Clear params
+                        }}
+                        className="p-1 hover:bg-primary/20 rounded-full transition-colors"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCardVariant
-                    title={t('finance.balance')}
-                    value={`${balance.toFixed(2)} €`}
+                    title={accountIdParam ? "Solde du compte" : t('finance.balance')}
+                    value={`${(Number(displayedBalance) || 0).toFixed(2)} €`}
                     icon={<Wallet className="h-6 w-6" />}
                     variant="primary"
                 />
