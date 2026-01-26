@@ -81,7 +81,28 @@ export function useFinance() {
     const createAccount = useMutation({
         mutationFn: async (data: Partial<Account> & { bankId: string }) => {
             const response = await axios.post<Account>('/finance/accounts', data);
-            return response.data;
+            const newAccount = response.data;
+
+            // Auto-create initial transaction if balance is set
+            if (data.balance && Number(data.balance) !== 0) {
+                try {
+                    await axios.post('/finance/transactions', {
+                        accountId: newAccount.id,
+                        amount: Number(data.balance),
+                        date: new Date().toISOString(),
+                        description: "Solde initial",
+                        type: Number(data.balance) > 0 ? 'INCOME' : 'EXPENSE',
+                        classification: 'UNKNOWN',
+                        category: 'Solde Initial',
+                        isRecurring: false,
+                        profileId: 'current-user-id' // Fallback
+                    });
+                } catch (err) {
+                    console.error("Failed to create initial balance transaction", err);
+                    // Don't fail the account creation if this fails, just log it
+                }
+            }
+            return newAccount;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
