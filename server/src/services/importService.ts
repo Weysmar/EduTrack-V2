@@ -227,6 +227,19 @@ export class ImportService {
                 count = batch.count;
             }
 
+            // Log import for traceability
+            await tx.importLog.create({
+                data: {
+                    profileId,
+                    filename: 'import_' + new Date().toISOString(),
+                    status: 'SUCCESS',
+                    totalRows: previewData.summary.totalTransactions,
+                    imported: count,
+                    duplicates: previewData.summary.duplicates,
+                    errors: 0
+                }
+            });
+
             return {
                 importedTransactions: count,
                 accountsSynced: previewData.accounts.length
