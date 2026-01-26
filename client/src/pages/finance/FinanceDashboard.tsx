@@ -3,8 +3,8 @@ import { FinanceStatsCards } from '@/components/finance/dashboard/FinanceStatsCa
 import { ExpenseChart } from '@/components/finance/dashboard/ExpenseChart';
 import { TransactionList } from '@/components/finance/dashboard/TransactionList';
 import { BankPanel } from '@/components/finance/dashboard/BankPanel';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
