@@ -76,6 +76,53 @@ export function useFinance() {
         }
     });
 
+    // --- ACCOUNT MUTATIONS ---
+
+    const createAccount = useMutation({
+        mutationFn: async (data: Partial<Account> & { bankId: string }) => {
+            const response = await axios.post<Account>('/finance/accounts', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['banks'] }); // Update bank totals
+            toast.success('Compte créé');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Erreur création compte');
+        }
+    });
+
+    const updateAccount = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<Account> }) => {
+            const response = await axios.put<Account>(`/finance/accounts/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Compte mis à jour');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Erreur mise à jour compte');
+        }
+    });
+
+    const deleteAccount = useMutation({
+        mutationFn: async (id: string) => {
+            await axios.delete(`/finance/accounts/${id}`);
+            return id;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Compte supprimé');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Erreur suppression compte');
+        }
+    });
+
     return {
         // Banks
         banks,
@@ -88,9 +135,14 @@ export function useFinance() {
         deleteBank: deleteBank.mutate,
         isDeletingBank: deleteBank.isPending,
 
-        // New Data
+        // Accounts
         accounts,
         isLoadingAccounts,
+        createAccount: createAccount.mutate,
+        updateAccount: updateAccount.mutate,
+        deleteAccount: deleteAccount.mutate,
+
+        // New Data
         transactions,
         isLoadingTransactions
     };

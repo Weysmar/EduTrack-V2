@@ -85,6 +85,90 @@ export const getAccounts = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const createAccount = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { bankId, name, type, balance, currency, accountNumber } = req.body;
+
+        // Verify bank belongs to user
+        const bank = await prisma.bank.findFirst({
+            where: { id: bankId, profileId }
+        });
+
+        if (!bank) {
+            return res.status(404).json({ error: 'Bank not found' });
+        }
+
+        const account = await prisma.account.create({
+            data: {
+                bankId,
+                name,
+                type: type || 'CHECKING',
+                balance: balance || 0,
+                currency: currency || 'EUR',
+                accountNumber: accountNumber || 'N/A',
+                iban: accountNumber || undefined, // Simple default
+                active: true,
+                autoDetected: false
+            }
+        });
+
+        res.status(201).json(account);
+    } catch (error: any) {
+        console.error('Create Account Error:', error);
+        res.status(500).json({ error: 'Failed to create account' });
+    }
+};
+
+export const updateAccount = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { id } = req.params;
+        const { name, type, balance, currency, accountNumber } = req.body;
+
+        // Verify ownership via Bank
+        const account = await prisma.account.findFirst({
+            where: { id, bank: { profileId } }
+        });
+
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        const updated = await prisma.account.update({
+            where: { id },
+            data: {
+                name,
+                type,
+                balance,
+                currency,
+                accountNumber
+            }
+        });
+
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update account' });
+    }
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { id } = req.params;
+
+        // Verify ownership
+        const account = await prisma.account.findFirst({
+            where: { id, bank: { profileId } }
+        });
+
+        if (!account) return res.status(404).json({ error: 'Account not found' });
+
+        await prisma.account.delete({ where: { id } });
+        res.json({ message: 'Account deleted' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete account' });
+    }
+};
+
 // --- Transactions ---
 export const getTransactions = async (req: AuthRequest, res: Response) => {
     try {

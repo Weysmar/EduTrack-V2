@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getBanks, createBank, updateBank, deleteBank } from '../controllers/bankController';
-import { getAccounts, getTransactions, previewImport, confirmImport, categorizeTransactions } from '../controllers/financeController';
+import { getAccounts, getTransactions, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount } from '../controllers/financeController';
 import multer from 'multer';
 import path from 'path';
 
@@ -29,6 +29,9 @@ router.delete('/banks/:id', deleteBank);
 
 // Accounts Routes
 router.get('/accounts', getAccounts);
+router.post('/accounts', createAccount);
+router.put('/accounts/:id', updateAccount);
+router.delete('/accounts/:id', deleteAccount);
 
 // Transactions Routes
 router.get('/transactions', getTransactions);
