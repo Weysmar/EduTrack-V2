@@ -171,7 +171,44 @@ export function useFinance() {
 
         // New Data
         transactions: transactions || [],
-        isLoadingTransactions
+        isLoadingTransactions,
+
+        // Transaction Mutations
+        createTransaction: useMutation({
+            mutationFn: async (data: Partial<Transaction>) => {
+                const response = await axios.post<Transaction>('/finance/transactions', data);
+                return response.data;
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Balance update
+                toast.success('Transaction créée');
+            },
+            onError: (err: any) => toast.error('Erreur lors de la création')
+        }).mutate,
+
+        updateTransaction: useMutation({
+            mutationFn: async ({ id, data }: { id: string; data: Partial<Transaction> }) => {
+                const response = await axios.put<Transaction>(`/finance/transactions/${id}`, data);
+                return response.data;
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                queryClient.invalidateQueries({ queryKey: ['accounts'] });
+                toast.success('Transaction mise à jour');
+            }
+        }).mutate,
+
+        deleteTransaction: useMutation({
+            mutationFn: async (id: string) => {
+                await axios.delete(`/finance/transactions/${id}`);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                queryClient.invalidateQueries({ queryKey: ['accounts'] });
+                toast.success('Transaction supprimée');
+            }
+        }).mutate
     };
 }
 
