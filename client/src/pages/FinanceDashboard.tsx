@@ -339,7 +339,7 @@ export default function FinanceDashboard() {
             <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
                 <TransactionList
-                    transactions={transactions}
+                    transactions={filteredTransactions}
                     onDelete={deleteTransaction}
                     onEnrich={enrichTransaction}
                 />
