@@ -252,6 +252,96 @@ export const createTransaction = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const updateTransaction = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { id } = req.params;
+        const {
+            amount,
+            date,
+            description,
+            classification,
+            category,
+            beneficiaryIban,
+            metadata
+        } = req.body;
+
+        // Verify ownership and get old transaction
+        const oldTransaction = await prisma.transaction.findFirst({
+            where: { id, account: { bank: { profileId } } },
+            include: { account: true }
+        });
+
+        if (!oldTransaction || !oldTransaction.accountId) {
+            return res.status(404).json({ error: 'Transaction not found or access denied' });
+        }
+
+        // Calculate balance difference if amount changes
+        if (amount !== undefined && amount !== oldTransaction.amount.toNumber()) {
+            const diff = parseFloat(amount.toString()) - oldTransaction.amount.toNumber();
+            await prisma.account.update({
+                where: { id: oldTransaction.accountId },
+                data: {
+                    balance: { increment: diff }
+                }
+            });
+        }
+
+        // Update transaction
+        const updated = await prisma.transaction.update({
+            where: { id },
+            data: {
+                amount: amount !== undefined ? amount : undefined,
+                date: date ? new Date(date) : undefined,
+                description,
+                classification,
+                category,
+                beneficiaryIban,
+                metadata
+            }
+        });
+
+        res.json(updated);
+    } catch (error: any) {
+        console.error('Update Transaction Error:', error);
+        res.status(500).json({ error: 'Failed to update transaction' });
+    }
+};
+
+export const deleteTransaction = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { id } = req.params;
+
+        // Verify ownership
+        const transaction = await prisma.transaction.findFirst({
+            where: { id, account: { bank: { profileId } } }
+        });
+
+        if (!transaction || !transaction.accountId) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        // Revert balance
+        // If it was income (positive), we subtract. If expense (negative), we subtract negative (add).
+        // Essentially: balance = balance - transaction.amount
+        await prisma.account.update({
+            where: { id: transaction.accountId },
+            data: {
+                balance: {
+                    decrement: transaction.amount
+                }
+            }
+        });
+
+        await prisma.transaction.delete({ where: { id } });
+        res.json({ message: 'Transaction deleted' });
+    } catch (error) {
+        console.error('Delete Transaction Error:', error);
+        res.status(500).json({ error: 'Failed to delete transaction' });
+    }
+};
+
 // --- AI Categorization ---
 export const categorizeTransactions = async (req: AuthRequest, res: Response) => {
     try {
