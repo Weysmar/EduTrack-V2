@@ -40,6 +40,7 @@ export default function FinanceDashboard() {
     const accountIdParam = searchParams.get('accountId');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState<any | null>(null); // Using any to avoid import dance, or verify Transaction import
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
     const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
@@ -341,11 +342,22 @@ export default function FinanceDashboard() {
                 <TransactionList
                     transactions={filteredTransactions}
                     onDelete={deleteTransaction}
+                    onEdit={(tx) => {
+                        setEditingTransaction(tx);
+                        setIsModalOpen(true);
+                    }}
                     onEnrich={enrichTransaction}
                 />
             </div>
 
-            <CreateTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <CreateTransactionModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingTransaction(null);
+                }}
+                initialData={editingTransaction}
+            />
 
             {/* Audit Modal Overlay */}
             {isAuditOpen && (
