@@ -198,6 +198,60 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const createTransaction = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const {
+            accountId,
+            amount,
+            date,
+            description,
+            classification,
+            category,
+            beneficiaryIban,
+            metadata
+        } = req.body;
+
+        // Verify account belongs to user
+        const account = await prisma.account.findFirst({
+            where: { id: accountId, bank: { profileId } }
+        });
+
+        if (!account) {
+            return res.status(404).json({ error: 'Account not found or access denied' });
+        }
+
+        // Create transaction
+        const transaction = await prisma.transaction.create({
+            data: {
+                accountId,
+                amount: amount,
+                date: date ? new Date(date) : new Date(),
+                description: description || 'Transaction manuelle',
+                classification: classification || 'UNKNOWN',
+                category: category || null,
+                beneficiaryIban: beneficiaryIban || null,
+                metadata: metadata || null
+            }
+        });
+
+        // Update account balance
+        await prisma.account.update({
+            where: { id: accountId },
+            data: {
+                balance: {
+                    increment: parseFloat(amount.toString())
+                }
+            }
+        });
+
+        res.status(201).json(transaction);
+    } catch (error: any) {
+        console.error('Create Transaction Error:', error);
+        res.status(500).json({ error: 'Failed to create transaction' });
+    }
+};
+
 // --- AI Categorization ---
 export const categorizeTransactions = async (req: AuthRequest, res: Response) => {
     try {
