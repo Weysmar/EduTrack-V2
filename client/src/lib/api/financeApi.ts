@@ -75,18 +75,18 @@ export const financeApi = {
 
     // Banks
     getBanks: async () => {
-        const { data } = await apiClient.get<any[]>('/banks');
+        const { data } = await apiClient.get<any[]>('/finance/banks');
         return data;
     },
     createBank: async (data: any) => {
-        const { data: res } = await apiClient.post<any>('/banks', data);
+        const { data: res } = await apiClient.post<any>('/finance/banks', data);
         return res;
     },
     updateBank: async (id: string, data: any) => {
-        const { data: res } = await apiClient.put<any>(`/banks/${id}`, data);
+        const { data: res } = await apiClient.put<any>(`/finance/banks/${id}`, data);
         return res;
     },
     deleteBank: async (id: string) => {
-        await apiClient.delete(`/banks/${id}`);
+        await apiClient.delete(`/finance/banks/${id}`);
     }
 };
