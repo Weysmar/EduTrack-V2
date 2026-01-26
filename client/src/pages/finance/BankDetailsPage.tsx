@@ -80,7 +80,7 @@ export default function BankDetailsPage() {
     };
 
     // Calculate totals
-    const totalBalance = bank.accounts?.reduce((sum, acc) => sum + acc.balance, 0) || 0;
+    const totalBalance = bank.accounts?.reduce((sum, acc) => sum + Number(acc.balance || 0), 0) || 0;
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -101,7 +101,7 @@ export default function BankDetailsPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold text-slate-100">{bank.name}</h1>
-                        <p className="text-slate-400 mt-1">Solde total : <span className="text-emerald-400 font-mono font-medium">{totalBalance.toFixed(2)} €</span></p>
+                        <p className="text-slate-400 mt-1">Solde total : <span className="text-emerald-400 font-mono font-medium">{Number(totalBalance).toFixed(2)} €</span></p>
                     </div>
                 </div>
 
@@ -150,8 +150,8 @@ export default function BankDetailsPage() {
                                 <div className="flex justify-between items-end mt-4">
                                     <div className="flex flex-col">
                                         <span className="text-xs text-slate-500 uppercase tracking-wider mb-1">Solde</span>
-                                        <span className={`text-2xl font-mono font-bold ${account.balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {account.balance.toFixed(2)} €
+                                        <span className={`text-2xl font-mono font-bold ${Number(account.balance) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {Number(account.balance).toFixed(2)} €
                                         </span>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
