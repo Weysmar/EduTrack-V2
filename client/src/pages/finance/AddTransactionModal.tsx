@@ -28,7 +28,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
             profileId: 'current-user-id', // Would come from auth context
             amount: parseFloat(formData.amount),
             description: formData.description,
-            // @ts-ignore - 'type' property is missing in Transaction interface but inferred in dashboard. Ideally should be added to interface.
             type: formData.type,
             date: new Date().toISOString(),
             category: formData.category, // Mapped from form data
