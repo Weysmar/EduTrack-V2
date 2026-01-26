@@ -104,7 +104,7 @@ export const createAccount = async (req: AuthRequest, res: Response) => {
                 bankId,
                 name,
                 type: type || 'CHECKING',
-                balance: balance || 0,
+                balance: 0, // Always start at 0 - balance managed via transactions
                 currency: currency || 'EUR',
                 accountNumber: accountNumber || 'N/A',
                 iban: accountNumber || undefined, // Simple default
