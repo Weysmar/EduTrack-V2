@@ -125,7 +125,7 @@ export function useFinance() {
 
     return {
         // Banks
-        banks,
+        banks: banks || [],
         isLoadingBanks,
         banksError,
         createBank: createBank.mutate,
@@ -136,14 +136,14 @@ export function useFinance() {
         isDeletingBank: deleteBank.isPending,
 
         // Accounts
-        accounts,
+        accounts: accounts || [],
         isLoadingAccounts,
         createAccount: createAccount.mutate,
         updateAccount: updateAccount.mutate,
         deleteAccount: deleteAccount.mutate,
 
         // New Data
-        transactions,
+        transactions: transactions || [],
         isLoadingTransactions
     };
 }
