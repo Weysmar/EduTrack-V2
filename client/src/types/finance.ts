@@ -31,6 +31,8 @@ export interface Account {
     lastTransactionDate?: string;
     autoDetected: boolean;
     active: boolean;
+    isArchived?: boolean;
+    metadata?: any;
     createdAt: string;
     updatedAt: string;
 }
@@ -39,6 +41,7 @@ export interface Transaction {
     id: string;
     accountId: string;
     account?: Account;
+    profileId?: string; // Added for frontend compatibility
     date: string;
     amount: number;
     description: string;
@@ -48,6 +51,8 @@ export interface Transaction {
     linkedAccountId?: string;
     category?: string;
     importSource?: string;
+    type?: TransactionType; // Added for frontend compatibility
+    isRecurring?: boolean; // Added for frontend compatibility
     metadata?: any;
     createdAt: string;
     updatedAt: string;
