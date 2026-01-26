@@ -90,7 +90,7 @@ export default function FinanceDashboard() {
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
             if (hideInternal) {
-                if (t.classification === 'INTERNAL_INTRA' || t.classification === 'INTERNAL_INTER') return false;
+                if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
             }
             if (accountIdParam) {
                 return t.accountId === accountIdParam;
@@ -101,8 +101,8 @@ export default function FinanceDashboard() {
 
     // Helper to calculate totals based on filtered view
     const calculateTotals = (txs: typeof transactions) => {
-        const income = txs.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-        const expense = txs.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + Math.abs(t.amount), 0);
+        const income = txs.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
+        const expense = txs.filter(t => t.amount < 0).reduce((acc, t) => acc + Math.abs(t.amount), 0);
         return { income, expense };
     };
 
@@ -121,26 +121,18 @@ export default function FinanceDashboard() {
     // Re-calculate chart data
     const chartData = filteredTransactions
         .slice()
-        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .reduce((acc: any[], t) => {
-            const dateStr = t.date.toISOString().split('T')[0];
+            const dateStr = new Date(t.date).toISOString().split('T')[0];
             const existing = acc.find(d => d.date === dateStr);
             if (existing) {
-                if (t.type === 'INCOME') existing.income += t.amount;
-                else existing.expense += t.amount; // amount is negative for expense usually, but here we add magnitude?
-                // logic in original was: existing.expense += t.amount. Check original logic.
-                // Original: existing.expense += t.amount (which is negative).
-                // Chart displays typical positive bars? 
-                // AreaChart usage: <Area dataKey="expense" ... />. 
-                // If expense is negative, it plots below 0? 
-                // Usually dashboard charts show Expenses as positive magnitude for comparison.
-                // Let's keep original logic but verify.
-                // Original: existing.expense += t.amount. 
+                if (t.amount > 0) existing.income += t.amount;
+                else existing.expense += Math.abs(t.amount);
             } else {
                 acc.push({
                     date: dateStr,
-                    income: t.type === 'INCOME' ? t.amount : 0,
-                    expense: t.type === 'EXPENSE' ? t.amount : 0
+                    income: t.amount > 0 ? t.amount : 0,
+                    expense: t.amount < 0 ? Math.abs(t.amount) : 0
                 });
             }
             return acc;
@@ -151,8 +143,8 @@ export default function FinanceDashboard() {
     const getFilteredCategoryBreakdown = () => {
         const breakdown = new Map<string, number>();
         filteredTransactions.forEach(t => {
-            if (t.type === 'EXPENSE') {
-                const category = t.categoryId || 'Uncategorized';
+            if (t.amount < 0) {
+                const category = t.category || 'Uncategorized';
                 breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
             }
         });
