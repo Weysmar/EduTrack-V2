@@ -72,14 +72,6 @@ export function EduSidebar() {
                         <img src={logoSrc} alt="EduTrack" className="h-8 w-8 object-contain" />
                     </Link>
                 )}
-
-                <button
-                    onClick={toggleCollapse}
-                    className={cn("text-muted-foreground hover:text-foreground transition-colors hidden lg:block", !isCollapsed && "ml-auto")}
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-                </button>
             </div>
 
             <div className={cn("border-b space-y-2 transition-all", isCollapsed ? "p-2" : "p-4")}>

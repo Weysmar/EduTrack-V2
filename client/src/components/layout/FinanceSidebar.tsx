@@ -81,13 +81,6 @@ export function FinanceSidebar() {
                         <img src={logoSrc} alt="FinanceTrack" className="h-8 w-8 object-contain hue-rotate-90" />
                     </Link>
                 )}
-
-                <button
-                    onClick={toggleCollapse}
-                    className={cn("text-muted-foreground hover:text-foreground transition-colors hidden lg:block", !isCollapsed && "ml-auto")}
-                >
-                    {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-                </button>
             </div>
 
             {/* Back to Hub */}
