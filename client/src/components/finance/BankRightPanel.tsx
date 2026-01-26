@@ -32,10 +32,7 @@ export const BankRightPanel: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 w-[300px]">
-            {/* Header */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-                <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Banques & Comptes</h2>
-            </div>
+            {/* Header Removed */}
 
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
