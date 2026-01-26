@@ -1,70 +1,89 @@
+export type AccountType = 'CHECKING' | 'SAVINGS' | 'CREDIT' | 'INVESTMENT' | 'LOAN' | 'OTHER';
+
+export type TransactionClassification = 'EXTERNAL' | 'INTERNAL_INTRA_BANK' | 'INTERNAL_INTER_BANK' | 'UNKNOWN';
+
 export interface Bank {
     id: string;
     name: string;
-    icon?: string;
+    swifBic?: string;
     color: string;
-    profileId: string;
-    swiftCode?: string;
-    isActive: boolean;
-    isArchived: boolean;
+    icon?: string;
+    active: boolean;
+    accounts?: Account[];
     metadata?: any;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export interface FinancialAccount {
+export interface Account {
     id: string;
-    profileId: string;
-    bankId?: string; // Link to Bank
+    bankId: string;
+    bank?: Bank;
     name: string;
-    type: 'CHECKING' | 'SAVINGS' | 'CASH';
-    balance: number;
+    type: AccountType;
+    iban?: string;
+    accountNumber?: string;
     currency: string;
-    icon?: string;
-    color: string;
-    createdAt: Date;
-    updatedAt: Date;
-    lastSyncedAt?: Date;
-    isArchived: boolean;
-    isAutoDetected: boolean;
-    metadata?: any;
+    balance?: number;
+    balanceDate?: string;
+    lastTransactionDate?: string;
+    autoDetected: boolean;
+    active: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Transaction {
     id: string;
-    profileId: string;
-    accountId?: string;
+    accountId: string;
+    account?: Account;
+    date: string;
     amount: number;
-    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
-    date: Date;
-    description?: string;
-    categoryId?: string;
-    receiptUrl?: string;
-    isRecurring: boolean;
-    recurringRule?: string;
-    aiEnriched: boolean;
-    aiSuggestions?: any;
-    createdAt: Date;
-
-    // V2 Fields
-    classification: 'EXTERNAL' | 'INTERNAL_INTRA' | 'INTERNAL_INTER' | 'UNKNOWN';
-    confidenceScore: number;
+    description: string;
     beneficiaryIban?: string;
+    classification: TransactionClassification;
+    classificationConfidence?: number;
+    linkedAccountId?: string;
+    category?: string;
+    importSource?: string;
+    metadata?: any;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export interface TransactionCategory {
-    id: string;
+export interface CreateBankDTO {
     name: string;
-    type: 'INCOME' | 'EXPENSE';
+    color: string;
     icon?: string;
-    color?: string;
-    parentId?: string;
+    swiftBic?: string;
 }
 
-export interface Budget {
-    id: string;
-    profileId: string;
-    categoryId: string;
-    amount: number;
-    period: 'MONTHLY' | 'WEEKLY' | 'YEARLY';
-    startDate: Date;
-    endDate?: Date;
+export interface UpdateBankDTO extends Partial<CreateBankDTO> { }
+
+// --- Import Types ---
+
+export interface ImportPreviewData {
+    detectedBankId: string;
+    accounts: {
+        isNew: boolean;
+        accountName: string;
+        accountNumber: string;
+        balance: number;
+        currency: string;
+    }[];
+    transactions: {
+        date: string; // ISO date string from JSON
+        amount: number;
+        description: string;
+        classification: TransactionClassification;
+        confidence: number;
+        accountNumber: string;
+        isDuplicate: boolean;
+        importId?: string;
+    }[];
+    summary: {
+        totalTransactions: number;
+        newTransactions: number;
+        duplicates: number;
+    }
 }

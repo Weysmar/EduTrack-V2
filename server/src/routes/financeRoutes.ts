@@ -1,37 +1,40 @@
 import { Router } from 'express';
-import { authenticate as auth } from '../middleware/auth';
-import * as financeController from '../controllers/financeController';
+import { getBanks, createBank, updateBank, deleteBank } from '../controllers/bankController';
+import { getAccounts, getTransactions, previewImport, confirmImport } from '../controllers/financeController';
+import multer from 'multer';
+import path from 'path';
 
 const router = Router();
 
-// Accounts (Protected)
-router.get('/accounts', auth, financeController.getAccounts);
-router.post('/accounts', auth, financeController.createAccount);
-router.put('/accounts/:id', auth, financeController.updateAccount);
-router.delete('/accounts/:id', auth, financeController.deleteAccount);
+// Multer Config
+const upload = multer({
+    dest: 'uploads/temp/',
+    limits: { fileSize: 10 * 1024 * 1024 }, // Boost to 10MB
+    fileFilter: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const allowedExtensions = ['.ofx', '.qfx', '.csv', '.xlsx', '.xls'];
+        if (allowedExtensions.includes(ext)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Format non supporté. Utilisez OFX, CSV ou Excel.'));
+        }
+    }
+});
 
-import { upload } from '../middleware/upload';
+// Banks Routes
+router.get('/banks', getBanks);
+router.post('/banks', createBank);
+router.put('/banks/:id', updateBank);
+router.delete('/banks/:id', deleteBank);
 
-// Transactions
-router.get('/transactions', auth, financeController.getTransactions);
-router.post('/transactions/upload', auth, upload.single('file'), financeController.uploadTransactions);
-router.post('/transactions', auth, financeController.createTransaction);
-router.put('/transactions/:id', auth, financeController.updateTransaction);
-router.delete('/transactions/:id', auth, financeController.deleteTransaction);
-router.post('/transactions/bulk/delete', auth, financeController.bulkDeleteTransactions);
+// Accounts Routes
+router.get('/accounts', getAccounts);
 
-// Categories
-router.get('/categories', auth, financeController.getCategories);
-router.post('/categories', auth, financeController.createCategory);
+// Transactions Routes
+router.get('/transactions', getTransactions);
 
-// Budgets
-router.get('/budgets', auth, financeController.getBudgets);
-router.post('/budgets', auth, financeController.createBudget);
-router.put('/budgets/:id', auth, financeController.updateBudget);
-
-// AI Features
-router.post('/transactions/:id/enrich', auth, financeController.enrichTransaction);
-router.post('/audit', auth, financeController.generateAudit);
-router.get('/report', auth, financeController.generateReport);
+// Import Routes
+router.post('/import/preview', upload.single('file'), previewImport);
+router.post('/import/confirm', confirmImport);
 
 export default router;

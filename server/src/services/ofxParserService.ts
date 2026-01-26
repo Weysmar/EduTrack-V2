@@ -1,100 +1,142 @@
 import { parse } from 'ofx-parser';
-import { Prisma } from '@prisma/client';
-import { ParsedTransaction } from './csvParserService';
+import { OfxData, OfxAccount, OfxTransaction } from '../types/ofx';
 
-export const parseOfx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]> => {
-    return new Promise((resolve, reject) => {
-        try {
-            let ofxString = fileBuffer.toString('utf-8');
+export class OfxParserService {
 
-            // Fix: Strip OFX Headers (everything before first <OFX> tag, case insensitive)
-            const ofxIndex = ofxString.search(/<OFX>/i);
-            if (ofxIndex !== -1) {
-                ofxString = ofxString.substring(ofxIndex);
-            }
+    static async parseFile(fileBuffer: Buffer): Promise<OfxData> {
+        return new Promise((resolve, reject) => {
+            try {
+                let ofxString = fileBuffer.toString('utf-8');
 
-            parse(ofxString).then((data: any) => {
-                const transactions: ParsedTransaction[] = [];
-
-                // Recursive search for transaction lists (STMTTRN)
-                const stmtList = findTransactionNodes(data);
-
-                if (!stmtList || stmtList.length === 0) {
-                    console.error("OFX Structure Valid keys:", Object.keys(data));
-                    reject(new Error("Aucune transaction trouvée (Structure incompatible)."));
-                    return;
+                // Clean header junk if present before <OFX> tag
+                const ofxIndex = ofxString.search(/<OFX>/i);
+                if (ofxIndex !== -1) {
+                    ofxString = ofxString.substring(ofxIndex);
                 }
 
-                stmtList.forEach((stmt: any) => {
-                    try {
-                        const dateStr = stmt.DTPOSTED;
-                        const date = parseOfxDate(dateStr);
+                parse(ofxString).then((data: any) => {
+                    const extractedAccounts: OfxAccount[] = [];
 
-                        const amount = parseFloat(stmt.TRNAMT);
-                        const name = stmt.NAME || '';
-                        const memo = stmt.MEMO || '';
-                        const description = `${name} ${memo}`.trim();
-                        const fitId = stmt.FITID;
+                    // OFX structure can vary. We look for BANKMSGSRSV1 -> STMTTRNRS -> STMTRS
+                    // Or CREDITCARDMSGSRSV1 -> CCSTMTTRNRS -> CCSTMTRS
 
-                        if (date && !isNaN(amount)) {
-                            transactions.push({
-                                date,
-                                description: description.replace(/\s+/g, ' ').trim(),
-                                amount: new Prisma.Decimal(amount).toNumber(),
-                                type: amount >= 0 ? 'INCOME' : 'EXPENSE',
-                                importedId: fitId
+                    // Helper to process a statement response block
+                    const processStatement = (stmtrs: any, isCreditCard = false) => {
+                        try {
+                            const currency = stmtrs.CURDEF || 'EUR';
+                            let accountId = '';
+                            let bankId = '';
+
+                            if (isCreditCard) {
+                                accountId = stmtrs.CCACCTFROM?.ACCTID || '';
+                            } else {
+                                accountId = stmtrs.BANKACCTFROM?.ACCTID || '';
+                                bankId = stmtrs.BANKACCTFROM?.BANKID || '';
+                            }
+
+                            // Balance
+                            const ledgerBal = stmtrs.LEDGERBAL || {};
+                            const balance = parseFloat(ledgerBal.BALAMT || '0');
+                            const balanceDateStr = ledgerBal.DTASOF || '';
+                            const balanceDate = balanceDateStr ? OfxParserService.parseOfxDate(balanceDateStr) : undefined;
+
+                            // Transactions
+                            const transactions: OfxTransaction[] = [];
+                            const transList = stmtrs.BANKTRANLIST?.STMTTRN || [];
+
+                            // Handle single transaction vs array
+                            const transArray = Array.isArray(transList) ? transList : [transList];
+
+                            transArray.forEach((trn: any) => {
+                                if (!trn) return;
+
+                                const amount = parseFloat(trn.TRNAMT);
+                                if (isNaN(amount)) return;
+
+                                const date = OfxParserService.parseOfxDate(trn.DTPOSTED);
+                                const name = trn.NAME || '';
+                                const memo = trn.MEMO || '';
+                                const description = `${name} ${memo}`.trim();
+
+                                transactions.push({
+                                    date,
+                                    amount,
+                                    description,
+                                    fitId: trn.fitId || trn.FITID || '', // Crucial for deduplication
+                                    checkNumber: trn.CHECKNUM,
+                                    type: amount >= 0 ? 'CREDIT' : 'DEBIT'
+                                });
                             });
+
+                            extractedAccounts.push({
+                                accountId,
+                                bankId,
+                                currency,
+                                balance,
+                                balanceDate,
+                                transactions
+                            });
+
+                        } catch (err) {
+                            console.error("Error processing OFX statement block", err);
                         }
-                    } catch (err) {
-                        console.warn("Skipping OFX row", err);
+                    };
+
+                    // Look for Bank Statements
+                    const bankMsgs = data.OFX?.BANKMSGSRSV1?.STMTTRNRS;
+                    if (bankMsgs) {
+                        const msgs = Array.isArray(bankMsgs) ? bankMsgs : [bankMsgs];
+                        msgs.forEach((msg: any) => {
+                            if (msg.STMTRS) processStatement(msg.STMTRS, false);
+                        });
                     }
+
+                    // Look for Credit Card Statements
+                    const ccMsgs = data.OFX?.CREDITCARDMSGSRSV1?.CCSTMTTRNRS;
+                    if (ccMsgs) {
+                        const msgs = Array.isArray(ccMsgs) ? ccMsgs : [ccMsgs];
+                        msgs.forEach((msg: any) => {
+                            if (msg.CCSTMTRS) processStatement(msg.CCSTMTRS, true);
+                        });
+                    }
+
+                    if (extractedAccounts.length === 0) {
+                        reject(new Error("Aucun compte ou transaction trouvé dans le fichier OFX."));
+                        return;
+                    }
+
+                    resolve({ accounts: extractedAccounts });
+
+                }).catch((err: any) => {
+                    console.error("OFX Parser Error:", err);
+                    reject(new Error("Erreur lors du parsing du fichier OFX."));
                 });
 
-                resolve(transactions);
-
-            }).catch((err: any) => {
-                console.error("OFX Parse Error:", err);
-                reject(new Error("Erreur de parsing OFX: " + err.message));
-            });
-
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
-
-// Helper to recursively find STMTTRN nodes
-function findTransactionNodes(obj: any): any[] {
-    let results: any[] = [];
-
-    if (!obj || typeof obj !== 'object') return results;
-
-    // Check if current object represents a transaction list (BANKTRANLIST) containing STMTTRN
-    if (obj.STMTTRN) {
-        if (Array.isArray(obj.STMTTRN)) {
-            results = results.concat(obj.STMTTRN);
-        } else {
-            results.push(obj.STMTTRN);
-        }
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
-    // Recurse keys
-    Object.keys(obj).forEach(key => {
-        // Optimization: Don't recurse into strings/numbers
-        if (typeof obj[key] === 'object') {
-            const childResults = findTransactionNodes(obj[key]);
-            results = results.concat(childResults);
+    private static parseOfxDate(dateStr: string): Date {
+        if (!dateStr || dateStr.length < 8) return new Date();
+
+        // YYYYMMDDHHMMSS.....
+        const year = parseInt(dateStr.substring(0, 4));
+        const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-indexed
+        const day = parseInt(dateStr.substring(6, 8));
+
+        // Handle time if present, otherwise default to noon to avoid timezone shift issues on pure dates
+        let hours = 12;
+        let minutes = 0;
+        let seconds = 0;
+
+        if (dateStr.length >= 14) {
+            hours = parseInt(dateStr.substring(8, 10));
+            minutes = parseInt(dateStr.substring(10, 12));
+            seconds = parseInt(dateStr.substring(12, 14));
         }
-    });
 
-    return results;
-}
-
-function parseOfxDate(dateStr: string): Date {
-    if (!dateStr || dateStr.length < 8) return new Date();
-    // YYYYMMDD...
-    const year = dateStr.substring(0, 4);
-    const month = dateStr.substring(4, 6);
-    const day = dateStr.substring(6, 8);
-    return new Date(`${year}-${month}-${day}`);
+        return new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+    }
 }

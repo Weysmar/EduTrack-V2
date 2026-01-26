@@ -1,195 +1,91 @@
 import * as XLSX from 'xlsx';
-import { Prisma } from '@prisma/client';
-import { ParsedTransaction } from './csvParserService';
+import { OfxData, OfxTransaction } from '../types/ofx';
 
-export const parseXlsx = async (fileBuffer: Buffer): Promise<ParsedTransaction[]> => {
-    return new Promise((resolve, reject) => {
-        try {
-            const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
+export class XlsxParserService {
 
-            // Convert to JSON with header detection
-            const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    static parseFile(fileBuffer: Buffer): OfxData {
+        const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
 
-            if (!jsonData || jsonData.length === 0) {
-                reject(new Error("Le fichier XLSX est vide ou illisible."));
-                return;
-            }
+        // Convert to JSON with header row 1
+        const rows = XLSX.utils.sheet_to_json(sheet);
 
-            const transactions: ParsedTransaction[] = [];
+        const transactions = this.mapToTransactions(rows);
 
-            // Strategy: Find the header row
-            // Look for row containing 'Date', 'Montant', 'Libellé'
-            let headerRowIndex = -1;
-            for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
-                const row = jsonData[i].map(c => String(c).toLowerCase());
-                if (row.some(c => c.includes('date')) && (row.some(c => c.includes('montant')) || row.some(c => c.includes('debit')) || row.some(c => c.includes('credit')))) {
-                    headerRowIndex = i;
-                    break;
-                }
-            }
-
-            // Heuristic for columns if header not found or standard LCL/Bank export
-            let dateCol = -1;
-            let amountCol = -1;
-            let descCol = -1;
-            let debitCol = -1;
-            let creditCol = -1;
-
-            if (headerRowIndex !== -1) {
-                const header = jsonData[headerRowIndex].map(c => String(c).toLowerCase());
-
-                dateCol = header.findIndex(c => c.includes('date'));
-                descCol = header.findIndex(c => c.includes('libell') || c.includes('description') || c.includes('opération'));
-
-                // Check if separate Debit/Credit columns
-                debitCol = header.findIndex(c => c.includes('débit') || c.includes('debit'));
-                creditCol = header.findIndex(c => c.includes('crédit') || c.includes('credit'));
-
-                if (debitCol === -1 && creditCol === -1) {
-                    amountCol = header.findIndex(c => c.includes('montant') || c.includes('solde') === false); // Avoid Solde
-                }
-            } else {
-                // No Header found - Type-based detection on first data row
-                // Heuristic: 
-                // Date = number > 30000 (Excel serial) or Date object
-                // Amount = number (but not date-like)
-                // Description = string
-
-                headerRowIndex = -1; // Data starts at 0
-                const firstRow = jsonData[0]; // Sample first row
-
-                if (firstRow && Array.isArray(firstRow)) {
-                    // Reset defaults
-                    dateCol = -1;
-                    amountCol = -1;
-                    descCol = -1;
-
-                    firstRow.forEach((cell, idx) => {
-                        const type = typeof cell;
-                        if (type === 'number') {
-                            if (cell > 30000 && cell < 60000 && dateCol === -1) {
-                                // Likely a date
-                                dateCol = idx;
-                            } else if (amountCol === -1) {
-                                amountCol = idx;
-                            }
-                        } else if (type === 'string' && descCol === -1) {
-                            descCol = idx;
-                        }
-                    });
-
-                    // Defaults if detection fails
-                    if (dateCol === -1) dateCol = 0;
-                    if (amountCol === -1) amountCol = 2; // Common pattern: Date, Desc, Amount
-                    if (descCol === -1) descCol = 1;
-                } else {
-                    // Fallback default
-                    dateCol = 0;
-                    amountCol = 1;
-                    descCol = 2;
-                }
-            }
-
-            // Process Rows
-            for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
-                const row = jsonData[i];
-                if (!row || row.length === 0) continue;
-
-                try {
-                    // Date Parsing (Excel dates are numbers usually, or strings)
-                    let date: Date | null = null;
-                    const dateRaw = row[dateCol];
-
-                    if (typeof dateRaw === 'number') {
-                        // Excel serial date
-                        date = new Date(Math.round((dateRaw - 25569) * 86400 * 1000));
-                    } else if (typeof dateRaw === 'string') {
-                        date = parseDateString(dateRaw);
-                    } else {
-                        // dateRaw might be Date object if parsed by xlsx option cellDates: true (not used here)
-                        continue;
-                    }
-
-                    if (!date || isNaN(date.getTime())) continue;
-
-                    // Amount Parsing
-                    let amount = 0;
-                    if (debitCol !== -1 && creditCol !== -1) {
-                        const debit = parseAmount(row[debitCol]);
-                        const credit = parseAmount(row[creditCol]);
-                        if (credit > 0) amount = credit;
-                        else if (debit > 0) amount = -debit; // Debit is usually positive number in column
-                        else if (typeof row[debitCol] === 'number' && row[debitCol] < 0) amount = row[debitCol]; // If debit is negative
-                    } else {
-                        amount = parseAmount(row[amountCol]);
-                    }
-
-                    if (isNaN(amount) || amount === 0) continue;
-
-                    // Description Parsing
-                    let description = '';
-                    if (descCol !== -1 && row[descCol]) {
-                        description = String(row[descCol]).trim();
-                    } else {
-                        // Concatenate others?
-                        description = row.filter((_, idx) => idx !== dateCol && idx !== amountCol && idx !== debitCol && idx !== creditCol).join(' ').trim();
-                    }
-
-                    if (!description) description = "Import XLSX";
-
-                    // Skip rows that look like Balance summaries or headers
-                    const descLower = description.toLowerCase();
-                    if (descLower.startsWith('solde ') ||
-                        descLower.startsWith('ancien solde') ||
-                        descLower.includes('solde au') ||
-                        descLower.match(/^\d{5}[\s.-]?\d{6,}[A-Z]?$/)) { // Account number pattern detection
-                        continue;
-                    }
-
-                    const type = amount >= 0 ? 'INCOME' : 'EXPENSE';
-
-                    transactions.push({
-                        date,
-                        description: description.replace(/\s+/g, ' ').trim(),
-                        amount: new Prisma.Decimal(amount).toNumber(),
-                        type
-                    });
-
-                } catch (err) {
-                    console.warn(`Row ${i} skipped`, err);
-                }
-            }
-
-            if (transactions.length === 0) {
-                reject(new Error("Aucune transaction valide trouvée dans le fichier XLSX."));
-            } else {
-                resolve(transactions);
-            }
-
-        } catch (e) {
-            reject(e);
-        }
-    });
-};
-
-function parseDateString(dateStr: string): Date | null {
-    if (!dateStr) return null;
-    // Common formats: DD/MM/YYYY
-    if (dateStr.includes('/')) {
-        const [day, month, year] = dateStr.split('/');
-        if (day && month && year) {
-            return new Date(`${year.length === 2 ? '20' + year : year}-${month}-${day}`);
-        }
+        return {
+            accounts: [{
+                accountId: 'XLSX_IMPORT',
+                currency: 'EUR',
+                balance: 0,
+                transactions
+            }]
+        };
     }
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-}
 
-function parseAmount(val: any): number {
-    if (typeof val === 'number') return val;
-    if (!val) return 0;
-    const str = String(val).replace(/\s/g, '').replace('€', '').replace(',', '.');
-    return parseFloat(str);
+    private static mapToTransactions(rows: any[]): OfxTransaction[] {
+        return rows.map((row: any) => {
+            // Keys depend on the Excel headers. We try common ones.
+            // Keys in standard `sheet_to_json` are usually the header strings.
+
+            // Normalize keys to simpler lowercase to find matches
+            const normalizedRow: any = {};
+            Object.keys(row).forEach(k => {
+                normalizedRow[k.toLowerCase().trim()] = row[k];
+            });
+
+            const dateVal = normalizedRow['date'] || normalizedRow['date opération'] || normalizedRow['date operation'];
+            const label = normalizedRow['libellé'] || normalizedRow['libelle'] || normalizedRow['description'] || normalizedRow['label'] || normalizedRow['memo'];
+
+            let amount = 0;
+            if (normalizedRow['montant'] !== undefined || normalizedRow['amount'] !== undefined) {
+                amount = parseFloat(normalizedRow['montant'] || normalizedRow['amount']);
+            } else {
+                // Credit / Debit Strategy
+                const credit = parseFloat(normalizedRow['crédit'] || normalizedRow['credit'] || '0');
+                const debit = parseFloat(normalizedRow['débit'] || normalizedRow['debit'] || '0');
+                amount = credit - Math.abs(debit);
+            }
+
+            if (!dateVal || !label) return null;
+
+            // Date parsing in Excel can be:
+            // 1. Serial number (e.g. 44505) -> XLSX helper needed usually, but sheet_to_json might parse it if raw false? 
+            // By default `sheet_to_json` with raw: false (default is true?) tries to keep types?
+            // Actually it's cleaner to handle JS Date if XLSX parsed it, or string.
+
+            // Let's assume dateVal is likely a string "DD/MM/YYYY" or a JS Date object depends on options
+            // If it's a number (serial), we need to convert.
+
+            let finalDate: Date;
+            if (typeof dateVal === 'number') {
+                // Excel serial date
+                // (n - 25569) * 86400 * 1000 ? 
+                // Or use library helper if possible, but simpler to just try 'raw: false' which gives strings, 
+                // OR assuming manual conversion.
+                // JS Date: new Date(Math.round((excelDate - 25569)*86400*1000));
+                finalDate = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+            } else {
+                // Try parsing string
+                finalDate = new Date(dateVal);
+                if (isNaN(finalDate.getTime()) && typeof dateVal === 'string' && dateVal.includes('/')) {
+                    // manual french parsing
+                    const [d, m, y] = dateVal.split('/');
+                    finalDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                }
+            }
+
+            return {
+                date: finalDate,
+                amount: amount,
+                description: String(label),
+                fitId: this.generateFitId(finalDate.toISOString(), label, amount),
+                type: amount >= 0 ? 'CREDIT' : 'DEBIT'
+            };
+        }).filter(t => t !== null) as OfxTransaction[];
+    }
+
+    private static generateFitId(date: string, desc: string, amount: number): string {
+        return Buffer.from(`${date}-${desc}-${amount}`).toString('base64');
+    }
 }
