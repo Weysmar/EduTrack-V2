@@ -135,18 +135,34 @@ export function FinanceSidebar() {
                         <div key={bank.id} className="space-y-1">
                             {!isCollapsed ? (
                                 <>
-                                    <button
-                                        onClick={() => toggleBank(bank.id)}
-                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors"
-                                    >
-                                        {expandedBanks[bank.id] ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                                        {bank.icon && !bank.icon.startsWith('http') ? (
-                                            <span style={{ color: bank.color }}>{bank.icon}</span>
-                                        ) : (
-                                            <Building className="h-3 w-3" />
-                                        )}
-                                        <span className="truncate">{bank.name}</span>
-                                    </button>
+                                    <div className="w-full flex items-center gap-1 group/bank">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                toggleBank(bank.id);
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                                        >
+                                            {expandedBanks[bank.id] ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                        </button>
+
+                                        <Link
+                                            to={`/finance/bank/${bank.id}`}
+                                            className={cn(
+                                                "flex-1 flex items-center gap-2 py-1.5 px-2 text-sm font-medium rounded-md transition-colors",
+                                                location.pathname === `/finance/bank/${bank.id}`
+                                                    ? "bg-primary/10 text-primary"
+                                                    : "text-foreground hover:bg-muted/50"
+                                            )}
+                                        >
+                                            {bank.icon && !bank.icon.startsWith('http') ? (
+                                                <span style={{ color: bank.color }}>{bank.icon}</span>
+                                            ) : (
+                                                <Building className="h-3 w-3" />
+                                            )}
+                                            <span className="truncate">{bank.name}</span>
+                                        </Link>
+                                    </div>
 
                                     {expandedBanks[bank.id] && (
                                         <div className="ml-4 pl-2 border-l border-border/50 space-y-1 mt-1">
@@ -167,7 +183,7 @@ export function FinanceSidebar() {
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center gap-1 group relative">
-                                    <div className="p-2 rounded-md hover:bg-muted cursor-pointer relative">
+                                    <Link to={`/finance/bank/${bank.id}`} className="p-2 rounded-md hover:bg-muted cursor-pointer relative block">
                                         {bank.icon && !bank.icon.startsWith('http') ? (
                                             <span style={{ color: bank.color }}>{bank.icon}</span>
                                         ) : (
@@ -177,7 +193,7 @@ export function FinanceSidebar() {
                                         <div className="absolute left-10 top-0 bg-popover border text-popover-foreground px-2 py-1 rounded shadow-md hidden group-hover:block whitespace-nowrap z-50">
                                             {bank.name}
                                         </div>
-                                    </div>
+                                    </Link>
                                 </div>
                             )}
                         </div>

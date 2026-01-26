@@ -129,18 +129,24 @@ export function useFinance() {
         isLoadingBanks,
         banksError,
         createBank: createBank.mutate,
+        createBankAsync: createBank.mutateAsync,
         isCreatingBank: createBank.isPending,
         updateBank: updateBank.mutate,
+        updateBankAsync: updateBank.mutateAsync,
         isUpdatingBank: updateBank.isPending,
         deleteBank: deleteBank.mutate,
+        deleteBankAsync: deleteBank.mutateAsync,
         isDeletingBank: deleteBank.isPending,
 
         // Accounts
         accounts: accounts || [],
         isLoadingAccounts,
         createAccount: createAccount.mutate,
+        createAccountAsync: createAccount.mutateAsync,
         updateAccount: updateAccount.mutate,
+        updateAccountAsync: updateAccount.mutateAsync,
         deleteAccount: deleteAccount.mutate,
+        deleteAccountAsync: deleteAccount.mutateAsync,
 
         // New Data
         transactions: transactions || [],

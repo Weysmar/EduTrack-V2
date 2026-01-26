@@ -215,7 +215,7 @@ export function FolderView() {
                     {courses?.map((course: any) => (
                         <Link
                             key={`course-${course.id}`}
-                            to={`/course/${course.id}`}
+                            to={`/edu/course/${course.id}`}
                             className="bg-card border rounded-lg p-4 hover:shadow-md transition-all flex items-center gap-3 group"
                         >
                             {course.icon ? (

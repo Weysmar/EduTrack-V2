@@ -53,7 +53,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
     const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(true)
     const location = useLocation()
-    const isActive = location.pathname === `/folder/${folder.id}`
+    const isActive = location.pathname === `/edu/folder/${folder.id}`
     const queryClient = useQueryClient()
 
     const handleDrop = async (e: React.DragEvent) => {
@@ -100,7 +100,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                         <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200", isOpen && "rotate-90")} />
                     </button>
 
-                    <Link to={`/folder/${folder.id}`} className="flex items-center gap-2 flex-1 truncate py-0.5">
+                    <Link to={`/edu/folder/${folder.id}`} className="flex items-center gap-2 flex-1 truncate py-0.5">
                         <FolderIcon className={cn("h-4 w-4", isOpen ? "fill-current" : "fill-transparent")} />
                         <span className="truncate">{folder.name}</span>
                     </Link>
@@ -121,7 +121,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
 
 function CourseItem({ course, level }: { course: Course, level: number }) {
     const location = useLocation()
-    const isActive = location.pathname === `/course/${course.id}`
+    const isActive = location.pathname === `/edu/course/${course.id}`
 
     const handleDragStart = (e: React.DragEvent) => {
         e.dataTransfer.setData('courseId', course.id!.toString())
