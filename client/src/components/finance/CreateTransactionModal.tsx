@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, FileText } from 'lucide-react';
 import { useFinanceStore } from '@/store/financeStore';
 import { useLanguage } from '@/components/language-provider';
+import { Transaction } from '@/types/finance';
 
 interface CreateTransactionModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialData?: Transaction | null;
 }
 
-export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionModalProps) {
-    const { addTransaction, accounts } = useFinanceStore();
+export function CreateTransactionModal({ isOpen, onClose, initialData }: CreateTransactionModalProps) {
+    const { addTransaction, updateTransaction, accounts } = useFinanceStore();
     const { t } = useLanguage();
 
     const [amount, setAmount] = useState('');
@@ -19,32 +21,69 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
     const [category, setCategory] = useState('');
     const [accountId, setAccountId] = useState('');
 
-    // Reset form on open
+    // Reset or Populate form on open
     useEffect(() => {
         if (isOpen) {
-            setAmount('');
-            setType('EXPENSE');
-            setDate(new Date().toISOString().split('T')[0]);
-            setDescription('');
-            setCategory('');
-            if (accounts.length > 0) setAccountId(accounts[0].id);
+            if (initialData) {
+                setAmount(Math.abs(initialData.amount).toString());
+                setType(initialData.type || (initialData.amount > 0 ? 'INCOME' : 'EXPENSE'));
+                // Safe date handling
+                const dateStr = initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                setDate(dateStr);
+                setDescription(initialData.description || '');
+                setCategory(initialData.category || '');
+                setAccountId(initialData.accountId || (accounts.length > 0 ? accounts[0].id : ''));
+            } else {
+                setAmount('');
+                setType('EXPENSE');
+                setDate(new Date().toISOString().split('T')[0]);
+                setDescription('');
+                setCategory('');
+                if (accounts.length > 0) setAccountId(accounts[0].id);
+            }
         }
-    }, [isOpen, accounts]);
+    }, [isOpen, initialData, accounts]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!amount || !description) return;
 
-        await addTransaction({
-            amount: parseFloat(amount),
-            type,
+        // Calculate final amount based on type
+        // For UI, we typically show absolute amount in input, but backend expects signed (or type handles sign).
+        // Let's ensure consistency: 
+        // If INCOME, amount is positive. If EXPENSE, negative.
+        // Actually, store/hook usually handles it? 
+        // CreateTransactionModal previously sent: amount: parseFloat(amount), type...
+        // Let's continue that pattern. The backend or store should assume amount is absolute value if type is provided?
+        // Checking financeController: amount used as is.
+        // Checking AddTransactionModal usage: `amount` passed as is.
+        // IMPORTANT: The backend `createTransaction` just takes `amount`. It does NOT look at `type` (which isn't even in Prisma schema properly, strictly speaking classification/category). 
+        // Wait, schema has NO `type` field on Transaction model? 
+        // Schema: `amount` (Decimal).
+        // So the frontend MUST send signed amount: -100 for expense, +100 for income.
+
+        const numericAmount = parseFloat(amount);
+        const signedAmount = type === 'EXPENSE' ? -Math.abs(numericAmount) : Math.abs(numericAmount);
+
+        const dataPayload = {
+            amount: signedAmount,
             date: new Date(date),
             description,
-            categoryId: category || undefined,
+            category: category || undefined, // Mapping helper: backend uses 'category'
             accountId: accountId || undefined,
-            isRecurring: false,
-            profileId: 'current-profile',
-        });
+            // type prop isn't in backend DTO typically if amount is signed, but we can pass it if helper needs it
+        };
+
+        if (initialData) {
+            await updateTransaction(initialData.id, dataPayload);
+        } else {
+            await addTransaction({
+                ...dataPayload,
+                type, // Store might use it for immediate local update before refresh
+                isRecurring: false,
+                profileId: 'current-profile', // handled by backend mostly
+            });
+        }
 
         onClose();
     };
@@ -55,7 +94,9 @@ export function CreateTransactionModal({ isOpen, onClose }: CreateTransactionMod
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="w-full max-w-md bg-card rounded-xl shadow-xl border animate-in zoom-in-95">
                 <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">{t('finance.modal.title')}</h2>
+                    <h2 className="text-lg font-semibold">
+                        {initialData ? t('item.edit') : t('finance.modal.title')}
+                    </h2>
                     <button onClick={onClose} className="p-1 hover:bg-muted rounded-full">
                         <X className="h-4 w-4" />
                     </button>
