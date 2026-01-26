@@ -31,7 +31,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ isOpen
             // @ts-ignore - 'type' property is missing in Transaction interface but inferred in dashboard. Ideally should be added to interface.
             type: formData.type,
             date: new Date().toISOString(),
-            categoryId: null, // Should be selected from categories
+            category: formData.category, // Mapped from form data
             isRecurring: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
