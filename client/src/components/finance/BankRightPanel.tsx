@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useFinanceStore } from '@/store/financeStore';
-import { Bank, FinancialAccount } from '@/types/finance';
+// Fix: Import Account instead of FinancialAccount
+import { Bank, Account } from '@/types/finance';
 import { Plus, ChevronDown, ChevronRight, MoreVertical, CreditCard, Building2, Wallet, PiggyBank, Globe, Trash2, Edit2, Archive } from 'lucide-react';
 import { cn, maskIban } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
-import { BankManager } from '@/components/finance/BankManager'; // Reusing this modal or adapting it?
-// The plan says "Replace current modal-centric view OR integrate". 
-// We will trigger the BankManager modal from here for "Add Bank".
+import { BankManager } from '@/components/finance/BankManager';
 
 const formatCurrency = (amount: number, currency = 'EUR') => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
@@ -17,8 +16,8 @@ export const BankRightPanel: React.FC = () => {
     const [expandedBanks, setExpandedBanks] = useState<Record<string, boolean>>({});
     const [isBankManagerOpen, setIsBankManagerOpen] = useState(false);
 
-    // Group Accounts by Bank
-    const accountsByBank = (bankId: string) => accounts.filter(a => a.bankId === bankId && !a.isArchived);
+    // Group Accounts by Bank (Account type matches now)
+    const accountsByBank = (bankId: string) => accounts.filter(a => a.bankId === bankId && !a.isArchived) as Account[];
 
     const toggleExpand = (bankId: string) => {
         setExpandedBanks(prev => ({ ...prev, [bankId]: !prev[bankId] }));
@@ -128,8 +127,22 @@ export const BankRightPanel: React.FC = () => {
                 </Button>
             </div>
 
+            {/* MODAL WRAPPER OR INLINE */}
             {isBankManagerOpen && (
-                <BankManager onClose={() => setIsBankManagerOpen(false)} />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-card rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto w-full max-w-4xl relative">
+                        <button
+                            onClick={() => setIsBankManagerOpen(false)}
+                            className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full z-10"
+                        >
+                            <span className="sr-only">Fermer</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                        </button>
+                        <div className="p-6">
+                            <BankManager />
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -1,4 +1,5 @@
 export type AccountType = 'CHECKING' | 'SAVINGS' | 'CREDIT' | 'INVESTMENT' | 'LOAN' | 'OTHER';
+export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export type TransactionClassification = 'EXTERNAL' | 'INTERNAL_INTRA_BANK' | 'INTERNAL_INTER_BANK' | 'UNKNOWN';
 
@@ -9,6 +10,7 @@ export interface Bank {
     color: string;
     icon?: string;
     active: boolean;
+    isArchived?: boolean; // Added for UI compatibility
     accounts?: Account[];
     metadata?: any;
     createdAt: string;
