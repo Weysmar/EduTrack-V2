@@ -1,8 +1,11 @@
-import { PrismaClient, TransactionClassification, FinancialAccount } from '@prisma/client';
+import { PrismaClient, TransactionClassification, Account, Transaction } from '@prisma/client';
+import { OfxParserService } from './ofxParserService';
+import { CsvParserService } from './csvParserService';
+import { XlsxParserService } from './xlsxParserService';
 import { ClassificationService } from './classificationService';
-// import { OfxParserService } from './ofxParserService';
 import fs from 'fs';
 import path from 'path';
+import { OfxData, OfxAccount, OfxTransaction } from '../types/ofx';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +14,7 @@ export interface ImportPreview {
     detectedBankId: string;
     accounts: {
         isNew: boolean;
-        accountName: string; // inferred or existing
+        accountName: string;
         accountNumber: string; // IBAN or ID
         balance: number;
         currency: string;
@@ -25,6 +28,7 @@ export interface ImportPreview {
         confidence: number;
         accountNumber: string; // link to one of the accounts above
         isDuplicate: boolean;
+        importId?: string;
     }[];
     summary: {
         totalTransactions: number;
@@ -36,18 +40,28 @@ export interface ImportPreview {
 export class ImportService {
 
     /**
-     * Step 2 & 3: Parse, Detect, and Generate Preview
+     * Preview Step: Parse and Match
      */
     static async generatePreview(profileId: string, filePath: string, targetBankId: string): Promise<ImportPreview> {
-        // 1. Parse File (OFX support only for now as per spec v1 focuses on OFX)
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        // Simple OFX parsing logic (mocking external parser dependency for reliability here or using existing)
-        // In reality, we'd use 'ofx-parser' or similar. 
-        // For this V2 implementation, let's assume we have a helper or do basic parsing.
+        const fileBuffer = fs.readFileSync(filePath);
+        const ext = path.extname(filePath).toLowerCase();
 
-        // Let's assume we use a robust parser.
-        // For the sake of this file being standalone compliable without complex deps right now:
-        const parsedData = await this.parseOfx(fileContent);
+        // 1. Parse File based on Extension
+        let parsedData: OfxData;
+
+        try {
+            if (ext === '.csv') {
+                parsedData = await CsvParserService.parseFile(fileBuffer);
+            } else if (ext === '.xlsx' || ext === '.xls') {
+                parsedData = XlsxParserService.parseFile(fileBuffer);
+            } else {
+                // Default to OFX
+                parsedData = await OfxParserService.parseFile(fileBuffer);
+            }
+        } catch (error) {
+            console.error("Parser Error", error);
+            throw new Error(`Failed to parse file: ${ext}`);
+        }
 
         const preview: ImportPreview = {
             detectedBankId: targetBankId,
@@ -57,52 +71,72 @@ export class ImportService {
         };
 
         // 2. Fetch User's Existing Accounts for this Bank
-        const existingAccounts = await prisma.financialAccount.findMany({
-            where: { profileId, bankId: targetBankId }
+        const existingAccounts = await prisma.account.findMany({
+            where: {
+                bank: { profileId, id: targetBankId }
+            }
         });
 
-        // 3. Process Accounts found in OFX
-        for (const ofxAccount of parsedData.accounts) {
-            // Match by Account Number (IBAN)
-            // We assume metadata stores the 'accountNumber' or 'iban' as discussed in Classification
-            const match = existingAccounts.find(dbAcc => {
-                const meta = dbAcc.metadata as any;
-                return meta?.accountNumber === ofxAccount.id || dbAcc.name.includes(ofxAccount.id);
+        // 3. Process Accounts found in File and Match them
+        for (const accountData of parsedData.accounts) {
+            // For CSV/XLSX, we often don't have a real account number in the file
+            // We might use "CSV_IMPORT" as ID. In that case, we should probably try to match 
+            // the ONLY account of that bank if it exists, or ask user?
+            // Current logic: Match by strict ID.
+            // Improvement: If only 1 account exists in DB for this bank, and imported ID is generic "CSV_IMPORT", match it?
+
+            let match = existingAccounts.find(dbAcc => {
+                return (dbAcc.iban === accountData.accountId) || (dbAcc.accountNumber === accountData.accountId);
             });
+
+            // Fallback for generic imports
+            if (!match && (accountData.accountId === 'CSV_IMPORT' || accountData.accountId === 'XLSX_IMPORT')) {
+                if (existingAccounts.length === 1) {
+                    match = existingAccounts[0]; // Auto-assign to the only account
+                }
+            }
 
             preview.accounts.push({
                 isNew: !match,
-                accountName: match ? match.name : `Account ${ofxAccount.id}`,
-                accountNumber: ofxAccount.id,
-                balance: ofxAccount.balance,
-                currency: ofxAccount.currency,
+                accountName: match ? match.name : (accountData.accountId === 'CSV_IMPORT' ? 'Compte Importé (CSV)' : `Compte ${accountData.accountId.slice(-4)}`),
+                accountNumber: accountData.accountId,
+                balance: accountData.balance || 0,
+                currency: accountData.currency,
                 dbId: match?.id
             });
         }
 
-        // 4. Process Transactions & De-duplicate
+        // 4. Process Transactions & De-duplicate & Classify
         for (const account of parsedData.accounts) {
+            const matchedAccount = preview.accounts.find(a => a.accountNumber === account.accountId);
+            const accountDbId = matchedAccount?.dbId;
+
             for (const tx of account.transactions) {
                 preview.summary.totalTransactions++;
 
-                // Check Duplication: (profileId, accountId, date, amount, description)
-                // Since we might not have accountId for new accounts, we check mainly if we have this tx in the bank context?
-                // Actually strict dedupe requires accountId. 
-                // We'll mark as duplicate if we find a very similar transaction in the *matched* account.
+                // Duplication Check
                 let isDuplicate = false;
-                const matchedAccount = preview.accounts.find(a => a.accountNumber === account.id);
-
-                if (matchedAccount?.dbId) {
+                if (accountDbId) {
                     const existingTx = await prisma.transaction.findFirst({
                         where: {
-                            accountId: matchedAccount.dbId,
+                            accountId: accountDbId,
                             amount: tx.amount,
                             date: tx.date,
-                            description: tx.description,
-                            type: tx.amount >= 0 ? 'INCOME' : 'EXPENSE'
+                            OR: [{ description: tx.description }]
                         }
                     });
-                    if (existingTx) isDuplicate = true;
+                    // Stronger duplicate check if FITID is available (OFX)
+                    const fitIdCheck = tx.fitId ? await prisma.transaction.findFirst({
+                        where: {
+                            accountId: accountDbId,
+                            metadata: {
+                                path: ['fitId'],
+                                equals: tx.fitId
+                            }
+                        }
+                    }) : null;
+
+                    if (existingTx || fitIdCheck) isDuplicate = true;
                 }
 
                 if (isDuplicate) {
@@ -112,9 +146,8 @@ export class ImportService {
                 }
 
                 // Classification
-                const classification = await ClassificationService.classifyTransaction(
+                const classificationResult = await ClassificationService.classifyTransaction(
                     profileId,
-                    targetBankId,
                     tx.description,
                     tx.amount
                 );
@@ -123,10 +156,11 @@ export class ImportService {
                     date: tx.date,
                     amount: tx.amount,
                     description: tx.description,
-                    classification: classification.classification,
-                    confidence: classification.confidenceScore,
-                    accountNumber: account.id,
-                    isDuplicate
+                    classification: classificationResult.classification,
+                    confidence: classificationResult.confidenceScore,
+                    accountNumber: account.accountId,
+                    isDuplicate,
+                    importId: tx.fitId
                 });
             }
         }
@@ -135,129 +169,68 @@ export class ImportService {
     }
 
     /**
-     * Step 4: Commit Import
+     * Commit Step: Write to DB
      */
     static async commitImport(profileId: string, bankId: string, previewData: ImportPreview) {
         return await prisma.$transaction(async (tx) => {
-            const accountMap = new Map<string, string>(); // OFX ID -> DB ID
+            const accountMap = new Map<string, string>(); // OFX AccNum -> DB ID
 
             // 1. Create/Update Accounts
             for (const acc of previewData.accounts) {
                 if (acc.isNew) {
-                    const newAcc = await tx.financialAccount.create({
+                    const newAcc = await tx.account.create({
                         data: {
-                            profileId,
                             bankId,
                             name: acc.accountName,
-                            type: 'CHECKING', // Default, maybe infer?
+                            type: 'CHECKING',
                             balance: acc.balance,
                             currency: acc.currency,
-                            isAutoDetected: true,
-                            metadata: { accountNumber: acc.accountNumber }
+                            accountNumber: acc.accountNumber,
+                            iban: acc.accountNumber,
+                            autoDetected: true,
+                            active: true
                         }
                     });
                     accountMap.set(acc.accountNumber, newAcc.id);
                 } else if (acc.dbId) {
-                    await tx.financialAccount.update({
+                    // Update balance only
+                    await tx.account.update({
                         where: { id: acc.dbId },
                         data: {
-                            balance: acc.balance,
-                            lastSyncedAt: new Date()
+                            balance: acc.balance !== 0 ? acc.balance : undefined, // Update if non-zero
+                            balanceDate: new Date()
                         }
                     });
                     accountMap.set(acc.accountNumber, acc.dbId);
                 }
             }
 
-            // 2. Create Transactions (Filter out duplicates)
+            // 2. Create Transactions
             const transactionsToCreate = previewData.transactions
                 .filter(t => !t.isDuplicate)
                 .map(t => ({
-                    profileId,
-                    accountId: accountMap.get(t.accountNumber),
+                    accountId: accountMap.get(t.accountNumber)!,
                     amount: t.amount,
                     date: t.date,
                     description: t.description,
-                    type: t.amount >= 0 ? 'INCOME' : 'EXPENSE',
                     classification: t.classification,
-                    confidenceScore: t.confidence
+                    classificationConfidence: t.confidence,
+                    metadata: { fitId: t.importId },
+                    importSource: 'IMPORT'
                 }));
 
-            // Bulk create is parsed
             let count = 0;
-            for (const t of transactionsToCreate) {
-                if (t.accountId) {
-                    await tx.transaction.create({ data: t as any });
-                    count++;
-                }
-            }
-
-            // 3. Create Import Log
-            await tx.importLog.create({
-                data: {
-                    profileId,
-                    filename: 'import.ofx', // We should pass this down
-                    status: 'SUCCESS',
-                    totalRows: previewData.summary.totalTransactions,
-                    imported: count,
-                    duplicates: previewData.summary.duplicates,
-                    errors: 0
-                }
-            });
-
-            return count;
-        });
-    }
-
-    // --- Helper ---
-    private static async parseOfx(content: string): Promise<{ accounts: any[] }> {
-        // Mock parser implementation matching the return structure expected
-        // In prod, use 'ofx-parser' or 'banking' libs
-        // Logic: specific regex to find <STMTRS> blocks
-        const accounts = [];
-
-        // Very basic regex parser for demo/phase 2 logic
-        const accountRegex = /<STMTRS>([\s\S]*?)<\/STMTRS>/g;
-        let diff;
-
-        while ((diff = accountRegex.exec(content)) !== null) {
-            const block = diff[1];
-            const idMatch = /<ACCTID>(\w+)/.exec(block);
-            const balMatch = /<BALAMT>([-0-9.]+)/.exec(block);
-            const curMatch = /<CURDEF>(\w+)/.exec(block);
-
-            const transactions = [];
-            const txRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/g;
-            let txMatch;
-            while ((txMatch = txRegex.exec(block)) !== null) {
-                const txBlock = txMatch[1];
-                const amt = /<TRNAMT>([-0-9.]+)/.exec(txBlock);
-                const name = /<NAME>(.*?)(<|$)/.exec(txBlock);
-                const memo = /<MEMO>(.*?)(<|$)/.exec(txBlock);
-                const date = /<DTPOST>(\d{8})/.exec(txBlock); // YYYYMMDD
-
-                if (amt && date) {
-                    const dateStr = date[1];
-                    const parsedDate = new Date(`${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`);
-
-                    transactions.push({
-                        amount: parseFloat(amt[1]),
-                        description: (name ? name[1] : '') + (memo ? ' ' + memo[1] : ''),
-                        date: parsedDate
-                    });
-                }
-            }
-
-            if (idMatch) {
-                accounts.push({
-                    id: idMatch[1],
-                    balance: balMatch ? parseFloat(balMatch[1]) : 0,
-                    currency: curMatch ? curMatch[1] : 'EUR',
-                    transactions
+            if (transactionsToCreate.length > 0) {
+                const batch = await tx.transaction.createMany({
+                    data: transactionsToCreate
                 });
+                count = batch.count;
             }
-        }
 
-        return { accounts };
+            return {
+                importedTransactions: count,
+                accountsSynced: previewData.accounts.length
+            };
+        });
     }
 }

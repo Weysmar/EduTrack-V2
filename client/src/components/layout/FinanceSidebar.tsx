@@ -5,13 +5,15 @@ import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useFinanceStore } from '@/store/financeStore'
+import { useFinance } from '@/hooks/useFinance';
 import { useEffect, useState } from 'react'
-import { BankManager } from '../finance/BankManager'
+import { BankFormModal } from '../finance/BankFormModal'
 
 export function FinanceSidebar() {
     const { t } = useLanguage()
     const { isCollapsed, toggleCollapse } = useUIStore()
     const { banks, accounts, fetchBanks, fetchAccounts } = useFinanceStore()
+    const { createBank } = useFinance(); // Use hook for mutation
     const location = useLocation()
     const logoSrc = '/logo.svg'
 
@@ -34,6 +36,12 @@ export function FinanceSidebar() {
 
     const toggleBank = (bankId: string) => {
         setExpandedBanks(prev => ({ ...prev, [bankId]: !prev[bankId] }));
+    };
+
+    const handleCreateBank = async (data: any) => {
+        await createBank(data);
+        setIsBankModalOpen(false);
+        fetchBanks(); // Refresh store
     };
 
     // Group accounts by Bank
@@ -138,8 +146,8 @@ export function FinanceSidebar() {
                                         className="w-full flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-md transition-colors"
                                     >
                                         {expandedBanks[bank.id] ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                                        {bank.icon && bank.icon.startsWith('http') ? (
-                                            <img src={bank.icon} className="w-4 h-4 rounded-full object-contain bg-white" alt="" />
+                                        {bank.icon && !bank.icon.startsWith('http') ? (
+                                            <span style={{ color: bank.color }}>{bank.icon}</span>
                                         ) : (
                                             <Building className="h-3 w-3" />
                                         )}
@@ -166,8 +174,8 @@ export function FinanceSidebar() {
                             ) : (
                                 <div className="flex flex-col items-center gap-1 group relative">
                                     <div className="p-2 rounded-md hover:bg-muted cursor-pointer relative">
-                                        {bank.icon && bank.icon.startsWith('http') ? (
-                                            <img src={bank.icon} className="w-5 h-5 rounded-full object-contain bg-white" alt="" />
+                                        {bank.icon && !bank.icon.startsWith('http') ? (
+                                            <span style={{ color: bank.color }}>{bank.icon}</span>
                                         ) : (
                                             <Building className="h-4 w-4" />
                                         )}
@@ -236,7 +244,11 @@ export function FinanceSidebar() {
                 </Link>
             </div>
 
-            {isBankModalOpen && <BankManager onClose={() => setIsBankModalOpen(false)} />}
+            <BankFormModal
+                isOpen={isBankModalOpen}
+                onClose={() => setIsBankModalOpen(false)}
+                onSubmit={handleCreateBank}
+            />
         </div>
     )
 }

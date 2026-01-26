@@ -9,6 +9,7 @@ import summaryRoutes from './summaryRoutes';
 import storageRoutes from './storageRoutes';
 import aiRoutes from './aiRoutes';
 import extractionRoutes from './extractionRoutes';
+import { authenticate as authMiddleware } from '../middleware/auth';
 
 import planningRoutes from './planningRoutes';
 import studyPlanRoutes from './studyPlanRoutes';
@@ -17,7 +18,6 @@ import profileRoutes from './profileRoutes';
 import analyticsRoutes from './analyticsRoutes';
 import mindmapRoutes from './mindmapRoutes';
 import financeRoutes from './financeRoutes';
-import { bankRoutes } from './bankRoutes';
 
 const router = Router();
 
@@ -36,7 +36,6 @@ router.use('/planning', planningRoutes);
 router.use('/plans', studyPlanRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/mindmaps', mindmapRoutes);
-router.use('/finance', financeRoutes);
-router.use('/banks', bankRoutes);
+router.use('/finance', authMiddleware, financeRoutes);
 
 export default router;

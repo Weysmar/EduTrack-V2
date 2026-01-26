@@ -32,10 +32,8 @@ model Profile {
   studySessions StudySession[]
   
   // FinanceTrack Relations
-  financialAccounts FinancialAccount[]
-  transactions      Transaction[]
-  budgets           Budget[]
   banks             Bank[]
+  budgets           Budget[]
 }
 
 // ... existing models ...
@@ -243,116 +241,102 @@ model MindMap {
   content     String   @db.Text // Mermaid syntax
   sources     Json     // { noteIds: [ids], fileNames: [names] }
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course? @relation(fields: [courseId], references: [id])
 }
-// FinanceTrack Models
+
+// FinanceTrack Models (Phase 1 Integration)
 
 model Bank {
-  id        String   @id @default(uuid())
-  profileId String
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  
-  swiftCode String?
-  name      String
-  icon      String?
-  color     String?
-  website   String?
-  isActive  Boolean  @default(true)
-  metadata  Json?    // phone, notes
-  isArchived Boolean @default(false)
-  
-  accounts  FinancialAccount[]
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@index([profileId])
-}
-
-model FinancialAccount {
-  id        String   @id @default(uuid())
-  profileId String
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  
-  bankId    String?
-  bank      Bank?    @relation(fields: [bankId], references: [id])
-  
-  name      String   // "Compte Courant", "Livret A"
-  type      String   // "CHECKING", "SAVINGS", "CASH"
-  balance   Decimal  @default(0) @db.Decimal(10, 2)
-  currency  String   @default("EUR")
-  icon      String?  // Emoji
-  color     String   @default("#10b981")
-  
-  // V2 Fields
-  lastSyncedAt   DateTime?
-  balanceDate    DateTime?
-  isArchived     Boolean   @default(false)
-  isAutoDetected Boolean   @default(false)
-  metadata       Json?     // import stats
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  transactions Transaction[]
-  
-  @@index([profileId])
-  @@index([bankId])
-}
-
-enum TransactionClassification {
-  EXTERNAL
-  INTERNAL_INTRA
-  INTERNAL_INTER
-  UNKNOWN
-}
-
-model Transaction {
   id          String   @id @default(uuid())
   profileId   String
   profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  accountId   String?
-  account     FinancialAccount? @relation(fields: [accountId], references: [id])
+  name        String
+  swiftBic    String?
+  color       String   @default("#10b981")
+  icon        String?
+  metadata    Json?
+  active      Boolean  @default(true)
   
-  amount      Decimal  @db.Decimal(10, 2) // Positif = revenu, Négatif = dépense
-  type        String   // "INCOME", "EXPENSE"
-  date        DateTime @default(now())
-  description String
-  
-  // V2 Fields
-  classification  TransactionClassification @default(EXTERNAL)
-  confidenceScore Float @default(0.0)
-  beneficiaryIban String?
-  
-  categoryId  String?
-  category    TransactionCategory? @relation(fields: [categoryId], references: [id])
-  
-  // Justificatifs
-  receiptUrl  String?  // MinIO S3 URL
-  storageKey  String?  // S3 key pour cleanup
-  
-  // Récurrence
-  isRecurring    Boolean @default(false)
-  recurringRule  String? // "MONTHLY", "WEEKLY", "YEARLY"
-  
-  // IA Metadata
-  aiEnriched     Boolean @default(false)
-  aiSuggestions  Json?   // { betterOffer: "...", category: "auto" }
+  accounts    Account[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  importId    String?
-  importLog   ImportLog? @relation(fields: [importId], references: [id])
   
-  @@index([profileId, date])
-  @@index([categoryId])
-  // Strict Deduplication Constraint
-  @@unique([profileId, accountId, date, amount, description, type], name: "unique_transaction")
+  @@unique([profileId, name])
+  @@index([profileId])
+}
+
+model Account {
+  id          String   @id @default(uuid())
+  bankId      String
+  bank        Bank     @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  
+  name        String
+  type        AccountType @default(CHECKING)
+  iban        String?
+  accountNumber String?
+  currency    String   @default("EUR")
+  balance     Decimal? @db.Decimal(15, 2)
+  balanceDate DateTime?
+  lastTransactionDate DateTime?
+  
+  autoDetected Boolean @default(false)
+  importMetadata Json?
+  active      Boolean  @default(true)
+  
+  transactions Transaction[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([bankId, iban])
+  @@index([bankId])
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+  INVESTMENT
+  LOAN
+  OTHER
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  amount      Decimal  @db.Decimal(15, 2)
+  description String
+  beneficiaryIban String?
+  
+  classification TransactionClassification @default(UNKNOWN)
+  classificationConfidence Float? @default(0.0)
+  linkedAccountId String? // Pour virements internes
+  category    String?
+  
+  importSource String?
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([accountId, date, amount, description])
+  @@index([accountId])
+  @@index([date])
+  @@index([classification])
+}
+
+enum TransactionClassification {
+  EXTERNAL
+  INTERNAL_INTRA_BANK
+  INTERNAL_INTER_BANK
+  UNKNOWN
 }
 
 model ImportLog {
@@ -367,8 +351,6 @@ model ImportLog {
   errors      Int
   
   createdAt   DateTime @default(now())
-  
-  transactions Transaction[]
 }
 
 model TransactionCategory {
@@ -381,7 +363,6 @@ model TransactionCategory {
   
   parent       TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     TransactionCategory[] @relation("CategoryHierarchy")
-  transactions Transaction[]
   budgets      Budget[]
   
   // @@unique([name, type]) // Commented out to fix migration conflict with existing duplicates

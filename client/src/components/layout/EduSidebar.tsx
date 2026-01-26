@@ -155,7 +155,17 @@ export function EduSidebar() {
                                 {!isCollapsed && <span className="text-sm font-medium">{t('board.mapTitle') || "Tableau d'Enquête"}</span>}
                             </Link>
 
-                            {/* Removed Finance Link */}
+                            <Link
+                                to="/finance"
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
+                                    isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
+                                )}
+                                title={t('finance.title') || "Finance"}
+                            >
+                                <Settings className="h-4 w-4 shrink-0" /> {/* Using Settings icon temporarily or importing Coins */}
+                                {!isCollapsed && <span className="text-sm font-medium">Finance</span>}
+                            </Link>
                         </>
                     )}
 
