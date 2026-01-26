@@ -307,8 +307,8 @@ enum AccountType {
 
 model Transaction {
   id          String   @id @default(uuid())
-  accountId   String
-  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId   String?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
   
   date        DateTime
   amount      Decimal  @db.Decimal(15, 2)
