@@ -115,17 +115,7 @@ export const BankRightPanel: React.FC = () => {
                 })}
             </div>
 
-            {/* Footer / Actions */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={() => setIsBankManagerOpen(true)}
-                >
-                    <Plus className="w-4 h-4" />
-                    Ajouter une banque
-                </Button>
-            </div>
+            {/* Footer Removed */}
 
             {/* MODAL WRAPPER OR INLINE */}
             {isBankManagerOpen && (
