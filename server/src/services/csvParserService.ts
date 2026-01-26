@@ -15,7 +15,7 @@ export class CsvParserService {
         return new Promise((resolve, reject) => {
             Readable.from(content)
                 .pipe(csv({ separator }))
-                .on('data', (data) => results.push(data))
+                .on('data', (data: any) => results.push(data))
                 .on('end', () => {
                     try {
                         const transactions = this.mapToTransactions(results);
@@ -27,11 +27,11 @@ export class CsvParserService {
                                 transactions
                             }]
                         });
-                    } catch (err) {
+                    } catch (err: any) {
                         reject(err);
                     }
                 })
-                .on('error', (err) => reject(err));
+                .on('error', (err: any) => reject(err));
         });
     }
 

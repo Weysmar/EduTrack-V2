@@ -21,31 +21,35 @@ export const reportService = {
 
         const transactions = await prisma.transaction.findMany({
             where: {
-                profileId,
+                account: {
+                    bank: {
+                        profileId
+                    }
+                },
                 date: { gte: startDate, lte: endDate }
             },
-            include: { category: true },
+            // include: { category: true }, // Category is currently just a string or missing relation, removing for now
             orderBy: { date: 'desc' }
         });
 
-        const totalIncome = transactions
-            .filter(t => t.type === 'INCOME')
-            .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        // Derive Type from Amount
+        const incomeTransactions = transactions.filter(t => t.amount.toNumber() > 0);
+        const expenseTransactions = transactions.filter(t => t.amount.toNumber() < 0);
 
-        const totalExpense = transactions
-            .filter(t => t.type === 'EXPENSE')
-            .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount.toString())), 0);
+        const totalIncome = incomeTransactions
+            .reduce((sum, t) => sum + t.amount.toNumber(), 0);
+
+        const totalExpense = expenseTransactions
+            .reduce((sum, t) => sum + Math.abs(t.amount.toNumber()), 0);
 
         const savings = totalIncome - totalExpense;
 
-        // Breakdown by Category
+        // Breakdown by Category (using classification or category string)
         const breakdown: Record<string, number> = {};
-        transactions
-            .filter(t => t.type === 'EXPENSE')
-            .forEach(t => {
-                const cat = t.category?.name || 'Autres';
-                breakdown[cat] = (breakdown[cat] || 0) + Math.abs(parseFloat(t.amount.toString()));
-            });
+        expenseTransactions.forEach(t => {
+            const cat = t.category || t.classification || 'Autres';
+            breakdown[cat] = (breakdown[cat] || 0) + Math.abs(t.amount.toNumber());
+        });
 
         // 2. Generate PDF
         return new Promise((resolve, reject) => {
@@ -62,7 +66,6 @@ export const reportService = {
             doc.fontSize(20).text(`Rapport Financier - ${monthName}`, { align: 'center' });
             doc.moveDown();
 
-            // Fix: Use fillColor instead of deprecated color option in text
             doc.fontSize(12).fillColor('gray').text(`Généré par FinanceTrack le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' });
             doc.moveDown(2);
 
@@ -86,7 +89,7 @@ export const reportService = {
             Object.entries(breakdown)
                 .sort(([, a], [, b]) => b - a)
                 .forEach(([cat, amount]) => {
-                    const percent = ((amount / totalExpense) * 100).toFixed(1);
+                    const percent = totalExpense > 0 ? ((amount / totalExpense) * 100).toFixed(1) : '0';
                     doc.fontSize(10).text(`${cat}: ${amount.toFixed(2)} € (${percent}%)`);
                 });
 
@@ -114,12 +117,14 @@ export const reportService = {
                     y = 50;
                 }
                 const dateStr = new Date(t.date).toLocaleDateString('fr-FR');
-                const amountStr = parseFloat(t.amount.toString()).toFixed(2) + ' €';
-                const color = t.type === 'INCOME' ? 'green' : 'red';
+                const amountVal = t.amount.toNumber();
+                const amountStr = amountVal.toFixed(2) + ' €';
+                const color = amountVal > 0 ? 'green' : 'red';
+                const cat = t.category || t.classification || '-';
 
                 doc.fillColor('black').text(dateStr, 50, y);
                 doc.text(t.description.substring(0, 35), 130, y);
-                doc.text(t.category?.name || '-', 350, y);
+                doc.text(cat, 350, y);
                 doc.fillColor(color).text(amountStr, 480, y);
 
                 y += 20;
