@@ -6,14 +6,14 @@ export function MetaManager() {
 
     useEffect(() => {
         const path = location.pathname;
-        let title = 'EduTrack';
+        let title = 'HubTrack';
         let favicon = '/logo.svg';
 
         if (path.startsWith('/finance')) {
             title = 'FinanceTrack - Gestion de Portefeuille';
             favicon = '/finance.svg';
         } else if (path.startsWith('/hub')) {
-            title = 'EduTrack - Hub';
+            title = 'HubTrack - Hub';
             favicon = '/logo.svg';
         } else if (path.startsWith('/edu')) {
             title = 'EduTrack - Espace Étudiant';
@@ -24,7 +24,7 @@ export function MetaManager() {
             if (path.includes('/library')) title = 'EduTrack - Bibliothèque';
             if (path.includes('/calendar')) title = 'EduTrack - Calendrier';
         } else if (path === '/') {
-            title = 'EduTrack - Apprendre efficacement';
+            title = 'HubTrack - Hub central pour votre vie';
             favicon = '/logo.svg';
         }
 

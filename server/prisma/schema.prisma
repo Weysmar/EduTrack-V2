@@ -355,10 +355,12 @@ model ImportLog {
 
 model TransactionCategory {
   id          String   @id @default(uuid())
+  profileId   String?  // User-specific categories
   name        String   // "Alimentation", "Loyer", "Salaire"
   type        String   // "INCOME", "EXPENSE"
   icon        String?  // Emoji
   color       String?  // Tailwind color class
+  keywords    String[] @default([]) // Keywords for auto-categorization
   parentId    String?  // Hiérarchie (Biomes)
   
   parent       TransactionCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])

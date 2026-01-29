@@ -67,13 +67,20 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
 export const getAccounts = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
+        const { includeArchived } = req.query;
+
+        const whereClause: any = { bank: { profileId } };
+        if (includeArchived !== 'true') {
+            whereClause.active = true;
+        }
+
         const accounts = await prisma.account.findMany({
-            where: { bank: { profileId } },
+            where: whereClause,
             include: { bank: true }
         });
 
         // Mask sensitive IBAN data
-        const maskedAccounts = accounts.map(acc => ({
+        const maskedAccounts = accounts.map((acc: any) => ({
             ...acc,
             iban: maskIban(acc.iban),
             accountNumber: maskAccountNumber(acc.accountNumber)
@@ -124,7 +131,7 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
         const { id } = req.params;
-        const { name, type, balance, currency, accountNumber } = req.body;
+        const { name, type, balance, currency, accountNumber, active } = req.body;
 
         // Verify ownership via Bank
         const account = await prisma.account.findFirst({
@@ -140,7 +147,8 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
                 type,
                 balance,
                 currency,
-                accountNumber
+                accountNumber,
+                active
             }
         });
 
@@ -182,7 +190,7 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         });
 
         // Mask IBANs in account data and beneficiaryIban
-        const maskedTransactions = transactions.map(tx => ({
+        const maskedTransactions = transactions.map((tx: any) => ({
             ...tx,
             beneficiaryIban: maskIban(tx.beneficiaryIban),
             account: tx.account ? {
@@ -377,7 +385,7 @@ export const categorizeTransactions = async (req: AuthRequest, res: Response) =>
         }
 
         // Call categorizer service
-        const txData = transactions.map(t => ({
+        const txData = transactions.map((t: any) => ({
             description: t.description,
             amount: t.amount.toNumber(),
             id: t.id
@@ -405,5 +413,96 @@ export const categorizeTransactions = async (req: AuthRequest, res: Response) =>
     } catch (error: any) {
         console.error('Categorization Error:', error);
         res.status(500).json({ error: error.message || 'Failed to categorize transactions' });
+    }
+};
+
+// --- Import Logs ---
+export const getImportLogs = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const logs = await prisma.importLog.findMany({
+            where: { profileId },
+            orderBy: { createdAt: 'desc' },
+            take: 20 // Limit to last 20 imports for now
+        });
+        res.json(logs);
+    } catch (error) {
+        console.error('Fetch Import Logs Error:', error);
+        res.status(500).json({ error: 'Failed to fetch import logs' });
+    }
+};
+
+// --- Export Data ---
+export const exportData = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const format = req.query.format as string || 'json';
+
+        if (format === 'json') {
+            const data = await prisma.profile.findUnique({
+                where: { id: profileId },
+                include: {
+                    banks: {
+                        include: {
+                            accounts: {
+                                include: {
+                                    transactions: true
+                                }
+                            }
+                        }
+                    },
+                    budgets: true
+                }
+            });
+
+            if (!data) return res.status(404).json({ error: 'Profile not found' });
+
+            const exportData = {
+                exportedAt: new Date(),
+                banks: data.banks,
+                budgets: data.budgets
+            };
+
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Disposition', `attachment; filename=persotrack_backup_${new Date().toISOString().split('T')[0]}.json`);
+            res.json(exportData);
+
+        } else if (format === 'csv') {
+            const transactions = await prisma.transaction.findMany({
+                where: { account: { bank: { profileId } } },
+                include: {
+                    account: {
+                        include: { bank: true }
+                    }
+                },
+                orderBy: { date: 'desc' }
+            });
+
+            // Convert to CSV
+            const header = 'Date,Description,Amount,Currency,Category,Details,Account,Bank,Type,Status\n';
+            const rows = transactions.map((t: any) => {
+                const date = t.date.toISOString().split('T')[0];
+                const cleanDesc = t.description.replace(/,/g, ' '); // Simple CSV escape
+                const amount = t.amount.toString();
+                const currency = t.account?.currency || 'EUR';
+                const category = t.category || '';
+                const details = t.classification || '';
+                const account = t.account?.name || '';
+                const bank = t.account?.bank.name || '';
+                const type = (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') ? 'Internal' : 'External';
+
+                return `${date},${cleanDesc},${amount},${currency},${category},${details},${account},${bank},${type},${t.classification}`;
+            }).join('\n');
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename=persotrack_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+            res.send(header + rows);
+        } else {
+            res.status(400).json({ error: 'Invalid format. Use json or csv.' });
+        }
+
+    } catch (error) {
+        console.error('Export Error:', error);
+        res.status(500).json({ error: 'Failed to export data' });
     }
 };

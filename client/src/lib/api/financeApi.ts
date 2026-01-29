@@ -3,8 +3,9 @@ import { Transaction, FinancialAccount, TransactionCategory } from '../../types/
 
 export const financeApi = {
     // Accounts
-    getAccounts: async () => {
-        const { data } = await apiClient.get<FinancialAccount[]>('/finance/accounts');
+    getAccounts: async (includeArchived?: boolean) => {
+        const params = includeArchived ? '?includeArchived=true' : '';
+        const { data } = await apiClient.get<FinancialAccount[]>(`/finance/accounts${params}`);
         return data;
     },
     createAccount: async (account: Partial<FinancialAccount>) => {
@@ -56,10 +57,59 @@ export const financeApi = {
         return data;
     },
 
+    getImportLogs: async () => {
+        const { data } = await apiClient.get('/finance/imports');
+        return data;
+    },
+
+    // Budgets
+    getBudgets: async () => {
+        const { data } = await apiClient.get<any[]>('/finance/budgets');
+        return data;
+    },
+    createBudget: async (data: any) => {
+        const { data: res } = await apiClient.post('/finance/budgets', data);
+        return res;
+    },
+    updateBudget: async (id: string, data: any) => {
+        const { data: res } = await apiClient.put(`/finance/budgets/${id}`, data);
+        return res;
+    },
+    deleteBudget: async (id: string) => {
+        await apiClient.delete(`/finance/budgets/${id}`);
+    },
+
+    exportData: async (format: 'json' | 'csv') => {
+        const response = await apiClient.get(`/finance/export?format=${format}`, {
+            responseType: 'blob'
+        });
+
+        // Trigger download
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `persotrack_export_${date}.${format}`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+    },
+
     // Categories
     getCategories: async () => {
         const { data } = await apiClient.get<TransactionCategory[]>('/finance/categories');
         return data;
+    },
+    createCategory: async (category: Partial<TransactionCategory>) => {
+        const { data } = await apiClient.post<TransactionCategory>('/finance/categories', category);
+        return data;
+    },
+    updateCategory: async (id: string, updates: Partial<TransactionCategory>) => {
+        const { data } = await apiClient.put<TransactionCategory>(`/finance/categories/${id}`, updates);
+        return data;
+    },
+    deleteCategory: async (id: string) => {
+        await apiClient.delete(`/finance/categories/${id}`);
     },
 
     // Import
@@ -74,8 +124,9 @@ export const financeApi = {
     },
 
     // Banks
-    getBanks: async () => {
-        const { data } = await apiClient.get<any[]>('/finance/banks');
+    getBanks: async (includeArchived?: boolean) => {
+        const params = includeArchived ? '?includeArchived=true' : '';
+        const { data } = await apiClient.get<any[]>(`/finance/banks${params}`);
         return data;
     },
     createBank: async (data: any) => {

@@ -16,6 +16,10 @@ const getHslColor = (variable: string) => {
     return value ? `hsl(${value})` : '#64748b'; // fallback
 };
 
+// Import BankRightPanel
+import { BankRightPanel } from '@/components/finance/BankRightPanel';
+import { BudgetManager } from '@/components/finance/BudgetManager';
+
 export default function FinanceDashboard() {
     useEffect(() => {
         console.log("💰 FinanceDashboard V3.1 (Account Filter) Loaded");
@@ -32,8 +36,10 @@ export default function FinanceDashboard() {
         generateLocalAudit,
         enrichTransaction,
         importTransactions,
-        accounts
+        accounts,
+        fetchBudgets // New action
     } = useFinanceStore();
+
 
     const { t } = useLanguage();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -72,6 +78,7 @@ export default function FinanceDashboard() {
     useEffect(() => {
         console.log("💰 FinanceDashboard V2.2 (Chunk Fix) Loaded");
         fetchTransactions();
+        fetchBudgets();
     }, []);
 
     const handleGenerateAudit = async () => {
@@ -86,10 +93,18 @@ export default function FinanceDashboard() {
 
     const navigate = useNavigate();
     const [hideInternal, setHideInternal] = useState(false);
+    const [showUnknownOnly, setShowUnknownOnly] = useState(false);
 
     // Filter transactions based on 'hideInternal' and 'accountId'
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
+            if (showUnknownOnly) {
+                // Unknown if classification is UNKNOWN or missing, OR category is missing/generic
+                // Adjust logic as preferred. Usually UNKNOWN classification is the key.
+                const isUnknown = t.classification === 'UNKNOWN' || !t.category || t.category === 'Uncategorized';
+                if (!isUnknown) return false;
+            }
+
             if (hideInternal) {
                 if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
             }
@@ -98,7 +113,11 @@ export default function FinanceDashboard() {
             }
             return true;
         });
-    }, [transactions, hideInternal, accountIdParam]);
+    }, [transactions, hideInternal, accountIdParam, showUnknownOnly]);
+
+    const unknownCount = useMemo(() => {
+        return transactions.filter(t => t.classification === 'UNKNOWN' || !t.category || t.category === 'Uncategorized').length;
+    }, [transactions]);
 
     // Helper to calculate totals based on filtered view
     const calculateTotals = (txs: typeof transactions) => {
@@ -156,235 +175,253 @@ export default function FinanceDashboard() {
     const COLORS = [colors.green, colors.primary, '#f59e0b', colors.red, '#8b5cf6', '#ec4899'];
 
     return (
-        <div className="min-h-screen p-4 md:p-8 space-y-8 animate-in fade-in">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{t('finance.title')} 💰</h1>
-                    <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
-                </div>
-                <div className="flex gap-2 flex-wrap items-center">
-                    {/* Filter Toggle */}
-                    <div className="flex items-center gap-2 mr-4 bg-card border px-3 py-2 rounded-md">
-                        <input
-                            type="checkbox"
-                            id="hideInternal"
-                            checked={hideInternal}
-                            onChange={(e) => setHideInternal(e.target.checked)}
-                            className="w-4 h-4 rounded text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="hideInternal" className="text-sm font-medium cursor-pointer select-none">
-                            Masquer virements internes
-                        </label>
+        <div className="flex h-screen overflow-hidden animate-in fade-in">
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">{t('finance.title')} 💰</h1>
+                        <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                     </div>
-
-                    <button
-                        onClick={() => navigate('/finance/import')}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
-                        title="Importer"
-                    >
-                        <Upload className="h-4 w-4" />
-                        <span className="hidden sm:inline">Importer</span>
-                    </button>
-                    <button
-                        onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
-                        title={t('finance.audit')}
-                    >
-                        <Sparkles className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t('finance.audit')}</span>
-                    </button>
-                    <button
-                        onClick={() => fetchTransactions()}
-                        className="p-2 text-muted-foreground hover:bg-muted rounded-md"
-                        title={t('finance.refresh')}
-                    >
-                        <RefreshCw className="h-5 w-5" />
-                    </button>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
-                    >
-                        <Plus className="h-4 w-4" />
-                        {t('finance.tx.new')}
-                    </button>
-                </div>
-            </div>
-            {/* Onboarding / Empty State */}
-            {useFinanceStore.getState().banks.length === 0 && (
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg mb-6">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h2 className="text-xl font-bold mb-2">Bienvenue sur FinanceTrack ! 👋</h2>
-                            <p className="text-blue-100 max-w-xl">
-                                Commencez par ajouter votre première banque pour suivre vos comptes et importer vos transactions.
-                            </p>
+                    <div className="flex gap-2 flex-wrap items-center">
+                        {/* Filter Toggle */}
+                        <div className="flex items-center gap-2 mr-4 bg-card border px-3 py-2 rounded-md">
+                            <input
+                                type="checkbox"
+                                id="hideInternal"
+                                checked={hideInternal}
+                                onChange={(e) => setHideInternal(e.target.checked)}
+                                className="w-4 h-4 rounded text-primary focus:ring-primary"
+                            />
+                            <label htmlFor="hideInternal" className="text-sm font-medium cursor-pointer select-none">
+                                Masquer virements internes
+                            </label>
                         </div>
+
                         <button
-                            onClick={() => { /* Ideally open Bank Manager, but it's in the sidebar. For now, prompt user to check sidebar. */
-                                // Or we could expose a store action to open it? 
-                                // Let's just point to it.
-                                (document.querySelector('aside button') as HTMLElement)?.click(); // Hacky but effective if we don't have global UI state for sidebar modals
-                            }}
-                            className="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-blue-50 transition"
+                            onClick={() => navigate('/finance/import')}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
+                            title="Importer"
                         >
-                            Ajouter une banque
+                            <Upload className="h-4 w-4" />
+                            <span className="hidden sm:inline">Importer</span>
+                        </button>
+                        <button
+                            onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
+                            title={t('finance.audit')}
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            <span className="hidden sm:inline">{t('finance.audit')}</span>
+                        </button>
+                        <button
+                            onClick={() => fetchTransactions()}
+                            className="p-2 text-muted-foreground hover:bg-muted rounded-md"
+                            title={t('finance.refresh')}
+                        >
+                            <RefreshCw className="h-5 w-5" />
+                        </button>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
+                        >
+                            <Plus className="h-4 w-4" />
+                            {t('finance.tx.new')}
                         </button>
                     </div>
                 </div>
-            )}
-
-            {/* Header / Active Filter */}
-            {accountIdParam && selectedAccount && (
-                <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4" />
-                        <span className="font-medium">Filtré par compte : <strong>{selectedAccount.name}</strong></span>
-                    </div>
-                    <button
-                        onClick={() => {
-                            setSearchParams({}); // Clear params
-                        }}
-                        className="p-1 hover:bg-primary/20 rounded-full transition-colors"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-            )}
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCardVariant
-                    title={accountIdParam ? "Solde du compte" : t('finance.balance')}
-                    value={`${(Number(displayedBalance) || 0).toFixed(2)} €`}
-                    icon={<Wallet className="h-6 w-6" />}
-                    variant="primary"
-                />
-                <StatCardVariant
-                    title={t('finance.income')}
-                    value={`+${filteredIncome.toFixed(2)} €`}
-                    icon={<TrendingUp className="h-6 w-6" />}
-                    variant="green"
-                />
-                <StatCardVariant
-                    title={t('finance.expense')}
-                    value={`-${filteredExpenses.toFixed(2)} €`}
-                    icon={<TrendingDown className="h-6 w-6" />}
-                    variant="red"
-                />
-            </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={colors.green} stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor={colors.green} stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={colors.red} stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor={colors.red} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="date" hide />
-                                <YAxis hide />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
-                                    formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                                />
-                                <Area type="monotone" dataKey="income" stroke={colors.green} fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
-                                <Area type="monotone" dataKey="expense" stroke={colors.red} fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.categories')}</h2>
-                    <div className="h-[300px] w-full relative">
-                        {pieData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={pieData}
-                                        dataKey="amount"
-                                        nameKey="category"
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
-                                        paddingAngle={5}
-                                    >
-                                        {pieData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                                {t('item.noContent')}
+                {/* Onboarding / Empty State */}
+                {useFinanceStore.getState().banks.length === 0 && (
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg mb-6">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold mb-2">Bienvenue sur FinanceTrack ! 👋</h2>
+                                <p className="text-blue-100 max-w-xl">
+                                    Commencez par ajouter votre première banque pour suivre vos comptes et importer vos transactions.
+                                </p>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Transaction List */}
-            <div className="bg-card border rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
-                <TransactionList
-                    transactions={filteredTransactions}
-                    onDelete={deleteTransaction}
-                    onEdit={(tx) => {
-                        setEditingTransaction(tx);
-                        setIsModalOpen(true);
-                    }}
-                    onEnrich={enrichTransaction}
-                />
-            </div>
-
-            <CreateTransactionModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setEditingTransaction(null);
-                }}
-                initialData={editingTransaction}
-            />
-
-            {/* Audit Modal Overlay */}
-            {isAuditOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border flex flex-col max-h-[85vh] animate-in zoom-in-95">
-                        <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-purple-500" />
-                                <h2 className="text-lg font-semibold">{t('finance.audit')}</h2>
-                            </div>
-                            <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">{t('action.close')}</button>
+                            <button
+                                onClick={() => {
+                                    // Trigger BankRightPanel manager modal via local event or just guide user
+                                    // For now, we'll just focus the right panel if possible, but simplest is 
+                                    // to rely on the panel being visible or adding a visual cue.
+                                    // Actually, BankRightPanel has its own internal state for the modal.
+                                    // We can emit a custom event or use a global UI store. 
+                                    // Let's use a custom event for simplicity for this feature gap.
+                                    window.dispatchEvent(new CustomEvent('open-bank-manager'));
+                                }}
+                                className="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-blue-50 transition"
+                            >
+                                Ajouter une banque
+                            </button>
                         </div>
-                        <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none">
-                            {isGeneratingAudit ? (
-                                <div className="flex flex-col items-center justify-center py-12 gap-4 text-muted-foreground">
-                                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-                                    <p>Analyse de vos dépenses en cours...</p>
-                                </div>
+                    </div>
+                )}
+
+                {/* Header / Active Filter */}
+                {accountIdParam && selectedAccount && (
+                    <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-4 w-4" />
+                            <span className="font-medium">Filtré par compte : <strong>{selectedAccount.name}</strong></span>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setSearchParams({}); // Clear params
+                            }}
+                            className="p-1 hover:bg-primary/20 rounded-full transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCardVariant
+                        title={accountIdParam ? "Solde du compte" : t('finance.balance')}
+                        value={`${(Number(displayedBalance) || 0).toFixed(2)} €`}
+                        icon={<Wallet className="h-6 w-6" />}
+                        variant="primary"
+                    />
+                    <StatCardVariant
+                        title={t('finance.income')}
+                        value={`+${filteredIncome.toFixed(2)} €`}
+                        icon={<TrendingUp className="h-6 w-6" />}
+                        variant="green"
+                    />
+                    <StatCardVariant
+                        title={t('finance.expense')}
+                        value={`-${filteredExpenses.toFixed(2)} €`}
+                        icon={<TrendingDown className="h-6 w-6" />}
+                        variant="red"
+                    />
+                </div>
+
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-card border rounded-xl p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={colors.green} stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor={colors.green} stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={colors.red} stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor={colors.red} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="date" hide />
+                                    <YAxis hide />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
+                                    />
+                                    <Area type="monotone" dataKey="income" stroke={colors.green} fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
+                                    <Area type="monotone" dataKey="expense" stroke={colors.red} fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-card border rounded-xl p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold mb-4">{t('finance.chart.categories')}</h2>
+                        <div className="h-[300px] w-full relative">
+                            {pieData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieData}
+                                            dataKey="amount"
+                                            nameKey="category"
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={100}
+                                            paddingAngle={5}
+                                        >
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             ) : (
-                                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                                    {auditContent || "Erreur d'analyse."}
+                                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                                    {t('item.noContent')}
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-            )}
+
+                {/* Budgets Section */}
+                <div className="bg-card border rounded-xl p-6 shadow-sm">
+                    <BudgetManager />
+                </div>
+
+                {/* Transaction List */}
+                <div className="bg-card border rounded-xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
+                    <TransactionList
+                        transactions={filteredTransactions}
+                        onDelete={deleteTransaction}
+                        onEdit={(tx) => {
+                            setEditingTransaction(tx);
+                            setIsModalOpen(true);
+                        }}
+                        onEnrich={enrichTransaction}
+                    />
+                </div>
+
+                <CreateTransactionModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setEditingTransaction(null);
+                    }}
+                    initialData={editingTransaction}
+                />
+
+                {/* Audit Modal Overlay */}
+                {isAuditOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                        <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border flex flex-col max-h-[85vh] animate-in zoom-in-95">
+                            <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-purple-500" />
+                                    <h2 className="text-lg font-semibold">{t('finance.audit')}</h2>
+                                </div>
+                                <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">{t('action.close')}</button>
+                            </div>
+                            <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none">
+                                {isGeneratingAudit ? (
+                                    <div className="flex flex-col items-center justify-center py-12 gap-4 text-muted-foreground">
+                                        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                                        <p>Analyse de vos dépenses en cours...</p>
+                                    </div>
+                                ) : (
+                                    <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                        {auditContent || "Erreur d'analyse."}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Closing Main Content Area via flex-1 div end */}
+            </div>
+
+            {/* Right Panel - Hidden on small mobile, visible on desktop */}
+            <div className="hidden lg:block w-[300px] border-l border-border h-full bg-card/50 backdrop-blur-sm">
+                <BankRightPanel />
+            </div>
         </div>
     );
 }

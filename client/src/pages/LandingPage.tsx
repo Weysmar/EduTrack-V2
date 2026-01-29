@@ -38,7 +38,7 @@ export function LandingPage() {
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <img src="/logo.svg" alt="Logo" className="h-8 w-8" />
-                        <span className="font-bold text-xl tracking-tight">EduTrack Hub</span>
+                        <span className="font-bold text-xl tracking-tight">HubTrack</span>
                     </div>
                     <div className="flex items-center gap-4">
                         <ModeToggle />
@@ -140,7 +140,7 @@ export function LandingPage() {
 
             {/* Footer */}
             <footer className="border-t py-8 text-center text-sm text-muted-foreground bg-muted/20">
-                <p>&copy; {new Date().getFullYear()} EduTrack Hub. Tous droits réservés.</p>
+                <p>&copy; {new Date().getFullYear()} HubTrack. Tous droits réservés.</p>
             </footer>
         </div>
     );

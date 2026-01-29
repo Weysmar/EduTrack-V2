@@ -53,6 +53,8 @@ export interface Transaction {
     importSource?: string;
     type?: TransactionType; // Added for frontend compatibility
     isRecurring?: boolean; // Added for frontend compatibility
+    aiEnriched?: boolean; // AI enrichment flag
+    aiSuggestions?: any; // AI suggestions data
     metadata?: any;
     createdAt: string;
     updatedAt: string;
@@ -93,4 +95,37 @@ export interface ImportPreviewData {
         newTransactions: number;
         duplicates: number;
     }
+}
+
+export type FinancialAccount = Account;
+
+export interface TransactionCategory {
+    id: string;
+    name: string;
+    color: string;
+    icon?: string;
+    keywords?: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Budget {
+    id: string;
+    categoryId: string;
+    category?: TransactionCategory;
+    amount: number;
+    period: 'MONTHLY' | 'YEARLY';
+    month?: number;
+    year?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ImportLog {
+    id: string;
+    fileName: string;
+    importDate: string;
+    status: 'SUCCESS' | 'FAILED' | 'PARTIAL';
+    recordCount: number;
+    details?: any;
 }
