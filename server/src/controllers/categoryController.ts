@@ -22,7 +22,7 @@ export const getCategories = async (req: any, res: Response) => {
 // Create a new category
 export const createCategory = async (req: any, res: Response) => {
     const profileId = req.user.profileId;
-    const { name, type, color, icon, keywords } = req.body;
+    let { name, type, color, icon, keywords } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
@@ -30,6 +30,15 @@ export const createCategory = async (req: any, res: Response) => {
 
     if (!type) {
         return res.status(400).json({ error: 'Type is required' });
+    }
+
+    // Ensure keywords is an array
+    if (keywords && !Array.isArray(keywords)) {
+        if (typeof keywords === 'string') {
+            keywords = keywords.split(',').map((k: string) => k.trim()).filter(Boolean);
+        } else {
+            return res.status(400).json({ error: 'Keywords must be an array of strings' });
+        }
     }
 
     try {
@@ -54,7 +63,16 @@ export const createCategory = async (req: any, res: Response) => {
 export const updateCategory = async (req: any, res: Response) => {
     const { id } = req.params;
     const profileId = req.user.profileId;
-    const { name, color, icon, keywords } = req.body;
+    let { name, color, icon, keywords } = req.body;
+
+    // Ensure keywords is an array if provided
+    if (keywords && !Array.isArray(keywords)) {
+        if (typeof keywords === 'string') {
+            keywords = keywords.split(',').map((k: string) => k.trim()).filter(Boolean);
+        } else {
+            return res.status(400).json({ error: 'Keywords must be an array of strings' });
+        }
+    }
 
     try {
         const category = await prisma.transactionCategory.findUnique({
