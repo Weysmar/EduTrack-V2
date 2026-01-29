@@ -79,6 +79,8 @@ export default function FinanceDashboard() {
         console.log("💰 FinanceDashboard V2.2 (Chunk Fix) Loaded");
         fetchTransactions();
         fetchBudgets();
+        fetchAccounts(); // Ensure accounts are loaded
+        fetchBanks();    // Ensure banks are loaded
     }, []);
 
     const handleGenerateAudit = async () => {
@@ -138,6 +140,9 @@ export default function FinanceDashboard() {
 
     const { income: filteredIncome, expense: filteredExpenses } = calculateTotals(filteredTransactions);
 
+    // Dynamic Title
+    const dashboardTitle = selectedAccount ? selectedAccount.name : "Portefeuille";
+
     // Re-calculate chart data
     const chartData = filteredTransactions
         .slice()
@@ -181,7 +186,7 @@ export default function FinanceDashboard() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{t('finance.title')} 💰</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">{dashboardTitle} 💰</h1>
                         <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
