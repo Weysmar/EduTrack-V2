@@ -22,10 +22,14 @@ export const getCategories = async (req: any, res: Response) => {
 // Create a new category
 export const createCategory = async (req: any, res: Response) => {
     const profileId = req.user.profileId;
-    const { name, color, icon, keywords } = req.body;
+    const { name, type, color, icon, keywords } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
+    }
+
+    if (!type) {
+        return res.status(400).json({ error: 'Type is required' });
     }
 
     try {
@@ -33,6 +37,7 @@ export const createCategory = async (req: any, res: Response) => {
             data: {
                 profileId,
                 name,
+                type,
                 color: color || '#3b82f6', // Default blue
                 icon,
                 keywords: keywords || []
