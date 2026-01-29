@@ -37,6 +37,8 @@ export default function FinanceDashboard() {
         enrichTransaction,
         importTransactions,
         accounts,
+        fetchAccounts,
+        fetchBanks,
         fetchBudgets // New action
     } = useFinanceStore();
 
