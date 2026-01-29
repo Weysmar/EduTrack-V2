@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { format } from 'date-fns';
 import { ClassificationBadge } from '@/components/finance/ClassificationBadge';
+import { ImportHistory } from '@/components/finance/ImportHistory';
 
 export default function ImportPage() {
     const { banks, isLoadingBanks } = useFinance(); // Bank selection
@@ -97,77 +98,85 @@ export default function ImportPage() {
 
             {/* --- STEP 1: UPLOAD --- */}
             {step === 1 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                    {/* Bank Selector */}
-                    <div className="space-y-2">
-                        <label className="text-slate-300 font-medium">Banque cible</label>
-                        <select
-                            value={selectedBankId}
-                            onChange={(e) => setSelectedBankId(e.target.value)}
-                            className="w-full md:w-1/2 p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                        >
-                            <option value="">Sélectionnez une banque...</option>
-                            {banks?.map(bank => (
-                                <option key={bank.id} value={bank.id}>{bank.name}</option>
-                            ))}
-                        </select>
-                        {banks?.length === 0 && (
-                            <p className="text-sm text-amber-500">
-                                Aucune banque configurée. <a href="/finance/settings" className="underline">Créez-en une d'abord.</a>
-                            </p>
-                        )}
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+
+                    {/* Import History Component */}
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <ImportHistory />
                     </div>
 
-                    {/* Dropzone */}
-                    <div
-                        {...getRootProps()}
-                        className={clsx(
-                            "border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors relative overflow-hidden",
-                            isDragActive ? "border-blue-500 bg-blue-500/10" : "border-slate-700 hover:border-slate-500 bg-slate-800/50",
-                            file && "border-green-500/50 bg-green-500/5"
-                        )}
-                    >
-                        <input {...getInputProps()} />
-                        <div className="flex flex-col items-center gap-4 relative z-10">
-                            {file ? (
-                                <>
-                                    {getFileIcon(file.name)}
-                                    <div>
-                                        <p className="font-medium text-slate-200">{file.name}</p>
-                                        <p className="text-sm text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
-                                    </div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                                        className="text-xs text-red-400 hover:underline"
-                                    >
-                                        Changer de fichier
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="w-12 h-12 text-slate-500" />
-                                    <div>
-                                        <p className="font-medium text-slate-200">Glissez votre fichier ici</p>
-                                        <p className="text-sm text-slate-500">OFX, CSV ou Excel acceptés</p>
-                                    </div>
-                                    <div className="flex gap-2 text-xs text-slate-600 mt-2">
-                                        <span className="bg-slate-800 px-2 py-1 rounded">.ofx</span>
-                                        <span className="bg-slate-800 px-2 py-1 rounded">.csv</span>
-                                        <span className="bg-slate-800 px-2 py-1 rounded">.xlsx</span>
-                                    </div>
-                                </>
+                    <div className="space-y-6">
+                        {/* Bank Selector */}
+                        <div className="space-y-2">
+                            <label className="text-slate-300 font-medium">Banque cible</label>
+                            <select
+                                value={selectedBankId}
+                                onChange={(e) => setSelectedBankId(e.target.value)}
+                                className="w-full md:w-1/2 p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                            >
+                                <option value="">Sélectionnez une banque...</option>
+                                {banks?.map(bank => (
+                                    <option key={bank.id} value={bank.id}>{bank.name}</option>
+                                ))}
+                            </select>
+                            {banks?.length === 0 && (
+                                <p className="text-sm text-amber-500">
+                                    Aucune banque configurée. <a href="/finance/settings" className="underline">Créez-en une d'abord.</a>
+                                </p>
                             )}
                         </div>
-                    </div>
 
-                    <div className="flex justify-end">
-                        <button
-                            onClick={handlePreview}
-                            disabled={!file || !selectedBankId || isPreviewing}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        {/* Dropzone */}
+                        <div
+                            {...getRootProps()}
+                            className={clsx(
+                                "border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors relative overflow-hidden",
+                                isDragActive ? "border-blue-500 bg-blue-500/10" : "border-slate-700 hover:border-slate-500 bg-slate-800/50",
+                                file && "border-green-500/50 bg-green-500/5"
+                            )}
                         >
-                            {isPreviewing ? 'Analyse en cours...' : 'Continuer vers Aperçu'}
-                        </button>
+                            <input {...getInputProps()} />
+                            <div className="flex flex-col items-center gap-4 relative z-10">
+                                {file ? (
+                                    <>
+                                        {getFileIcon(file.name)}
+                                        <div>
+                                            <p className="font-medium text-slate-200">{file.name}</p>
+                                            <p className="text-sm text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                            className="text-xs text-red-400 hover:underline"
+                                        >
+                                            Changer de fichier
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-12 h-12 text-slate-500" />
+                                        <div>
+                                            <p className="font-medium text-slate-200">Glissez votre fichier ici</p>
+                                            <p className="text-sm text-slate-500">OFX, CSV ou Excel acceptés</p>
+                                        </div>
+                                        <div className="flex gap-2 text-xs text-slate-600 mt-2">
+                                            <span className="bg-slate-800 px-2 py-1 rounded">.ofx</span>
+                                            <span className="bg-slate-800 px-2 py-1 rounded">.csv</span>
+                                            <span className="bg-slate-800 px-2 py-1 rounded">.xlsx</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handlePreview}
+                                disabled={!file || !selectedBankId || isPreviewing}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                            >
+                                {isPreviewing ? 'Analyse en cours...' : 'Continuer vers Aperçu'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -199,14 +208,23 @@ export default function ImportPage() {
                         <div className="divide-y divide-slate-800">
                             {previewData.accounts.map((acc, i) => (
                                 <div key={i} className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className={clsx("w-2 h-2 rounded-full", acc.isNew ? "bg-green-500" : "bg-blue-500")} />
-                                        <div>
-                                            <p className="font-medium text-slate-200">{acc.accountName}</p>
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div className={clsx("w-2 h-2 rounded-full flex-shrink-0", acc.isNew ? "bg-green-500" : "bg-blue-500")} />
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={acc.accountName}
+                                                onChange={(e) => {
+                                                    const newAccounts = [...previewData.accounts];
+                                                    newAccounts[i].accountName = e.target.value;
+                                                    setPreviewData({ ...previewData, accounts: newAccounts });
+                                                }}
+                                                className="font-medium text-slate-200 bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 focus:bg-slate-800/50 outline-none w-full transition-all px-1 -ml-1 rounded"
+                                            />
                                             <p className="text-sm text-slate-500 font-mono">{acc.accountNumber}</p>
                                         </div>
                                         {acc.isNew && (
-                                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Nouveau Compte</span>
+                                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded flex-shrink-0">Nouveau</span>
                                         )}
                                     </div>
                                     <div className="text-right">

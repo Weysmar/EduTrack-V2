@@ -7,8 +7,15 @@ const prisma = new PrismaClient();
 export const getBanks = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
+        const { includeArchived } = req.query;
+
+        const whereClause: any = { profileId };
+        if (includeArchived !== 'true') {
+            whereClause.active = true;
+        }
+
         const banks = await prisma.bank.findMany({
-            where: { profileId },
+            where: whereClause,
             include: { accounts: true },
             orderBy: { name: 'asc' }
         });
@@ -72,8 +79,20 @@ export const deleteBank = async (req: AuthRequest, res: Response) => {
         }
 
         // Check for attached accounts
-        if (bank.accounts.length > 0) {
-            return res.status(400).json({ error: 'Cannot delete bank with active accounts. Please reassign or delete accounts first.' });
+        // Cascade delete: Transactions -> Accounts -> Bank
+        // 1. Find all accounts
+        const accountIds = bank.accounts.map((a: any) => a.id);
+
+        if (accountIds.length > 0) {
+            // 2. Delete all transactions for these accounts
+            await prisma.transaction.deleteMany({
+                where: { accountId: { in: accountIds } }
+            });
+
+            // 3. Delete accounts
+            await prisma.account.deleteMany({
+                where: { bankId: id }
+            });
         }
 
         await prisma.bank.delete({ where: { id } });

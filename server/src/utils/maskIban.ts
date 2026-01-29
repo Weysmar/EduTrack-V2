@@ -3,10 +3,11 @@
  */
 export function maskIban(iban?: string | null): string | undefined {
     if (!iban) return undefined;
-    if (iban.length < 8) return iban; // Too short to mask meaningfully
+    const clean = iban.replace(/\s/g, '');
+    if (clean.length < 8) return iban;
 
-    // Format: FR**...1234
-    return `${iban.slice(0, 4)}****${iban.slice(-4)}`;
+    // Format: FR76 **** **** **** 1234
+    return `${clean.slice(0, 4)} **** **** **** ${clean.slice(-4)}`;
 }
 
 /**

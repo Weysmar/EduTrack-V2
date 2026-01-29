@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import { getBanks, createBank, updateBank, deleteBank } from '../controllers/bankController';
-import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount } from '../controllers/financeController';
+import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData } from '../controllers/financeController';
+import {
+    getBudgets,
+    createBudget,
+    updateBudget,
+    deleteBudget
+} from '../controllers/budgetController';
 import multer from 'multer';
 import path from 'path';
 
@@ -10,13 +16,13 @@ const router = Router();
 const upload = multer({
     dest: 'uploads/temp/',
     limits: { fileSize: 10 * 1024 * 1024 }, // Boost to 10MB
-    fileFilter: (_req, file, cb) => {
+    fileFilter: (_req: any, file: any, cb: any) => {
         const ext = path.extname(file.originalname).toLowerCase();
         const allowedExtensions = ['.ofx', '.qfx', '.csv', '.xlsx', '.xls'];
         if (allowedExtensions.includes(ext)) {
             cb(null, true);
         } else {
-            cb(new Error('Format non supporté. Utilisez OFX, CSV ou Excel.'));
+            cb(new Error('format non supporté. Utilisez OFX, CSV ou Excel.'));
         }
     }
 });
@@ -26,6 +32,12 @@ router.get('/banks', getBanks);
 router.post('/banks', createBank);
 router.put('/banks/:id', updateBank);
 router.delete('/banks/:id', deleteBank);
+
+// Budget Routes
+router.get('/budgets', getBudgets);
+router.post('/budgets', createBudget);
+router.put('/budgets/:id', updateBudget);
+router.delete('/budgets/:id', deleteBudget);
 
 // Accounts Routes
 router.get('/accounts', getAccounts);
@@ -43,5 +55,9 @@ router.post('/transactions/categorize', categorizeTransactions);
 // Import Routes
 router.post('/import/preview', upload.single('file'), previewImport);
 router.post('/import/confirm', confirmImport);
+router.get('/imports', getImportLogs);
+
+// Export Route
+router.get('/export', exportData);
 
 export default router;

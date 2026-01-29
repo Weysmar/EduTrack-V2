@@ -117,14 +117,21 @@ export class ImportService {
                 // Duplication Check
                 let isDuplicate = false;
                 if (accountDbId) {
+                    // Robust check: Same day (ignore time), amount within tolerance, same description
+                    const dayStart = new Date(tx.date);
+                    dayStart.setHours(0, 0, 0, 0);
+                    const dayEnd = new Date(dayStart);
+                    dayEnd.setDate(dayEnd.getDate() + 1);
+
                     const existingTx = await prisma.transaction.findFirst({
                         where: {
                             accountId: accountDbId,
-                            amount: tx.amount,
-                            date: tx.date,
-                            OR: [{ description: tx.description }]
+                            amount: { gte: tx.amount - 0.01, lte: tx.amount + 0.01 },
+                            date: { gte: dayStart, lt: dayEnd },
+                            description: tx.description
                         }
                     });
+
                     // Stronger duplicate check if FITID is available (OFX)
                     const fitIdCheck = tx.fitId ? await prisma.transaction.findFirst({
                         where: {
@@ -149,7 +156,8 @@ export class ImportService {
                 const classificationResult = await ClassificationService.classifyTransaction(
                     profileId,
                     tx.description,
-                    tx.amount
+                    tx.amount,
+                    targetBankId
                 );
 
                 preview.transactions.push({
@@ -193,13 +201,20 @@ export class ImportService {
                     });
                     accountMap.set(acc.accountNumber, newAcc.id);
                 } else if (acc.dbId) {
-                    // Update balance only
+                    // Update balance AND Name (if renamed in UI)
+                    const updates: any = {
+                        balance: acc.balance !== 0 ? acc.balance : undefined,
+                        balanceDate: new Date()
+                    };
+
+                    // If name is different from DB (we'd need to fetch or trust UI), let's just update it if provided
+                    if (acc.accountName) {
+                        updates.name = acc.accountName;
+                    }
+
                     await tx.account.update({
                         where: { id: acc.dbId },
-                        data: {
-                            balance: acc.balance !== 0 ? acc.balance : undefined, // Update if non-zero
-                            balanceDate: new Date()
-                        }
+                        data: updates
                     });
                     accountMap.set(acc.accountNumber, acc.dbId);
                 }
@@ -208,16 +223,24 @@ export class ImportService {
             // 2. Create Transactions
             const transactionsToCreate = previewData.transactions
                 .filter(t => !t.isDuplicate)
-                .map(t => ({
-                    accountId: accountMap.get(t.accountNumber)!,
-                    amount: t.amount,
-                    date: t.date,
-                    description: t.description,
-                    classification: t.classification,
-                    classificationConfidence: t.confidence,
-                    metadata: { fitId: t.importId },
-                    importSource: 'IMPORT'
-                }));
+                .map(t => {
+                    // IBAN Extraction Regex (Handles spaces or no spaces)
+                    const ibanRegex = /\b([A-Z]{2}\d{2}(?:\s?\d{4}){3,}(?:\s?\d{1,4})?)\b/gi;
+                    const match = t.description.match(ibanRegex);
+                    const extractedIban = match ? match[0].replace(/\s/g, '') : null;
+
+                    return {
+                        accountId: accountMap.get(t.accountNumber)!,
+                        amount: t.amount,
+                        date: t.date,
+                        description: t.description,
+                        beneficiaryIban: extractedIban, // Populated from description
+                        classification: t.classification,
+                        classificationConfidence: t.confidence,
+                        metadata: { fitId: t.importId },
+                        importSource: 'IMPORT'
+                    };
+                });
 
             let count = 0;
             if (transactionsToCreate.length > 0) {

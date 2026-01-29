@@ -32,6 +32,7 @@ const FinanceDashboard = lazy(() => import('@/pages/FinanceDashboard').then(m =>
 const FinanceSettings = lazy(() => import('@/pages/finance/FinanceSettings').then(m => ({ default: m.FinanceSettings })))
 const ImportPage = lazy(() => import('@/pages/finance/ImportPage').then(m => ({ default: m.default })))
 const BankDetailsPage = lazy(() => import('@/pages/finance/BankDetailsPage').then(m => ({ default: m.default })))
+const AccountDetailsPage = lazy(() => import('@/pages/finance/AccountDetailsPage').then(m => ({ default: m.default })))
 
 // Suspense Wrapper
 const LazyPage = ({ children }: { children: React.ReactNode }) => (
@@ -160,6 +161,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'bank/:bankId',
                                 element: <LazyPage><BankDetailsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'account/:accountId',
+                                element: <LazyPage><AccountDetailsPage /></LazyPage>,
                             }
                         ]
                     }

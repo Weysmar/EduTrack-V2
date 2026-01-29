@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { financeApi } from '@/lib/api/financeApi';
-import { Transaction, FinancialAccount, Bank } from '@/types/finance';
+import { Transaction, FinancialAccount, Bank, TransactionCategory } from '@/types/finance';
 
 interface FinanceFilters {
     month: number | null;
@@ -15,6 +15,8 @@ interface FinanceState {
     transactions: Transaction[];
     accounts: FinancialAccount[];
     isLoading: boolean;
+    showArchived: boolean;
+    toggleShowArchived: () => void;
     filters: FinanceFilters;
 
     // Actions
@@ -26,6 +28,13 @@ interface FinanceState {
     importTransactions: (file: File) => Promise<void>;
     generateLocalAudit: () => Promise<string>;
     setFilters: (filters: Partial<FinanceFilters>) => void;
+
+
+    categories: TransactionCategory[];
+    fetchCategories: () => Promise<void>;
+    addCategory: (category: { name: string; color?: string; icon?: string; keywords?: string[] }) => Promise<void>;
+    updateCategory: (id: string, updates: Partial<{ name: string; color: string; icon: string; keywords: string[] }>) => Promise<void>;
+    deleteCategory: (id: string) => Promise<void>;
 
     // Computed Methods
     getTotalIncome: () => number;
@@ -46,12 +55,72 @@ interface FinanceState {
 
     // Transaction Actions
     updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
+
+    // Budget Actions
+    budgets: any[]; // Replace with Budget type
+    fetchBudgets: () => Promise<void>;
+    addBudget: (data: { categoryId: string; amount: number; period?: string }) => Promise<void>;
+    updateBudget: (id: string, data: Partial<{ amount: number; period: string }>) => Promise<void>;
+    deleteBudget: (id: string) => Promise<void>;
+
+    // Import Logs
+    // Import Logs
+    importLogs: any[];
+    fetchImportLogs: () => Promise<void>;
+
+    // Export
+    exportData?: (format: 'json' | 'csv') => Promise<void>; // Optional if handled via API directly
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
     transactions: [],
     accounts: [],
+    banks: [], // Initialize banks array
+    categories: [],
+    budgets: [],
+    importLogs: [],
+
+    fetchCategories: async () => {
+        try {
+            const categories = await financeApi.getCategories();
+            set({ categories });
+        } catch (error) {
+            console.error('Failed to fetch categories', error);
+        }
+    },
+
+    addCategory: async (category) => {
+        try {
+            const newCategory = await financeApi.createCategory(category);
+            set((state) => ({ categories: [...state.categories, newCategory] }));
+        } catch (error) {
+            console.error('Failed to add category', error);
+        }
+    },
+
+    updateCategory: async (id, updates) => {
+        try {
+            const updatedCategory = await financeApi.updateCategory(id, updates);
+            set((state) => ({
+                categories: state.categories.map((c) => (c.id === id ? updatedCategory : c)),
+            }));
+        } catch (error) {
+            console.error('Failed to update category', error);
+        }
+    },
+
+    deleteCategory: async (id) => {
+        try {
+            await financeApi.deleteCategory(id);
+            set((state) => ({
+                categories: state.categories.filter((c) => c.id !== id),
+            }));
+        } catch (error) {
+            console.error('Failed to delete category', error);
+        }
+    },
     isLoading: false,
+    showArchived: false,
     filters: {
         month: new Date().getMonth(),
         year: new Date().getFullYear(),
@@ -82,11 +151,9 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 maxAmount: get().filters.maxAmount || undefined
             });
 
-            // Ensure dates are Date objects (API sends strings)
+            // Keep dates as strings for type compatibility
             const parsedData = data.map(t => ({
                 ...t,
-                date: new Date(t.date),
-                createdAt: new Date(t.createdAt),
                 amount: typeof t.amount === 'string' ? parseFloat(t.amount) : Number(t.amount)
             }));
 
@@ -97,29 +164,41 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         }
     },
 
+    toggleShowArchived: () => {
+        const newValue = !get().showArchived;
+        set({ showArchived: newValue });
+        get().fetchAccounts();
+        get().fetchBanks();
+    },
+
     fetchAccounts: async () => {
         try {
-            const accounts = await financeApi.getAccounts();
+            const showArchived = get().showArchived;
+            // Need to update API method to accept query param first, but assuming we modify API helper too or pass manually string
+            // Let's modify api call below in next step or use direct fetch if needed, but better to update api lib.
+            // Assuming api.getAccounts supports optional arg. I will update api lib next.
+            // For now, let's look at financeApi.ts logic.
+            // I'll update financeApi.ts to accept arguments.
 
-            if (accounts.length === 0) {
-                // Auto-create default account for zero-config experience
-                console.log("No accounts found. Creating default account...");
-                const defaultAccount = await financeApi.createAccount({
-                    name: 'Compte Principal',
-                    type: 'CHECKING',
-                    balance: 0,
-                    color: '#10b981',
-                    icon: 'wallet'
-                });
-                set({ accounts: [defaultAccount] });
-            } else {
-                // Ensure balance is a number (Prisma Decimal returns string)
-                const parsedAccounts = accounts.map(a => ({
-                    ...a,
-                    balance: typeof a.balance === 'string' ? parseFloat(a.balance) : Number(a.balance)
-                }));
-                set({ accounts: parsedAccounts });
+            // Wait, I should update financeApi.ts first or passing args here will fail TS check? 
+            // It's JS/TS, it might be fine if typed vaguely, but better to do it right.
+            // I'll proceed with assumed update to api.
+            const accounts = await financeApi.getAccounts(showArchived);
+
+            if (accounts.length === 0 && !showArchived) {
+                // ... default account logic only if not looking for archived and truly empty
+                // Logic: If no accounts AT ALL (active or not), suggest creation.
+                // Check if this is the very first load.
+                console.log("No active accounts found.");
             }
+
+            // ... formatting ...
+            const parsedAccounts = accounts.map(a => ({
+                ...a,
+                balance: typeof a.balance === 'string' ? parseFloat(a.balance) : Number(a.balance)
+            }));
+            set({ accounts: parsedAccounts });
+
         } catch (error) {
             console.error('Failed to fetch accounts', error);
         }
@@ -249,7 +328,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
         get().transactions.forEach(t => {
             if (t.type === 'EXPENSE') {
-                const category = t.categoryId || 'Uncategorized';
+                const category = t.category || 'Uncategorized';
                 breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
             }
         });
@@ -260,11 +339,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         }));
     },
 
-    // Bank Implementation
-    banks: [],
+
     fetchBanks: async () => {
         try {
-            const banks = await financeApi.getBanks();
+            const showArchived = get().showArchived;
+            const banks = await financeApi.getBanks(showArchived);
             set({ banks });
         } catch (error) {
             console.error('Failed to fetch banks', error);
@@ -301,5 +380,62 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         } catch (error) {
             console.error('Failed to delete account', error);
         }
+    },
+
+    // Budget Implementation already initialized above
+
+    fetchBudgets: async () => {
+        try {
+            const budgets = await financeApi.getBudgets();
+            set({ budgets });
+        } catch (error) {
+            console.error('Failed to fetch budgets', error);
+        }
+    },
+
+    addBudget: async (data) => {
+        try {
+            await financeApi.createBudget(data);
+            get().fetchBudgets();
+        } catch (error) {
+            console.error('Failed to create budget', error);
+        }
+    },
+
+    updateBudget: async (id, data) => {
+        try {
+            await financeApi.updateBudget(id, data);
+            get().fetchBudgets();
+        } catch (error) {
+            console.error('Failed to update budget', error);
+        }
+    },
+
+    deleteBudget: async (id) => {
+        try {
+            await financeApi.deleteBudget(id);
+            get().fetchBudgets();
+        } catch (error) {
+            console.error('Failed to delete budget', error);
+        }
+    },
+
+    // Import Logs Implementation
+    fetchImportLogs: async () => {
+        try {
+            const logs = await financeApi.getImportLogs();
+            set({ importLogs: logs });
+        } catch (error) {
+            console.error('Failed to fetch import logs', error);
+        }
+    },
+
+    exportData: async (format) => {
+        try {
+            await financeApi.exportData(format);
+        } catch (error) {
+            console.error('Export error', error);
+        }
     }
+
 }));

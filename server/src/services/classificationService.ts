@@ -18,6 +18,7 @@ export class ClassificationService {
         profileId: string,
         description: string,
         amount: number,
+        sourceBankId: string,
         beneficiaryIban?: string
     ): Promise<ClassificationResult> {
 
@@ -60,19 +61,10 @@ export class ClassificationService {
         // Step 4: Determine Classification & Score
         if (linkedAccount) {
             // Found a matching internal account!
-
-            // To distinguish Intra vs Inter bank, we'd need the source account's bankId.
-            // Since this method is often called during import where we might not have the source DB record yet (it's in the preview array),
-            // we rely on the caller to handle that granularity if needed, or we default to a generic "INTERNAL".
-            // However, our Enum has INTRA and INTER.
-
-            // For now, if we match a user's account, it is definitely INTERNAL. 
-            // We'll mark as INTER_BANK by default unless we check source bank (which requires more args).
-            // Let's settle for INTER_BANK as a safe default for "Transfer to myself".
-            // Ideally we should pass sourceBankId to this function.
+            const isIntraBank = linkedAccount.bankId === sourceBankId;
 
             return {
-                classification: 'INTERNAL_INTER_BANK', // Most common case (moving money between banks)
+                classification: isIntraBank ? 'INTERNAL_INTRA_BANK' : 'INTERNAL_INTER_BANK',
                 confidenceScore: 0.95,
                 beneficiaryIban: detectedIban,
                 linkedAccountId: linkedAccount.id
