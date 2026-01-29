@@ -66,8 +66,12 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
 // --- Accounts ---
 export const getAccounts = async (req: AuthRequest, res: Response) => {
     try {
-        const profileId = req.user!.id;
+        const profileId = req.user!.profileId; // Use profileId
         const { includeArchived } = req.query;
+
+        if (!profileId) {
+            return res.status(400).json({ error: 'Profile ID not found in token' });
+        }
 
         const whereClause: any = { bank: { profileId } };
         if (includeArchived !== 'true') {
@@ -94,8 +98,12 @@ export const getAccounts = async (req: AuthRequest, res: Response) => {
 
 export const createAccount = async (req: AuthRequest, res: Response) => {
     try {
-        const profileId = req.user!.id;
+        const profileId = req.user!.profileId; // Use profileId
         const { bankId, name, type, balance, currency, accountNumber } = req.body;
+
+        if (!profileId) {
+            return res.status(400).json({ error: 'Profile ID not found in token' });
+        }
 
         // Verify bank belongs to user
         const bank = await prisma.bank.findFirst({
