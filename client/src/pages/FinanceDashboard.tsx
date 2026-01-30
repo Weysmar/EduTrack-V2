@@ -113,7 +113,10 @@ export default function FinanceDashboard() {
                 if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
                 // Fallback for unclassified internal transfers
                 const desc = t.description.toLowerCase();
-                if (desc.includes('virement interne') || desc.includes('virement entre vos comptes')) return false;
+                if (desc.includes('virement interne') ||
+                    desc.includes('virement entre vos comptes') ||
+                    (desc.includes('virement') && desc.includes('compte') && desc.includes('titulaire'))
+                ) return false;
             }
             if (accountIdParam) {
                 return t.accountId === accountIdParam;

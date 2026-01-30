@@ -31,6 +31,13 @@ export function FinanceSidebar() {
         }
     }, [banks]);
 
+    // Listen for dashboard "Add Bank" event
+    useEffect(() => {
+        const handleOpenBankModal = () => setIsBankModalOpen(true);
+        window.addEventListener('open-bank-manager', handleOpenBankModal);
+        return () => window.removeEventListener('open-bank-manager', handleOpenBankModal);
+    }, []);
+
     const toggleBank = (bankId: string) => {
         setExpandedBanks(prev => ({ ...prev, [bankId]: !prev[bankId] }));
     };
