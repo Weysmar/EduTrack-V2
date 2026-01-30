@@ -58,9 +58,13 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
         const result = await ImportService.commitImport(profileId, bankId, importData);
         res.json(result);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Commit Error:', error);
-        res.status(500).json({ error: 'Failed to commit import' });
+        res.status(500).json({
+            error: 'Failed to commit import',
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
