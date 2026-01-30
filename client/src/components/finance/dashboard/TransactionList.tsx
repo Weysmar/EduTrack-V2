@@ -1,8 +1,8 @@
 import { Transaction } from '@/types/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ClassificationBadge } from '../ClassificationBadge';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+// import { format } from 'date-fns';
+// import { fr } from 'date-fns/locale';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -30,6 +30,19 @@ export function TransactionList({ transactions = [] }: Props) {
         t.amount.toString().includes(search)
     );
 
+    // Safe date formatter
+    const formatDate = (dateStr: string | Date) => {
+        try {
+            return new Date(dateStr).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return 'Date invalide';
+        }
+    };
+
     return (
         <Card className="bg-slate-900 border-slate-800 h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-slate-800">
@@ -55,7 +68,7 @@ export function TransactionList({ transactions = [] }: Props) {
                                 <div className="flex-1 min-w-0 pr-4">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-sm text-slate-400">
-                                            {format(new Date(t.date), 'dd MMM yyyy', { locale: fr })}
+                                            {formatDate(t.date)}
                                         </span>
                                         <ClassificationBadge classification={t.classification} confidence={t.classificationConfidence} />
                                     </div>

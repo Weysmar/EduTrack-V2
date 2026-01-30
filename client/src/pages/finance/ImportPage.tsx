@@ -251,10 +251,10 @@ export default function ImportPage() {
                     {/* Transactions Preview */}
                     <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-slate-700 font-medium text-slate-200 flex justify-between items-center">
-                            <span>Aperçu des transactions</span>
+                            <span>Aperçu des transactions ({previewData.transactions.length})</span>
                             <span className="text-sm text-slate-400">Seules les nouvelles transactions seront importées</span>
                         </div>
-                        <div className="overflow-x-auto max-h-[400px]">
+                        <div className="overflow-x-auto max-h-[600px]">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-800 text-slate-400 sticky top-0 z-10">
                                     <tr>

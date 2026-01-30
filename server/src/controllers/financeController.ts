@@ -194,8 +194,8 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         const transactions = await prisma.transaction.findMany({
             where: { account: { bank: { profileId } } },
             include: { account: true },
-            orderBy: { date: 'desc' },
-            take: 100 // Limit for now
+            orderBy: { date: 'desc' }
+            // take: 100 // Limit removed as requested
         });
 
         // Mask IBANs in account data and beneficiaryIban
