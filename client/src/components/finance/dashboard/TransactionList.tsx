@@ -1,8 +1,6 @@
 import { Transaction } from '@/types/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ClassificationBadge } from '../ClassificationBadge';
-// import { format } from 'date-fns';
-// import { fr } from 'date-fns/locale';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 import { useState, useMemo } from 'react';
