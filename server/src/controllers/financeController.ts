@@ -540,6 +540,7 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
         let updated = 0;
         for (const tx of transactions) {
             // Need bankId. tx.account.bankId is available via include
+            if (!tx.account) continue;
             const bankId = tx.account.bankId;
 
             const result = await ClassificationService.classifyTransaction(
@@ -547,7 +548,7 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
                 tx.description,
                 tx.amount.toNumber(),
                 bankId,
-                tx.beneficiaryIban
+                tx.beneficiaryIban || undefined
             );
 
             // Only update if confidence improved
