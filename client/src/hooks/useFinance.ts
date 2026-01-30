@@ -216,10 +216,11 @@ export function useFinanceImport() {
     const queryClient = useQueryClient();
 
     const previewImport = useMutation({
-        mutationFn: async ({ file, bankId }: { file: File; bankId: string }) => {
+        mutationFn: async ({ file, bankId, accountId }: { file: File; bankId: string; accountId?: string }) => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('bankId', bankId);
+            if (accountId) formData.append('accountId', accountId);
 
             const response = await axios.post<ImportPreviewData>('/finance/import/preview', formData, {
                 headers: {
