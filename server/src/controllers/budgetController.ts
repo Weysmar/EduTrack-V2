@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export const getBudgets = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.profileId;
+        const userId = req.user!.id;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -27,7 +27,7 @@ export const getBudgets = async (req: AuthRequest, res: Response) => {
 
 export const createBudget = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.profileId;
+        const userId = req.user!.id;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -80,7 +80,7 @@ export const createBudget = async (req: AuthRequest, res: Response) => {
 
 export const updateBudget = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.profileId;
+        const userId = req.user!.id;
         const { id } = req.params;
         const { amount, period } = req.body;
 
@@ -112,7 +112,7 @@ export const updateBudget = async (req: AuthRequest, res: Response) => {
 
 export const deleteBudget = async (req: AuthRequest, res: Response) => {
     try {
-        const userId = req.user?.profileId;
+        const userId = req.user!.id;
         const { id } = req.params;
 
         const budget = await prisma.budget.findUnique({

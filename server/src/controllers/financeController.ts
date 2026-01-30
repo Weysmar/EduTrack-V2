@@ -67,7 +67,7 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
 // --- Accounts ---
 export const getAccounts = async (req: AuthRequest, res: Response) => {
     try {
-        const profileId = req.user!.profileId; // Use profileId
+        const profileId = req.user!.id;
         const { includeArchived } = req.query;
 
         if (!profileId) {
@@ -99,7 +99,7 @@ export const getAccounts = async (req: AuthRequest, res: Response) => {
 
 export const createAccount = async (req: AuthRequest, res: Response) => {
     try {
-        const profileId = req.user!.profileId; // Use profileId
+        const profileId = req.user!.id;
         const { bankId, name, type, balance, currency, accountNumber } = req.body;
 
         if (!profileId) {
