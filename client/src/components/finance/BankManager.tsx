@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useFinance } from '@/hooks/useFinance';
-import { Plus, Pencil, Trash2, Wallet, CreditCard } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wallet, CreditCard, Archive } from 'lucide-react';
 import { Bank, Account } from '@/types/finance';
 import { BankFormModal } from './BankFormModal';
 import { AccountFormModal } from './AccountFormModal';
@@ -41,8 +41,24 @@ export function BankManager() {
         }
     };
 
+    const handleArchive = async (bankId: string) => {
+        if (confirm('Voulez-vous archiver cette banque ? Vous pourrez la restaurer plus tard.')) {
+            try {
+                await fetch(`/api/finance/banks/${bankId}/archive`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                // Refresh banks list
+                window.location.reload();
+            } catch (error) {
+                console.error('Failed to archive bank:', error);
+            }
+        }
+    };
+
     const handleDelete = async (bankId: string) => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette banque ? Cela n\'est possible que si aucun compte n\'y est rattaché.')) {
+        if (confirm('⚠️ ATTENTION : Supprimer définitivement cette banque et toutes ses données ? Cette action est irréversible.\n\nPréférez "Archiver" pour conserver vos données.')) {
             await deleteBank(bankId);
         }
     };
@@ -119,12 +135,21 @@ export function BankManager() {
                                 <button
                                     onClick={() => openEditModal(bank)}
                                     className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                                    title="Éditer"
                                 >
                                     <Pencil size={18} />
                                 </button>
                                 <button
+                                    onClick={() => handleArchive(bank.id)}
+                                    className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
+                                    title="Archiver"
+                                >
+                                    <Archive size={18} />
+                                </button>
+                                <button
                                     onClick={() => handleDelete(bank.id)}
                                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                    title="Supprimer définitivement"
                                 >
                                     <Trash2 size={18} />
                                 </button>

@@ -72,8 +72,17 @@ export class ClassificationService {
         }
 
         // No internal match found
+        // Check if we have enough IBAN data to classify
+        if (!detectedIban || detectedIban.length < 4) {
+            // Pas d'IBAN extractible ou trop court -> UNKNOWN
+            return {
+                classification: 'UNKNOWN',
+                confidenceScore: 0.30
+            };
+        }
+
         if (isTransferKeyword) {
-            // "VIREMENT" to unknown -> External
+            // "VIREMENT" to unknown external account -> External
             return {
                 classification: 'EXTERNAL',
                 confidenceScore: 0.70,

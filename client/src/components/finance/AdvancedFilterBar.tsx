@@ -86,6 +86,22 @@ export const AdvancedFilterBar = () => {
                         </select>
                     </div>
 
+                    {/* Masquer Virements Internes */}
+                    <div className="space-y-2 flex flex-col justify-end">
+                        <label className="flex items-center gap-2 cursor-pointer p-3 bg-slate-950 border border-slate-800 rounded-lg hover:border-slate-700 transition-colors">
+                            <input
+                                type="checkbox"
+                                checked={filters.hideInternalTransfers || false}
+                                onChange={(e) => setFilters({ hideInternalTransfers: e.target.checked })}
+                                className="w-4 h-4 text-blue-600 bg-slate-950 border-slate-700 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                                <span className="text-sm text-slate-300 font-medium">Masquer virements internes</span>
+                                <p className="text-xs text-slate-500 mt-0.5">Afficher uniquement les flux externes</p>
+                            </div>
+                        </label>
+                    </div>
+
                     {/* Actions */}
                     <div className="flex items-end gap-2">
                         <button
