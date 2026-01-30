@@ -17,7 +17,7 @@ const getHslColor = (variable: string) => {
 };
 
 // Import BankRightPanel
-import { BankRightPanel } from '@/components/finance/BankRightPanel';
+
 import { BudgetManager } from '@/components/finance/BudgetManager';
 
 export default function FinanceDashboard() {
@@ -111,6 +111,9 @@ export default function FinanceDashboard() {
 
             if (hideInternal) {
                 if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
+                // Fallback for unclassified internal transfers
+                const desc = t.description.toLowerCase();
+                if (desc.includes('virement interne') || desc.includes('virement entre vos comptes')) return false;
             }
             if (accountIdParam) {
                 return t.accountId === accountIdParam;
@@ -425,10 +428,7 @@ export default function FinanceDashboard() {
                 {/* Closing Main Content Area via flex-1 div end */}
             </div>
 
-            {/* Right Panel - Hidden on small mobile, visible on desktop */}
-            <div className="hidden lg:block w-[300px] border-l border-border h-full bg-card/50 backdrop-blur-sm">
-                <BankRightPanel />
-            </div>
+
         </div>
     );
 }

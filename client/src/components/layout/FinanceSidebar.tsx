@@ -1,4 +1,4 @@
-import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building, Download } from 'lucide-react'
+import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building, Download, Tag, FileJson, FileText } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '@/components/language-provider'
 import { useUIStore } from '@/store/uiStore'
@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/store/financeStore'
 import { useFinance } from '@/hooks/useFinance';
 import { useEffect, useState } from 'react'
 import { BankFormModal } from '../finance/BankFormModal'
+import { CategoryManager } from '../finance/CategoryManager'
 
 export function FinanceSidebar() {
     const { t } = useLanguage()
@@ -19,6 +20,7 @@ export function FinanceSidebar() {
 
     const [expandedBanks, setExpandedBanks] = useState<Record<string, boolean>>({});
     const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
     // Initial expansion logic
     useEffect(() => {
@@ -108,11 +110,20 @@ export function FinanceSidebar() {
                 {!isCollapsed && (
                     <div className="px-3 flex items-center justify-between mb-2">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Banques</h3>
-                        <div className="flex items-center gap-1">
-                            <Link to="/finance/import" className="hover:bg-muted p-1 rounded-full transition-colors hidden group-hover:block" title="Importer OFX">
+                        <div className="flex items-center gap-1 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setIsCategoryModalOpen(true)} className="hover:bg-muted p-1 rounded-md transition-colors" title="Catégories">
+                                <Tag className="h-3 w-3" />
+                            </button>
+                            <button onClick={() => useFinanceStore.getState().exportData?.('json')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export JSON">
+                                <FileJson className="h-3 w-3" />
+                            </button>
+                            <button onClick={() => useFinanceStore.getState().exportData?.('csv')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export CSV">
+                                <FileText className="h-3 w-3" />
+                            </button>
+                            <Link to="/finance/import" className="hover:bg-muted p-1 rounded-md transition-colors" title="Importer OFX">
                                 <Download className="h-3 w-3" />
                             </Link>
-                            <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-1 rounded-full transition-colors" title="Ajouter une banque">
+                            <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-1 rounded-md transition-colors" title="Ajouter une banque">
                                 <Plus className="h-3 w-3" />
                             </button>
                         </div>
@@ -251,12 +262,20 @@ export function FinanceSidebar() {
                     <Settings className="h-5 w-5 text-muted-foreground" />
                 </Link>
             </div>
-
+            {/* Modals */}
             <BankFormModal
                 isOpen={isBankModalOpen}
                 onClose={() => setIsBankModalOpen(false)}
                 onSubmit={handleCreateBank}
             />
+
+            {isCategoryModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <CategoryManager
+                        onClose={() => setIsCategoryModalOpen(false)}
+                    />
+                </div>
+            )}
         </div>
     )
 }
