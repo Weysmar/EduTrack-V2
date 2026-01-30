@@ -13,7 +13,7 @@ import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
-import { BankRightPanel } from '@/components/finance/BankRightPanel'
+
 
 export function FinanceLayout() {
     const { t } = useLanguage()
@@ -101,9 +101,7 @@ export function FinanceLayout() {
                     <Outlet />
                 </main>
 
-                <aside className="hidden xl:flex w-[300px] border-l border-border bg-card">
-                    <BankRightPanel />
-                </aside>
+
             </div>
         </div>
     )
