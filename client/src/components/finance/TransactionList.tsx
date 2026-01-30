@@ -2,9 +2,10 @@
 // import { fr } from 'date-fns/locale';
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles, ArrowRightLeft } from 'lucide-react';
 import { Transaction } from '@/types/finance';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
+import { useFinanceStore } from '@/store/financeStore';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -16,6 +17,17 @@ interface TransactionListProps {
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const { t, language } = useLanguage();
+    const { filters } = useFinanceStore();
+
+    // Filter internal transfers if hideInternalTransfers is enabled
+    const filteredTransactions = useMemo(() => {
+        if (!filters.hideInternalTransfers) return transactions;
+
+        return transactions.filter(tx =>
+            tx.classification !== 'INTERNAL_INTRA_BANK' &&
+            tx.classification !== 'INTERNAL_INTER_BANK'
+        );
+    }, [transactions, filters.hideInternalTransfers]);
 
     const handleEnrich = async (id: string) => {
         if (!onEnrich) return;
@@ -24,10 +36,12 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         setLoadingMap(prev => ({ ...prev, [id]: false }));
     };
 
-    if (transactions.length === 0) {
+    if (filteredTransactions.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('finance.chart.activity')} - {t('item.noContent')}
+                {filters.hideInternalTransfers
+                    ? "Aucune transaction externe trouvée"
+                    : `${t('finance.chart.activity')} - ${t('item.noContent')}`}
             </div>
         );
     }
@@ -55,7 +69,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
 
     return (
         <div className="space-y-4">
-            {transactions.map((tx) => (
+            {filteredTransactions.map((tx) => (
                 <div
                     key={tx.id}
                     className="bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border overflow-hidden"

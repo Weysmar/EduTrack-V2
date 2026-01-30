@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getBanks, createBank, updateBank, deleteBank } from '../controllers/bankController';
+import { getBanks, createBank, updateBank, deleteBank, archiveBank, unarchiveBank } from '../controllers/bankController';
 import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData } from '../controllers/financeController';
 import {
     getBudgets,
@@ -32,6 +32,8 @@ router.get('/banks', getBanks);
 router.post('/banks', createBank);
 router.put('/banks/:id', updateBank);
 router.delete('/banks/:id', deleteBank);
+router.put('/banks/:id/archive', archiveBank);
+router.put('/banks/:id/unarchive', unarchiveBank);
 
 // Budget Routes
 router.get('/budgets', getBudgets);

@@ -5,7 +5,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useFinanceStore } from '@/store/financeStore';
 
 interface Props {
     transactions?: Transaction[];
@@ -13,8 +14,18 @@ interface Props {
 
 export function TransactionList({ transactions = [] }: Props) {
     const [search, setSearch] = useState('');
+    const { filters } = useFinanceStore();
 
-    const filtered = transactions.filter(t =>
+    // Filter internal transfers if enabled
+    const filteredByType = useMemo(() => {
+        if (!filters.hideInternalTransfers) return transactions;
+        return transactions.filter(t =>
+            t.classification !== 'INTERNAL_INTRA_BANK' &&
+            t.classification !== 'INTERNAL_INTER_BANK'
+        );
+    }, [transactions, filters.hideInternalTransfers]);
+
+    const filtered = filteredByType.filter(t =>
         t.description.toLowerCase().includes(search.toLowerCase()) ||
         t.amount.toString().includes(search)
     );

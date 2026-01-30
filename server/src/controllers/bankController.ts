@@ -101,3 +101,45 @@ export const deleteBank = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Failed to delete bank' });
     }
 };
+
+export const archiveBank = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const profileId = req.user!.id;
+
+        // Verify ownership
+        const bank = await prisma.bank.findUnique({ where: { id } });
+        if (!bank || bank.profileId !== profileId) {
+            return res.status(404).json({ error: 'Bank not found' });
+        }
+
+        const updated = await prisma.bank.update({
+            where: { id },
+            data: { active: false }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to archive bank' });
+    }
+};
+
+export const unarchiveBank = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const profileId = req.user!.id;
+
+        // Verify ownership
+        const bank = await prisma.bank.findUnique({ where: { id } });
+        if (!bank || bank.profileId !== profileId) {
+            return res.status(404).json({ error: 'Bank not found' });
+        }
+
+        const updated = await prisma.bank.update({
+            where: { id },
+            data: { active: true }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to unarchive bank' });
+    }
+};

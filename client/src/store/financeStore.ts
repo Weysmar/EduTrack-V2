@@ -9,6 +9,7 @@ interface FinanceFilters {
     categoryId: string | null;
     minAmount?: number | null;
     maxAmount?: number | null;
+    hideInternalTransfers?: boolean;
 }
 
 interface FinanceState {
@@ -125,7 +126,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         month: new Date().getMonth(),
         year: new Date().getFullYear(),
         accountId: null,
-        categoryId: null
+        categoryId: null,
+        hideInternalTransfers: false
     },
 
     fetchTransactions: async () => {
