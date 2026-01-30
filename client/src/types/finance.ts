@@ -6,7 +6,7 @@ export type TransactionClassification = 'EXTERNAL' | 'INTERNAL_INTRA_BANK' | 'IN
 export interface Bank {
     id: string;
     name: string;
-    swifBic?: string;
+    swiftBic?: string;
     color: string;
     icon?: string;
     active: boolean;

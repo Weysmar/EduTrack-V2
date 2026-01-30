@@ -320,12 +320,14 @@ model Transaction {
   linkedAccountId String? // Pour virements internes
   category    String?
   
+  fitId       String? // FITID unique du fichier OFX pour meilleure détection doublons
   importSource String?
   metadata    Json?
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  @@unique([accountId, fitId])
   @@unique([accountId, date, amount, description])
   @@index([accountId])
   @@index([date])

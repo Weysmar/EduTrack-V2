@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { ImportService } from '../services/importService';
 import { categorizerService } from '../services/categorizerService';
+import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 import fs from 'fs';
 
@@ -512,5 +513,60 @@ export const exportData = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Export Error:', error);
         res.status(500).json({ error: 'Failed to export data' });
+    }
+};
+
+// --- Bulk Reclassification ---
+export const reclassifyAllTransactions = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+
+        // Fetch all UNKNOWN or low-confidence transactions
+        const transactions = await prisma.transaction.findMany({
+            where: {
+                account: { bank: { profileId } },
+                OR: [
+                    { classification: 'UNKNOWN' },
+                    { classificationConfidence: { lt: 0.5 } }
+                ]
+            },
+            include: {
+                account: {
+                    include: { bank: true }
+                }
+            }
+        });
+
+        let updated = 0;
+        for (const tx of transactions) {
+            // Need bankId. tx.account.bankId is available via include
+            const bankId = tx.account.bankId;
+
+            const result = await ClassificationService.classifyTransaction(
+                profileId,
+                tx.description,
+                tx.amount.toNumber(),
+                bankId,
+                tx.beneficiaryIban
+            );
+
+            // Only update if confidence improved
+            if (result.confidenceScore > (tx.classificationConfidence || 0)) {
+                await prisma.transaction.update({
+                    where: { id: tx.id },
+                    data: {
+                        classification: result.classification,
+                        classificationConfidence: result.confidenceScore,
+                        linkedAccountId: result.linkedAccountId
+                    }
+                });
+                updated++;
+            }
+        }
+
+        res.json({ success: true, updated, total: transactions.length });
+    } catch (error) {
+        console.error('Reclassification Error:', error);
+        res.status(500).json({ error: 'Failed to reclassify transactions' });
     }
 };
