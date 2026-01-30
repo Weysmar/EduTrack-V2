@@ -11,11 +11,12 @@ import { ClassificationBadge } from '@/components/finance/ClassificationBadge';
 import { ImportHistory } from '@/components/finance/ImportHistory';
 
 export default function ImportPage() {
-    const { banks, isLoadingBanks } = useFinance(); // Bank selection
+    const { banks, accounts, isLoadingBanks } = useFinance(); // Bank and Accounts
     const { previewImport, confirmImport, isPreviewing, isConfirming } = useFinanceImport();
     const navigate = useNavigate();
 
     const [selectedBankId, setSelectedBankId] = useState<string>('');
+    const [selectedAccountId, setSelectedAccountId] = useState<string>('');
     const [previewData, setPreviewData] = useState<ImportPreviewData | null>(null);
     const [file, setFile] = useState<File | null>(null);
 
@@ -53,7 +54,11 @@ export default function ImportPage() {
         }
 
         try {
-            const data = await previewImport({ file, bankId: selectedBankId });
+            const data = await previewImport({
+                file,
+                bankId: selectedBankId,
+                accountId: selectedAccountId || undefined
+            });
             setPreviewData(data);
             setStep(2);
         } catch (err) {
@@ -137,6 +142,24 @@ export default function ImportPage() {
                                 </p>
                             )}
                         </div>
+
+                        {/* Account Selector (Optional but Recommended) */}
+                        {selectedBankId && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <label className="text-slate-300 font-medium">Compte cible (Optionnel)</label>
+                                <p className="text-xs text-slate-500">Sélectionnez un compte pour forcer l'import dessus, sinon FinanceTrack essaiera de le détecter.</p>
+                                <select
+                                    value={selectedAccountId}
+                                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                                    className="w-full md:w-1/2 p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                                >
+                                    <option value="">Détection automatique</option>
+                                    {accounts?.filter(a => a.bankId === selectedBankId).map(account => (
+                                        <option key={account.id} value={account.id}>{account.name} ({account.currency})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {/* Dropzone */}
                         <div

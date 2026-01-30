@@ -42,7 +42,7 @@ export class ImportService {
     /**
      * Preview Step: Parse and Match
      */
-    static async generatePreview(profileId: string, filePath: string, targetBankId: string): Promise<ImportPreview> {
+    static async generatePreview(profileId: string, filePath: string, targetBankId: string, targetAccountId?: string): Promise<ImportPreview> {
         const fileBuffer = fs.readFileSync(filePath);
         const ext = path.extname(filePath).toLowerCase();
 
@@ -77,30 +77,38 @@ export class ImportService {
             }
         });
 
+        // Pre-fetch target account if specified
+        let forcedAccount: Account | undefined;
+        if (targetAccountId) {
+            forcedAccount = existingAccounts.find(a => a.id === targetAccountId);
+        }
+
         // 3. Process Accounts found in File and Match them
         for (const accountData of parsedData.accounts) {
-            // For CSV/XLSX, we often don't have a real account number in the file
-            // We might use "CSV_IMPORT" as ID. In that case, we should probably try to match 
-            // the ONLY account of that bank if it exists, or ask user?
-            // Current logic: Match by strict ID.
-            // Improvement: If only 1 account exists in DB for this bank, and imported ID is generic "CSV_IMPORT", match it?
+            let match = null;
 
-            let match = existingAccounts.find(dbAcc => {
-                return (dbAcc.iban === accountData.accountId) || (dbAcc.accountNumber === accountData.accountId);
-            });
+            if (forcedAccount) {
+                // FORCE MATCH to user selection
+                match = forcedAccount;
+            } else {
+                // Auto-detection logic
+                match = existingAccounts.find(dbAcc => {
+                    return (dbAcc.iban === accountData.accountId) || (dbAcc.accountNumber === accountData.accountId);
+                });
 
-            // Fallback: If only 1 account exists in DB for this bank, and it has NO IBAN/AccNum,
-            // assume it's the target for the first import.
-            if (!match && accountData.accountId) {
-                if (existingAccounts.length === 1 && !existingAccounts[0].accountNumber && !existingAccounts[0].iban) {
-                    match = existingAccounts[0];
+                // Fallback: If only 1 account exists in DB for this bank, and it has NO IBAN/AccNum,
+                // assume it's the target for the first import.
+                if (!match && accountData.accountId) {
+                    if (existingAccounts.length === 1 && !existingAccounts[0].accountNumber && !existingAccounts[0].iban) {
+                        match = existingAccounts[0];
+                    }
                 }
-            }
 
-            // Fallback for generic imports
-            if (!match && (accountData.accountId === 'CSV_IMPORT' || accountData.accountId === 'XLSX_IMPORT')) {
-                if (existingAccounts.length === 1) {
-                    match = existingAccounts[0]; // Auto-assign to the only account
+                // Fallback for generic imports
+                if (!match && (accountData.accountId === 'CSV_IMPORT' || accountData.accountId === 'XLSX_IMPORT')) {
+                    if (existingAccounts.length === 1) {
+                        match = existingAccounts[0];
+                    }
                 }
             }
 

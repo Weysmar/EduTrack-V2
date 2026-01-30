@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 export const previewImport = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        const { bankId } = req.body;
+        const { bankId, accountId } = req.body;
         const file = req.file;
 
         if (!file) {
@@ -27,7 +27,7 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'Bank ID is required' });
         }
 
-        const previewData = await ImportService.generatePreview(profileId, file.path, bankId);
+        const previewData = await ImportService.generatePreview(profileId, file.path, bankId, accountId);
 
         // Clean up file after processing (or keep it if needed for Step 2? 
         // Ideally we should delete it and re-upload or move it to a temp folder. 
