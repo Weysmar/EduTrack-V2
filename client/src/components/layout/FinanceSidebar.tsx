@@ -1,4 +1,4 @@
-import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building } from 'lucide-react'
+import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building, Download } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '@/components/language-provider'
 import { useUIStore } from '@/store/uiStore'
@@ -108,9 +108,14 @@ export function FinanceSidebar() {
                 {!isCollapsed && (
                     <div className="px-3 flex items-center justify-between mb-2">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Banques</h3>
-                        <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-1 rounded-full transition-colors">
-                            <Plus className="h-3 w-3" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <Link to="/finance/import" className="hover:bg-muted p-1 rounded-full transition-colors hidden group-hover:block" title="Importer OFX">
+                                <Download className="h-3 w-3" />
+                            </Link>
+                            <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-1 rounded-full transition-colors" title="Ajouter une banque">
+                                <Plus className="h-3 w-3" />
+                            </button>
+                        </div>
                     </div>
                 )}
 
