@@ -89,6 +89,14 @@ export class ImportService {
                 return (dbAcc.iban === accountData.accountId) || (dbAcc.accountNumber === accountData.accountId);
             });
 
+            // Fallback: If only 1 account exists in DB for this bank, and it has NO IBAN/AccNum,
+            // assume it's the target for the first import.
+            if (!match && accountData.accountId) {
+                if (existingAccounts.length === 1 && !existingAccounts[0].accountNumber && !existingAccounts[0].iban) {
+                    match = existingAccounts[0];
+                }
+            }
+
             // Fallback for generic imports
             if (!match && (accountData.accountId === 'CSV_IMPORT' || accountData.accountId === 'XLSX_IMPORT')) {
                 if (existingAccounts.length === 1) {
