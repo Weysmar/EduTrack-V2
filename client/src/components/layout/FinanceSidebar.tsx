@@ -12,14 +12,14 @@ import { CategoryManager } from '../finance/CategoryManager'
 
 export function FinanceSidebar() {
     const { t } = useLanguage()
-    const { isCollapsed, toggleCollapse } = useUIStore()
+    const { isCollapsed, toggleCollapse, isBankModalOpen, closeBankModal, openBankModal } = useUIStore()
     // Use useFinance hook directly for better sync with TanStack Query
     const { banks, accounts, createBank } = useFinance()
     const location = useLocation()
     const logoSrc = '/logo.svg'
 
     const [expandedBanks, setExpandedBanks] = useState<Record<string, boolean>>({});
-    const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+    // Local state for Category only
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
     // Initial expansion logic
@@ -31,20 +31,13 @@ export function FinanceSidebar() {
         }
     }, [banks]);
 
-    // Listen for dashboard "Add Bank" event
-    useEffect(() => {
-        const handleOpenBankModal = () => setIsBankModalOpen(true);
-        window.addEventListener('open-bank-manager', handleOpenBankModal);
-        return () => window.removeEventListener('open-bank-manager', handleOpenBankModal);
-    }, []);
-
     const toggleBank = (bankId: string) => {
         setExpandedBanks(prev => ({ ...prev, [bankId]: !prev[bankId] }));
     };
 
     const handleCreateBank = async (data: any) => {
         await createBank(data);
-        setIsBankModalOpen(false);
+        closeBankModal();
     };
 
     // Group accounts by Bank
@@ -130,7 +123,7 @@ export function FinanceSidebar() {
                             <Link to="/finance/import" className="hover:bg-muted p-1 rounded-md transition-colors" title="Importer OFX">
                                 <Download className="h-3 w-3" />
                             </Link>
-                            <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-1 rounded-md transition-colors" title="Ajouter une banque">
+                            <button onClick={openBankModal} className="hover:bg-muted p-1 rounded-md transition-colors" title="Ajouter une banque">
                                 <Plus className="h-3 w-3" />
                             </button>
                         </div>
@@ -139,7 +132,7 @@ export function FinanceSidebar() {
 
                 {isCollapsed && (
                     <div className="flex justify-center mb-2">
-                        <button onClick={() => setIsBankModalOpen(true)} className="hover:bg-muted p-2 rounded-full transition-colors">
+                        <button onClick={openBankModal} className="hover:bg-muted p-2 rounded-full transition-colors">
                             <Plus className="h-4 w-4" />
                         </button>
                     </div>
@@ -272,7 +265,7 @@ export function FinanceSidebar() {
             {/* Modals */}
             <BankFormModal
                 isOpen={isBankModalOpen}
-                onClose={() => setIsBankModalOpen(false)}
+                onClose={closeBankModal}
                 onSubmit={handleCreateBank}
             />
 

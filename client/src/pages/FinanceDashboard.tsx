@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
+import { useUIStore } from '@/store/uiStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload, Filter, X } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
@@ -111,6 +112,9 @@ export default function FinanceDashboard() {
 
             if (hideInternal) {
                 if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
+                // Check linked account ID (System detected internal transfer)
+                if (t.linkedAccountId) return false;
+
                 // Fallback for unclassified internal transfers
                 const desc = t.description.toLowerCase();
                 if (desc.includes('virement interne') ||
@@ -255,15 +259,7 @@ export default function FinanceDashboard() {
                                 </p>
                             </div>
                             <button
-                                onClick={() => {
-                                    // Trigger BankRightPanel manager modal via local event or just guide user
-                                    // For now, we'll just focus the right panel if possible, but simplest is 
-                                    // to rely on the panel being visible or adding a visual cue.
-                                    // Actually, BankRightPanel has its own internal state for the modal.
-                                    // We can emit a custom event or use a global UI store. 
-                                    // Let's use a custom event for simplicity for this feature gap.
-                                    window.dispatchEvent(new CustomEvent('open-bank-manager'));
-                                }}
+                                onClick={() => useUIStore.getState().openBankModal()}
                                 className="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-blue-50 transition"
                             >
                                 Ajouter une banque
@@ -432,6 +428,6 @@ export default function FinanceDashboard() {
             </div>
 
 
-        </div>
+        </div >
     );
 }
