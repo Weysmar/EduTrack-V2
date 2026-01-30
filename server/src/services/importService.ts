@@ -122,6 +122,7 @@ export class ImportService {
                         const fitIdCheck = await prisma.transaction.findFirst({
                             where: {
                                 accountId: accountDbId,
+                                // @ts-ignore - Field exists in schema but types may lag
                                 fitId: tx.fitId
                             }
                         });
@@ -230,8 +231,14 @@ export class ImportService {
                     const match = t.description.match(ibanRegex);
                     const extractedIban = match ? match[0].replace(/\s/g, '') : null;
 
+                    const accId = accountMap.get(t.accountNumber);
+                    if (!accId) {
+                        console.warn(`[Import] Skipping transaction: Account number '${t.accountNumber}' not found in map. Available: ${Array.from(accountMap.keys()).join(', ')}`);
+                        return null;
+                    }
+
                     return {
-                        accountId: accountMap.get(t.accountNumber)!,
+                        accountId: accId,
                         amount: t.amount,
                         date: t.date,
                         description: t.description,
@@ -242,12 +249,14 @@ export class ImportService {
                         metadata: { fitId: t.importId }, // Keep in metadata for backward compatibility
                         importSource: 'IMPORT'
                     };
-                });
+                })
+                .filter((t): t is NonNullable<typeof t> => t !== null);
 
             let count = 0;
             if (transactionsToCreate.length > 0) {
                 const batch = await tx.transaction.createMany({
-                    data: transactionsToCreate
+                    data: transactionsToCreate,
+                    skipDuplicates: true // Prevent P2002 errors if duplicates exist
                 });
                 count = batch.count;
             }

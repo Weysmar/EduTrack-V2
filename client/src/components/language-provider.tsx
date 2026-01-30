@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useState } from "react"
+﻿import { createContext, useContext, useEffect, useState, useMemo } from "react"
 
 export type Language = "en" | "fr" | "mc"
 
@@ -1568,11 +1568,11 @@ export function LanguageProvider({
         return text
     }
 
-    const value = {
+    const value = useMemo(() => ({
         language,
         setLanguage,
         t
-    }
+    }), [language])
 
     return (
         <LanguageProviderContext.Provider value={value} {...props}>

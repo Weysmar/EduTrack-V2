@@ -1,11 +1,8 @@
-// import { format } from 'date-fns'; // Removed for stability
-// import { fr } from 'date-fns/locale';
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles, ArrowRightLeft, AlertCircle, RefreshCw } from 'lucide-react';
 import { Transaction } from '@/types/finance';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
-import { useFinanceStore } from '@/store/financeStore';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -17,17 +14,7 @@ interface TransactionListProps {
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const { t, language } = useLanguage();
-    const { filters } = useFinanceStore();
-
-    // Filter internal transfers if hideInternalTransfers is enabled
-    const filteredTransactions = useMemo(() => {
-        if (!filters.hideInternalTransfers) return transactions;
-
-        return transactions.filter(tx =>
-            tx.classification !== 'INTERNAL_INTRA_BANK' &&
-            tx.classification !== 'INTERNAL_INTER_BANK'
-        );
-    }, [transactions, filters.hideInternalTransfers]);
+    const [isReclassifying, setIsReclassifying] = useState(false);
 
     const handleEnrich = async (id: string) => {
         if (!onEnrich) return;
@@ -36,22 +23,30 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         setLoadingMap(prev => ({ ...prev, [id]: false }));
     };
 
-    if (filteredTransactions.length === 0) {
-        return (
-            <div className="text-center py-8 text-muted-foreground">
-                {filters.hideInternalTransfers
-                    ? "Aucune transaction externe trouvée"
-                    : `${t('finance.chart.activity')} - ${t('item.noContent')}`}
-            </div>
-        );
-    }
+    const handleReclassifyAll = async () => {
+        try {
+            setIsReclassifying(true);
+            const res = await fetch('/api/finance/transactions/reclassify-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success && data.updated > 0) {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsReclassifying(false);
+        }
+    };
 
     // Helper for safe date formatting
     const formatDate = (date: Date | string) => {
         try {
             return new Date(date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
         } catch (e) {
-            return 'Invalid Date';
+            return 'Date invalide';
         }
     };
 
@@ -67,27 +62,13 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         return <ArrowRightLeft className="h-5 w-5" />; // TRANSFER
     };
 
-    const [isReclassifying, setIsReclassifying] = useState(false);
-
-    const handleReclassifyAll = async () => {
-        try {
-            setIsReclassifying(true);
-            const res = await fetch('/api/finance/transactions/reclassify-all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await res.json();
-            if (data.success && data.updated > 0) {
-                // Refresh logic would go here, for now we just show a toast or rely on parent reload
-                // Assuming useFinance invalidates queries on focus or manually
-                window.location.reload(); // Simple brute force for now or use queryClient
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsReclassifying(false);
-        }
-    };
+    if (!transactions || transactions.length === 0) {
+        return (
+            <div className="text-center py-8 text-muted-foreground">
+                {t('finance.chart.activity')} - {t('item.noContent')}
+            </div>
+        );
+    }
 
     const unknownCount = transactions.filter(t => t.classification === 'UNKNOWN').length;
 
@@ -113,7 +94,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
             )}
 
             <div className="space-y-2">
-                {filteredTransactions.map((tx) => (
+                {transactions.map((tx) => (
                     <div
                         key={tx.id}
                         className="bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border overflow-hidden"
