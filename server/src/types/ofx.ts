@@ -14,6 +14,7 @@ export interface OfxAccount {
     balance?: number;
     balanceDate?: Date;
     transactions: OfxTransaction[];
+    swift?: string | null; // Detected SWIFT/BIC code
 }
 
 export interface OfxData {

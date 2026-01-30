@@ -68,13 +68,17 @@ export class OfxParserService {
                                 });
                             });
 
+                            // Extract SWIFT/BIC if possible
+                            const detectedSwift = OfxParserService.extractSwiftFromInstitutionId(bankId);
+
                             extractedAccounts.push({
                                 accountId,
                                 bankId,
                                 currency,
                                 balance,
                                 balanceDate,
-                                transactions
+                                transactions,
+                                swift: detectedSwift // Add the detected SWIFT code
                             });
 
                         } catch (err) {
@@ -138,5 +142,30 @@ export class OfxParserService {
         }
 
         return new Date(Date.UTC(year, month, day, hours, minutes, seconds));
+    }
+    public static extractSwiftFromInstitutionId(institutionId: string): string | null {
+        if (!institutionId) return null;
+
+        // Some OFX files put the BIC directly in the FID/BankID
+        if (/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(institutionId)) {
+            return institutionId;
+        }
+
+        // Common French Bank codes mapping (approximate)
+        const mapping: Record<string, string> = {
+            '30003': 'SOGEFRPP', // SG
+            '30004': 'BNPAFRPP', // BNP
+            '30002': 'AGRIFRPP', // CA
+            '30006': 'CCBPFRPP', // Banque Pop
+            '10278': 'CMCIFRPP', // CCM
+            '20041': 'PSSTFRPP', // La Banque Postale
+            '18206': 'CEPAFRPP', // CE
+            '30066': 'CICAFRPP', // CIC
+            '14518': 'CRLYFRPP', // LCL
+            '40618': 'BOUSFRPP', // Boursorama (old code)
+            '44053': 'ARKEFRPP', // Fortuneo
+        };
+
+        return mapping[institutionId] || null;
     }
 }

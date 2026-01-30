@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useFinance, useFinanceImport } from '@/hooks/useFinance';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, ArrowRight, Table as TableIcon, FileSpreadsheet } from 'lucide-react';
@@ -60,6 +60,18 @@ export default function ImportPage() {
             console.error(err);
         }
     };
+
+    // Auto-select bank if SWIFT is detected
+    useEffect(() => {
+        if ((previewData as any)?.accounts?.[0]?.swift) {
+            const swift = (previewData as any).accounts[0].swift;
+            const matchingBank = banks.find(b => b.swiftBic === swift);
+            if (matchingBank) {
+                setSelectedBankId(matchingBank.id);
+                toast.success(`Banque détectée: ${matchingBank.name} `);
+            }
+        }
+    }, [previewData, banks]);
 
     const handleConfirm = async () => {
         if (!previewData || !selectedBankId) return;
@@ -295,37 +307,39 @@ export default function ImportPage() {
                             className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                         >
                             {isConfirming ? 'Importation...' : `Confirmer l'import (${previewData.summary.newTransactions})`}
-                        </button>
-                    </div>
-                </div>
+                        </button >
+                    </div >
+                </div >
             )}
 
             {/* --- STEP 3: SUCCESS --- */}
-            {step === 3 && (
-                <div className="flex flex-col items-center justify-center py-12 animate-in zoom-in-95">
-                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle className="w-8 h-8 text-green-400" />
+            {
+                step === 3 && (
+                    <div className="flex flex-col items-center justify-center py-12 animate-in zoom-in-95">
+                        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle className="w-8 h-8 text-green-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-100 mb-2">Import réussi !</h2>
+                        <p className="text-slate-400 mb-8 max-w-md text-center">
+                            Vos transactions ont été importées et classées.
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => navigate('/finance/dashboard')}
+                                className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg transition-colors"
+                            >
+                                Aller au Dashboard
+                            </button>
+                            <button
+                                onClick={reset}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                            >
+                                Importer un autre fichier
+                            </button>
+                        </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-100 mb-2">Import réussi !</h2>
-                    <p className="text-slate-400 mb-8 max-w-md text-center">
-                        Vos transactions ont été importées et classées.
-                    </p>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => navigate('/finance/dashboard')}
-                            className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg transition-colors"
-                        >
-                            Aller au Dashboard
-                        </button>
-                        <button
-                            onClick={reset}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                        >
-                            Importer un autre fichier
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

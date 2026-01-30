@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 // Fix: Import Account instead of FinancialAccount
 import { Bank, Account } from '@/types/finance';
-import { Plus, ChevronDown, ChevronRight, MoreVertical, CreditCard, Building2, Wallet, PiggyBank, Globe, Trash2, Edit2, Archive, Tag, Download } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, MoreVertical, CreditCard, Building2, Wallet, PiggyBank, Globe, Trash2, Edit2, Archive, Tag, Download, Calendar, Sparkles } from 'lucide-react';
 import { cn, maskIban } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { BankManager } from '@/components/finance/BankManager';
@@ -11,6 +11,13 @@ import { CategoryManager } from '@/components/finance/CategoryManager';
 
 const formatCurrency = (amount: number, currency = 'EUR') => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
+};
+
+const isNew = (createdAt: string | Date | undefined) => {
+    if (!createdAt) return false;
+    const created = new Date(createdAt).getTime();
+    const now = Date.now();
+    return (now - created) < 24 * 60 * 60 * 1000; // 24 hours
 };
 
 export const BankRightPanel: React.FC = () => {
@@ -175,6 +182,12 @@ export const BankRightPanel: React.FC = () => {
                                                         <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
                                                             {account.name}
                                                             {isAccArchived && <span className="ml-1 text-[9px] uppercase border border-slate-300 px-1 rounded text-slate-500">Arch.</span>}
+                                                            {!isAccArchived && isNew(account.createdAt) && (
+                                                                <span className="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-green-500/10 text-green-400 text-[9px] font-medium rounded-full border border-green-500/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+                                                                    <Sparkles className="w-2 h-2" />
+                                                                    Nouveau
+                                                                </span>
+                                                            )}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-baseline mt-0.5">
@@ -187,6 +200,19 @@ export const BankRightPanel: React.FC = () => {
                                                             </span>
                                                         )}
                                                     </div>
+                                                    {account.balanceDate && (
+                                                        <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-0.5 ml-0.5">
+                                                            <Calendar className="w-2.5 h-2.5 opacity-70" />
+                                                            <span>
+                                                                Maj : {new Date(account.balanceDate).toLocaleDateString('fr-FR', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 {/* Account Actions (On Hover) */}
                                                 <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 ml-1">

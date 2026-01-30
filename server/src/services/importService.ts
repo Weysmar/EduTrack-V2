@@ -117,33 +117,34 @@ export class ImportService {
                 // Duplication Check
                 let isDuplicate = false;
                 if (accountDbId) {
-                    // Robust check: Same day (ignore time), amount within tolerance, same description
-                    const dayStart = new Date(tx.date);
-                    dayStart.setHours(0, 0, 0, 0);
-                    const dayEnd = new Date(dayStart);
-                    dayEnd.setDate(dayEnd.getDate() + 1);
-
-                    const existingTx = await prisma.transaction.findFirst({
-                        where: {
-                            accountId: accountDbId,
-                            amount: { gte: tx.amount - 0.01, lte: tx.amount + 0.01 },
-                            date: { gte: dayStart, lt: dayEnd },
-                            description: tx.description
-                        }
-                    });
-
-                    // Stronger duplicate check if FITID is available (OFX)
-                    const fitIdCheck = tx.fitId ? await prisma.transaction.findFirst({
-                        where: {
-                            accountId: accountDbId,
-                            metadata: {
-                                path: ['fitId'],
-                                equals: tx.fitId
+                    // Priority 1: Check FITID if available (most reliable for OFX)
+                    if (tx.fitId) {
+                        const fitIdCheck = await prisma.transaction.findFirst({
+                            where: {
+                                accountId: accountDbId,
+                                fitId: tx.fitId
                             }
-                        }
-                    }) : null;
+                        });
+                        if (fitIdCheck) isDuplicate = true;
+                    }
 
-                    if (existingTx || fitIdCheck) isDuplicate = true;
+                    // Priority 2: Fallback to date/amount/description if no FITID or not found
+                    if (!isDuplicate) {
+                        const dayStart = new Date(tx.date);
+                        dayStart.setHours(0, 0, 0, 0);
+                        const dayEnd = new Date(dayStart);
+                        dayEnd.setDate(dayEnd.getDate() + 1);
+
+                        const existingTx = await prisma.transaction.findFirst({
+                            where: {
+                                accountId: accountDbId,
+                                amount: { gte: tx.amount - 0.01, lte: tx.amount + 0.01 },
+                                date: { gte: dayStart, lt: dayEnd },
+                                description: tx.description
+                            }
+                        });
+                        if (existingTx) isDuplicate = true;
+                    }
                 }
 
                 if (isDuplicate) {
@@ -235,9 +236,10 @@ export class ImportService {
                         date: t.date,
                         description: t.description,
                         beneficiaryIban: extractedIban, // Populated from description
+                        fitId: t.importId, // Store FITID directly in field
                         classification: t.classification,
                         classificationConfidence: t.confidence,
-                        metadata: { fitId: t.importId },
+                        metadata: { fitId: t.importId }, // Keep in metadata for backward compatibility
                         importSource: 'IMPORT'
                     };
                 });

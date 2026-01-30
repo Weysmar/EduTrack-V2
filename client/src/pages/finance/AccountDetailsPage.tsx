@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Calendar, Download } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { AccountFormModal } from '@/components/finance/AccountFormModal';
+import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
+import { Transaction } from '@/types/finance';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -12,6 +14,7 @@ export default function AccountDetailsPage() {
     const navigate = useNavigate();
     const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransaction } = useFinance();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
     const account = accounts.find(a => a.id === accountId);
 
@@ -52,6 +55,19 @@ export default function AccountDetailsPage() {
             } catch (error) {
                 // handled in hook
             }
+        }
+    };
+
+    const handleEditTransaction = (transaction: Transaction) => {
+        setEditingTransaction(transaction);
+    };
+
+    const handleSaveTransaction = async (transactionId: string, updates: Partial<Transaction>) => {
+        try {
+            await updateTransaction({ id: transactionId, data: updates });
+            toast.success('Transaction mise à jour');
+        } catch (error) {
+            toast.error('Erreur lors de la mise à jour');
         }
     };
 
@@ -135,10 +151,7 @@ export default function AccountDetailsPage() {
                     <TransactionList
                         transactions={accountTransactions}
                         onDelete={(id) => deleteTransaction(id)}
-                    // Edit is handled by TransactionList modal internally if passed, 
-                    // but here we might just want basics. 
-                    // Actually TransactionList usually takes onEdit to open a parent modal.
-                    // For now we'll just support delete. Feature 8 handles more tx management.
+                        onEdit={handleEditTransaction}
                     />
                 </div>
             </div>
@@ -153,6 +166,16 @@ export default function AccountDetailsPage() {
                 initialData={account}
                 bankId={account.bankId}
             />
+
+            {editingTransaction && (
+                <TransactionEditModal
+                    transaction={editingTransaction}
+                    accounts={accounts}
+                    isOpen={!!editingTransaction}
+                    onClose={() => setEditingTransaction(null)}
+                    onSave={handleSaveTransaction}
+                />
+            )}
         </div>
     );
 }
