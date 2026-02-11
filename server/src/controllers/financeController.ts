@@ -1,13 +1,11 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { ImportService } from '../services/importService';
 import { categorizerService } from '../services/categorizerService';
 import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 import fs from 'fs';
-
-const prisma = new PrismaClient();
 
 // --- Import Endpoints ---
 

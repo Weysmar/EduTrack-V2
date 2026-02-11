@@ -1,13 +1,8 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 import { socketService } from '../services/socketService';
 import { incrementAIGeneration } from './profileController';
-
-const prisma = new PrismaClient();
-
-interface AuthRequest extends Request {
-    user?: { id: string };
-}
 
 // GET /api/quizzes?courseId=xx
 export const getQuizzes = async (req: AuthRequest, res: Response) => {
@@ -23,7 +18,7 @@ export const getQuizzes = async (req: AuthRequest, res: Response) => {
         });
         res.json(quizzes);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching quizzes', error });
+        res.status(500).json({ message: 'Error fetching quizzes', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -37,7 +32,7 @@ export const getQuiz = async (req: AuthRequest, res: Response) => {
         if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
         res.json(quiz);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching quiz', error });
+        res.status(500).json({ message: 'Error fetching quiz', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -74,7 +69,7 @@ export const createQuiz = async (req: AuthRequest, res: Response) => {
         res.status(201).json(quiz);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error creating quiz', error });
+        res.status(500).json({ message: 'Error creating quiz', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -91,7 +86,7 @@ export const deleteQuiz = async (req: AuthRequest, res: Response) => {
         socketService.emitToProfile(req.user!.id, 'quiz:deleted', { id: quiz.id, courseId: quiz.courseId });
         res.json({ message: 'Quiz deleted' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting quiz', error });
+        res.status(500).json({ message: 'Error deleting quiz', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -122,6 +117,6 @@ export const submitQuizResult = async (req: AuthRequest, res: Response) => {
         res.json({ message: 'Score submitted', bestScore: updated ? score : quiz.bestScore });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error submitting result', error });
+        res.status(500).json({ message: 'Error submitting result', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };

@@ -1,13 +1,11 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { incrementAIGeneration } from './profileController';
 import mammoth from 'mammoth';
 
 const pdfParse = require('pdf-parse');
-
-const prisma = new PrismaClient();
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
 Output MUST be valid Mermaid mindmap syntax ONLY. Do not include explanations or markdown code blocks.

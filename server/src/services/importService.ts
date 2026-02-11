@@ -1,4 +1,5 @@
-import { PrismaClient, TransactionClassification, Account, Transaction } from '@prisma/client';
+import { TransactionClassification, Account, Transaction } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { OfxParserService } from './ofxParserService';
 import { CsvParserService } from './csvParserService';
 import { XlsxParserService } from './xlsxParserService';
@@ -6,8 +7,6 @@ import { ClassificationService } from './classificationService';
 import fs from 'fs';
 import path from 'path';
 import { OfxData, OfxAccount, OfxTransaction } from '../types/ofx';
-
-const prisma = new PrismaClient();
 
 // Types for the Preview Step
 export interface ImportPreview {

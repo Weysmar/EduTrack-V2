@@ -1,8 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { AuthRequest } from './auth';
-
-const prisma = new PrismaClient();
 
 const DAILY_AI_LIMIT = 100;
 

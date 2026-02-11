@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { AnalyticsController } from '../controllers/analyticsController';
-// import { authenticate } from '../middleware/auth'; 
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
+
+// Protect all analytics routes
+router.use(authenticate);
 
 // Retrieve Weekly Goals
 router.get('/goals', AnalyticsController.getWeeklyGoals);

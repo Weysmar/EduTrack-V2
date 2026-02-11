@@ -1,18 +1,8 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { incrementAIGeneration } from './profileController';
-
-const prisma = new PrismaClient();
-
-interface AuthRequest extends Request {
-    user?: { id: string };
-    headers: {
-        'x-gemini-api-key'?: string;
-        'x-perplexity-api-key'?: string;
-        [key: string]: any;
-    };
-}
 
 export const generatePlan = async (req: AuthRequest, res: Response) => {
     try {

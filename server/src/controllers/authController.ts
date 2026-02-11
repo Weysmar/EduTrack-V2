@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
 
 export const register = async (req: Request, res: Response) => {
     try {
@@ -38,7 +36,7 @@ export const register = async (req: Request, res: Response) => {
 
         res.status(201).json({ token, user });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -76,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
 
         res.json({ token, user: userWithoutPassword });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 

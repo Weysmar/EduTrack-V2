@@ -11,6 +11,18 @@ import { socketService } from './services/socketService';
 
 dotenv.config();
 
+// SEC-05: Validate critical environment variables at startup
+if (process.env.NODE_ENV === 'production') {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        console.error('FATAL: JWT_SECRET must be defined and at least 32 characters long in production.');
+        process.exit(1);
+    }
+    if (!process.env.DATABASE_URL) {
+        console.error('FATAL: DATABASE_URL must be defined in production.');
+        process.exit(1);
+    }
+}
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -29,17 +41,22 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded by other origins
     frameguard: false // Disable X-Frame-Options to allow embedding
 }));
+// SEC-03: CORS whitelist — use CORS_ORIGIN env var (comma-separated) in production
+const allowedOrigins = (process.env.CORS_ORIGIN || '*').split(',').map(o => o.trim());
+
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        // Allow all origins dynamically (reflect request origin)
-        // In production, you might want to restrict this to specific domains
-        return callback(null, true);
+        // In dev, allow all. In production, enforce the whitelist.
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
     },
     credentials: true
 }));
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression());

@@ -1,13 +1,8 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 import { storageService } from '../services/storageService';
 import { socketService } from '../services/socketService';
-
-const prisma = new PrismaClient();
-interface AuthRequest extends Request {
-    user?: { id: string };
-    file?: Express.Multer.File;
-}
 
 // GET /api/items?courseId=xxx
 export const getItems = async (req: AuthRequest, res: Response) => {
@@ -29,7 +24,7 @@ export const getItems = async (req: AuthRequest, res: Response) => {
         res.set('Cache-Control', 'no-store');
         res.json(items);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching items', error });
+        res.status(500).json({ message: 'Error fetching items', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -44,7 +39,7 @@ export const getItem = async (req: AuthRequest, res: Response) => {
 
         res.json(item);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching item', error });
+        res.status(500).json({ message: 'Error fetching item', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -120,7 +115,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
         res.status(201).json(item);
     } catch (error) {
         console.error('Error creating item:', error);
-        res.status(500).json({ message: 'Error creating item', error });
+        res.status(500).json({ message: 'Error creating item', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -191,7 +186,7 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
         res.json(updatedItem);
     } catch (error) {
         console.error("Error updating item:", error);
-        res.status(500).json({ message: 'Error updating item', error });
+        res.status(500).json({ message: 'Error updating item', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -219,7 +214,7 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
 
         res.json({ message: 'Item deleted' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting item', error });
+        res.status(500).json({ message: 'Error deleting item', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -313,7 +308,7 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
         res.json({ message: 'Items deleted successfully', count: validIds.length });
     } catch (error) {
         console.error('Error bulk deleting items:', error);
-        res.status(500).json({ message: 'Error deleting items', error });
+        res.status(500).json({ message: 'Error deleting items', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -348,6 +343,6 @@ export const uploadItemFile = async (req: AuthRequest, res: Response) => {
 
         res.json(updatedItem);
     } catch (error) {
-        res.status(500).json({ message: 'Error uploading file', error });
+        res.status(500).json({ message: 'Error uploading file', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };

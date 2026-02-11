@@ -1,11 +1,6 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-interface AuthRequest extends Request<any, any, any, any> {
-    user?: { id: string, profileId: string };
-}
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 
 // POST /api/study-plans
 export const createStudyPlan = async (req: AuthRequest, res: Response) => {

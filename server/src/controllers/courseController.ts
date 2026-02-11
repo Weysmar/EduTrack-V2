@@ -1,11 +1,7 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 import { socketService } from '../services/socketService';
-
-const prisma = new PrismaClient();
-interface AuthRequest extends Request {
-    user?: { id: string };
-}
 
 // GET /api/courses
 export const getCourses = async (req: AuthRequest, res: Response) => {
@@ -20,7 +16,7 @@ export const getCourses = async (req: AuthRequest, res: Response) => {
         });
         res.json(courses);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching courses', error });
+        res.status(500).json({ message: 'Error fetching courses', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -40,7 +36,7 @@ export const getCourse = async (req: AuthRequest, res: Response) => {
         res.json(course);
     } catch (error) {
         console.error('[DEBUG] Error fetching course:', error);
-        res.status(500).json({ message: 'Error fetching course', error });
+        res.status(500).json({ message: 'Error fetching course', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -66,7 +62,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 
         res.status(201).json(course);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating course', error });
+        res.status(500).json({ message: 'Error creating course', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -96,7 +92,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
 
         res.json(updatedCourse);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating course', error });
+        res.status(500).json({ message: 'Error updating course', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -114,6 +110,6 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
 
         res.json({ message: 'Course deleted' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting course', error });
+        res.status(500).json({ message: 'Error deleting course', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };

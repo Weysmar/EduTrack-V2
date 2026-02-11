@@ -1,6 +1,5 @@
-import { PrismaClient, TransactionClassification } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TransactionClassification } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 interface ClassificationResult {
     classification: TransactionClassification;

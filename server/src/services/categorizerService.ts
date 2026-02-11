@@ -1,7 +1,4 @@
 import { aiService } from './aiService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 // Predefined categories to guide the AI
 const DEFAULT_CATEGORIES = [

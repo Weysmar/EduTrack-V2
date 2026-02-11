@@ -1,14 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
 import multer from 'multer';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { extractionService } from '../services/extractionService';
-
-interface AuthRequest extends Request {
-    user?: { id: string };
-    file?: Express.Multer.File;
-}
 
 // POST /api/extract
 export const extractText = async (req: AuthRequest, res: Response) => {

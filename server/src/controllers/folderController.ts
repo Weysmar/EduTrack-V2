@@ -1,10 +1,6 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-interface AuthRequest extends Request {
-    user?: { id: string };
-}
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 
 // GET /api/folders
 export const getFolders = async (req: AuthRequest, res: Response) => {
@@ -19,7 +15,7 @@ export const getFolders = async (req: AuthRequest, res: Response) => {
         });
         res.json(folders);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching folders', error });
+        res.status(500).json({ message: 'Error fetching folders', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -43,7 +39,7 @@ export const getFolder = async (req: AuthRequest, res: Response) => {
 
         res.json(folder);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching folder', error });
+        res.status(500).json({ message: 'Error fetching folder', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -63,7 +59,7 @@ export const createFolder = async (req: AuthRequest, res: Response) => {
 
         res.status(201).json(folder);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating folder', error });
+        res.status(500).json({ message: 'Error creating folder', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -86,7 +82,7 @@ export const updateFolder = async (req: AuthRequest, res: Response) => {
         const updated = await prisma.folder.findFirst({ where: { id: req.params.id } });
         res.json(updated);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating folder', error });
+        res.status(500).json({ message: 'Error updating folder', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -100,6 +96,6 @@ export const deleteFolder = async (req: AuthRequest, res: Response) => {
         if (result.count === 0) return res.status(404).json({ message: 'Folder not found' });
         res.json({ message: 'Folder deleted' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting folder', error });
+        res.status(500).json({ message: 'Error deleting folder', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };

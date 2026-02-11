@@ -1,13 +1,8 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 import { socketService } from '../services/socketService';
 import { incrementAIGeneration } from './profileController';
-
-const prisma = new PrismaClient();
-
-interface AuthRequest extends Request<any, any, any, any> {
-    user?: { id: string };
-}
 
 // GET /api/flashcards?courseId=xx
 export const getFlashcardSets = async (req: AuthRequest, res: Response) => {
@@ -23,7 +18,7 @@ export const getFlashcardSets = async (req: AuthRequest, res: Response) => {
         });
         res.json(sets);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching flashcard sets', error });
+        res.status(500).json({ message: 'Error fetching flashcard sets', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -37,7 +32,7 @@ export const getFlashcardSet = async (req: AuthRequest, res: Response) => {
         if (!set) return res.status(404).json({ message: 'Set not found' });
         res.json(set);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching flashcard set', error });
+        res.status(500).json({ message: 'Error fetching flashcard set', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -76,7 +71,7 @@ export const createFlashcardSet = async (req: AuthRequest, res: Response) => {
         res.status(201).json(set);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error creating flashcard set', error });
+        res.status(500).json({ message: 'Error creating flashcard set', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -93,7 +88,7 @@ export const deleteFlashcardSet = async (req: AuthRequest, res: Response) => {
         socketService.emitToProfile(req.user!.id, 'flashcardSet:deleted', { id: set.id, courseId: set.courseId });
         res.json({ message: 'Set deleted' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting set', error });
+        res.status(500).json({ message: 'Error deleting set', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -139,6 +134,6 @@ export const updateStudyProgress = async (req: AuthRequest, res: Response) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error updating progress', error });
+        res.status(500).json({ message: 'Error updating progress', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };

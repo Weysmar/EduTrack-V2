@@ -1,11 +1,8 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { logErrorToFile } from '../utils/fileLogger';
 import { incrementAIGeneration } from './profileController';
-
-interface AuthRequest extends Request {
-    user?: { id: string };
-}
 
 export const generateContent = async (req: AuthRequest, res: Response) => {
     try {

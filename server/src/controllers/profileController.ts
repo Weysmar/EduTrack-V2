@@ -1,8 +1,6 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
+import { prisma } from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
     try {
@@ -25,7 +23,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         const { passwordHash, ...profileData } = profile;
         res.json(profileData);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
@@ -51,7 +49,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         const { passwordHash, ...profileData } = updatedProfile;
         res.json(profileData);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Internal server error' });
     }
 };
 
