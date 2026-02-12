@@ -20,21 +20,18 @@ const io = new Server(httpServer, {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP for PDF iFrame support (simplest fix for now)
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded by other origins
-    frameguard: false // Disable X-Frame-Options to allow embedding
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    frameguard: false
 }));
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        // Allow all origins dynamically (reflect request origin)
-        // In production, you might want to restrict this to specific domains
         return callback(null, true);
     },
     credentials: true
@@ -46,6 +43,11 @@ app.use(compression());
 
 // Routes
 app.use('/api', routes);
+
+// Health Checks
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', service: 'edutrack-backend', version: '1.0.0' });
+});
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
