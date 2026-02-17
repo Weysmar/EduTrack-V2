@@ -12,6 +12,9 @@ import routes from './routes';
 import { socketService } from './services/socketService';
 
 const app = express();
+console.log('[Server] Startup initiated');
+console.log('[Server] NODE_ENV:', process.env.NODE_ENV);
+console.log('[Server] DATABASE_URL provided?', !!process.env.DATABASE_URL);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
