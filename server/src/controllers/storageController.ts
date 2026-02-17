@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { storageService } from '../services/storageService';
+import { sanitizeKey, isPathWithinBase } from '../utils/sanitizePath';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
 const STORAGE_TYPE = process.env.STORAGE_TYPE || 'local';
@@ -16,16 +17,24 @@ export const servePublicFile = async (req: Request, res: Response) => {
     try {
         // Handle wildcard match for nested keys
         // If route is /public/*, params[0] usually holds the rest
-        const key = req.params[0] || req.params.key;
+        const rawKey = req.params[0] || req.params.key;
         const width = req.query.width || req.query.w;
 
-        if (!key) {
+        if (!rawKey) {
             return res.status(400).send('Key is required');
         }
 
+        const key = sanitizeKey(rawKey);
+
         // Logic to serve file publicly WITHOUT signature
         if (STORAGE_TYPE === 'local') {
-            const filePath = path.join(process.cwd(), UPLOAD_DIR, key);
+            const baseDir = path.join(process.cwd(), UPLOAD_DIR);
+            const filePath = path.join(baseDir, key);
+
+            if (!isPathWithinBase(filePath, baseDir)) {
+                return res.status(403).send('Access denied');
+            }
+
             if (fs.existsSync(filePath)) {
                 res.setHeader('Access-Control-Allow-Origin', '*'); // Allow Google/MS to fetch
                 res.removeHeader('X-Frame-Options');
@@ -68,14 +77,22 @@ export const servePublicFile = async (req: Request, res: Response) => {
 
 export const proxyFile = async (req: Request, res: Response) => {
     try {
-        const { key } = req.params;
+        const rawKey = req.params.key;
 
-        if (!key) {
+        if (!rawKey) {
             return res.status(400).json({ message: 'Key is required' });
         }
 
+        const key = sanitizeKey(rawKey);
+
         if (STORAGE_TYPE === 'local') {
-            const filePath = path.join(process.cwd(), UPLOAD_DIR, key);
+            const baseDir = path.join(process.cwd(), UPLOAD_DIR);
+            const filePath = path.join(baseDir, key);
+
+            if (!isPathWithinBase(filePath, baseDir)) {
+                return res.status(403).json({ message: 'Access denied' });
+            }
+
             if (fs.existsSync(filePath)) {
                 // Explicitly allow framing for PDF viewer
                 res.removeHeader('X-Frame-Options');

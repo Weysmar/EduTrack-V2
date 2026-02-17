@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { sanitizeFilename, sanitizeKey, isPathWithinBase } from '../utils/sanitizePath';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -19,7 +20,8 @@ const s3Client = new S3Client({
 export const storageService = {
 
     async uploadFile(file: Express.Multer.File): Promise<{ url: string; key: string }> {
-        const key = `${Date.now()}-${file.originalname}`;
+        const safeName = sanitizeFilename(file.originalname);
+        const key = `${Date.now()}-${safeName}`;
 
         if (STORAGE_TYPE === 's3') {
             const command = new PutObjectCommand({
@@ -65,8 +67,10 @@ export const storageService = {
                 Key: key
             }));
         } else {
-            const targetPath = path.join(process.cwd(), UPLOAD_DIR, key);
-            if (fs.existsSync(targetPath)) {
+            const safeKey = sanitizeKey(key);
+            const baseDir = path.join(process.cwd(), UPLOAD_DIR);
+            const targetPath = path.join(baseDir, safeKey);
+            if (isPathWithinBase(targetPath, baseDir) && fs.existsSync(targetPath)) {
                 fs.unlinkSync(targetPath);
             }
         }
@@ -122,8 +126,10 @@ export const storageService = {
                 }
                 return null;
             } else {
-                const targetPath = path.join(process.cwd(), UPLOAD_DIR, key);
-                if (fs.existsSync(targetPath)) {
+                const safeKey = sanitizeKey(key);
+                const baseDir = path.join(process.cwd(), UPLOAD_DIR);
+                const targetPath = path.join(baseDir, safeKey);
+                if (isPathWithinBase(targetPath, baseDir) && fs.existsSync(targetPath)) {
                     return fs.readFileSync(targetPath);
                 }
                 return null;

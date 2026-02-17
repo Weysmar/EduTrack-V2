@@ -6,6 +6,8 @@ import { categorizerService } from '../services/categorizerService';
 import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 import fs from 'fs';
+import path from 'path';
+import { isPathWithinBase } from '../utils/sanitizePath';
 
 const prisma = new PrismaClient();
 
@@ -19,6 +21,12 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
 
         if (!file) {
             return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Validate file path is within expected temp directory
+        const tempBaseDir = path.resolve('uploads/temp');
+        if (!isPathWithinBase(file.path, tempBaseDir)) {
+            return res.status(400).json({ error: 'Invalid file path' });
         }
 
         if (!bankId) {

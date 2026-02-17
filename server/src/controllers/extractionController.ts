@@ -4,6 +4,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { extractionService } from '../services/extractionService';
+import { sanitizeFilename } from '../utils/sanitizePath';
 
 interface AuthRequest extends Request {
     user?: { id: string };
@@ -21,7 +22,8 @@ export const extractText = async (req: AuthRequest, res: Response) => {
 
         // Save uploaded file temporarily
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'upload-'));
-        tempFilePath = path.join(tempDir, req.file.originalname);
+        const safeName = sanitizeFilename(req.file.originalname);
+        tempFilePath = path.join(tempDir, safeName);
         await fs.writeFile(tempFilePath, req.file.buffer);
 
         // Extract text
