@@ -295,7 +295,7 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
                     await prisma.item.delete({ where: { id } });
                     deletedCount++;
                 } catch (e: any) {
-                    console.error(`Failed to delete item ${id}:`, e.message);
+                    console.error('Failed to delete item %s: %s', String(id), e.message);
                     errors.push({ id, error: e.message });
                 }
             }

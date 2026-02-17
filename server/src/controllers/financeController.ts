@@ -25,17 +25,18 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
 
         // Validate file path is within expected temp directory
         const tempBaseDir = path.resolve('uploads/temp');
-        if (!isPathWithinBase(file.path, tempBaseDir)) {
+        const resolvedFilePath = path.resolve(file.path);
+        if (!isPathWithinBase(resolvedFilePath, tempBaseDir)) {
             return res.status(400).json({ error: 'Invalid file path' });
         }
 
         if (!bankId) {
             // Clean up file if validation fails
-            fs.unlinkSync(file.path);
+            fs.unlinkSync(resolvedFilePath);
             return res.status(400).json({ error: 'Bank ID is required' });
         }
 
-        const previewData = await ImportService.generatePreview(profileId, file.path, bankId, accountId);
+        const previewData = await ImportService.generatePreview(profileId, resolvedFilePath, bankId, accountId);
 
         // Clean up file after processing (or keep it if needed for Step 2? 
         // Ideally we should delete it and re-upload or move it to a temp folder. 
@@ -45,7 +46,7 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
         // OR we rely on the file still being there if we pass the path back (risky if stateless).
         // BETTER APPROACH: The confirm step receives the "previewData" structure back as JSON to commit it.)
 
-        fs.unlinkSync(file.path); // Delete temp file
+        fs.unlinkSync(resolvedFilePath); // Delete temp file
         res.json(previewData);
 
     } catch (error) {
@@ -317,15 +318,16 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
         }
 
         // Update transaction
+        const sanitizedAmount = amount !== undefined ? parseFloat(String(amount)) : undefined;
         const updated = await prisma.transaction.update({
             where: { id },
             data: {
-                amount: amount !== undefined ? amount : undefined,
+                amount: sanitizedAmount,
                 date: date ? new Date(date) : undefined,
-                description,
+                description: description ? String(description) : undefined,
                 classification,
-                category,
-                beneficiaryIban,
+                category: category ? String(category) : undefined,
+                beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
                 metadata
             }
         });
@@ -419,7 +421,7 @@ export const categorizeTransactions = async (req: AuthRequest, res: Response) =>
             const tx = transactions[parseInt(index)];
             return prisma.transaction.update({
                 where: { id: tx.id },
-                data: { category: String(category) }
+                data: { category: String(category).substring(0, 255) }
             });
         });
 
