@@ -8,8 +8,6 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import compression from 'compression';
 import { Server } from 'socket.io';
-import routes from './routes';
-import { socketService } from './services/socketService';
 
 const app = express();
 console.log('[Server] Startup initiated');
@@ -47,8 +45,30 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression());
 
-// Routes
-app.use('/api', routes);
+// Routes will be mounted after async init
+async function initializeApp() {
+    const routes = await import('./routes');
+    const { socketService } = await import('./services/socketService');
+
+    app.use('/api', routes.default);
+
+    // Socket.IO
+    io.on('connection', (socket) => {
+        console.log('Client connected:', socket.id);
+
+        // Initialize the socket service singleton
+        socketService.init(io);
+
+        socket.on('join-profile', (profileId: string) => {
+            socket.join(`profile:${profileId}`);
+            console.log(`Socket ${socket.id} joined profile:${profileId}`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Client disconnected:', socket.id);
+        });
+    });
+}
 
 // Health Checks
 app.get('/', (req, res) => {
@@ -57,23 +77,6 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
-});
-
-// Socket.IO
-io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
-
-    // Initialize the socket service singleton
-    socketService.init(io);
-
-    socket.on('join-profile', (profileId: string) => {
-        socket.join(`profile:${profileId}`);
-        console.log(`Socket ${socket.id} joined profile:${profileId}`);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-    });
 });
 
 // Global Error Handler
@@ -93,7 +96,8 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-httpServer.listen(Number(PORT), '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '0.0.0.0', async () => {
+    await initializeApp();
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
