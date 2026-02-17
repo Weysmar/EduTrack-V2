@@ -1,15 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
 import compression from 'compression';
 import { Server } from 'socket.io';
 import routes from './routes';
 import { socketService } from './services/socketService';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
