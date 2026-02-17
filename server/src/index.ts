@@ -47,27 +47,44 @@ app.use(compression());
 
 // Routes will be mounted after async init
 async function initializeApp() {
-    const routes = await import('./routes');
-    const { socketService } = await import('./services/socketService');
+    try {
+        console.log('[Init] Starting async initialization...');
 
-    app.use('/api', routes.default);
+        console.log('[Init] Loading routes module...');
+        const routes = await import('./routes');
+        console.log('[Init] Routes module loaded');
 
-    // Socket.IO
-    io.on('connection', (socket) => {
-        console.log('Client connected:', socket.id);
+        console.log('[Init] Loading socketService module...');
+        const { socketService } = await import('./services/socketService');
+        console.log('[Init] SocketService module loaded');
 
-        // Initialize the socket service singleton
-        socketService.init(io);
+        console.log('[Init] Mounting /api routes...');
+        app.use('/api', routes.default);
+        console.log('[Init] Routes mounted successfully');
 
-        socket.on('join-profile', (profileId: string) => {
-            socket.join(`profile:${profileId}`);
-            console.log(`Socket ${socket.id} joined profile:${profileId}`);
+        // Socket.IO
+        console.log('[Init] Configuring Socket.IO...');
+        io.on('connection', (socket) => {
+            console.log('Client connected:', socket.id);
+
+            // Initialize the socket service singleton
+            socketService.init(io);
+
+            socket.on('join-profile', (profileId: string) => {
+                socket.join(`profile:${profileId}`);
+                console.log(`Socket ${socket.id} joined profile:${profileId}`);
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Client disconnected:', socket.id);
+            });
         });
-
-        socket.on('disconnect', () => {
-            console.log('Client disconnected:', socket.id);
-        });
-    });
+        console.log('[Init] Socket.IO configured successfully');
+        console.log('[Init] ✅ Initialization complete!');
+    } catch (error) {
+        console.error('[Init] ❌ CRITICAL ERROR during initialization:', error);
+        throw error;
+    }
 }
 
 // Health Checks
