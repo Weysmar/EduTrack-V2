@@ -22,6 +22,9 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3000;
 
+// Trust Proxy (essential for X-Forwarded-Proto behind Nginx/Traefik)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet({
     contentSecurityPolicy: false,
