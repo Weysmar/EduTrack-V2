@@ -97,30 +97,20 @@ export class ICalParser {
     }
 }
 
+import { apiClient } from './api/client';
+
 export const fetchICalFeed = async (url: string): Promise<ICalEvent[]> => {
     try {
-        // Add cache busting to the specific Google Calendar URL
-        // Check if URL already has query params
-        const separator = url.includes('?') ? '&' : '?';
-        const uniqueUrl = `${url}${separator}nocache=${Date.now()}`;
+        // Use our backend proxy to fetch the iCal feed
+        // This avoids CORS issues and is more reliable than public proxies
+        const response = await apiClient.get('/calendar/proxy', {
+            params: { url },
+            // Ensure we get text back, not JSON (though axios might try to parse JSON if content-type is json)
+            // But our backend returns text/calendar.
+            responseType: 'text'
+        });
 
-        // Use a CORS proxy to bypass browser restrictions
-        // Trying corsproxy.io as it is often more reliable
-        const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(uniqueUrl);
-
-        const response = await fetch(proxyUrl);
-        if (!response.ok) {
-            // Fallback to allorigins if first one fails
-            console.warn("Primary proxy failed, trying fallback...");
-            const fallbackUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(uniqueUrl)}`;
-            const fallbackResponse = await fetch(fallbackUrl);
-            if (!fallbackResponse.ok) throw new Error("Failed to fetch ICS from both proxies");
-            const text = await fallbackResponse.text();
-            return ICalParser.parse(text);
-        }
-
-        const text = await response.text();
-        return ICalParser.parse(text);
+        return ICalParser.parse(response.data);
     } catch (error) {
         console.error("iCal Fetch Error:", error);
         throw error;
