@@ -1,13 +1,12 @@
-import { PrismaClient, TransactionClassification, Account, Transaction } from '@prisma/client';
+import { TransactionClassification, Account, Transaction } from '@prisma/client';
 import { OfxParserService } from './ofxParserService';
 import { CsvParserService } from './csvParserService';
 import { XlsxParserService } from './xlsxParserService';
 import { ClassificationService } from './classificationService';
+import { prisma } from '../lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import { OfxData, OfxAccount, OfxTransaction } from '../types/ofx';
-
-const prisma = new PrismaClient();
 
 // Types for the Preview Step
 export interface ImportPreview {
@@ -58,9 +57,9 @@ export class ImportService {
                 // Default to OFX
                 parsedData = await OfxParserService.parseFile(fileBuffer);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Parser Error", error);
-            throw new Error(`Failed to parse file: ${ext}`);
+            throw new Error(`Failed to parse ${ext} file: ${error.message || 'Unknown format error'}`);
         }
 
         const preview: ImportPreview = {

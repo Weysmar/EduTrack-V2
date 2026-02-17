@@ -1,8 +1,6 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export const getBanks = async (req: AuthRequest, res: Response) => {
     try {
@@ -53,9 +51,11 @@ export const updateBank = async (req: AuthRequest, res: Response) => {
         const exists = await prisma.bank.count({ where: { id, profileId } });
         if (!exists) return res.status(404).json({ error: 'Bank not found' });
 
+        const { name, icon, color, swiftBic } = req.body;
+
         const updated = await prisma.bank.update({
             where: { id },
-            data: req.body
+            data: { name, icon, color, swiftBic }
         });
         res.json(updated);
     } catch (error) {
@@ -69,32 +69,16 @@ export const deleteBank = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
 
         // Verify ownership
-        const bank = await prisma.bank.findUnique({
-            where: { id },
-            include: { accounts: true }
+        const bank = await prisma.bank.findFirst({
+            where: { id, profileId }
         });
 
-        if (!bank || bank.profileId !== profileId) {
+        if (!bank) {
             return res.status(404).json({ error: 'Bank not found' });
         }
 
-        // Check for attached accounts
-        // Cascade delete: Transactions -> Accounts -> Bank
-        // 1. Find all accounts
-        const accountIds = bank.accounts.map((a: any) => a.id);
-
-        if (accountIds.length > 0) {
-            // 2. Delete all transactions for these accounts
-            await prisma.transaction.deleteMany({
-                where: { accountId: { in: accountIds } }
-            });
-
-            // 3. Delete accounts
-            await prisma.account.deleteMany({
-                where: { bankId: id }
-            });
-        }
-
+        // Prisma cascade delete (schema: Account onDelete: Cascade, Transaction onDelete: Cascade)
+        // This atomically removes the bank and all associated accounts + transactions
         await prisma.bank.delete({ where: { id } });
         res.json({ message: 'Bank deleted' });
     } catch (error) {

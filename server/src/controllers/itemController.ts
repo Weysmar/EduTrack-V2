@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { storageService } from '../services/storageService';
 import { socketService } from '../services/socketService';
 
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 interface AuthRequest extends Request {
     user?: { id: string };
     file?: Express.Multer.File;

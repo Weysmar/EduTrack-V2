@@ -1,9 +1,8 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { incrementAIGeneration } from './profileController';
 
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export const getSummary = async (req: AuthRequest, res: Response) => {
     try {

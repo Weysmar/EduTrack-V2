@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { aiService } from '../services/aiService';
 import { incrementAIGeneration } from './profileController';
 
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 interface AuthRequest extends Request {
     user?: { id: string };

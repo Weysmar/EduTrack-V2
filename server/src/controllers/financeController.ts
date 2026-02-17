@@ -1,15 +1,28 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { ImportService } from '../services/importService';
 import { categorizerService } from '../services/categorizerService';
 import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
+import { prisma } from '../lib/prisma';
 import fs from 'fs';
 import path from 'path';
 import { isPathWithinBase } from '../utils/sanitizePath';
 
-const prisma = new PrismaClient();
+// Helper: Recalculate account balance from transactions (prevents drift)
+async function recalculateBalance(accountId: string, tx?: any) {
+    const db = tx || prisma;
+    const result = await db.transaction.aggregate({
+        _sum: { amount: true },
+        where: { accountId }
+    });
+    const computedBalance = result._sum.amount ?? 0;
+    await db.account.update({
+        where: { id: accountId },
+        data: { balance: computedBalance, balanceDate: new Date() }
+    });
+    return computedBalance;
+}
 
 // --- Import Endpoints ---
 
@@ -150,7 +163,11 @@ export const createAccount = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        res.status(201).json(account);
+        res.status(201).json({
+            ...account,
+            iban: maskIban(account.iban),
+            accountNumber: maskAccountNumber(account.accountNumber)
+        });
     } catch (error: any) {
         console.error('Create Account Error:', error);
         res.status(500).json({ error: 'Failed to create account' });
@@ -182,7 +199,11 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        res.json(updated);
+        res.json({
+            ...updated,
+            iban: maskIban(updated.iban),
+            accountNumber: maskAccountNumber(updated.accountNumber)
+        });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update account' });
     }
@@ -259,28 +280,22 @@ export const createTransaction = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Account not found or access denied' });
         }
 
-        // Create transaction
-        const transaction = await prisma.transaction.create({
-            data: {
-                accountId,
-                amount: amount,
-                date: date ? new Date(date) : new Date(),
-                description: description || 'Transaction manuelle',
-                classification: classification || 'UNKNOWN',
-                category: category || null,
-                beneficiaryIban: beneficiaryIban || null,
-                metadata: metadata || null
-            }
-        });
-
-        // Update account balance
-        await prisma.account.update({
-            where: { id: accountId },
-            data: {
-                balance: {
-                    increment: parseFloat(amount.toString())
+        // Atomic: create transaction + recalculate balance
+        const transaction = await prisma.$transaction(async (tx) => {
+            const created = await tx.transaction.create({
+                data: {
+                    accountId,
+                    amount: parseFloat(String(amount)),
+                    date: date ? new Date(date) : new Date(),
+                    description: description || 'Transaction manuelle',
+                    classification: classification || 'UNKNOWN',
+                    category: category || null,
+                    beneficiaryIban: beneficiaryIban || null,
+                    metadata: metadata || null
                 }
-            }
+            });
+            await recalculateBalance(accountId, tx);
+            return created;
         });
 
         res.status(201).json(transaction);
@@ -304,7 +319,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
             metadata
         } = req.body;
 
-        // Verify ownership and get old transaction
+        // Verify ownership
         const oldTransaction = await prisma.transaction.findFirst({
             where: { id, account: { bank: { profileId } } },
             include: { account: true }
@@ -314,30 +329,25 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Transaction not found or access denied' });
         }
 
-        // Calculate balance difference if amount changes
-        if (amount !== undefined && amount !== oldTransaction.amount.toNumber()) {
-            const diff = parseFloat(amount.toString()) - oldTransaction.amount.toNumber();
-            await prisma.account.update({
-                where: { id: oldTransaction.accountId },
+        // Atomic: update transaction + recalculate balance
+        const sanitizedAmount = amount !== undefined ? parseFloat(String(amount)) : undefined;
+        const updated = await prisma.$transaction(async (tx) => {
+            // Prisma uses parameterized queries, preventing SQL Injection
+            const result = await tx.transaction.update({
+                where: { id },
                 data: {
-                    balance: { increment: diff }
+                    amount: sanitizedAmount,
+                    date: date ? new Date(date) : undefined,
+                    description: description ? String(description) : undefined,
+                    classification,
+                    category: category ? String(category) : undefined,
+                    beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
+                    metadata
                 }
             });
-        }
-
-        // Update transaction
-        const sanitizedAmount = amount !== undefined ? parseFloat(String(amount)) : undefined;
-        const updated = await prisma.transaction.update({
-            where: { id },
-            data: {
-                amount: sanitizedAmount,
-                date: date ? new Date(date) : undefined,
-                description: description ? String(description) : undefined,
-                classification,
-                category: category ? String(category) : undefined,
-                beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
-                metadata
-            }
+            // Recalculate from all transactions (prevents drift)
+            await recalculateBalance(oldTransaction.accountId!, tx);
+            return result;
         });
 
         res.json(updated);
@@ -361,19 +371,14 @@ export const deleteTransaction = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
-        // Revert balance
-        // If it was income (positive), we subtract. If expense (negative), we subtract negative (add).
-        // Essentially: balance = balance - transaction.amount
-        await prisma.account.update({
-            where: { id: transaction.accountId },
-            data: {
-                balance: {
-                    decrement: transaction.amount
-                }
-            }
+        const accountId = transaction.accountId;
+
+        // Atomic: delete transaction + recalculate balance
+        await prisma.$transaction(async (tx) => {
+            await tx.transaction.delete({ where: { id } });
+            await recalculateBalance(accountId, tx);
         });
 
-        await prisma.transaction.delete({ where: { id } });
         res.json({ message: 'Transaction deleted' });
     } catch (error) {
         console.error('Delete Transaction Error:', error);

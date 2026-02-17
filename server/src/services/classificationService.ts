@@ -1,6 +1,5 @@
-import { PrismaClient, TransactionClassification } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TransactionClassification } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 interface ClassificationResult {
     classification: TransactionClassification;
@@ -105,9 +104,9 @@ export class ClassificationService {
     }
 
     private static extractIbanFromDescription(description: string): string | undefined {
-        // Basic Regex for FR IBAN: FRkk BBBB BGGG GGCC CCCC CCCC CKK
-        // Matches FR followed by 25 alphanumeric chars, ignoring spaces
-        const ibanRegex = /FR\d{2}[ ]?\d{5}[ ]?\d{5}[ ]?[A-Z0-9]{11}[ ]?\d{2}/gi;
+        // Generic IBAN regex: 2 letter country code + 2 check digits + up to 30 alphanumeric chars
+        // Supports all countries: FR, BE, LU, CH, DE, etc.
+        const ibanRegex = /\b([A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,}(?:\s?[A-Z0-9]{1,4})?)\b/gi;
         const match = description.match(ibanRegex);
         if (match && match.length > 0) {
             return match[0].replace(/\s/g, '').toUpperCase();
