@@ -50,9 +50,14 @@ export const servePublicFile = async (req: Request, res: Response) => {
                                 .resize(w, null, { withoutEnlargement: true })
                                 .toBuffer();
 
-                            res.setHeader('Content-Type', `image/${ext.replace('.', '')}`);
-                            res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache aggressive
-                            return res.send(resized);
+                            const mimeMap: Record<string, string> = {
+                                '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+                                '.webp': 'image/webp', '.tiff': 'image/tiff', '.gif': 'image/gif', '.avif': 'image/avif'
+                            };
+                            res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
+                            res.setHeader('Content-Length', resized.length);
+                            res.setHeader('Cache-Control', 'public, max-age=31536000');
+                            return res.end(resized);
                         } catch (err) {
                             console.error('Resize error, serving original', err);
                             return res.sendFile(filePath);

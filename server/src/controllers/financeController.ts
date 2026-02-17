@@ -14,6 +14,8 @@ const prisma = new PrismaClient();
 // --- Import Endpoints ---
 
 export const previewImport = async (req: AuthRequest, res: Response) => {
+    const tempBaseDir = path.resolve('uploads/temp');
+
     try {
         const profileId = req.user!.id;
         const { bankId, accountId } = req.body;
@@ -23,33 +25,35 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // Validate file path is within expected temp directory
-        const tempBaseDir = path.resolve('uploads/temp');
+        // Validate and resolve the file path to break taint chain
         const resolvedFilePath = path.resolve(file.path);
         if (!isPathWithinBase(resolvedFilePath, tempBaseDir)) {
             return res.status(400).json({ error: 'Invalid file path' });
         }
 
+        // Safe cleanup helper using the validated path
+        const safeCleanup = () => {
+            try { if (fs.existsSync(resolvedFilePath)) fs.unlinkSync(resolvedFilePath); } catch { /* ignore */ }
+        };
+
         if (!bankId) {
-            // Clean up file if validation fails
-            fs.unlinkSync(resolvedFilePath);
+            safeCleanup();
             return res.status(400).json({ error: 'Bank ID is required' });
         }
 
         const previewData = await ImportService.generatePreview(profileId, resolvedFilePath, bankId, accountId);
 
-        // Clean up file after processing (or keep it if needed for Step 2? 
-        // Ideally we should delete it and re-upload or move it to a temp folder. 
-        // For statelessness, we might return the parsed data and expect client to send it back, 
-        // OR we store the temp file path in a session/token. 
-        // FOR NOW: We return the preview data. The frontend will have to re-send the data for confirmation 
-        // OR we rely on the file still being there if we pass the path back (risky if stateless).
-        // BETTER APPROACH: The confirm step receives the "previewData" structure back as JSON to commit it.)
-
-        fs.unlinkSync(resolvedFilePath); // Delete temp file
+        safeCleanup();
         res.json(previewData);
 
     } catch (error) {
+        // Try to clean up any temp file on error
+        try {
+            if (req.file?.path) {
+                const p = path.resolve(req.file.path);
+                if (isPathWithinBase(p, tempBaseDir) && fs.existsSync(p)) fs.unlinkSync(p);
+            }
+        } catch { /* ignore cleanup errors */ }
         console.error('Preview Error:', error);
         res.status(500).json({ error: 'Failed to generate preview' });
     }
