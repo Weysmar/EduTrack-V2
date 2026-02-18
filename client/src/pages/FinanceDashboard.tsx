@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wallet, TrendingUp, TrendingDown, Plus, RefreshCw, Sparkles, Loader2, Upload, Filter, X } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, RefreshCw, Sparkles, Loader2, Upload, Filter, X } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
-import { CreateTransactionModal } from '@/components/finance/CreateTransactionModal';
+import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { StatCardVariant } from '@/components/ui/StatCard';
@@ -49,7 +49,7 @@ export default function FinanceDashboard() {
     const accountIdParam = searchParams.get('accountId');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingTransaction, setEditingTransaction] = useState<any | null>(null); // Using any to avoid import dance, or verify Transaction import
+    const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
     const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
@@ -239,13 +239,6 @@ export default function FinanceDashboard() {
                         >
                             <RefreshCw className="h-5 w-5" />
                         </button>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition font-medium"
-                        >
-                            <Plus className="h-4 w-4" />
-                            {t('finance.tx.new')}
-                        </button>
                     </div>
                 </div>
                 {/* Onboarding / Empty State */}
@@ -389,14 +382,22 @@ export default function FinanceDashboard() {
                     />
                 </div>
 
-                <CreateTransactionModal
-                    isOpen={isModalOpen}
-                    onClose={() => {
-                        setIsModalOpen(false);
-                        setEditingTransaction(null);
-                    }}
-                    initialData={editingTransaction}
-                />
+                {editingTransaction && (
+                    <TransactionEditModal
+                        transaction={editingTransaction}
+                        accounts={accounts}
+                        isOpen={!!editingTransaction}
+                        onClose={() => {
+                            setIsModalOpen(false);
+                            setEditingTransaction(null);
+                        }}
+                        onSave={async (id, data) => {
+                            await useFinanceStore.getState().updateTransaction(id, data);
+                            setEditingTransaction(null);
+                            setIsModalOpen(false);
+                        }}
+                    />
+                )}
 
                 {/* Audit Modal Overlay */}
                 {isAuditOpen && (
