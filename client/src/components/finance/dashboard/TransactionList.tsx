@@ -1,6 +1,7 @@
 import { Transaction } from '@/types/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ClassificationBadge } from '../ClassificationBadge';
+import { MerchantLogo } from '../MerchantLogo';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -62,17 +63,20 @@ export function TransactionList({ transactions = [] }: Props) {
                         <div className="p-8 text-center text-slate-500">Aucune transaction trouvée</div>
                     ) : (
                         filtered.map(t => (
-                            <div key={t.id} className="p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
-                                <div className="flex-1 min-w-0 pr-4">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm text-slate-400">
+                            <div key={t.id} className="p-4 flex items-center gap-3 hover:bg-slate-800/50 transition-colors">
+                                {/* Merchant Logo */}
+                                <MerchantLogo description={t.description} classification={t.classification} size={36} />
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="text-xs text-slate-500">
                                             {formatDate(t.date)}
                                         </span>
                                         <ClassificationBadge classification={t.classification} confidence={t.classificationConfidence} />
                                     </div>
-                                    <p className="text-slate-200 font-medium truncate" title={t.description}>{t.description}</p>
+                                    <p className="text-slate-200 font-medium truncate text-sm" title={t.description}>{t.description}</p>
                                 </div>
-                                <div className={clsx("text-right font-bold whitespace-nowrap", t.amount > 0 ? "text-green-400" : "text-slate-200")}>
+                                <div className={clsx("text-right font-bold whitespace-nowrap text-sm", t.amount > 0 ? "text-green-400" : "text-slate-200")}>
                                     {t.amount > 0 ? '+' : ''}{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(t.amount)}
                                 </div>
                             </div>

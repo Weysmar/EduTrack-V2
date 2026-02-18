@@ -1,4 +1,5 @@
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2, Tag, Wand2, Sparkles, ArrowRightLeft, AlertCircle, RefreshCw } from 'lucide-react';
+import { MerchantLogo } from './MerchantLogo';
 import { Transaction } from '@/types/finance';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -101,9 +102,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                     >
                         <div className="flex items-center justify-between p-4">
                             <div className="flex items-center gap-4">
-                                <div className={`p-2 rounded-full ${getTypeColor(tx.type)}`}>
-                                    {getTypeIcon(tx.type)}
-                                </div>
+                                <MerchantLogo description={tx.description} classification={tx.classification} size={40} />
 
                                 <div>
                                     <div className="flex items-center gap-2">

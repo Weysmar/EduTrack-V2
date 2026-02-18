@@ -8,9 +8,10 @@ import { startOfMonth, isAfter } from 'date-fns';
 interface Props {
     transactions?: Transaction[];
     totalBalance?: number;
+    hideInternalTransfers?: boolean;
 }
 
-export function FinanceStatsCards({ transactions = [], totalBalance = 0 }: Props) {
+export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInternalTransfers = false }: Props) {
 
     const stats = useMemo(() => {
         const startOfCurrentMonth = startOfMonth(new Date());
@@ -24,7 +25,7 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0 }: Props
         let expenses = 0;
 
         currentMonthTransactions.forEach(t => {
-            // Ignore Internal transfers for income/expense calc to avoid noise
+            // Ignore Internal transfers when toggle is active (or always for cleaner stats)
             if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return;
 
             if (t.amount > 0) {
