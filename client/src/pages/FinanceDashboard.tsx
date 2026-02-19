@@ -2,13 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
-import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wallet, TrendingUp, TrendingDown, RefreshCw, Sparkles, Loader2, Upload, Filter, X } from 'lucide-react';
+import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
+import { FinanceStatsCards } from '@/components/finance/dashboard/FinanceStatsCards';
+import { ExpenseChart } from '@/components/finance/dashboard/ExpenseChart';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
-import { StatCardVariant } from '@/components/ui/StatCard';
 
 // Helper to get HSL values from CSS variables
 const getHslColor = (variable: string) => {
@@ -97,48 +97,19 @@ export default function FinanceDashboard() {
     };
 
     const navigate = useNavigate();
-    const [hideInternal, setHideInternal] = useState(false);
-    const [showUnknownOnly, setShowUnknownOnly] = useState(false);
+    // Use store filters instead of local state
+    const { filters, setFilters } = useFinanceStore();
+    const hideInternal = filters.hideInternalTransfers ?? false;
 
-    // Filter transactions based on 'hideInternal' and 'accountId'
+    // Filter transactions based on 'accountId' only (hideInternal is handled by components)
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
-            if (showUnknownOnly) {
-                // Unknown if classification is UNKNOWN or missing, OR category is missing/generic
-                // Adjust logic as preferred. Usually UNKNOWN classification is the key.
-                const isUnknown = t.classification === 'UNKNOWN' || !t.category || t.category === 'Uncategorized';
-                if (!isUnknown) return false;
-            }
-
-            if (hideInternal) {
-                if (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') return false;
-                // Check linked account ID (System detected internal transfer)
-                if (t.linkedAccountId) return false;
-
-                // Fallback for unclassified internal transfers
-                const desc = t.description.toLowerCase();
-                if (desc.includes('virement interne') ||
-                    desc.includes('virement entre vos comptes') ||
-                    (desc.includes('virement') && desc.includes('compte') && desc.includes('titulaire'))
-                ) return false;
-            }
             if (accountIdParam) {
                 return t.accountId === accountIdParam;
             }
             return true;
         });
-    }, [transactions, hideInternal, accountIdParam, showUnknownOnly]);
-
-    const unknownCount = useMemo(() => {
-        return transactions.filter(t => t.classification === 'UNKNOWN' || !t.category || t.category === 'Uncategorized').length;
-    }, [transactions]);
-
-    // Helper to calculate totals based on filtered view
-    const calculateTotals = (txs: typeof transactions) => {
-        const income = txs.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-        const expense = txs.filter(t => t.amount < 0).reduce((acc, t) => acc + Math.abs(t.amount), 0);
-        return { income, expense };
-    };
+    }, [transactions, accountIdParam]);
 
     // Calculate dynamic balance
     // If accountId is present, we should find that specific account's balance from store (if available) or calculate from transactions (less accurate for bank sync).
@@ -146,50 +117,16 @@ export default function FinanceDashboard() {
     const selectedAccount = accountIdParam ? accounts?.find(a => a.id === accountIdParam) : null;
 
     // If filtering by account, use its specific balance. Otherwise use global calculated balance.
+    // If filtering by account, use its specific balance. Otherwise use global calculated balance.
+    const totalBalance = getBalance();
     const displayedBalance = selectedAccount
         ? selectedAccount.balance
-        : getBalance(); // Global balance (sum of all accounts)
-
-    const { income: filteredIncome, expense: filteredExpenses } = calculateTotals(filteredTransactions);
+        : totalBalance;
 
     // Dynamic Title
     const dashboardTitle = selectedAccount ? selectedAccount.name : "Portefeuille";
 
-    // Re-calculate chart data
-    const chartData = filteredTransactions
-        .slice()
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .reduce((acc: any[], t) => {
-            const dateStr = new Date(t.date).toISOString().split('T')[0];
-            const existing = acc.find(d => d.date === dateStr);
-            if (existing) {
-                if (t.amount > 0) existing.income += t.amount;
-                else existing.expense += Math.abs(t.amount);
-            } else {
-                acc.push({
-                    date: dateStr,
-                    income: t.amount > 0 ? t.amount : 0,
-                    expense: t.amount < 0 ? Math.abs(t.amount) : 0
-                });
-            }
-            return acc;
-        }, [])
-        .slice(-30);
 
-    // Re-calculate Pie Data
-    const getFilteredCategoryBreakdown = () => {
-        const breakdown = new Map<string, number>();
-        filteredTransactions.forEach(t => {
-            if (t.amount < 0) {
-                const category = t.category || 'Uncategorized';
-                breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
-            }
-        });
-        return Array.from(breakdown.entries()).map(([category, amount]) => ({ category, amount }));
-    };
-    const pieData = getFilteredCategoryBreakdown();
-
-    const COLORS = [colors.green, colors.primary, '#f59e0b', colors.red, '#8b5cf6', '#ec4899'];
 
     return (
         <div className="flex h-screen overflow-hidden animate-in fade-in">
@@ -203,18 +140,19 @@ export default function FinanceDashboard() {
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
                         {/* Filter Toggle */}
-                        <div className="flex items-center gap-2 mr-4 bg-card border px-3 py-2 rounded-md">
-                            <input
-                                type="checkbox"
-                                id="hideInternal"
-                                checked={hideInternal}
-                                onChange={(e) => setHideInternal(e.target.checked)}
-                                className="w-4 h-4 rounded text-primary focus:ring-primary"
-                            />
-                            <label htmlFor="hideInternal" className="text-sm font-medium cursor-pointer select-none">
-                                Masquer virements internes
-                            </label>
-                        </div>
+                        <button
+                            onClick={() => setFilters({ hideInternalTransfers: !hideInternal })}
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer",
+                                hideInternal
+                                    ? "bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
+                                    : "bg-card hover:bg-accent hover:text-accent-foreground"
+                            )}
+                            title={hideInternal ? 'Afficher les virements internes' : 'Masquer les virements internes'}
+                        >
+                            {hideInternal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            <span className="hidden sm:inline">Virements internes</span>
+                        </button>
 
                         <button
                             onClick={() => navigate('/finance/import')}
@@ -280,87 +218,17 @@ export default function FinanceDashboard() {
                 )}
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCardVariant
-                        title={accountIdParam ? "Solde du compte" : t('finance.balance')}
-                        value={`${(Number(displayedBalance) || 0).toFixed(2)} €`}
-                        icon={<Wallet className="h-6 w-6" />}
-                        variant="primary"
-                    />
-                    <StatCardVariant
-                        title={t('finance.income')}
-                        value={`+${filteredIncome.toFixed(2)} €`}
-                        icon={<TrendingUp className="h-6 w-6" />}
-                        variant="green"
-                    />
-                    <StatCardVariant
-                        title={t('finance.expense')}
-                        value={`-${filteredExpenses.toFixed(2)} €`}
-                        icon={<TrendingDown className="h-6 w-6" />}
-                        variant="red"
-                    />
-                </div>
+                {/* Stats Cards */}
+                <FinanceStatsCards
+                    transactions={filteredTransactions} // Pass filtered tx (by account) or all tx? Usually all tx but filtered by hideInternal in component
+                    totalBalance={displayedBalance}
+                    hideInternalTransfers={hideInternal}
+                />
 
                 {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-card border rounded-xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={colors.green} stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor={colors.green} stopOpacity={0} />
-                                        </linearGradient>
-                                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={colors.red} stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor={colors.red} stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <XAxis dataKey="date" hide />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
-                                        formatter={(value: number) => [`${value.toFixed(2)} €`, '']}
-                                    />
-                                    <Area type="monotone" dataKey="income" stroke={colors.green} fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} name={t('finance.tx.income')} />
-                                    <Area type="monotone" dataKey="expense" stroke={colors.red} fillOpacity={1} fill="url(#colorExpense)" strokeWidth={2} name={t('finance.tx.expense')} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    <div className="bg-card border rounded-xl p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold mb-4">{t('finance.chart.categories')}</h2>
-                        <div className="h-[300px] w-full relative">
-                            {pieData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={pieData}
-                                            dataKey="amount"
-                                            nameKey="category"
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={100}
-                                            paddingAngle={5}
-                                        >
-                                            {pieData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip formatter={(value: number) => `${value.toFixed(2)} €`} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                                    {t('item.noContent')}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                <div className="bg-card border rounded-xl p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
+                    <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={hideInternal} />
                 </div>
 
                 {/* Budgets Section */}
