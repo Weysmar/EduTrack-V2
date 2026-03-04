@@ -1,12 +1,28 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 
 import { prisma } from '../lib/prisma';
 
+const registerSchema = z.object({
+    name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
+    email: z.string().email('Adresse email invalide'),
+    password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
+    language: z.string().optional()
+});
+
 export const register = async (req: Request, res: Response) => {
     try {
-        const { name, email, password, language } = req.body;
+        const validatedData = registerSchema.safeParse(req.body);
+        if (!validatedData.success) {
+            return res.status(400).json({
+                message: 'Erreur de validation',
+                errors: validatedData.error.format()
+            });
+        }
+
+        const { name, email, password, language } = validatedData.data;
 
         // Check if user exists
         const existingUser = await prisma.profile.findUnique({ where: { email } });
@@ -32,7 +48,7 @@ export const register = async (req: Request, res: Response) => {
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET as string,
-            { expiresIn: '24h' }
+            { expiresIn: '7d' }
         );
 
         res.status(201).json({ token, user });
@@ -41,9 +57,22 @@ export const register = async (req: Request, res: Response) => {
     }
 };
 
+const loginSchema = z.object({
+    email: z.string().email('Adresse email invalide'),
+    password: z.string().min(1, 'Le mot de passe est requis')
+});
+
 export const login = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const validatedData = loginSchema.safeParse(req.body);
+        if (!validatedData.success) {
+            return res.status(400).json({
+                message: 'Erreur de validation',
+                errors: validatedData.error.format()
+            });
+        }
+
+        const { email, password } = validatedData.data;
 
         // Find user
         const user = await prisma.profile.findUnique({ where: { email } });
@@ -67,7 +96,7 @@ export const login = async (req: Request, res: Response) => {
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET as string,
-            { expiresIn: '24h' }
+            { expiresIn: '7d' }
         );
 
         // Remove password hash from response
