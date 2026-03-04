@@ -23,6 +23,13 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3000;
 
+if (!process.env.JWT_SECRET) {
+    console.error('⚠️ CRITICAL WARNING: JWT_SECRET environment variable is not set. Auth will fail.');
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET is required in production.');
+    }
+}
+
 // Trust Proxy (essential for X-Forwarded-Proto behind Nginx/Traefik)
 app.set('trust proxy', 1);
 
@@ -35,8 +42,15 @@ app.use(helmet({
 }));
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        return callback(null, true);
+        const allowedOrigins = process.env.CORS_ORIGIN
+            ? process.env.CORS_ORIGIN.split(',')
+            : ['http://localhost', 'http://localhost:5173', 'https://hubtrack.vpdeploy.com'];
+
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+            return callback(null, true);
+        }
+        console.warn(`[CORS] Rejected origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true
 }));

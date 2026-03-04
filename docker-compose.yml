@@ -30,9 +30,9 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-edutrack}:${POSTGRES_PASSWORD:-securepassword}@postgres:5432/${POSTGRES_DB:-edutrack_db}
-      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeytochangeinprod}
+      JWT_SECRET: ${JWT_SECRET}
       # CORS setup for dokploy domain or local network
-      CORS_ORIGIN: "*"
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://hubtrack.vpdeploy.com,http://localhost:5173,http://localhost}
       # Storage configuration (S3 or Local)
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
