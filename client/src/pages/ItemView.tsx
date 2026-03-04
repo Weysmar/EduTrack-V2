@@ -11,7 +11,9 @@ import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
+import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
+import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { CheckSquare, AlertCircle } from 'lucide-react'
@@ -445,351 +447,52 @@ export function ItemView() {
                     </div>
                 </div>
 
-                {/* Actions Toolbar - Desktop Only */}
-                <div className="hidden md:flex items-center gap-2 justify-end">
-                    {/* TTS Controls */}
-                    {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <TTSControls
-                                text={item.content || item.extractedContent || ''}
-                                lang={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
-                            />
-                            <div className="h-6 w-px bg-border mx-1" />
-                        </div>
-                    )}
-
-                    {/* Universal View/Download Button */}
-                    {item.type === 'resource' && item.storageKey && (
-                        (() => {
-                            // Construct Public URL (Option 3)
-                            const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
-                            const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-                            const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
-                            const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
-
-                            // Determine Target URL for "View in New Tab"
-                            let targetUrl = publicRawUrl;
-                            if (isOffice) {
-                                // Dynamic Engine Link
-                                if (officeEngine === 'microsoft') {
-                                    targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
-                                } else {
-                                    targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
-                                }
-                            }
-
-                            return (
-                                <>
-                                    <a
-                                        href={targetUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                                        title={t('action.openNewTab')}
-                                    >
-                                        <ExternalLink className="h-5 w-5" />
-                                    </a>
-                                    <div className="h-6 w-px bg-border mx-1" />
-                                </>
-                            );
-                        })()
-                    )}
-
-                    {/* Universal Fullscreen Button - Available for all items with files */}
-                    {pdfUrl && (
-                        <button
-                            onClick={() => {
-                                setMobileTab('pdf')
-                                setIsFocusMode(true)
-                            }}
-                            aria-label={t('action.fullscreen')}
-                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                            title={t('action.fullscreen')}
-                        >
-                            <Maximize className="h-5 w-5" aria-hidden="true" />
-                        </button>
-                    )}
-
-
-                    {/* Edit Button Logic */}
-                    {item.type === 'note' ? (
-                        isEditMode ? (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        setIsEditMode(false)
-                                        setEditedContent(item.content || '')
-                                    }}
-                                    className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground border border-transparent flex-shrink-0"
-                                    title="Cancel"
-                                >
-                                    <Cancel className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={() => updateMutation.mutate(editedContent)}
-                                    disabled={updateMutation.isPending}
-                                    className="px-3 py-2 bg-primary text-primary-foreground hover:opacity-90 rounded-md transition-colors flex items-center gap-2 font-medium flex-shrink-0"
-                                    title="Save"
-                                >
-                                    <Check className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{updateMutation.isPending ? 'Saving...' : 'Save'}</span>
-                                </button>
-                            </>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    setIsEditMode(true)
-                                    setEditedContent(item.content || '')
-                                }}
-                                className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                                title={t('item.edit')}
-                            >
-                                <Pencil className="h-5 w-5" />
-                            </button>
-                        )
-                    ) : (
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                            title={t('item.edit')}
-                        >
-                            <Edit className="h-5 w-5" />
-                        </button>
-                    )}
-
-                    {/* AI Generation Menu - Desktop Dropdown */}
-                    <div className="relative flex-shrink-0">
-                        <button
-                            disabled={isExtracting}
-                            onClick={() => setIsAIMenuOpen(!isAIMenuOpen)}
-                            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md hover:from-violet-700 hover:to-indigo-700 active:from-violet-800 active:to-indigo-800 transition-all text-sm font-medium shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isExtracting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span>Extraction...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="h-4 w-4" />
-                                    <span>Génération IA</span>
-                                </>
-                            )}
-                        </button>
-
-                        {/* Desktop Dropdown Menu */}
-                        {isAIMenuOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-40"
-                                    onClick={() => setIsAIMenuOpen(false)}
-                                />
-                                <div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-md bg-card shadow-lg ring-1 ring-black ring-opacity-5 z-50 divide-y divide-border animate-in fade-in zoom-in-95">
-                                    <div className="p-1">
-                                        <button
-                                            onClick={() => {
-                                                setIsAIMenuOpen(false)
-                                                handleOpenExercise('flashcards')
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                        >
-                                            <BrainCircuit className="h-4 w-4 text-purple-500" />
-                                            Générer Flashcards
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setIsAIMenuOpen(false)
-                                                handleOpenExercise('quiz')
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                        >
-                                            <CheckSquare className="h-4 w-4 text-green-500" />
-                                            Générer QCM
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setIsAIMenuOpen(false)
-                                                setIsMindMapModalOpen(true)
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                        >
-                                            <BrainCircuit className="h-4 w-4 text-blue-500" />
-                                            Générer Mind Map
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setIsAIMenuOpen(false)
-                                                if (summary) setShowSummary(true)
-                                                else setIsSummaryOptionsOpen(true)
-                                            }}
-                                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                        >
-                                            <FileText className="h-4 w-4 text-blue-500" />
-                                            {summary ? "Voir le résumé" : "Générer un résumé"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={handleDelete}
-                        className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors flex-shrink-0"
-                        title={t('action.delete')}
-                    >
-                        <Trash2 className="h-5 w-5" />
-                    </button>
-                </div>
+                <ItemDesktopToolbar
+                    item={item}
+                    course={course}
+                    isText={isText}
+                    isMarkdown={isMarkdown}
+                    isOffice={!!isOffice}
+                    API_URL={API_URL}
+                    officeEngine={officeEngine}
+                    pdfUrl={pdfUrl}
+                    setMobileTab={setMobileTab}
+                    setIsFocusMode={setIsFocusMode}
+                    isEditMode={!!isEditMode}
+                    editedContent={editedContent}
+                    setIsEditMode={setIsEditMode}
+                    setEditedContent={setEditedContent}
+                    updateMutation={updateMutation}
+                    setIsEditModalOpen={setIsEditModalOpen}
+                    isExtracting={isExtracting}
+                    isAIMenuOpen={isAIMenuOpen}
+                    setIsAIMenuOpen={setIsAIMenuOpen}
+                    handleOpenExercise={handleOpenExercise}
+                    setIsMindMapModalOpen={setIsMindMapModalOpen}
+                    hasSummary={!!summary}
+                    setShowSummary={setShowSummary}
+                    setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
+                    handleDelete={handleDelete}
+                    t={t}
+                />
             </div>
 
-            {/* FIXED MOBILE BOTTOM BAR */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t pb-safe">
-                <div className="flex items-center justify-around p-2 h-16">
-                    {/* 1. Edit / Tools */}
-                    {item.type === 'note' ? (
-                        <button
-                            onClick={() => isEditMode ? setIsEditMode(false) : setIsEditMode(true)}
-                            className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
-                        >
-                            {isEditMode ? <Check className="h-6 w-6" /> : <Pencil className="h-6 w-6" />}
-                            <span className="text-[10px] font-medium">{isEditMode ? 'Sauver' : 'Éditer'}</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
-                        >
-                            <Edit className="h-6 w-6" />
-                            <span className="text-[10px] font-medium">Éditer</span>
-                        </button>
-                    )}
-
-                    {/* 2. MAIN ACTION: AI (Center, Prominent) */}
-                    <div className="flex items-center justify-center">
-                        <button
-                            onClick={() => setIsAIMenuOpen(true)}
-                            disabled={isExtracting}
-                            className="flex flex-col items-center gap-1 p-2 text-violet-500 active:text-violet-700 touch-manipulation"
-                        >
-                            {isExtracting ? (
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            ) : (
-                                <Sparkles className="h-6 w-6" />
-                            )}
-                            <span className="text-[10px] font-medium">IA</span>
-                        </button>
-                    </div>
-
-                    {/* 3. More Actions (Sheet) */}
-                    <button
-                        onClick={() => {
-                            // Simple toggle for a "More" sheet potentially, or just use delete for now as placeholder
-                            // For now, let's put TTS/Fullscreen here or just Delete?
-                            // Let's make "Delete" accessible.
-                            if (confirm(t('item.delete.confirm'))) handleDelete()
-                        }}
-                        className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-destructive touch-manipulation"
-                    >
-                        <Trash2 className="h-6 w-6" />
-                        <span className="text-[10px] font-medium">Supprimer</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* MOBILE AI BOTTOM SHEET (Controlled by isAIMenuOpen) */}
-            {isAIMenuOpen && (
-                <div className="md:hidden fixed inset-0 z-[60] flex items-end justify-center">
-                    {/* Backdrop */}
-                    <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
-                        onClick={() => setIsAIMenuOpen(false)}
-                    />
-
-                    {/* Bottom Sheet Content */}
-                    <div className="relative w-full bg-card rounded-t-2xl shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom duration-300 pb-safe space-y-4">
-                        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-2 opacity-50" />
-                        <h3 className="text-lg font-bold text-center mb-4">Que voulez-vous générer ?</h3>
-
-                        <div className="grid grid-cols-1 gap-3">
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    handleOpenExercise('flashcards')
-                                }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
-                                    <Layers className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">Flashcards</div>
-                                    <div className="text-xs text-muted-foreground">Pour mémoriser les concepts clés</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    handleOpenExercise('quiz')
-                                }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
-                                    <CheckSquare className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">QCM</div>
-                                    <div className="text-xs text-muted-foreground">Testez vos connaissances</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    setIsMindMapModalOpen(true)
-                                }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                                    <BrainCircuit className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">Mind Map</div>
-                                    <div className="text-xs text-muted-foreground">Visualisez les relations</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    if (summary) setShowSummary(true)
-                                    else setIsSummaryOptionsOpen(true)
-                                }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
-                                    <FileText className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">Résumé</div>
-                                    <div className="text-xs text-muted-foreground">Synthèse du document</div>
-                                </div>
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={() => setIsAIMenuOpen(false)}
-                            className="w-full py-3 mt-4 text-center font-medium text-muted-foreground hover:text-foreground"
-                        >
-                            Annuler
-                        </button>
-                    </div>
-                </div>
-            )}
+            <ItemMobileToolbar
+                itemType={item.type || 'note'}
+                isEditMode={isEditMode}
+                setIsEditMode={setIsEditMode}
+                setIsEditModalOpen={setIsEditModalOpen}
+                isExtracting={isExtracting}
+                isAIMenuOpen={isAIMenuOpen}
+                setIsAIMenuOpen={setIsAIMenuOpen}
+                handleDelete={handleDelete}
+                handleOpenExercise={handleOpenExercise}
+                setIsMindMapModalOpen={setIsMindMapModalOpen}
+                hasSummary={!!summary}
+                setShowSummary={setShowSummary}
+                setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
+                t={t}
+            />
             {/* Main Content Area */}
             <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10 pb-24 md:pb-10">
                 <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
@@ -934,25 +637,9 @@ export function ItemView() {
                                                 className={isFocusMode ? "h-full" : "min-h-[50vh]"}
                                             />
                                         ) : item.type === 'note' ? (
-                                            <div className="w-full max-w-4xl bg-card p-8 rounded-lg prose dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-lg prose-p:leading-relaxed prose-li:text-lg">
-                                                <ReactMarkdown
-                                                    components={{
-                                                        h1: ({ children }) => <h1 className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
-                                                        h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
-                                                        h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
-                                                        ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-                                                        li: ({ children }) => <li className="marker:text-primary">{children}</li>,
-                                                    }}
-                                                >
-                                                    {item.content || ''}
-                                                </ReactMarkdown>
-                                            </div>
+                                            <ItemMarkdownDisplay content={item.content || ''} isSummary={false} />
                                         ) : (
-                                            <div className="w-full max-w-4xl bg-card p-8 rounded-lg prose dark:prose-invert max-w-none whitespace-pre-wrap">
-                                                <ReactMarkdown>
-                                                    {item.content || ''}
-                                                </ReactMarkdown>
-                                            </div>
+                                            <ItemMarkdownDisplay content={item.content || ''} isSummary={false} className="whitespace-pre-wrap" />
                                         )}
                                     </div>
                                 ) : (
@@ -1123,33 +810,8 @@ export function ItemView() {
                                                         </p>
                                                     </div>
                                                 ) : (summary && summary.content) ? (
-                                                    <div ref={contentRef} className="w-full max-w-4xl bg-white dark:bg-zinc-950 p-8 rounded-lg">
-                                                        <ReactMarkdown
-                                                            components={{
-                                                                h1: ({ children }) => <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400 mb-6 border-b pb-4 mt-2">{children}</h1>,
-                                                                h2: ({ children }) => <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-300 mt-10 mb-4">{children}</h2>,
-                                                                h3: ({ children }) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
-                                                                p: ({ children }) => <p className="text-lg leading-8 text-slate-700 dark:text-slate-300 mb-4">{children}</p>,
-                                                                ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
-                                                                li: ({ children }) => <li className="text-lg text-slate-700 dark:text-slate-300">{children}</li>,
-                                                                strong: ({ children }) => <strong className="font-bold text-slate-900 dark:text-slate-100">{children}</strong>,
-                                                                input: (props) => {
-                                                                    // Ensure safe boolean for checked
-                                                                    const isChecked = !!props.checked;
-                                                                    return (
-                                                                        <div className="flex items-center gap-2 my-1">
-                                                                            <input type="checkbox" checked={isChecked} readOnly className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                                                            <span className="text-lg text-slate-700 dark:text-slate-300">
-                                                                            </span>
-                                                                        </div>
-                                                                    )
-                                                                }
-                                                            }}
-                                                        >
-                                                            {typeof summary.content === 'string'
-                                                                ? summary.content.replace(/•\s?/g, '\n- ')
-                                                                : ''}
-                                                        </ReactMarkdown>
+                                                    <div ref={contentRef} className="w-full max-w-4xl bg-white dark:bg-zinc-950 p-8 rounded-lg flex justify-start">
+                                                        <ItemMarkdownDisplay content={summary.content || ''} isSummary={true} className="!p-0 !bg-transparent w-full" />
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4">
