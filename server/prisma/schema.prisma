@@ -369,7 +369,7 @@ model TransactionCategory {
   children     TransactionCategory[] @relation("CategoryHierarchy")
   budgets      Budget[]
   
-  // @@unique([name, type]) // Commented out to fix migration conflict with existing duplicates
+  @@unique([name, type]) // Commented out to fix migration conflict with existing duplicates
 }
 
 model Budget {

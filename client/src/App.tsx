@@ -56,7 +56,6 @@ const SettingsPage = lazyWithRetry(() => import('@/pages/SettingsPage').then(m =
 const MindMapsPage = lazyWithRetry(() => import('@/pages/MindMapsPage').then(m => ({ default: m.MindMapsPage })))
 const InvestigationBoard = lazyWithRetry(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
 const FinanceDashboard = lazyWithRetry(() => import('@/pages/FinanceDashboard').then(m => ({ default: m.default })))
-const FinanceSettings = lazyWithRetry(() => import('@/pages/finance/FinanceSettings').then(m => ({ default: m.FinanceSettings })))
 const ImportPage = lazyWithRetry(() => import('@/pages/finance/ImportPage').then(m => ({ default: m.default })))
 const BankDetailsPage = lazyWithRetry(() => import('@/pages/finance/BankDetailsPage').then(m => ({ default: m.default })))
 const AccountDetailsPage = lazyWithRetry(() => import('@/pages/finance/AccountDetailsPage').then(m => ({ default: m.default })))
@@ -181,10 +180,6 @@ const router = createBrowserRouter([
                             {
                                 path: 'dashboard',
                                 element: <LazyPage><FinanceDashboard /></LazyPage>,
-                            },
-                            {
-                                path: 'settings',
-                                element: <LazyPage><FinanceSettings /></LazyPage>,
                             },
                             {
                                 path: 'import',
