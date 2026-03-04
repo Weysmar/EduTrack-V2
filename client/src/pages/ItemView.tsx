@@ -199,6 +199,8 @@ export function ItemView() {
     }
 
     const triggerDownload = (url: string, name: string) => {
+        // Anti DOM-XSS
+        if (url.trim().toLowerCase().startsWith('javascript:')) return;
         const a = document.createElement('a')
         a.href = url
         a.download = name
@@ -570,10 +572,12 @@ export function ItemView() {
                                             // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
 
                                             if (isImage) {
+                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
                                                 return <ImageViewer url={pdfUrl} alt={item.title} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
                                             }
 
                                             if (isOffice) {
+                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
                                                 return (
                                                     <OfficeViewer
                                                         url={pdfUrl}
@@ -588,6 +592,7 @@ export function ItemView() {
 
                                             // Text/Markdown files
                                             if (isText || isMarkdown) {
+                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
                                                 return (
                                                     <TextViewer
                                                         url={pdfUrl}
@@ -607,7 +612,7 @@ export function ItemView() {
                                                         {/* Desktop: Native Iframe for best performance */}
                                                         <div className={cn("hidden lg:block", isFocusMode ? "h-full" : "h-[80vh]")}>
                                                             <iframe
-                                                                src={`${pdfUrl}#view=FitH`}
+                                                                src={pdfUrl.trim().toLowerCase().startsWith('javascript:') ? 'about:blank' : `${pdfUrl}#view=FitH`}
                                                                 title="PDF Document"
                                                                 className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
                                                                 allowFullScreen
@@ -616,13 +621,14 @@ export function ItemView() {
 
                                                         {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
                                                         <div className="block lg:hidden">
-                                                            <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />
+                                                            {pdfUrl.trim().toLowerCase().startsWith('javascript:') ? null : <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />}
                                                         </div>
                                                     </>
                                                 );
                                             }
 
                                             // Fallback for Unknown Types
+                                            if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
                                             return <GenericFileViewer url={pdfUrl} filename={item.fileName} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
                                         })()}
                                     </div>

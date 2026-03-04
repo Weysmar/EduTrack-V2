@@ -4,7 +4,7 @@
 // a sophisticated attacker with filesystem access could decrypt it.
 // Ideally, we would ask the user for a password to derive the key.
 
-const SALT = "EduTrack_Local_Salt_v1";
+const SALT = import.meta.env.VITE_ENCRYPTION_SALT || "EduTrack_Local_Salt_v1";
 
 // Helper to check for secure context support
 function isSecureContext() {
@@ -24,7 +24,7 @@ async function getKey(): Promise<CryptoKey> {
     return window.crypto.subtle.deriveKey(
         {
             name: "PBKDF2",
-            salt: enc.encode("fixed-salt"),
+            salt: enc.encode(import.meta.env.VITE_ENCRYPTION_PBKDF2_SALT || "fixed-salt"),
             iterations: 100000,
             hash: "SHA-256"
         },

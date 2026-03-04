@@ -45,7 +45,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
                     const ext = path.extname(filePath).toLowerCase();
                     if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif', '.avif'].includes(ext)) {
                         try {
-                            const imageBuffer = fs.readFileSync(filePath);
+                            const imageBuffer = await fs.promises.readFile(filePath);
                             const resized = await sharp(imageBuffer)
                                 .resize(w, null, { withoutEnlargement: true })
                                 .toBuffer();

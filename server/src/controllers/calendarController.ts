@@ -35,6 +35,7 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Invalid URL format' });
         }
 
+        let targetAddress: string;
         // 2. SSRF Protection: Resolve hostname and check for private IP
         try {
             const { address } = await lookup(parsedUrl.hostname);
@@ -42,16 +43,21 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
                 console.warn(`Blocked SSRF attempt to ${url} (resolved to ${address})`);
                 return res.status(403).json({ error: 'Access to internal resources is forbidden' });
             }
+            targetAddress = address;
         } catch (e) {
             // DNS resolution failed
             return res.status(400).json({ error: 'Invalid hostname' });
         }
 
-        // Fetch the iCal feed
         // SSRF Protection: We manually resolved and validated the IP above ($isPrivateIp).
-        const response = await fetch(url, {
+        // To prevent DNS Rebinding (TOCTOU), we fetch using the resolved IP and pass the original Host.
+        const targetUrl = new URL(url);
+        targetUrl.hostname = targetAddress;
+
+        const response = await fetch(targetUrl.toString(), {
             headers: {
-                'User-Agent': 'EduTrack/1.0 (Calendar Proxy)'
+                'User-Agent': 'EduTrack/1.0 (Calendar Proxy)',
+                'Host': parsedUrl.hostname
             }
         });
 
@@ -72,6 +78,7 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
         res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Cache-Control', 'public, max-age=300');
+        res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"'); // Mitigates XSS
 
         // XSS Protection: Content verified as iCal format, Content-Type strict, and nosniff header set.
         res.send(icsData);

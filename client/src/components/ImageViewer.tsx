@@ -28,6 +28,11 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
 
         const processImage = async () => {
             try {
+                // Mitigate DOM-XSS via javascript: URI
+                if (url.trim().toLowerCase().startsWith('javascript:')) {
+                    throw new Error('Invalid URL protocol');
+                }
+
                 // Check if it's likely HEIC based on URL extension or if it's a blob url we can check type?
                 // For now, simple extension check. Ideally we inspect the blob type if feasible.
                 const isHeic = url.toLowerCase().includes('.heic') || url.toLowerCase().includes('.heif');
