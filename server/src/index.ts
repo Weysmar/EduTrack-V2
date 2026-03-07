@@ -10,9 +10,16 @@ import compression from 'compression';
 import { Server } from 'socket.io';
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
+console.log('-------------------------------------------');
 console.log('[Server] Startup initiated');
 console.log('[Server] NODE_ENV:', process.env.NODE_ENV);
+console.log('[Server] PORT:', PORT);
 console.log('[Server] DATABASE_URL provided?', !!process.env.DATABASE_URL);
+console.log('[Server] CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('-------------------------------------------');
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
@@ -21,13 +28,9 @@ const io = new Server(httpServer, {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-
+console.log('[Server] JWT_SECRET check...');
 if (!process.env.JWT_SECRET) {
     console.error('⚠️ CRITICAL WARNING: JWT_SECRET environment variable is not set. Auth will fail.');
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error('JWT_SECRET is required in production.');
-    }
 }
 
 // Trust Proxy (essential for X-Forwarded-Proto behind Nginx/Traefik)
