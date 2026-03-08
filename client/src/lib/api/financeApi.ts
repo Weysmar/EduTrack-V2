@@ -45,6 +45,10 @@ export const financeApi = {
     deleteTransaction: async (id: string) => {
         await apiClient.delete(`/finance/transactions/${id}`);
     },
+    autoCategorizeTransactions: async (transactionIds?: string[]) => {
+        const { data } = await apiClient.post<{ success: boolean; updated: number; matches: any }>('/finance/transactions/auto-categorize', { transactionIds });
+        return data;
+    },
 
     // AI
     enrich: async (description: string, amount: number) => {

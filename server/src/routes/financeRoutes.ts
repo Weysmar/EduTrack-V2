@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getBanks, createBank, updateBank, deleteBank, archiveBank, unarchiveBank } from '../controllers/bankController';
-import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData, reclassifyAllTransactions, audit } from '../controllers/financeController';
+import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData, reclassifyAllTransactions, audit, autoCategorizeTransactions } from '../controllers/financeController';
 import {
     getBudgets,
     createBudget,
@@ -53,6 +53,7 @@ router.post('/transactions', createTransaction);
 router.put('/transactions/:id', updateTransaction);
 router.delete('/transactions/:id', deleteTransaction);
 router.post('/transactions/categorize', categorizeTransactions);
+router.post('/transactions/auto-categorize', autoCategorizeTransactions);
 
 // Import Routes
 router.post('/import/preview', upload.single('file'), previewImport);

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { ImportService } from '../services/importService';
 import { categorizerService } from '../services/categorizerService';
 import { aiService } from '../services/aiService';
+import { CategoryMatcherService } from '../services/categoryMatcherService';
 import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 import { prisma } from '../lib/prisma';
@@ -653,5 +654,41 @@ export const audit = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error('Audit Error:', error);
         res.status(500).json({ error: error.message || 'Failed to generate financial audit' });
+    }
+};
+
+// --- Auto Categorization (Keyword-based) ---
+export const autoCategorizeTransactions = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { transactionIds } = req.body;
+
+        // Call the matcher service
+        const matches = await CategoryMatcherService.matchTransactions(profileId, transactionIds);
+        const matchEntries = Object.entries(matches);
+
+        if (matchEntries.length === 0) {
+            return res.json({ success: true, updated: 0, message: 'No matches found.' });
+        }
+
+        // Update transactions in a batch
+        const updates = matchEntries.map(([id, category]) => {
+            return prisma.transaction.update({
+                where: { id },
+                data: { category }
+            });
+        });
+
+        await prisma.$transaction(updates);
+
+        res.json({
+            success: true,
+            updated: matchEntries.length,
+            matches
+        });
+
+    } catch (error: any) {
+        console.error('Auto Categorization Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to auto-categorize transactions' });
     }
 };

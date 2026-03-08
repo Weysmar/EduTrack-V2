@@ -43,7 +43,8 @@ export default function FinanceDashboard() {
         fetchBudgets,
         hideInternalTransfers,
         toggleInternalTransfers,
-        getFilteredTransactions
+        getFilteredTransactions,
+        autoCategorize
     } = useFinanceStore();
 
 
@@ -156,6 +157,17 @@ export default function FinanceDashboard() {
                             <span className="hidden sm:inline">Virements internes</span>
                         </button>
 
+                        <button
+                            onClick={() => {
+                                const count = autoCategorize();
+                                // We could add a toast here if we had a toast system
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600 transition shadow-sm font-medium"
+                            title="Auto-catégoriser par mots-clés"
+                        >
+                            <Filter className="h-4 w-4" />
+                            <span className="hidden sm:inline">Auto-cat</span>
+                        </button>
                         <button
                             onClick={() => navigate('/finance/import')}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
