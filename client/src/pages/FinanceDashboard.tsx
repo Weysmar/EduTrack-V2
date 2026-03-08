@@ -159,14 +159,13 @@ export default function FinanceDashboard() {
 
                         <button
                             onClick={() => {
-                                const count = autoCategorize();
-                                // We could add a toast here if we had a toast system
+                                autoCategorize();
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600 transition shadow-sm font-medium"
-                            title="Auto-catégoriser par mots-clés"
+                            title={t('finance.categorize.tooltip')}
                         >
                             <Filter className="h-4 w-4" />
-                            <span className="hidden sm:inline">Auto-cat</span>
+                            <span className="hidden sm:inline">{t('finance.categorize')}</span>
                         </button>
                         <button
                             onClick={() => navigate('/finance/import')}

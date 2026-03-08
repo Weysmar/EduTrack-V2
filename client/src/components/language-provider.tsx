@@ -529,7 +529,12 @@ const translations: Translations = {
         "finance.suggestion": "AI Suggestion",
         "finance.savings": "Potential Savings: {amount} / month",
         "finance.betterOffer": "Alternative",
-        "finance.refresh": "Refresh"
+        "finance.refresh": "Refresh",
+        "finance.identify": "Identify Type",
+        "finance.identify.pending": "transactions to identify",
+        "finance.identify.tooltip": "Analyze transaction type (transfer, card payment, etc.)",
+        "finance.categorize": "Classify by Keywords",
+        "finance.categorize.tooltip": "Assign categories (Shopping, Health...) based on your keywords",
     },
     fr: {
         "app.title": "EduTrack",
@@ -695,6 +700,11 @@ const translations: Translations = {
         "finance.savings": "Économie potentielle : {amount} / mois",
         "finance.betterOffer": "Alternative",
         "finance.refresh": "Actualiser",
+        "finance.identify": "Identifier le type",
+        "finance.identify.pending": "transactions à identifier",
+        "finance.identify.tooltip": "Analyser le type de transaction (virement, carte, etc.)",
+        "finance.categorize": "Ranger par mots-clés",
+        "finance.categorize.tooltip": "Assigner des catégories (Shopping, Loisirs...) selon vos mots-clés",
         "search.select": "sélectionner",
         // Summary
         "summary.title": "Options de Résumé",

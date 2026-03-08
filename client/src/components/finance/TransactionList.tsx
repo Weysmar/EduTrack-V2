@@ -76,16 +76,17 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                     <div className="flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 text-yellow-400" />
                         <p className="text-sm text-yellow-200">
-                            {unknownCount} transactions non classifiées
+                            {unknownCount} {t('finance.identify.pending')}
                         </p>
                     </div>
                     <button
                         onClick={handleReclassifyAll}
                         disabled={isReclassifying}
                         className="flex items-center gap-2 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white rounded text-sm transition-colors"
+                        title={t('finance.identify.tooltip')}
                     >
                         <RefreshCw className={`w-4 h-4 ${isReclassifying ? 'animate-spin' : ''}`} />
-                        {isReclassifying ? 'Traitement...' : 'Re-classifier'}
+                        {isReclassifying ? t('common.loading') : t('finance.identify')}
                     </button>
                 </div>
             )}

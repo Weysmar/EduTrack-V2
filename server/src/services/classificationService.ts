@@ -74,13 +74,23 @@ export class ClassificationService {
         // No internal match found
         // Check if we have enough IBAN data to classify
         if (!detectedIban || detectedIban.length < 4) {
-            // Pas d'IBAN extractible ou trop court -> UNKNOWN if no keywords
+            // Pas d'IBAN extractible ou trop court
             if (isTransferKeyword) {
                 return {
                     classification: 'EXTERNAL',
-                    confidenceScore: 0.50
+                    confidenceScore: 0.60
                 };
             }
+
+            // Default to EXTERNAL if we have a description (likely a card payment or similar)
+            // instead of UNKNOWN which blocks many features.
+            if (description && description.trim().length > 0) {
+                return {
+                    classification: 'EXTERNAL',
+                    confidenceScore: 0.55
+                };
+            }
+
             return {
                 classification: 'UNKNOWN',
                 confidenceScore: 0.30
@@ -105,7 +115,10 @@ export class ClassificationService {
     }
 
     private static hasTransferKeywords(description: string): boolean {
-        const keywords = ['VIREMENT', 'VIR ', 'TRANSFER', 'VERSEMENT', 'PAYMENT', 'ACHAT'];
+        const keywords = [
+            'VIREMENT', 'VIR ', 'TRANSFER', 'VERSEMENT', 'PAYMENT', 'ACHAT',
+            'CB ', 'CARD', 'PAIEMENT', 'CHEQUE', 'CHQ', 'PRELEVEMENT', 'PRLV'
+        ];
         const upper = description.toUpperCase();
         return keywords.some(k => upper.includes(k));
     }

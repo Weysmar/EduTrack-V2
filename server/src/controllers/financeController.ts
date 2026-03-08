@@ -583,13 +583,13 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
     try {
         const profileId = req.user!.id;
 
-        // Fetch all UNKNOWN or low-confidence transactions
+        // Fetch UNKNOWN or low-confidence transactions (increased threshold to 0.8)
         const transactions = await prisma.transaction.findMany({
             where: {
                 account: { bank: { profileId } },
                 OR: [
                     { classification: 'UNKNOWN' },
-                    { classificationConfidence: { lt: 0.5 } }
+                    { classificationConfidence: { lt: 0.8 } }
                 ]
             },
             include: {
@@ -600,6 +600,8 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
         });
 
         let updated = 0;
+        const updatedIds: string[] = [];
+
         for (const tx of transactions) {
             if (!tx.account) continue;
             const bankId = tx.account.bankId;
@@ -613,11 +615,11 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
             );
 
             // Logic:
-            // 1. If result is UNKNOWN, skip (preserve existing classification as requested)
+            // 1. If result is UNKNOWN, skip
             // 2. Otherwise update if classification changed OR confidence improved
             if (result.classification !== 'UNKNOWN') {
                 const hasChanged = result.classification !== tx.classification;
-                const confidenceImproved = result.confidenceScore > (tx.classificationConfidence || 0);
+                const confidenceImproved = (result.confidenceScore || 0) > (tx.classificationConfidence || 0);
 
                 if (hasChanged || confidenceImproved) {
                     await prisma.transaction.update({
@@ -629,7 +631,24 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
                         }
                     });
                     updated++;
+                    updatedIds.push(tx.id);
                 }
+            }
+        }
+
+        // Trigger Auto-categorization for updated IDs
+        if (updatedIds.length > 0) {
+            const matches = await CategoryMatcherService.matchTransactions(profileId, updatedIds);
+            const matchEntries = Object.entries(matches);
+
+            if (matchEntries.length > 0) {
+                const catUpdates = matchEntries.map(([id, category]) => {
+                    return prisma.transaction.update({
+                        where: { id },
+                        data: { category }
+                    });
+                });
+                await prisma.$transaction(catUpdates);
             }
         }
 
