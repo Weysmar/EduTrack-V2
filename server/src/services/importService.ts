@@ -42,6 +42,14 @@ export class ImportService {
      * Preview Step: Parse and Match
      */
     static async generatePreview(profileId: string, filePath: string, targetBankId: string, targetAccountId?: string): Promise<ImportPreview> {
+        // Security check: ensure the file path is within the allowed uploads directory
+        const tempBaseDir = path.resolve('uploads/temp');
+        const { isPathWithinBase } = await import('../utils/sanitizePath');
+
+        if (!isPathWithinBase(filePath, tempBaseDir)) {
+            throw new Error('Security Error: Unauthorized file access attempt');
+        }
+
         const fileBuffer = fs.readFileSync(filePath);
         const ext = path.extname(filePath).toLowerCase();
 
