@@ -109,25 +109,42 @@ function extractDomain(description: string): string | null {
 }
 
 export function MerchantLogo({ description, classification, size = 32 }: Props) {
-    const [imgError, setImgError] = useState(false);
+    const [logoSource, setLogoSource] = useState<'clearbit' | 'google' | 'fallback'>('clearbit');
     const domain = extractDomain(description);
 
     const containerClass = `flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 shrink-0 overflow-hidden`;
     const containerStyle = { width: size, height: size };
 
-    if (domain && !imgError) {
-        return (
-            <div className={containerClass} style={containerStyle}>
-                <img
-                    src={`https://logo.clearbit.com/${domain}`}
-                    alt={domain}
-                    width={size - 8}
-                    height={size - 8}
-                    className="object-contain rounded-full"
-                    onError={() => setImgError(true)}
-                />
-            </div>
-        );
+    if (domain) {
+        if (logoSource === 'clearbit') {
+            return (
+                <div className={containerClass} style={containerStyle}>
+                    <img
+                        src={`https://logo.clearbit.com/${domain}`}
+                        alt={domain}
+                        width={size - 8}
+                        height={size - 8}
+                        className="object-contain rounded-full"
+                        onError={() => setLogoSource('google')}
+                    />
+                </div>
+            );
+        }
+
+        if (logoSource === 'google') {
+            return (
+                <div className={containerClass} style={containerStyle}>
+                    <img
+                        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`}
+                        alt={domain}
+                        width={size - 8}
+                        height={size - 8}
+                        className="object-contain rounded-full"
+                        onError={() => setLogoSource('fallback')}
+                    />
+                </div>
+            );
+        }
     }
 
     return (
