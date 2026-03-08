@@ -48,7 +48,6 @@ export default function FinanceDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const accountIdParam = searchParams.get('accountId');
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
@@ -244,7 +243,6 @@ export default function FinanceDashboard() {
                         onDelete={deleteTransaction}
                         onEdit={(tx) => {
                             setEditingTransaction(tx);
-                            setIsModalOpen(true);
                         }}
                         onEnrich={enrichTransaction}
                     />
@@ -256,13 +254,11 @@ export default function FinanceDashboard() {
                         accounts={accounts}
                         isOpen={!!editingTransaction}
                         onClose={() => {
-                            setIsModalOpen(false);
                             setEditingTransaction(null);
                         }}
                         onSave={async (id, data) => {
                             await useFinanceStore.getState().updateTransaction(id, data);
                             setEditingTransaction(null);
-                            setIsModalOpen(false);
                         }}
                     />
                 )}

@@ -19,9 +19,9 @@ const PERIOD_BUTTONS: { key: Period; label: string; isIcon?: boolean }[] = [
     { key: 'all', label: '∞' },
     { key: '3y', label: '3a' },
     { key: '1y', label: '1a' },
-    { key: '6m', label: '6m' },
-    { key: '3m', label: '3m' },
-    { key: '1m', label: '1m' },
+    { key: '6m', label: '1m' },
+    { key: '3m', label: '2m' },
+    { key: '1m', label: '3m' },
 ];
 
 const formatCurrency = (val: number) =>
@@ -217,8 +217,8 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
                             key={btn.key}
                             onClick={() => setPeriod(btn.key)}
                             className={`px-2 py-0.5 rounded text-xs font-mono font-medium transition-colors ${period === btn.key
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                                 }`}
                         >
                             {btn.label}

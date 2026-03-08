@@ -308,14 +308,18 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     },
 
     getTotalIncome: () => {
+        const hideInternal = get().filters.hideInternalTransfers;
         return get().transactions
             .filter(t => t.type === 'INCOME')
+            .filter(t => !hideInternal || (t.classification !== 'INTERNAL_INTRA_BANK' && t.classification !== 'INTERNAL_INTER_BANK'))
             .reduce((acc, t) => acc + t.amount, 0);
     },
 
     getTotalExpenses: () => {
+        const hideInternal = get().filters.hideInternalTransfers;
         return get().transactions
             .filter(t => t.type === 'EXPENSE')
+            .filter(t => !hideInternal || (t.classification !== 'INTERNAL_INTRA_BANK' && t.classification !== 'INTERNAL_INTER_BANK'))
             .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     },
 
