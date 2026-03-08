@@ -647,7 +647,7 @@ export const audit = async (req: AuthRequest, res: Response) => {
         Réponds en français avec un ton encourageant mais professionnel.
         `;
 
-        const auditText = await aiService.generateText(prompt, systemPrompt, 'gemini-2.0-flash-exp', apiKey);
+        const auditText = await aiService.generateText(prompt, systemPrompt, 'gemini-1.5-flash', apiKey);
 
         res.json({ audit: auditText });
 
