@@ -606,3 +606,51 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
         res.status(500).json({ error: 'Failed to reclassify transactions' });
     }
 };
+
+// --- Financial Audit (AI) ---
+export const audit = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user!.id;
+        const { transactions } = req.body;
+
+        if (!Array.isArray(transactions) || transactions.length === 0) {
+            return res.status(400).json({ error: 'Transactions are required for audit' });
+        }
+
+        // Get user's API key
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { settings: true }
+        });
+
+        const apiKey = (profile?.settings as any)?.google_gemini_summaries;
+
+        if (!apiKey) {
+            return res.status(400).json({ error: 'No API key configured. Please add your Gemini API key in Settings.' });
+        }
+
+        // Prepare context for AI
+        const txList = transactions
+            .slice(0, 50) // Limit to last 50 for cost/speed
+            .map((t: any) => `[${new Date(t.date).toLocaleDateString()}] ${t.amount}€ - ${t.description} (${t.category || t.classification || 'Sans catégorie'})`)
+            .join('\n');
+
+        const systemPrompt = "Tu es un analyste financier personnel expert. Ton objectif est d'analyser les transactions récentes de l'utilisateur et de lui donner un résumé court (max 150 mots), percutant et des conseils actionnables.";
+
+        const prompt = `
+        Voici mes dernières transactions :
+        ${txList}
+
+        Analyse ma situation financière récente. Identifie les tendances de dépenses, les anomalies éventuelles et propose 2-3 conseils concrets pour optimiser mon budget.
+        Réponds en français avec un ton encourageant mais professionnel.
+        `;
+
+        const auditText = await aiService.generateText(prompt, systemPrompt, 'gemini-2.0-flash-exp', apiKey);
+
+        res.json({ audit: auditText });
+
+    } catch (error: any) {
+        console.error('Audit Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate financial audit' });
+    }
+};

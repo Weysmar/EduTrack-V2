@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getBanks, createBank, updateBank, deleteBank, archiveBank, unarchiveBank } from '../controllers/bankController';
-import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData, reclassifyAllTransactions } from '../controllers/financeController';
+import { getAccounts, getTransactions, createTransaction, updateTransaction, deleteTransaction, previewImport, confirmImport, categorizeTransactions, createAccount, updateAccount, deleteAccount, getImportLogs, exportData, reclassifyAllTransactions, audit } from '../controllers/financeController';
 import {
     getBudgets,
     createBudget,
@@ -61,6 +61,9 @@ router.get('/imports', getImportLogs);
 
 // Export Route
 router.get('/export', exportData);
+
+// AI Audit
+router.post('/audit', audit);
 
 // Bulk Reclassification
 router.post('/transactions/reclassify-all', reclassifyAllTransactions as any);

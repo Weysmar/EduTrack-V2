@@ -192,6 +192,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'account/:accountId',
                                 element: <LazyPage><AccountDetailsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'settings',
+                                element: <LazyPage><SettingsPage /></LazyPage>,
                             }
                         ]
                     }
