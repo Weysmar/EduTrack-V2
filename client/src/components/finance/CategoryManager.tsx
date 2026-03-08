@@ -19,11 +19,12 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
     const { t } = useLanguage();
     const { categories, fetchCategories, addCategory, updateCategory, deleteCategory } = useFinanceStore();
 
-    const [isEditing, setIsEditing] = useState<string | null>(null); // ID of category being edited
-    const [editForm, setEditForm] = useState<Partial<TransactionCategory>>({});
-
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState(COLORS[6]); // Default blue
+    const [newCategoryKeywords, setNewCategoryKeywords] = useState('');
+
+    const [isEditing, setIsEditing] = useState<string | null>(null); // ID of category being edited
+    const [editForm, setEditForm] = useState<Partial<TransactionCategory>>({});
 
     useEffect(() => {
         fetchCategories();
@@ -31,13 +32,21 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
 
     const handleAdd = async () => {
         if (!newCategoryName.trim()) return;
+
+        // Parse keywords from string (comma separated)
+        const keywords = newCategoryKeywords
+            .split(',')
+            .map(k => k.trim())
+            .filter(k => k.length > 0);
+
         await addCategory({
             name: newCategoryName,
             color: newCategoryColor,
             icon: 'tag', // Default icon
-            keywords: []
+            keywords
         });
         setNewCategoryName('');
+        setNewCategoryKeywords('');
         setNewCategoryColor(COLORS[6]);
     };
 
@@ -76,16 +85,15 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                 </button>
             </div>
 
-            <div className="p-4 border-b bg-muted/10">
+            <div className="p-4 border-b bg-muted/10 space-y-3">
                 <div className="flex gap-2">
                     <div className="flex-1">
                         <input
                             type="text"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder={t('finance.categories.placeholder') || "Nouvelle catégorie..."}
+                            placeholder={t('finance.categories.placeholder') || "Camping, Internet..."}
                             className="w-full px-3 py-2 rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                         />
                     </div>
 
@@ -95,7 +103,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                                 className="w-10 h-10 rounded-md border flex items-center justify-center transition-colors hover:border-primary"
                                 style={{ backgroundColor: newCategoryColor }}
                             >
-                                <span className="sr-only">Color</span>
+                                <Palette className="w-4 h-4 text-white drop-shadow-sm" />
                             </button>
                             <div className="absolute top-full right-0 mt-2 p-2 bg-card border rounded-lg shadow-lg grid grid-cols-4 gap-1 w-32 hidden group-hover:grid z-10">
                                 {COLORS.map(c => (
@@ -112,12 +120,24 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                         <button
                             onClick={handleAdd}
                             disabled={!newCategoryName.trim()}
-                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 font-medium flex items-center gap-2"
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 font-medium flex items-center gap-2 whitespace-nowrap"
                         >
                             <Plus className="w-4 h-4" />
                             {t('action.add')}
                         </button>
                     </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-background/50 p-2 rounded-md border border-dashed">
+                    <Tag className="w-3 h-3 text-muted-foreground" />
+                    <input
+                        type="text"
+                        value={newCategoryKeywords}
+                        onChange={(e) => setNewCategoryKeywords(e.target.value)}
+                        placeholder="Mots-clés (ex: amazon, netflix...)"
+                        className="flex-1 bg-transparent border-none text-xs focus:ring-0 p-0"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                    />
                 </div>
             </div>
 
@@ -131,21 +151,38 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                 {categories.map(category => (
                     <div key={category.id} className="flex items-center justify-between p-3 rounded-lg border hover:border-primary/50 bg-card transition-colors group">
                         {isEditing === category.id ? (
-                            <div className="flex items-center gap-2 flex-1 animate-in fade-in">
-                                <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: editForm.color }} />
-                                {/* Simple color picker for edit could be added here similar to create */}
-                                <input
-                                    value={editForm.name}
-                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                    className="flex-1 px-2 py-1 rounded border bg-background"
-                                    autoFocus
-                                />
-                                <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded">
-                                    <Check className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setIsEditing(null)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
-                                    <X className="w-4 h-4" />
-                                </button>
+                            <div className="flex flex-col gap-3 flex-1 animate-in fade-in">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: editForm.color }} />
+                                    <input
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        className="flex-1 px-3 py-1.5 rounded-md border bg-background text-sm"
+                                        autoFocus
+                                        placeholder="Nom de la catégorie"
+                                    />
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={handleSaveEdit} className="p-2 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md">
+                                            <Check className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => setIsEditing(null)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 pl-10">
+                                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Mots-clés (Auto-cat)</label>
+                                    <input
+                                        value={editForm.keywords?.join(', ')}
+                                        onChange={(e) => setEditForm({
+                                            ...editForm,
+                                            keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0)
+                                        })}
+                                        className="w-full px-3 py-1.5 rounded-md border bg-background text-xs"
+                                        placeholder="amazon, carrefour, netflix..."
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Séparez par des virgules pour ajouter plusieurs mots-clés.</p>
+                                </div>
                             </div>
                         ) : (
                             <>
