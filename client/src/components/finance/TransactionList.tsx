@@ -4,6 +4,7 @@ import { Transaction } from '@/types/finance';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
+import { useFinanceStore } from '@/store/financeStore';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -15,6 +16,7 @@ interface TransactionListProps {
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const { t, language } = useLanguage();
+    const { reclassifyAll } = useFinanceStore();
     const [isReclassifying, setIsReclassifying] = useState(false);
 
     const handleEnrich = async (id: string) => {
@@ -27,14 +29,8 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
     const handleReclassifyAll = async () => {
         try {
             setIsReclassifying(true);
-            const res = await fetch('/api/finance/transactions/reclassify-all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await res.json();
-            if (data.success && data.updated > 0) {
-                window.location.reload();
-            }
+            const updated = await reclassifyAll();
+            // Store automatically refreshes transactions, so no need for reload
         } catch (error) {
             console.error(error);
         } finally {

@@ -49,6 +49,10 @@ export const financeApi = {
         const { data } = await apiClient.post<{ success: boolean; updated: number; matches: any }>('/finance/transactions/auto-categorize', { transactionIds });
         return data;
     },
+    reclassifyAllTransactions: async () => {
+        const { data } = await apiClient.post<{ success: boolean; updated: number; total: number }>('/finance/transactions/reclassify-all');
+        return data;
+    },
 
     // AI
     enrich: async (description: string, amount: number) => {

@@ -33,6 +33,7 @@ interface FinanceState {
     generateLocalAudit: () => Promise<string>;
     setFilters: (filters: Partial<FinanceFilters>) => void;
     autoCategorize: (ids?: string[]) => Promise<number>;
+    reclassifyAll: () => Promise<number>;
 
 
     categories: TransactionCategory[];
@@ -337,6 +338,23 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             return 0;
         } catch (error) {
             console.error('Auto categorization error', error);
+            return 0;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    reclassifyAll: async () => {
+        try {
+            set({ isLoading: true });
+            const result = await financeApi.reclassifyAllTransactions();
+            if (result.success) {
+                await get().fetchTransactions();
+                return result.updated;
+            }
+            return 0;
+        } catch (error) {
+            console.error('Reclassification error', error);
             return 0;
         } finally {
             set({ isLoading: false });
