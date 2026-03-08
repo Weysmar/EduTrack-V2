@@ -30,7 +30,7 @@ router.use('/folders', authMiddleware, folderRoutes);
 router.use('/flashcards', authMiddleware, flashcardRoutes);
 router.use('/summaries', authMiddleware, summaryRoutes);
 router.use('/quizzes', authMiddleware, quizRoutes);
-router.use('/storage', authMiddleware, storageRoutes);
+router.use('/storage', storageRoutes);
 router.use('/ai', authMiddleware, aiRoutes);
 router.use('/extract', authMiddleware, extractionRoutes);
 router.use('/planning', authMiddleware, planningRoutes);

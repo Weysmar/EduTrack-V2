@@ -11,9 +11,12 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
-    // 1. Get token from header
+    // 1. Get token from header or query param
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const tokenHeader = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const tokenQuery = req.query.token as string;
+
+    const token = tokenHeader || tokenQuery;
 
     if (!token) {
         return res.status(401).json({ message: 'Authentication required' });
