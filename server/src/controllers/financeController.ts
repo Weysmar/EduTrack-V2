@@ -599,6 +599,8 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
             }
         });
 
+        console.log(`[Reclassify] Found ${transactions.length} target transactions.`);
+
         let updated = 0;
         const updatedIds: string[] = [];
 
@@ -621,6 +623,8 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
                 const hasChanged = result.classification !== tx.classification;
                 const confidenceImproved = (result.confidenceScore || 0) > (tx.classificationConfidence || 0);
 
+                console.log(`[Reclassify] Profile: ${profileId.slice(0, 8)} | TX: ${tx.description.slice(0, 20)} | Old: ${tx.classification}(${tx.classificationConfidence?.toFixed(2)}) | New: ${result.classification}(${result.confidenceScore?.toFixed(2)}) | changed: ${hasChanged} | improved: ${confidenceImproved}`);
+
                 if (hasChanged || confidenceImproved) {
                     await prisma.transaction.update({
                         where: { id: tx.id },
@@ -633,6 +637,8 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
                     updated++;
                     updatedIds.push(tx.id);
                 }
+            } else {
+                console.log(`[Reclassify] Skip UNKNOWN for: ${tx.description.slice(0, 20)}`);
             }
         }
 
