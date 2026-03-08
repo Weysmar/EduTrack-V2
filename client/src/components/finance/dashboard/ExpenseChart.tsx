@@ -72,6 +72,9 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
 
         // Fill buckets
         filtered.forEach(t => {
+            // Systematically exclude internal transfers from activity chart
+            if (t.classification?.startsWith('INTERNAL')) return;
+
             const date = new Date(t.date);
             if (date < startDate) return;
             const key = useMonthly ? format(date, 'yyyy-MM') : format(date, 'yyyy-ww');

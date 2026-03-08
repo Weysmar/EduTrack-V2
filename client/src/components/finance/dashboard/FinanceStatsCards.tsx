@@ -25,6 +25,9 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
         let expenses = 0;
 
         currentMonthTransactions.forEach(t => {
+            // Systematically exclude internal transfers from stats
+            if (t.classification?.startsWith('INTERNAL')) return;
+
             if (t.amount > 0) {
                 income += t.amount;
             } else {

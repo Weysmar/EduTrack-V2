@@ -326,14 +326,16 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     },
 
     getTotalIncome: () => {
-        return get().getFilteredTransactions()
+        return get().transactions // Use all loaded transactions for totals
             .filter(t => t.type === 'INCOME')
+            .filter(t => !t.classification?.startsWith('INTERNAL')) // Systematically exclude internal transfers
             .reduce((acc, t) => acc + t.amount, 0);
     },
 
     getTotalExpenses: () => {
-        return get().getFilteredTransactions()
+        return get().transactions // Use all loaded transactions for totals
             .filter(t => t.type === 'EXPENSE')
+            .filter(t => !t.classification?.startsWith('INTERNAL')) // Systematically exclude internal transfers
             .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     },
 
@@ -346,12 +348,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     getCategoryBreakdown: () => {
         const breakdown = new Map<string, number>();
 
-        get().getFilteredTransactions().forEach(t => {
-            if (t.type === 'EXPENSE') {
-                const category = t.category || 'Uncategorized';
-                breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
-            }
-        });
+        get().transactions // Use all transactions for breakdown but filter internal
+            .filter(t => !t.classification?.startsWith('INTERNAL'))
+            .forEach(t => {
+                if (t.type === 'EXPENSE') {
+                    const category = t.category || 'Uncategorized';
+                    breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
+                }
+            });
 
         return Array.from(breakdown.entries()).map(([category, amount]) => ({
             category,

@@ -340,6 +340,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
                     date: date ? new Date(date) : undefined,
                     description: description ? String(description) : undefined,
                     classification,
+                    classificationConfidence: classification ? 1.0 : undefined, // Mark as manual if provided
                     category: category ? String(category) : undefined,
                     beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
                     metadata
@@ -567,7 +568,6 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
 
         let updated = 0;
         for (const tx of transactions) {
-            // Need bankId. tx.account.bankId is available via include
             if (!tx.account) continue;
             const bankId = tx.account.bankId;
 
@@ -579,17 +579,24 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
                 tx.beneficiaryIban || undefined
             );
 
-            // Only update if confidence improved
-            if (result.confidenceScore > (tx.classificationConfidence || 0)) {
-                await prisma.transaction.update({
-                    where: { id: tx.id },
-                    data: {
-                        classification: result.classification,
-                        classificationConfidence: result.confidenceScore,
-                        linkedAccountId: result.linkedAccountId
-                    }
-                });
-                updated++;
+            // Logic:
+            // 1. If result is UNKNOWN, skip (preserve existing classification as requested)
+            // 2. Otherwise update if classification changed OR confidence improved
+            if (result.classification !== 'UNKNOWN') {
+                const hasChanged = result.classification !== tx.classification;
+                const confidenceImproved = result.confidenceScore > (tx.classificationConfidence || 0);
+
+                if (hasChanged || confidenceImproved) {
+                    await prisma.transaction.update({
+                        where: { id: tx.id },
+                        data: {
+                            classification: result.classification,
+                            classificationConfidence: result.confidenceScore,
+                            linkedAccountId: result.linkedAccountId
+                        }
+                    });
+                    updated++;
+                }
             }
         }
 

@@ -23,6 +23,7 @@ export class ClassificationService {
 
         // Step 1: Analyze Description for keywords
         const isTransferKeyword = this.hasTransferKeywords(description);
+        const isInternalKeyword = this.hasInternalKeywords(description);
 
         // Step 2: Extract or Find Beneficiary IBAN if not provided
         let detectedIban = beneficiaryIban || this.extractIbanFromDescription(description);
@@ -58,22 +59,28 @@ export class ClassificationService {
         }
 
         // Step 4: Determine Classification & Score
-        if (linkedAccount) {
-            // Found a matching internal account!
-            const isIntraBank = linkedAccount.bankId === sourceBankId;
+        if (linkedAccount || isInternalKeyword) {
+            // Found a matching internal account OR high-confidence keyword!
+            const isIntraBank = linkedAccount ? linkedAccount.bankId === sourceBankId : true; // Default to intra if keyword but no account linked
 
             return {
                 classification: isIntraBank ? 'INTERNAL_INTRA_BANK' : 'INTERNAL_INTER_BANK',
-                confidenceScore: 0.95,
+                confidenceScore: linkedAccount ? 0.98 : 0.85,
                 beneficiaryIban: detectedIban,
-                linkedAccountId: linkedAccount.id
+                linkedAccountId: linkedAccount?.id
             };
         }
 
         // No internal match found
         // Check if we have enough IBAN data to classify
         if (!detectedIban || detectedIban.length < 4) {
-            // Pas d'IBAN extractible ou trop court -> UNKNOWN
+            // Pas d'IBAN extractible ou trop court -> UNKNOWN if no keywords
+            if (isTransferKeyword) {
+                return {
+                    classification: 'EXTERNAL',
+                    confidenceScore: 0.50
+                };
+            }
             return {
                 classification: 'UNKNOWN',
                 confidenceScore: 0.30
@@ -84,7 +91,7 @@ export class ClassificationService {
             // "VIREMENT" to unknown external account -> External
             return {
                 classification: 'EXTERNAL',
-                confidenceScore: 0.70,
+                confidenceScore: 0.75,
                 beneficiaryIban: detectedIban
             };
         }
@@ -98,7 +105,13 @@ export class ClassificationService {
     }
 
     private static hasTransferKeywords(description: string): boolean {
-        const keywords = ['VIREMENT', 'VIR', 'TRANSFER', 'VERSEMENT'];
+        const keywords = ['VIREMENT', 'VIR ', 'TRANSFER', 'VERSEMENT', 'PAYMENT', 'ACHAT'];
+        const upper = description.toUpperCase();
+        return keywords.some(k => upper.includes(k));
+    }
+
+    private static hasInternalKeywords(description: string): boolean {
+        const keywords = ['VIREMENT COMPTE A COMPTE', 'VIR COMPTE A COMPTE', 'VIR INTERNE', 'TRANSFERT INTERNE'];
         const upper = description.toUpperCase();
         return keywords.some(k => upper.includes(k));
     }
