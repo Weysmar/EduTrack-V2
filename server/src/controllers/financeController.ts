@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ImportService } from '../services/importService';
 import { categorizerService } from '../services/categorizerService';
+import { aiService } from '../services/aiService';
 import { ClassificationService } from '../services/classificationService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 import { prisma } from '../lib/prisma';
