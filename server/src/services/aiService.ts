@@ -9,11 +9,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
         // Stable models (2026)
-        'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
+        'gemini-1.5-flash': 'gemini-1.5-flash',
         'gemini-1.5-pro': 'gemini-1.5-pro',
         'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-2.5-flash': 'gemini-2.5-flash',
-        'gemini-2.5-pro': 'gemini-2.5-pro',
+        'gemini-2.0-pro': 'gemini-2.0-pro',
+        'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',

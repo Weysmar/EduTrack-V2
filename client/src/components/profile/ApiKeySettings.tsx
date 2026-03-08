@@ -14,12 +14,16 @@ export function ApiKeySettings() {
         google_calendar: string;
         google_gemini_summaries: string;
         google_gemini_exercises: string;
+        finance_audit_provider: 'google' | 'perplexity';
+        finance_audit_model: string;
     }>({
         perplexity_summaries: '',
         perplexity_exercises: '',
         google_calendar: '',
         google_gemini_summaries: '',
-        google_gemini_exercises: ''
+        google_gemini_exercises: '',
+        finance_audit_provider: 'google',
+        finance_audit_model: 'gemini-1.5-flash'
     })
 
     const [showKey, setShowKey] = useState<Record<string, boolean>>({})
@@ -33,7 +37,9 @@ export function ApiKeySettings() {
                 perplexity_exercises: getApiKey('perplexity_exercises') || '',
                 google_calendar: getApiKey('google_calendar') || '',
                 google_gemini_summaries: getApiKey('google_gemini_summaries') || '',
-                google_gemini_exercises: getApiKey('google_gemini_exercises') || ''
+                google_gemini_exercises: getApiKey('google_gemini_exercises') || '',
+                finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
+                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-1.5-flash'
             })
         }
     }, [activeProfile?.id]) // Only update if profile changes, not on every refresh
@@ -42,7 +48,7 @@ export function ApiKeySettings() {
         setIsSaving(true)
         setMessage(null)
         try {
-            await updateApiKeys(keys)
+            await updateApiKeys(keys as any)
 
             setMessage({ type: 'success', text: t('settings.save.success') })
 
@@ -137,6 +143,58 @@ export function ApiKeySettings() {
                         onToggle={() => toggleShow('google_calendar')}
                         placeholder={t('settings.api.placeholder.bearer')}
                     />
+                </div>
+
+                {/* Finance Audit Section */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">
+                        {t('settings.api.finance.title')}
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium">{t('settings.api.finance.provider')}</label>
+                            <select
+                                value={keys.finance_audit_provider}
+                                onChange={(e) => {
+                                    const provider = e.target.value as 'google' | 'perplexity';
+                                    setKeys(prev => ({
+                                        ...prev,
+                                        finance_audit_provider: provider,
+                                        finance_audit_model: provider === 'google' ? 'gemini-1.5-flash' : 'sonar'
+                                    }));
+                                }}
+                                className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                            >
+                                <option value="google">Google Gemini</option>
+                                <option value="perplexity">Perplexity AI</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium">{t('settings.api.finance.model')}</label>
+                            <select
+                                value={keys.finance_audit_model}
+                                onChange={(e) => setKeys(prev => ({ ...prev, finance_audit_model: e.target.value }))}
+                                className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                            >
+                                {keys.finance_audit_provider === 'google' ? (
+                                    <>
+                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                        <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="sonar">Sonar (Stable)</option>
+                                        <option value="sonar-pro">Sonar Pro</option>
+                                        <option value="sonar-reasoning">Sonar Reasoning</option>
+                                    </>
+                                )}
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 

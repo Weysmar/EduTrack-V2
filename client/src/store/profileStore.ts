@@ -18,6 +18,8 @@ interface ApiKeyMap {
     google_calendar: string | null;
     google_gemini_summaries: string | null;
     google_gemini_exercises: string | null;
+    finance_audit_provider: 'google' | 'perplexity' | null;
+    finance_audit_model: string | null;
 }
 
 interface ProfileState {
@@ -48,7 +50,9 @@ export const useProfileStore = create<ProfileState>()(
                 perplexity_exercises: null,
                 google_calendar: null,
                 google_gemini_summaries: null,
-                google_gemini_exercises: null
+                google_gemini_exercises: null,
+                finance_audit_provider: 'google',
+                finance_audit_model: 'gemini-1.5-flash'
             },
             isLoading: false,
 
@@ -61,8 +65,6 @@ export const useProfileStore = create<ProfileState>()(
                     // Load settings/keys from profile if available
                     let keys = get().apiKeys;
                     if (profile.settings) {
-                        // Merge or replace? Let's merge for safety, or replace if we trust server fully.
-                        // Since server is source of truth for sync, we use server values if present.
                         keys = { ...keys, ...profile.settings };
                     }
 
@@ -94,15 +96,19 @@ export const useProfileStore = create<ProfileState>()(
             logout: () => {
                 set({
                     activeProfile: null,
-                    apiKeys: { perplexity_summaries: null, perplexity_exercises: null, google_calendar: null, google_gemini_summaries: null, google_gemini_exercises: null }
+                    apiKeys: {
+                        perplexity_summaries: null,
+                        perplexity_exercises: null,
+                        google_calendar: null,
+                        google_gemini_summaries: null,
+                        google_gemini_exercises: null,
+                        finance_audit_provider: 'google',
+                        finance_audit_model: 'gemini-1.5-flash'
+                    }
                 });
             },
 
             setApiKey: async (service: keyof ApiKeyMap, key: string) => {
-                // Legacy single-setter, still useful for partial updates. 
-                // We should sync this too? Or keep it local until explicit save?
-                // The UI calls this on save, but 5 times. 
-                // Let's rely on the new updateApiKeys for save.
                 set(state => ({
                     apiKeys: { ...state.apiKeys, [service]: key }
                 }));
@@ -138,10 +144,6 @@ export const useProfileStore = create<ProfileState>()(
             },
 
             switchProfile: async (id: string) => {
-                // Assuming we just fetch the new profile or setting it active
-                // For now, let's just reload the profile or set it if we had the full object
-                // If the backend handles session switching, we might need an endpoint.
-                // But let's assume we just set it as active if we have it, or fetch it.
                 const response = await apiClient.get(`/profiles/${id}`);
                 const profile = response.data;
 
@@ -159,7 +161,7 @@ export const useProfileStore = create<ProfileState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 activeProfile: state.activeProfile,
-                apiKeys: state.apiKeys // Persist keys locally for now if not server synced yet
+                apiKeys: state.apiKeys
             }),
         }
     )

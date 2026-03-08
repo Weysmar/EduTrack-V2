@@ -40,13 +40,13 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // Validate and resolve the file path to break taint chain
-        // We strictly use the basename or the safe hex string of the uploaded file
-        const safeFilename = file.filename || path.basename(file.path);
+        // Strictly use only the basename of the file to prevent path traversal
+        const safeFilename = path.basename(file.path);
         const resolvedFilePath = path.join(tempBaseDir, safeFilename);
 
         if (!isPathWithinBase(resolvedFilePath, tempBaseDir)) {
-            return res.status(400).json({ error: 'Invalid file path' });
+            console.error('Security Alert: Path traversal attempt detected', { profileId, resolvedFilePath });
+            return res.status(403).json({ error: 'Access denied' });
         }
 
         // Safe cleanup helper using the validated path
@@ -69,7 +69,7 @@ export const previewImport = async (req: AuthRequest, res: Response) => {
         // Try to clean up any temp file on error
         try {
             if (req.file?.path) {
-                const p = path.resolve(req.file.path);
+                const p = path.join(tempBaseDir, path.basename(req.file.path));
                 if (isPathWithinBase(p, tempBaseDir) && fs.existsSync(p)) fs.unlinkSync(p);
             }
         } catch { /* ignore cleanup errors */ }
@@ -341,11 +341,11 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
                     amount: sanitizedAmount,
                     date: date ? new Date(date) : undefined,
                     description: description ? String(description) : undefined,
-                    classification,
-                    classificationConfidence: classification ? 1.0 : undefined, // Mark as manual if provided
+                    classification: classification ? (String(classification) as any) : undefined,
+                    classificationConfidence: classification ? 1.0 : undefined,
                     category: category ? String(category) : undefined,
                     beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
-                    metadata
+                    metadata: metadata ? (typeof metadata === 'object' ? metadata : undefined) : undefined
                 }
             });
             // Recalculate from all transactions (prevents drift)
@@ -625,10 +625,22 @@ export const audit = async (req: AuthRequest, res: Response) => {
             select: { settings: true }
         });
 
-        const apiKey = (profile?.settings as any)?.google_gemini_summaries;
+        // Get user's AI settings
+        const settings = (profile?.settings as any) || {};
+        const provider = settings.finance_audit_provider || 'google';
+        const model = settings.finance_audit_model || 'gemini-1.5-flash';
+
+        // Select correct API key based on provider
+        let apiKey = '';
+        if (provider === 'google') {
+            apiKey = settings.google_gemini_summaries || process.env.GEMINI_API_KEY || '';
+        } else {
+            apiKey = settings.perplexity_summaries || process.env.PERPLEXITY_API_KEY || '';
+        }
 
         if (!apiKey) {
-            return res.status(400).json({ error: 'No API key configured. Please add your Gemini API key in Settings.' });
+            const providerName = provider === 'google' ? 'Gemini' : 'Perplexity';
+            return res.status(400).json({ error: `No API key configured for ${providerName}. Please add it in Settings.` });
         }
 
         // Prepare context for AI
@@ -647,7 +659,8 @@ export const audit = async (req: AuthRequest, res: Response) => {
         Réponds en français avec un ton encourageant mais professionnel.
         `;
 
-        const auditText = await aiService.generateText(prompt, systemPrompt, 'gemini-1.5-flash', apiKey);
+        // Use the selected model and provider (aiService handles model mapping)
+        const auditText = await aiService.generateText(prompt, systemPrompt, model, apiKey);
 
         res.json({ audit: auditText });
 
