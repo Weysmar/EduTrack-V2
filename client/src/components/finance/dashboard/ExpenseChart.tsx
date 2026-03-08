@@ -31,16 +31,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
     const [period, setPeriod] = useState<Period>('3m');
     const [yScale, setYScale] = useState(100); // 10–100, slider percentage
 
-    const filtered = useMemo(() => {
-        let txs = transactions;
-        if (hideInternalTransfers) {
-            txs = txs.filter(t =>
-                t.classification !== 'INTERNAL_INTRA_BANK' &&
-                t.classification !== 'INTERNAL_INTER_BANK'
-            );
-        }
-        return txs;
-    }, [transactions, hideInternalTransfers]);
+    const filtered = transactions;
 
     const chartData = useMemo(() => {
         if (filtered.length === 0) return [];

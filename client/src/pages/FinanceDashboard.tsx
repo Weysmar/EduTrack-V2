@@ -40,7 +40,10 @@ export default function FinanceDashboard() {
         accounts,
         fetchAccounts,
         fetchBanks,
-        fetchBudgets // New action
+        fetchBudgets,
+        hideInternalTransfers,
+        toggleInternalTransfers,
+        getFilteredTransactions
     } = useFinanceStore();
 
 
@@ -98,17 +101,17 @@ export default function FinanceDashboard() {
     const navigate = useNavigate();
     // Use store filters instead of local state
     const { filters, setFilters } = useFinanceStore();
-    const hideInternal = filters.hideInternalTransfers ?? false;
 
-    // Filter transactions based on 'accountId' only (hideInternal is handled by components)
+    // Filter transactions based on 'accountId' + store internal filtering
     const filteredTransactions = useMemo(() => {
-        return transactions.filter(t => {
+        const baseTransactions = getFilteredTransactions();
+        return baseTransactions.filter(t => {
             if (accountIdParam) {
                 return t.accountId === accountIdParam;
             }
             return true;
         });
-    }, [transactions, accountIdParam]);
+    }, [getFilteredTransactions, accountIdParam]);
 
     // Calculate dynamic balance
     // If accountId is present, we should find that specific account's balance from store (if available) or calculate from transactions (less accurate for bank sync).
@@ -140,16 +143,16 @@ export default function FinanceDashboard() {
                     <div className="flex gap-2 flex-wrap items-center">
                         {/* Filter Toggle */}
                         <button
-                            onClick={() => setFilters({ hideInternalTransfers: !hideInternal })}
+                            onClick={toggleInternalTransfers}
                             className={cn(
                                 "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer",
-                                hideInternal
+                                hideInternalTransfers
                                     ? "bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
                                     : "bg-card hover:bg-accent hover:text-accent-foreground"
                             )}
-                            title={hideInternal ? 'Afficher les virements internes' : 'Masquer les virements internes'}
+                            title={hideInternalTransfers ? 'Afficher les virements internes' : 'Masquer les virements internes'}
                         >
-                            {hideInternal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            {hideInternalTransfers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             <span className="hidden sm:inline">Virements internes</span>
                         </button>
 
@@ -219,15 +222,15 @@ export default function FinanceDashboard() {
                 {/* Stats Cards */}
                 {/* Stats Cards */}
                 <FinanceStatsCards
-                    transactions={filteredTransactions} // Pass filtered tx (by account) or all tx? Usually all tx but filtered by hideInternal in component
+                    transactions={filteredTransactions} // Pass filtered tx (respect both account + internal filter)
                     totalBalance={displayedBalance}
-                    hideInternalTransfers={hideInternal}
+                    hideInternalTransfers={hideInternalTransfers}
                 />
 
                 {/* Charts Section */}
                 <div className="bg-card border rounded-xl p-6 shadow-sm">
                     <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
-                    <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={hideInternal} />
+                    <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={hideInternalTransfers} />
                 </div>
 
                 {/* Budgets Section */}

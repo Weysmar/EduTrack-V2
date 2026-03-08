@@ -19,10 +19,13 @@ interface FinanceState {
     showArchived: boolean;
     toggleShowArchived: () => void;
     filters: FinanceFilters;
+    hideInternalTransfers: boolean;
 
     // Actions
     fetchTransactions: () => Promise<void>;
     fetchAccounts: () => Promise<void>;
+    toggleInternalTransfers: () => void;
+    getFilteredTransactions: () => Transaction[];
     addTransaction: (data: Partial<Transaction>) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>;
     enrichTransaction: (id: string) => Promise<void>;
@@ -128,6 +131,21 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         accountId: null,
         categoryId: null,
         hideInternalTransfers: false
+    },
+    hideInternalTransfers: false,
+    toggleInternalTransfers: () => set(state => ({ hideInternalTransfers: !state.hideInternalTransfers })),
+
+    getFilteredTransactions: () => {
+        const { transactions, hideInternalTransfers } = get();
+        if (!hideInternalTransfers) return transactions;
+
+        return transactions.filter(t => {
+            const lowerDesc = t.description?.toLowerCase() || '';
+            const isInternal = t.category === 'Virement Interne' ||
+                lowerDesc.includes('virement compte à compte') ||
+                t.classification?.startsWith('INTERNAL');
+            return !isInternal;
+        });
     },
 
     fetchTransactions: async () => {
@@ -308,18 +326,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     },
 
     getTotalIncome: () => {
-        const hideInternal = get().filters.hideInternalTransfers;
-        return get().transactions
+        return get().getFilteredTransactions()
             .filter(t => t.type === 'INCOME')
-            .filter(t => !hideInternal || (t.classification !== 'INTERNAL_INTRA_BANK' && t.classification !== 'INTERNAL_INTER_BANK'))
             .reduce((acc, t) => acc + t.amount, 0);
     },
 
     getTotalExpenses: () => {
-        const hideInternal = get().filters.hideInternalTransfers;
-        return get().transactions
+        return get().getFilteredTransactions()
             .filter(t => t.type === 'EXPENSE')
-            .filter(t => !hideInternal || (t.classification !== 'INTERNAL_INTRA_BANK' && t.classification !== 'INTERNAL_INTER_BANK'))
             .reduce((acc, t) => acc + Math.abs(t.amount), 0);
     },
 
@@ -332,7 +346,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     getCategoryBreakdown: () => {
         const breakdown = new Map<string, number>();
 
-        get().transactions.forEach(t => {
+        get().getFilteredTransactions().forEach(t => {
             if (t.type === 'EXPENSE') {
                 const category = t.category || 'Uncategorized';
                 breakdown.set(category, (breakdown.get(category) || 0) + Math.abs(t.amount));
