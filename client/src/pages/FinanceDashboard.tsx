@@ -179,11 +179,16 @@ export default function FinanceDashboard() {
 
                         <button
                             onClick={async () => {
-                                const count = await autoCategorize();
-                                if (count > 0) {
-                                    toast.success(`${count} transaction(s) catégorisée(s) automatique(ment).`);
-                                } else {
-                                    toast.error(`Aucune transaction n'a pu être catégorisée selon vos mots-clés.`);
+                                try {
+                                    const count = await autoCategorize();
+                                    if (count > 0) {
+                                        toast.success(`${count} transaction(s) catégorisée(s) automatique(ment).`);
+                                    } else {
+                                        toast.info(`Aucune transaction n'a pu être catégorisée selon vos mots-clés.`);
+                                    }
+                                } catch (error) {
+                                    console.error('Auto-categorize failed:', error);
+                                    toast.error("Une erreur est survenue lors de la catégorisation.");
                                 }
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600 transition shadow-sm font-medium"
