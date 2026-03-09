@@ -109,38 +109,45 @@ function extractDomain(description: string): string | null {
 }
 
 export function MerchantLogo({ description, classification, size = 32 }: Props) {
-    const [logoSource, setLogoSource] = useState<'clearbit' | 'google' | 'fallback'>('clearbit');
+    const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
     const domain = extractDomain(description);
 
     const containerClass = `flex items-center justify-center rounded-full bg-slate-800 border border-slate-700 shrink-0 overflow-hidden`;
     const containerStyle = { width: size, height: size };
 
+    const handleLoadError = (source: string) => {
+        setFailedSources(prev => new Set(prev).add(source));
+    };
+
     if (domain) {
-        if (logoSource === 'clearbit') {
+        const clearbitUrl = `https://logo.clearbit.com/${domain}`;
+        const googleUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+
+        if (!failedSources.has('clearbit')) {
             return (
                 <div className={containerClass} style={containerStyle}>
                     <img
-                        src={`https://logo.clearbit.com/${domain}`}
+                        src={clearbitUrl}
                         alt={domain}
                         width={size - 8}
                         height={size - 8}
                         className="object-contain rounded-full"
-                        onError={() => setLogoSource('google')}
+                        onError={() => handleLoadError('clearbit')}
                     />
                 </div>
             );
         }
 
-        if (logoSource === 'google') {
+        if (!failedSources.has('google')) {
             return (
                 <div className={containerClass} style={containerStyle}>
                     <img
-                        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`}
+                        src={googleUrl}
                         alt={domain}
                         width={size - 8}
                         height={size - 8}
                         className="object-contain rounded-full"
-                        onError={() => setLogoSource('fallback')}
+                        onError={() => handleLoadError('google')}
                     />
                 </div>
             );
