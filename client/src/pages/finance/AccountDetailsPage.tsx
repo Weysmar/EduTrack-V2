@@ -1,20 +1,28 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFinance } from '@/hooks/useFinance';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Calendar, Download } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Calendar, Download, Plus } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { AccountFormModal } from '@/components/finance/AccountFormModal';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
-import { Transaction } from '@/types/finance';
-import { useState, useMemo } from 'react';
+import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
+import { Transaction, TransactionCategory } from '@/types/finance';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
+import { financeApi } from '@/lib/api/financeApi';
 
 export default function AccountDetailsPage() {
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransaction } = useFinance();
+    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransaction, createTransaction } = useFinance();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [categories, setCategories] = useState<TransactionCategory[]>([]);
+
+    useEffect(() => {
+        financeApi.getCategories().then(setCategories);
+    }, []);
 
     const account = accounts.find(a => a.id === accountId);
 
@@ -83,6 +91,14 @@ export default function AccountDetailsPage() {
                     <span>Retour à la banque</span>
                 </div>
                 <div className="flex gap-2">
+                    <Button
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                        onClick={() => setIsCreateModalOpen(true)}
+                    >
+                        <Plus size={18} />
+                        Nouvelle opération
+                    </Button>
                     <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
                         Modifier
                     </Button>
@@ -176,6 +192,16 @@ export default function AccountDetailsPage() {
                     onSave={handleSaveTransaction}
                 />
             )}
+
+            <TransactionCreateModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSave={async (data) => {
+                    await createTransaction(data);
+                }}
+                accountId={account.id}
+                categories={categories}
+            />
         </div>
     );
 }
