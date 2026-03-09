@@ -46,19 +46,28 @@ export function TransactionEditModal({
 }: TransactionEditModalProps) {
     const [classification, setClassification] = useState<TransactionClassification>(transaction.classification);
     const [linkedAccountId, setLinkedAccountId] = useState<string>(transaction.linkedAccountId || '');
+    const [date, setDate] = useState<string>(new Date(transaction.date).toISOString().split('T')[0]);
+    const [amount, setAmount] = useState<string>(Math.abs(transaction.amount).toString());
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         setClassification(transaction.classification);
         setLinkedAccountId(transaction.linkedAccountId || '');
+        setDate(new Date(transaction.date).toISOString().split('T')[0]);
+        setAmount(Math.abs(transaction.amount).toString());
     }, [transaction, isOpen]);
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const numAmount = parseFloat(amount);
+            const finalAmount = transaction.amount >= 0 ? Math.abs(numAmount) : -Math.abs(numAmount);
+
             const updates: Partial<Transaction> = {
                 classification,
-                linkedAccountId: classification.startsWith('INTERNAL_') ? linkedAccountId : null
+                linkedAccountId: classification.startsWith('INTERNAL_') ? linkedAccountId : null,
+                date: new Date(date).toISOString(),
+                amount: finalAmount
             };
             await onSave(transaction.id, updates);
             onClose();
@@ -107,19 +116,29 @@ export function TransactionEditModal({
                     {/* Transaction Details */}
                     <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6">
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div className="text-slate-500">Date</div>
-                                <div className="text-slate-200 font-medium">
-                                    {new Date(transaction.date).toLocaleDateString('fr-FR')}
+                            <div className="space-y-1">
+                                <label className="text-slate-500 block">Date</label>
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full [color-scheme:dark]"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-slate-500 block">Montant (€)</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className={`bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full pr-6 ${transaction.amount >= 0 ? 'text-green-400' : 'text-slate-100'}`}
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">€</span>
                                 </div>
                             </div>
-                            <div>
-                                <div className="text-slate-500">Montant</div>
-                                <div className={`font-bold ${transaction.amount >= 0 ? 'text-green-400' : 'text-slate-200'}`}>
-                                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(transaction.amount)}
-                                </div>
-                            </div>
-                            <div className="col-span-2">
+                            <div className="col-span-2 mt-2">
                                 <div className="text-slate-500 mb-1">Classification actuelle</div>
                                 <ClassificationBadge
                                     classification={transaction.classification}
@@ -142,8 +161,8 @@ export function TransactionEditModal({
                                         type="button"
                                         onClick={() => setClassification(option.value)}
                                         className={`w-full text-left p-3 rounded-lg border-2 transition-all ${classification === option.value
-                                                ? 'border-blue-500 bg-blue-500/10'
-                                                : 'border-slate-700 bg-slate-800 hover:border-slate-600'
+                                            ? 'border-blue-500 bg-blue-500/10'
+                                            : 'border-slate-700 bg-slate-800 hover:border-slate-600'
                                             }`}
                                     >
                                         <div className="font-medium text-slate-200">{option.label}</div>
