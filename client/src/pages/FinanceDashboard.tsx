@@ -2,9 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
-import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff, Trash2, Plus } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
+import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
 import { FinanceStatsCards } from '@/components/finance/dashboard/FinanceStatsCards';
 import { ExpenseChart } from '@/components/finance/dashboard/ExpenseChart';
 import { cn } from '@/lib/utils';
@@ -47,7 +48,10 @@ export default function FinanceDashboard() {
         toggleInternalTransfers,
         getFilteredTransactions,
         autoCategorize,
-        deleteAccount
+        deleteAccount,
+        categories,
+        fetchCategories,
+        addTransaction
     } = useFinanceStore();
 
 
@@ -56,6 +60,7 @@ export default function FinanceDashboard() {
     const accountIdParam = searchParams.get('accountId');
 
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
     const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
@@ -90,6 +95,7 @@ export default function FinanceDashboard() {
         fetchBudgets();
         fetchAccounts(); // Ensure accounts are loaded
         fetchBanks();    // Ensure banks are loaded
+        fetchCategories(); // Ensure categories are loaded for manual entry
     }, []);
 
     const handleGenerateAudit = async () => {
@@ -162,6 +168,17 @@ export default function FinanceDashboard() {
                         <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
+                        {selectedAccount && (
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-sm font-medium"
+                                title="Ajouter une opération manuellement"
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span className="hidden sm:inline">Nouvelle opération</span>
+                            </button>
+                        )}
+
                         {/* Filter Toggle */}
                         <button
                             onClick={toggleInternalTransfers}
@@ -197,6 +214,7 @@ export default function FinanceDashboard() {
                             <Filter className="h-4 w-4" />
                             <span className="hidden sm:inline">{t('finance.categorize')}</span>
                         </button>
+
                         <button
                             onClick={() => navigate('/finance/import')}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
@@ -205,6 +223,7 @@ export default function FinanceDashboard() {
                             <Upload className="h-4 w-4" />
                             <span className="hidden sm:inline">Importer</span>
                         </button>
+
                         <button
                             onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
@@ -213,6 +232,7 @@ export default function FinanceDashboard() {
                             <Sparkles className="h-4 w-4" />
                             <span className="hidden sm:inline">{t('finance.audit')}</span>
                         </button>
+
                         <button
                             onClick={() => fetchTransactions()}
                             className="p-2 text-muted-foreground hover:bg-muted rounded-md"
@@ -304,6 +324,19 @@ export default function FinanceDashboard() {
                             await useFinanceStore.getState().updateTransaction(id, data);
                             setEditingTransaction(null);
                         }}
+                    />
+                )}
+
+                {isCreateModalOpen && selectedAccount && (
+                    <TransactionCreateModal
+                        isOpen={isCreateModalOpen}
+                        onClose={() => setIsCreateModalOpen(false)}
+                        onSave={async (data) => {
+                            await addTransaction(data);
+                            toast.success("Opération ajoutée");
+                        }}
+                        accountId={selectedAccount.id}
+                        categories={categories}
                     />
                 )}
 

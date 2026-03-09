@@ -4,16 +4,22 @@ import { Plus, Pencil, Trash2, Wallet, CreditCard, Archive, Building } from 'luc
 import { Bank, Account } from '@/types/finance';
 import { BankFormModal } from './BankFormModal';
 import { AccountFormModal } from './AccountFormModal';
+import { TransactionCreateModal } from './TransactionCreateModal';
 import { Button } from '@/components/ui/Button';
+import { useFinanceStore } from '@/store/financeStore';
+import { toast } from 'sonner';
 
 export function BankManager() {
-    const { banks, createBank, updateBank, deleteBank, createAccount, updateAccount, deleteAccount } = useFinance();
+    const { banks, createBank, updateBank, deleteBank, createAccount, updateAccount, deleteAccount, createTransaction } = useFinance();
+    const { categories, fetchCategories } = useFinanceStore();
     const [isInternalModalOpen, setIsModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [isTxModalOpen, setIsTxModalOpen] = useState(false);
 
     const [editingBank, setEditingBank] = useState<Bank | null>(null);
     const [editingAccount, setEditingAccount] = useState<Account | null>(null);
     const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
+    const [selectedAccountIdForTx, setSelectedAccountIdForTx] = useState<string | null>(null);
 
     // --- BANK HANDLING ---
     const openCreateModal = () => {
@@ -94,6 +100,12 @@ export function BankManager() {
         if (confirm("Supprimer ce compte et toutes ses transactions ?")) {
             await deleteAccount(id);
         }
+    };
+
+    const openCreateTransaction = (accountId: string) => {
+        setSelectedAccountIdForTx(accountId);
+        setIsTxModalOpen(true);
+        fetchCategories(); // Ensure categories are loaded
     };
 
     return (
@@ -219,6 +231,13 @@ export function BankManager() {
                                                 </span>
                                             </div>
                                             <div className="flex gap-1 md:opacity-0 md:group-hover/acc:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => openCreateTransaction(acc.id)}
+                                                    className="p-1 text-slate-400 hover:text-emerald-400"
+                                                    title="Ajouter une opération"
+                                                >
+                                                    <Plus size={14} />
+                                                </button>
                                                 <button onClick={() => openEditAccount(acc)} className="p-1 text-slate-400 hover:text-blue-400"><Pencil size={14} /></button>
                                                 <button onClick={() => deleteAccountHandler(acc.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 size={14} /></button>
                                             </div>
@@ -259,6 +278,19 @@ export function BankManager() {
                 initialData={editingAccount}
                 bankId={selectedBankId || ''}
             />
+
+            {isTxModalOpen && selectedAccountIdForTx && (
+                <TransactionCreateModal
+                    isOpen={isTxModalOpen}
+                    onClose={() => setIsTxModalOpen(false)}
+                    onSave={async (data) => {
+                        await createTransaction(data);
+                        toast.success("Opération ajoutée");
+                    }}
+                    accountId={selectedAccountIdForTx}
+                    categories={categories}
+                />
+            )}
         </div>
     );
 }
