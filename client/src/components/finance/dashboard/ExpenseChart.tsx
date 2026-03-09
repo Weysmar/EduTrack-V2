@@ -88,9 +88,24 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
         });
 
         return Array.from(buckets.entries()).map(([key, val]) => {
-            const label = useMonthly
-                ? format(new Date(key + '-01'), 'MMM yy', { locale: fr })
-                : `S${key.split('-')[1]}`;
+            let label = "";
+            if (useMonthly) {
+                // key is yyyy-MM
+                label = format(new Date(key + '-01'), 'MMM yy', { locale: fr });
+            } else {
+                // key is yyyy-ww
+                const [year, weekStr] = key.split('-');
+                const weekNum = parseInt(weekStr);
+
+                // Get start of week from year and week number
+                // A simpler way: use the format for the tooltip or bucket logic
+                const date = eachWeekOfInterval({
+                    start: startOfDay(startDate),
+                    end: now
+                }).find(w => format(w, 'yyyy-ww') === key) || new Date();
+
+                label = format(date, 'd MMM', { locale: fr });
+            }
             return { label, ...val };
         });
     }, [filtered, period]);
