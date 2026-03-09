@@ -732,9 +732,13 @@ export const autoCategorizeTransactions = async (req: AuthRequest, res: Response
         const profileId = req.user!.id;
         const { transactionIds } = req.body;
 
+        console.log(`[AutoCat] Starting for profile ${profileId}. IDs? ${transactionIds?.length}`);
+
         // Call the matcher service
         const matches = await CategoryMatcherService.matchTransactions(profileId, transactionIds);
         const matchEntries = Object.entries(matches);
+
+        console.log(`[AutoCat] Found ${matchEntries.length} matches.`);
 
         if (matchEntries.length === 0) {
             return res.json({ success: true, updated: 0, message: 'No matches found.' });

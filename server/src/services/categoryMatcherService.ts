@@ -17,6 +17,7 @@ export class CategoryMatcherService {
 
         // Filter out categories without keywords
         const categoriesWithKeywords = categories.filter(c => c.keywords && c.keywords.length > 0);
+        console.log(`[Matcher] Found ${categoriesWithKeywords.length} categories with keywords directly.`);
 
         if (categoriesWithKeywords.length === 0) {
             return {};
@@ -25,7 +26,10 @@ export class CategoryMatcherService {
         // 2. Fetch Transactions
         const whereClause: any = {
             account: { bank: { profileId } },
-            category: null // Only target uncategorized by default
+            OR: [
+                { category: null },
+                { category: '' } // Handles cases where imported as empty string
+            ]
         };
 
         if (transactionIds && transactionIds.length > 0) {
@@ -36,6 +40,8 @@ export class CategoryMatcherService {
             where: whereClause,
             select: { id: true, description: true }
         });
+
+        console.log(`[Matcher] Analyzing ${transactions.length} uncategorized transactions with whereClause:`, JSON.stringify(whereClause));
 
         const matches: Record<string, string> = {};
 
@@ -55,6 +61,8 @@ export class CategoryMatcherService {
             }
         }
 
+        console.log(`[Matcher] Matched ${Object.keys(matches).length} transactions.`);
         return matches;
     }
 }
+
