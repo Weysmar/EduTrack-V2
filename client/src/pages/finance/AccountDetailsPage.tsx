@@ -14,7 +14,7 @@ import { financeApi } from '@/lib/api/financeApi';
 export default function AccountDetailsPage() {
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransaction, createTransaction } = useFinance();
+    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransactionAsync, createTransaction } = useFinance();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -72,7 +72,7 @@ export default function AccountDetailsPage() {
 
     const handleSaveTransaction = async (transactionId: string, updates: Partial<Transaction>) => {
         try {
-            await updateTransaction({ id: transactionId, data: updates });
+            await updateTransactionAsync({ id: transactionId, data: updates });
             toast.success('Transaction mise à jour');
         } catch (error) {
             toast.error('Erreur lors de la mise à jour');

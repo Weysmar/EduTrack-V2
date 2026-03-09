@@ -99,14 +99,13 @@ export function useFinance() {
                     });
                 } catch (err) {
                     console.error("Failed to create initial balance transaction", err);
-                    // Don't fail the account creation if this fails, just log it
                 }
             }
             return newAccount;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
-            queryClient.invalidateQueries({ queryKey: ['banks'] }); // Update bank totals
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
             toast.success('Compte créé');
         },
         onError: (error: any) => {
@@ -144,6 +143,44 @@ export function useFinance() {
         }
     });
 
+    // --- TRANSACTION MUTATIONS ---
+
+    const createTransactionMutation = useMutation({
+        mutationFn: async (data: Partial<Transaction>) => {
+            const response = await axios.post<Transaction>('/finance/transactions', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            toast.success('Transaction créée');
+        },
+        onError: (err: any) => toast.error('Erreur lors de la création')
+    });
+
+    const updateTransactionMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<Transaction> }) => {
+            const response = await axios.put<Transaction>(`/finance/transactions/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            toast.success('Transaction mise à jour');
+        }
+    });
+
+    const deleteTransactionMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await axios.delete(`/finance/transactions/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            toast.success('Transaction supprimée');
+        }
+    });
+
     return {
         // Banks
         banks: banks || [],
@@ -151,13 +188,10 @@ export function useFinance() {
         banksError,
         createBank: createBank.mutate,
         createBankAsync: createBank.mutateAsync,
-        isCreatingBank: createBank.isPending,
         updateBank: updateBank.mutate,
         updateBankAsync: updateBank.mutateAsync,
-        isUpdatingBank: updateBank.isPending,
         deleteBank: deleteBank.mutate,
         deleteBankAsync: deleteBank.mutateAsync,
-        isDeletingBank: deleteBank.isPending,
 
         // Accounts
         accounts: accounts || [],
@@ -169,46 +203,15 @@ export function useFinance() {
         deleteAccount: deleteAccount.mutate,
         deleteAccountAsync: deleteAccount.mutateAsync,
 
-        // New Data
+        // Transactions
         transactions: transactions || [],
         isLoadingTransactions,
-
-        // Transaction Mutations
-        createTransaction: useMutation({
-            mutationFn: async (data: Partial<Transaction>) => {
-                const response = await axios.post<Transaction>('/finance/transactions', data);
-                return response.data;
-            },
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Balance update
-                toast.success('Transaction créée');
-            },
-            onError: (err: any) => toast.error('Erreur lors de la création')
-        }).mutate,
-
-        updateTransaction: useMutation({
-            mutationFn: async ({ id, data }: { id: string; data: Partial<Transaction> }) => {
-                const response = await axios.put<Transaction>(`/finance/transactions/${id}`, data);
-                return response.data;
-            },
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                toast.success('Transaction mise à jour');
-            }
-        }).mutate,
-
-        deleteTransaction: useMutation({
-            mutationFn: async (id: string) => {
-                await axios.delete(`/finance/transactions/${id}`);
-            },
-            onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                toast.success('Transaction supprimée');
-            }
-        }).mutate
+        createTransaction: createTransactionMutation.mutate,
+        createTransactionAsync: createTransactionMutation.mutateAsync,
+        updateTransaction: updateTransactionMutation.mutate,
+        updateTransactionAsync: updateTransactionMutation.mutateAsync,
+        deleteTransaction: deleteTransactionMutation.mutate,
+        deleteTransactionAsync: deleteTransactionMutation.mutateAsync,
     };
 }
 

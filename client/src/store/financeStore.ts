@@ -254,8 +254,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     updateTransaction: async (id, data) => {
         try {
             await financeApi.updateTransaction(id, data);
-            get().fetchTransactions();
-            get().fetchAccounts();
+            await get().fetchTransactions();
+            await get().fetchAccounts();
         } catch (error) {
             console.error('Failed to update transaction', error);
         }
