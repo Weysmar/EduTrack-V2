@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
-import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff } from 'lucide-react';
+import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
 import { FinanceStatsCards } from '@/components/finance/dashboard/FinanceStatsCards';
@@ -46,7 +46,8 @@ export default function FinanceDashboard() {
         hideInternalTransfers,
         toggleInternalTransfers,
         getFilteredTransactions,
-        autoCategorize
+        autoCategorize,
+        deleteAccount
     } = useFinanceStore();
 
 
@@ -140,7 +141,24 @@ export default function FinanceDashboard() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{dashboardTitle} 💰</h1>
+                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                            {dashboardTitle} 💰
+                            {selectedAccount && (
+                                <button
+                                    onClick={async () => {
+                                        if (confirm("Supprimer ce compte et toutes ses transactions ?")) {
+                                            await deleteAccount(selectedAccount.id);
+                                            toast.success("Compte supprimé avec succès.");
+                                            setSearchParams(new URLSearchParams());
+                                        }
+                                    }}
+                                    className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
+                                    title="Supprimer ce compte"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )}
+                        </h1>
                         <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">

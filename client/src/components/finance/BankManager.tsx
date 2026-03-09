@@ -218,9 +218,9 @@ export function BankManager() {
                                                     {acc.balance} €
                                                 </span>
                                             </div>
-                                            <div className="flex gap-1 opacity-0 group-hover/acc:opacity-100">
-                                                <button onClick={() => openEditAccount(acc)} className="p-1 hover:text-blue-400"><Pencil size={12} /></button>
-                                                <button onClick={() => deleteAccountHandler(acc.id)} className="p-1 hover:text-red-400"><Trash2 size={12} /></button>
+                                            <div className="flex gap-1 md:opacity-0 md:group-hover/acc:opacity-100 transition-opacity">
+                                                <button onClick={() => openEditAccount(acc)} className="p-1 text-slate-400 hover:text-blue-400"><Pencil size={14} /></button>
+                                                <button onClick={() => deleteAccountHandler(acc.id)} className="p-1 text-slate-400 hover:text-red-400"><Trash2 size={14} /></button>
                                             </div>
                                         </div>
                                     ))}
