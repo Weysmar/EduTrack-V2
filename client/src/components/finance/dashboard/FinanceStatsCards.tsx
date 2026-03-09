@@ -93,9 +93,6 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
                     <div className={clsx("text-2xl font-bold", stats.savings >= 0 ? "text-purple-400" : "text-amber-500")}>
                         {formatCurrency(stats.savings)}
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                        Taux: <span className={stats.savingsRate > 20 ? "text-green-400" : "text-slate-400"}>{stats.savingsRate.toFixed(1)}%</span>
-                    </p>
                 </CardContent>
             </Card>
 
