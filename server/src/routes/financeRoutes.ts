@@ -7,6 +7,7 @@ import {
     updateBudget,
     deleteBudget
 } from '../controllers/budgetController';
+import categoryRoutes from './categoryRoutes';
 import multer from 'multer';
 import path from 'path';
 
@@ -42,6 +43,7 @@ router.put('/budgets/:id', updateBudget);
 router.delete('/budgets/:id', deleteBudget);
 
 // Accounts Routes
+router.use('/categories', categoryRoutes);
 router.get('/accounts', getAccounts);
 router.post('/accounts', createAccount);
 router.put('/accounts/:id', updateAccount);
