@@ -24,7 +24,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const [content, setContent] = useState('') // For note
     const [status, setStatus] = useState('todo') // For exercise
     const [difficulty, setDifficulty] = useState('medium') // For exercise
-    const [file, setFile] = useState<File | null>(initialFile || null) // For resource
+    const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []) // For resource/exercise
     const { t } = useLanguage()
     const queryClient = useQueryClient()
 
@@ -36,7 +36,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
             // Reset form
             setTitle('')
             setContent('')
-            setFile(null)
+            setFiles([])
             // Keep type maybe?
         }
     })
@@ -59,6 +59,49 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         e.preventDefault()
         if (!title.trim()) return
 
+        if (type === 'resource' && files.length > 0) {
+            // Ensure UI shows loading state during loop
+            try {
+                for (const currentFile of files) {
+                    const formData = new FormData();
+                    formData.append('type', type);
+                    formData.append('courseId', courseId);
+                    if (activeProfile?.id) formData.append('profileId', activeProfile.id);
+
+                    // Use explicit title for single file, mostly original filename for multiples
+                    const itemTitle = files.length === 1 && title.trim() ? title : currentFile.name.replace(/\.[^/.]+$/, "");
+                    formData.append('title', itemTitle);
+
+                    let fileToUpload = currentFile;
+                    if (currentFile.type.startsWith('image/')) {
+                        try {
+                            const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+                            fileToUpload = await imageCompression(currentFile, options);
+                        } catch (error) {
+                            console.error("Image compression failed, using original file", error);
+                        }
+                    }
+
+                    formData.append('file', fileToUpload);
+                    formData.append('fileName', fileToUpload.name);
+                    formData.append('fileType', fileToUpload.type);
+                    formData.append('fileSize', fileToUpload.size.toString());
+
+                    // Directly call API to avoid triggering mutation onSuccess prematurely
+                    await itemQueries.create(formData);
+                }
+
+                queryClient.invalidateQueries({ queryKey: ['items'] });
+                onClose();
+                setTitle('');
+                setContent('');
+                setFiles([]);
+            } catch (error) {
+                console.error(error);
+            }
+            return;
+        }
+
         const formData = new FormData();
         formData.append('title', title);
         formData.append('type', type);
@@ -71,31 +114,22 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         if (type === 'exercise') {
             formData.append('status', status);
             formData.append('difficulty', difficulty);
-        }
-        if (type === 'resource' && file) {
-            let fileToUpload = file;
 
-            // Compress image if it is an image
-            if (file.type.startsWith('image/')) {
-                try {
-                    // Original size logged for compression tracking
-                    const options = {
-                        maxSizeMB: 1,
-                        maxWidthOrHeight: 1920,
-                        useWebWorker: true
+            if (files.length > 0) {
+                let fileToUpload = files[0];
+                if (files[0].type.startsWith('image/')) {
+                    try {
+                        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+                        fileToUpload = await imageCompression(files[0], options);
+                    } catch (error) {
+                        console.error("Image compression failed", error);
                     }
-                    const compressedFile = await imageCompression(file, options);
-                    // Compressed size logged for compression tracking
-                    fileToUpload = compressedFile;
-                } catch (error) {
-                    console.error("Image compression failed, using original file", error);
                 }
+                formData.append('file', fileToUpload);
+                formData.append('fileName', fileToUpload.name);
+                formData.append('fileType', fileToUpload.type);
+                formData.append('fileSize', fileToUpload.size.toString());
             }
-
-            formData.append('file', fileToUpload);
-            formData.append('fileName', fileToUpload.name);
-            formData.append('fileType', fileToUpload.type);
-            formData.append('fileSize', fileToUpload.size.toString());
         }
 
         try {
@@ -136,16 +170,30 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">{t('item.form.title')}</label>
-                        <input
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            placeholder={t(`item.form.title.placeholder.${type}`)}
-                            required
-                        />
-                    </div>
+                    {type !== 'resource' && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">{t('item.form.title')}</label>
+                            <input
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder={t(`item.form.title.placeholder.${type}`)}
+                                required
+                            />
+                        </div>
+                    )}
+
+                    {type === 'resource' && files.length <= 1 && (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">{t('item.form.title')}</label>
+                            <input
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                placeholder={files.length === 1 ? files[0].name : t(`item.form.title.placeholder.${type}`)}
+                            />
+                        </div>
+                    )}
 
                     {type === 'note' && (
                         <div className="space-y-2">
@@ -196,12 +244,12 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                 <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/5 transition-colors cursor-pointer relative">
                                     <input
                                         type="file"
-                                        onChange={e => setFile(e.target.files?.[0] || null)}
+                                        onChange={e => setFiles(e.target.files?.[0] ? [e.target.files[0]] : [])}
                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                     />
                                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                         <FolderOpen className="h-4 w-4" />
-                                        <span className="text-sm">{file ? file.name : t('item.form.file.placeholder')}</span>
+                                        <span className="text-sm">{files[0] ? files[0].name : t('item.form.file.placeholder')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -213,12 +261,27 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                             <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/5 transition-colors cursor-pointer relative">
                                 <input
                                     type="file"
-                                    onChange={e => setFile(e.target.files?.[0] || null)}
+                                    multiple
+                                    onChange={e => setFiles(Array.from(e.target.files || []))}
                                     className="absolute inset-0 opacity-0 cursor-pointer"
                                 />
                                 <FolderOpen className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
-                                <p className="text-sm text-medium">{file ? file.name : t('item.form.file.placeholder')}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{file ? `${(file.size / 1024).toFixed(1)} KB` : t('item.form.file.supports')}</p>
+                                <p className="text-sm text-medium">
+                                    {files.length > 0
+                                        ? `${files.length} fichier(s) sélectionné(s)`
+                                        : t('item.form.file.placeholder')}
+                                </p>
+                                {files.length > 0 && (
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                        {files.map(f => f.name).join(', ').substring(0, 50)}
+                                        {files.map(f => f.name).join(', ').length > 50 && '...'}
+                                    </div>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1 text-center">
+                                    {files.length > 0
+                                        ? `${(files.reduce((acc, f) => acc + f.size, 0) / 1024 / 1024).toFixed(1)} MB total`
+                                        : t('item.form.file.supports')}
+                                </p>
                             </div>
                         </div>
                     )}

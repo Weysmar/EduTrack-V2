@@ -1,6 +1,7 @@
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState, useEffect } from 'react'
 import { X, Download, AlertCircle } from 'lucide-react'
+import { OfficeViewer } from './OfficeViewer'
 
 interface FilePreviewModalProps {
     isOpen: boolean
@@ -8,9 +9,11 @@ interface FilePreviewModalProps {
     fileData: Blob | null
     fileName: string
     fileType: string
+    fileUrl?: string
+    storageKey?: string
 }
 
-export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType }: FilePreviewModalProps) {
+export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType, fileUrl, storageKey }: FilePreviewModalProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     useEffect(() => {
@@ -21,13 +24,16 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
         }
     }, [isOpen, fileData])
 
-    if (!isOpen || !fileData) return null
+    if (!isOpen || (!fileData && !fileUrl)) return null
 
-    const isPdf = fileType === 'application/pdf'
-    const isImage = fileType.startsWith('image/')
+    const ext = (fileName?.split('.').pop() || fileType?.split('/')[1] || '').toLowerCase()
 
-    // For now, rely on standard browser display capabilities
-    const canPreview = isPdf || isImage
+    const isPdf = fileType === 'application/pdf' || ext === 'pdf'
+    const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext)
+    const isOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes(ext)
+
+    // Rely on standard browser capabilities or OfficeViewer
+    const canPreview = isPdf || isImage || (isOffice && fileUrl)
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -81,21 +87,26 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
 
                                 {/* Content */}
                                 <div className="flex-1 bg-muted/20 relative overflow-hidden flex items-center justify-center p-0 md:p-4">
-                                    {previewUrl && (
+                                    {(previewUrl || fileUrl) && (
                                         <>
-                                            {isPdf && (
+                                            {isPdf && previewUrl && (
                                                 <iframe
                                                     src={previewUrl}
                                                     className="w-full h-full rounded-lg border"
                                                     title={fileName}
                                                 />
                                             )}
-                                            {isImage && (
+                                            {isImage && previewUrl && (
                                                 <img
                                                     src={previewUrl}
                                                     alt={fileName}
                                                     className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                                                 />
+                                            )}
+                                            {isOffice && fileUrl && (
+                                                <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
+                                                    <OfficeViewer url={fileUrl} storageKey={storageKey} className="w-full h-full" />
+                                                </div>
                                             )}
                                             {!canPreview && (
                                                 <div className="text-center space-y-4">
@@ -107,7 +118,7 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                                                         <p className="text-muted-foreground">This file type ({fileType}) cannot be viewed in the browser.</p>
                                                     </div>
                                                     <a
-                                                        href={previewUrl}
+                                                        href={previewUrl || fileUrl}
                                                         download={fileName}
                                                         className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
                                                     >

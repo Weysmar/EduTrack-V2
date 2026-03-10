@@ -143,6 +143,8 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                 fileData={item.fileData || null}
                 fileName={item.fileName || 'File'}
                 fileType={item.fileType || ''}
+                fileUrl={item.fileUrl}
+                storageKey={item.storageKey}
             />
 
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">

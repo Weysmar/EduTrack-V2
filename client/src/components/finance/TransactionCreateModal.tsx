@@ -8,7 +8,8 @@ interface TransactionCreateModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: any) => Promise<void>;
-    accountId: string;
+    accountId?: string;
+    accounts: Account[];
     categories: TransactionCategory[];
 }
 
@@ -17,6 +18,7 @@ export function TransactionCreateModal({
     onClose,
     onSave,
     accountId,
+    accounts,
     categories
 }: TransactionCreateModalProps) {
     const { t } = useLanguage();
@@ -27,7 +29,8 @@ export function TransactionCreateModal({
         date: new Date().toISOString().split('T')[0],
         type: 'EXPENSE',
         category: '',
-        classification: 'EXTERNAL'
+        classification: 'EXTERNAL',
+        selectedAccountId: accountId || (accounts.length > 0 ? accounts[0].id : '')
     });
 
     const handleSave = async (e: React.FormEvent) => {
@@ -37,9 +40,14 @@ export function TransactionCreateModal({
             const amount = parseFloat(formData.amount);
             const finalAmount = formData.type === 'EXPENSE' ? -Math.abs(amount) : Math.abs(amount);
 
+            if (!formData.selectedAccountId) {
+                console.error("No account selected");
+                return;
+            }
+
             await onSave({
                 ...formData,
-                accountId,
+                accountId: formData.selectedAccountId,
                 amount: finalAmount,
                 date: new Date(formData.date).toISOString()
             });
@@ -86,6 +94,30 @@ export function TransactionCreateModal({
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                             />
                         </div>
+
+                        {/* Account Selector (if no accountId provided) */}
+                        {!accountId && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                    <CreditCard size={12} />
+                                    {t('finance.filter.account') || "Compte"}
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={formData.selectedAccountId}
+                                        onChange={(e) => setFormData({ ...formData, selectedAccountId: e.target.value })}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none text-sm"
+                                        required
+                                    >
+                                        <option value="" disabled>Sélectionnez un compte</option>
+                                        {accounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                             {/* Type */}

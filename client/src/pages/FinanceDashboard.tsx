@@ -26,6 +26,7 @@ const getHslColor = (variable: string) => {
 
 
 import { BudgetManager } from '@/components/finance/BudgetManager';
+import { AdvancedFilterBar } from '@/components/finance/AdvancedFilterBar';
 
 export default function FinanceDashboard() {
     useEffect(() => {
@@ -261,11 +262,11 @@ export default function FinanceDashboard() {
             )}
 
             {/* Header / Active Filter */}
-            {accountIdParam && selectedAccount && (
+            {accountIdParam && (
                 <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
                     <div className="flex items-center gap-2">
                         <Filter className="h-4 w-4" />
-                        <span className="font-medium">{t('finance.filter.active')} <strong>{selectedAccount.name}</strong></span>
+                        <span className="font-medium">{t('finance.filter.active')} <strong>{selectedAccount ? selectedAccount.name : accountIdParam}</strong></span>
                     </div>
                     <button
                         onClick={() => {
@@ -278,7 +279,12 @@ export default function FinanceDashboard() {
                 </div>
             )}
 
-            {/* Stats Cards */}
+            {/* Advanced Filters */}
+            <AdvancedFilterBar
+                isOpen={isFilterOpen}
+                onClose={() => setIsFilterOpen(false)}
+            />
+
             {/* Stats Cards */}
             <FinanceStatsCards
                 transactions={filteredTransactions} // Pass filtered tx (respect both account + internal filter)
@@ -325,7 +331,7 @@ export default function FinanceDashboard() {
                 />
             )}
 
-            {isCreateOpen && selectedAccount && (
+            {isCreateOpen && (
                 <TransactionCreateModal
                     isOpen={isCreateOpen}
                     onClose={() => setIsCreateOpen(false)}
@@ -333,7 +339,8 @@ export default function FinanceDashboard() {
                         await addTransaction(data);
                         toast.success(t('finance.tx.success'));
                     }}
-                    accountId={selectedAccount.id}
+                    accountId={selectedAccount ? selectedAccount.id : undefined}
+                    accounts={accounts}
                     categories={categories}
                 />
             )}

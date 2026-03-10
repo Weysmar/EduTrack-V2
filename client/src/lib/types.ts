@@ -40,6 +40,7 @@ export interface Item {
     // Resource specifics
     fileData?: Blob; // For local storage (Dexie) - API might return URL
     fileUrl?: string; // For API
+    storageKey?: string; // Key in storage bucket
     fileType?: string;
     fileName?: string;
     fileSize?: number;
