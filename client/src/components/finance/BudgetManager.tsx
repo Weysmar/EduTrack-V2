@@ -54,6 +54,35 @@ export function BudgetManager() {
         return spendMap;
     }, [transactions]);
 
+    const globalStats = useMemo(() => {
+        const now = new Date();
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const totalDays = endOfMonth.getDate();
+        const currentDay = now.getDate();
+        const percentMonthElapsed = Math.round((currentDay / totalDays) * 100);
+
+        let totalBudget = 0;
+        let totalSpent = 0;
+
+        budgets.forEach(b => {
+            if (b.period === 'MONTHLY') {
+                totalBudget += Number(b.amount);
+                const spent = categorySpend.get(b.category.name) || categorySpend.get(b.categoryId) || 0;
+                totalSpent += spent;
+            }
+        });
+
+        const percentBudgetUsed = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+
+        return {
+            percentMonthElapsed,
+            percentBudgetUsed,
+            totalBudget,
+            totalSpent
+        };
+    }, [budgets, categorySpend]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editingBudget) {
@@ -102,17 +131,33 @@ export function BudgetManager() {
                     <p className="text-muted-foreground text-sm">Aucun budget défini. Commencez à suivre vos dépenses !</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {budgets.map(budget => (
-                        <BudgetCard
-                            key={budget.id}
-                            budget={budget}
-                            spent={categorySpend.get(budget.category.name) || categorySpend.get(budget.categoryId) || 0} // Try name match if ID fails, store logic varies
-                            onEdit={handleEdit}
-                            onDelete={(id) => deleteBudget(id)}
-                        />
-                    ))}
-                </div>
+                <>
+                    {/* Global Pacing Banner */}
+                    <div className="bg-muted/30 border rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="text-sm font-medium text-muted-foreground">Vue d'ensemble du mois</h3>
+                            <p className="text-sm mt-1">
+                                Vous êtes à <span className="font-bold text-foreground">{globalStats.percentMonthElapsed}%</span> du mois et avez consommé <span className="font-bold text-foreground">{globalStats.percentBudgetUsed}%</span> de votre enveloppe globale.
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Total Budgété</p>
+                            <p className="text-lg font-bold">{globalStats.totalSpent.toFixed(0)} € / {globalStats.totalBudget.toFixed(0)} €</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {budgets.map(budget => (
+                            <BudgetCard
+                                key={budget.id}
+                                budget={budget}
+                                spent={categorySpend.get(budget.category.name) || categorySpend.get(budget.categoryId) || 0} // Try name match if ID fails, store logic varies
+                                onEdit={handleEdit}
+                                onDelete={(id) => deleteBudget(id)}
+                            />
+                        ))}
+                    </div>
+                </>
             )}
 
             <SimpleModal

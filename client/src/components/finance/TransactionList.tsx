@@ -13,26 +13,34 @@ interface TransactionListProps {
     onEnrich?: (id: string) => void;
 }
 
+const PAGE_SIZE = 50;
+
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const { t, language } = useLanguage();
     const { reclassifyAll } = useFinanceStore();
     const [isReclassifying, setIsReclassifying] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     const handleEnrich = async (id: string) => {
         if (!onEnrich) return;
-        setLoadingMap(prev => ({ ...prev, [id]: true }));
-        await onEnrich(id);
-        setLoadingMap(prev => ({ ...prev, [id]: false }));
+        try {
+            await onEnrich(id);
+        } catch (error: any) {
+            import('sonner').then(({ toast }) => toast.error(error.message || "Erreur d'enrichissement IA"));
+        } finally {
+            setLoadingMap(prev => ({ ...prev, [id]: false }));
+        }
     };
 
     const handleReclassifyAll = async () => {
         try {
             setIsReclassifying(true);
             const updated = await reclassifyAll();
-            // Store automatically refreshes transactions, so no need for reload
-        } catch (error) {
+            import('sonner').then(({ toast }) => toast.success(`${updated} transactions reclassifiées.`));
+        } catch (error: any) {
             console.error(error);
+            import('sonner').then(({ toast }) => toast.error(error.message || "Erreur de classification IA"));
         } finally {
             setIsReclassifying(false);
         }
@@ -92,7 +100,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
             )}
 
             <div className="space-y-2">
-                {transactions.map((tx) => (
+                {transactions.slice(0, visibleCount).map((tx) => (
                     <div
                         key={tx.id}
                         className="bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border overflow-hidden"
@@ -186,6 +194,17 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
                     </div>
                 ))}
             </div>
+
+            {visibleCount < transactions.length && (
+                <div className="pt-4 pb-8 flex justify-center animate-in fade-in">
+                    <button
+                        onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                        className="px-6 py-2 bg-muted hover:bg-muted/80 text-muted-foreground rounded-full text-sm font-medium transition-colors shadow-sm"
+                    >
+                        {t('common.loadMore')} ({transactions.length - visibleCount} {t('common.remaining')})
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

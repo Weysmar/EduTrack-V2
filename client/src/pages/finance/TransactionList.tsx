@@ -37,12 +37,12 @@ export const TransactionList: React.FC = () => {
                     >
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-slate-800 rounded-full border border-slate-700 group-hover:bg-slate-700 transition-colors">
-                                {getIcon(t.category?.name || '')}
+                                {getIcon((t as any).category?.name || '')}
                             </div>
                             <div>
                                 <div className="font-medium text-slate-200">{t.description || "Transaction"}</div>
                                 <div className="text-xs text-slate-500">
-                                    {format(new Date(t.date), 'dd MMM yyyy', { locale: fr })} • {t.category?.name || 'Autre'}
+                                    {format(new Date(t.date), 'dd MMM yyyy', { locale: fr })} • {(t as any).category?.name || 'Autre'}
                                 </div>
                             </div>
                         </div>

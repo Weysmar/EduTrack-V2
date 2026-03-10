@@ -29,7 +29,7 @@ export function BankFormModal({ isOpen, onClose, onSubmit, initialData }: BankFo
                 name: initialData.name,
                 color: initialData.color,
                 icon: initialData.icon || '🏦',
-                swiftBic: initialData.swifBic
+                swiftBic: initialData.swiftBic
             });
         } else {
             setFormData({ name: '', color: '#3b82f6', icon: '🏦', swiftBic: '' });

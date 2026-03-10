@@ -10,7 +10,7 @@ export const ExpenseDistributionChart: React.FC = () => {
         const expenses = getFilteredTransactions().filter(t => t.type === 'EXPENSE');
         const distribution: Record<string, number> = {};
 
-        expenses.forEach(t => {
+        expenses.forEach((t: any) => {
             const cat = t.category?.name || 'Autre';
             distribution[cat] = (distribution[cat] || 0) + t.amount;
         });

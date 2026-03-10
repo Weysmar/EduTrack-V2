@@ -284,8 +284,9 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                     )
                 }));
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Enrichment error", error);
+            throw error;
         }
     },
 
@@ -312,9 +313,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
             const result = await financeApi.audit(recentTx);
 
             return result.audit;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Audit error", error);
-            return "Erreur lors de la génération de l'audit.";
+            const msg = error.response?.data?.error || error.message || "Erreur lors de la génération de l'audit.";
+            throw new Error(msg);
         } finally {
             set({ isLoading: false });
         }
@@ -336,9 +338,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 return result.updated;
             }
             return 0;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Auto categorization error', error);
-            return 0;
+            const msg = error.response?.data?.error || error.message || 'Erreur lors de la catégorisation automatique';
+            throw new Error(msg);
         } finally {
             set({ isLoading: false });
         }
@@ -353,9 +356,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
                 return result.updated;
             }
             return 0;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Reclassification error', error);
-            return 0;
+            const msg = error.response?.data?.error || error.message || 'Erreur lors de la reclassification';
+            throw new Error(msg);
         } finally {
             set({ isLoading: false });
         }

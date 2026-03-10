@@ -1,31 +1,10 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { ImportService } from '../services/importService';
-import { categorizerService } from '../services/categorizerService';
-import { aiService } from '../services/aiService';
-import { CategoryMatcherService } from '../services/categoryMatcherService';
-import { ClassificationService } from '../services/classificationService';
-import { maskIban, maskAccountNumber } from '../utils/maskIban';
-import { prisma } from '../lib/prisma';
+import { FinanceService } from '../services/financeService';
+import { ImportService } from '../services/importService'; // Kept for cleanup logic
 import fs from 'fs';
 import path from 'path';
-import { isPathWithinBase } from '../utils/sanitizePath';
 import { z } from 'zod';
-
-// Helper: Recalculate account balance from transactions (prevents drift)
-async function recalculateBalance(accountId: string, tx?: any) {
-    const db = tx || prisma;
-    const result = await db.transaction.aggregate({
-        _sum: { amount: true },
-        where: { accountId }
-    });
-    const computedBalance = result._sum.amount ?? 0;
-    await db.account.update({
-        where: { id: accountId },
-        data: { balance: computedBalance, balanceDate: new Date() }
-    });
-    return computedBalance;
-}
 
 // --- Import Endpoints ---
 
@@ -100,7 +79,7 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'Missing import data or bank ID' });
         }
 
-        const result = await ImportService.commitImport(profileId, bankId, importData);
+        const result = await FinanceService.commitImport(profileId, bankId, importData);
         res.json(result);
 
     } catch (error: any) {
@@ -119,29 +98,12 @@ export const getAccounts = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
         const { includeArchived } = req.query;
 
-        if (!profileId) {
-            return res.status(400).json({ error: 'Profile ID not found in token' });
-        }
+        if (!profileId) return res.status(400).json({ error: 'Profile ID not found in token' });
 
-        const whereClause: any = { bank: { profileId } };
-        if (includeArchived !== 'true') {
-            whereClause.active = true;
-        }
-
-        const accounts = await prisma.account.findMany({
-            where: whereClause,
-            include: { bank: true }
-        });
-
-        // Mask sensitive IBAN data
-        const maskedAccounts = accounts.map((acc: any) => ({
-            ...acc,
-            iban: maskIban(acc.iban),
-            accountNumber: maskAccountNumber(acc.accountNumber)
-        }));
-
-        res.json(maskedAccounts);
+        const accounts = await FinanceService.getAccounts(profileId, includeArchived === 'true');
+        res.json(accounts);
     } catch (error) {
+        console.error('Fetch Accounts Error:', error);
         res.status(500).json({ error: 'Failed to fetch accounts' });
     }
 };
@@ -151,41 +113,13 @@ export const createAccount = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
         const { bankId, name, type, balance, currency, accountNumber } = req.body;
 
-        if (!profileId) {
-            return res.status(400).json({ error: 'Profile ID not found in token' });
-        }
+        if (!profileId) return res.status(400).json({ error: 'Profile ID not found in token' });
 
-        // Verify bank belongs to user
-        const bank = await prisma.bank.findFirst({
-            where: { id: bankId, profileId }
-        });
-
-        if (!bank) {
-            return res.status(404).json({ error: 'Bank not found' });
-        }
-
-        const account = await prisma.account.create({
-            data: {
-                bankId,
-                name,
-                type: type || 'CHECKING',
-                balance: 0, // Always start at 0 - balance managed via transactions
-                currency: currency || 'EUR',
-                accountNumber: accountNumber || 'N/A',
-                iban: accountNumber || undefined, // Simple default
-                active: true,
-                autoDetected: false
-            }
-        });
-
-        res.status(201).json({
-            ...account,
-            iban: maskIban(account.iban),
-            accountNumber: maskAccountNumber(account.accountNumber)
-        });
+        const account = await FinanceService.createAccount(profileId, req.body);
+        res.status(201).json(account);
     } catch (error: any) {
         console.error('Create Account Error:', error);
-        res.status(500).json({ error: 'Failed to create account' });
+        res.status(error.message === 'Bank not found' ? 404 : 500).json({ error: error.message || 'Failed to create account' });
     }
 };
 
@@ -193,34 +127,12 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
         const { id } = req.params;
-        const { name, type, balance, currency, accountNumber, active } = req.body;
 
-        // Verify ownership via Bank
-        const account = await prisma.account.findFirst({
-            where: { id, bank: { profileId } }
-        });
-
-        if (!account) return res.status(404).json({ error: 'Account not found' });
-
-        const updated = await prisma.account.update({
-            where: { id },
-            data: {
-                name,
-                type,
-                balance,
-                currency,
-                accountNumber,
-                active
-            }
-        });
-
-        res.json({
-            ...updated,
-            iban: maskIban(updated.iban),
-            accountNumber: maskAccountNumber(updated.accountNumber)
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update account' });
+        const updated = await FinanceService.updateAccount(profileId, id, req.body);
+        res.json(updated);
+    } catch (error: any) {
+        console.error('Update Account Error:', error);
+        res.status(error.message === 'Account not found' ? 404 : 500).json({ error: error.message || 'Failed to update account' });
     }
 };
 
@@ -229,17 +141,11 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
         const { id } = req.params;
 
-        // Verify ownership
-        const account = await prisma.account.findFirst({
-            where: { id, bank: { profileId } }
-        });
-
-        if (!account) return res.status(404).json({ error: 'Account not found' });
-
-        await prisma.account.delete({ where: { id } });
-        res.json({ message: 'Account deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete account' });
+        const result = await FinanceService.deleteAccount(profileId, id);
+        res.json(result);
+    } catch (error: any) {
+        console.error('Delete Account Error:', error);
+        res.status(error.message === 'Account not found' ? 404 : 500).json({ error: error.message || 'Failed to delete account' });
     }
 };
 
@@ -247,27 +153,10 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 export const getTransactions = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        // Basic pagination or filter support could be added here
-        const transactions = await prisma.transaction.findMany({
-            where: { account: { bank: { profileId } } },
-            include: { account: true },
-            orderBy: { date: 'desc' }
-            // take: 100 // Limit removed as requested
-        });
-
-        // Mask IBANs in account data and beneficiaryIban
-        const maskedTransactions = transactions.map((tx: any) => ({
-            ...tx,
-            beneficiaryIban: maskIban(tx.beneficiaryIban),
-            account: tx.account ? {
-                ...tx.account,
-                iban: maskIban(tx.account.iban),
-                accountNumber: maskAccountNumber(tx.account.accountNumber)
-            } : undefined
-        }));
-
+        const maskedTransactions = await FinanceService.getTransactions(profileId);
         res.json(maskedTransactions);
     } catch (error) {
+        console.error('Fetch Transactions Error:', error);
         res.status(500).json({ error: 'Failed to fetch transactions' });
     }
 };
@@ -275,48 +164,11 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
 export const createTransaction = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        const {
-            accountId,
-            amount,
-            date,
-            description,
-            classification,
-            category,
-            beneficiaryIban,
-            metadata
-        } = req.body;
-
-        // Verify account belongs to user
-        const account = await prisma.account.findFirst({
-            where: { id: accountId, bank: { profileId } }
-        });
-
-        if (!account) {
-            return res.status(404).json({ error: 'Account not found or access denied' });
-        }
-
-        // Atomic: create transaction + recalculate balance
-        const transaction = await prisma.$transaction(async (tx) => {
-            const created = await tx.transaction.create({
-                data: {
-                    accountId,
-                    amount: parseFloat(String(amount)),
-                    date: date ? new Date(date) : new Date(),
-                    description: description || 'Transaction manuelle',
-                    classification: classification || 'UNKNOWN',
-                    category: category || null,
-                    beneficiaryIban: beneficiaryIban || null,
-                    metadata: metadata || null
-                }
-            });
-            await recalculateBalance(accountId, tx);
-            return created;
-        });
-
+        const transaction = await FinanceService.createTransaction(profileId, req.body);
         res.status(201).json(transaction);
     } catch (error: any) {
         console.error('Create Transaction Error:', error);
-        res.status(500).json({ error: 'Failed to create transaction' });
+        res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message || 'Failed to create transaction' });
     }
 };
 
@@ -328,55 +180,11 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
         const idSchema = z.string().uuid();
         const id = idSchema.parse(rawId);
 
-        const {
-            amount,
-            date,
-            description,
-            classification,
-            category,
-            beneficiaryIban,
-            metadata
-        } = req.body;
-
-        // Verify ownership
-        const oldTransaction = await prisma.transaction.findFirst({
-            where: { id, account: { bank: { profileId } } },
-            include: { account: true }
-        });
-
-        if (!oldTransaction || !oldTransaction.accountId) {
-            return res.status(404).json({ error: 'Transaction not found or access denied' });
-        }
-
-        // Verification: get the ID from the database record we just found
-        // Use the DB-sourced ID to break the taint chain for static analysis
-        const safeId = oldTransaction.id;
-
-        // Atomic: update transaction + recalculate balance
-        const sanitizedAmount = amount !== undefined ? parseFloat(String(amount)) : undefined;
-        const updated = await prisma.$transaction(async (tx) => {
-            const result = await tx.transaction.update({
-                where: { id: safeId },
-                data: {
-                    amount: sanitizedAmount,
-                    date: date ? new Date(String(date)) : undefined,
-                    description: description ? String(description).slice(0, 255) : undefined,
-                    classification: classification ? (String(classification) as any) : undefined,
-                    classificationConfidence: classification ? 1.0 : undefined,
-                    category: category ? String(category).slice(0, 100) : undefined,
-                    beneficiaryIban: beneficiaryIban ? String(beneficiaryIban).slice(0, 50) : undefined,
-                    metadata: metadata ? (typeof metadata === 'object' ? JSON.parse(JSON.stringify(metadata)) : undefined) : undefined
-                }
-            });
-            // Recalculate from all transactions (prevents drift)
-            await recalculateBalance(oldTransaction.accountId!, tx);
-            return result;
-        });
-
+        const updated = await FinanceService.updateTransaction(profileId, id, req.body);
         res.json(updated);
     } catch (error: any) {
         console.error('Update Transaction Error:', error);
-        res.status(500).json({ error: 'Failed to update transaction' });
+        res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message || 'Failed to update transaction' });
     }
 };
 
@@ -385,27 +193,11 @@ export const deleteTransaction = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
         const { id } = req.params;
 
-        // Verify ownership
-        const transaction = await prisma.transaction.findFirst({
-            where: { id, account: { bank: { profileId } } }
-        });
-
-        if (!transaction || !transaction.accountId) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-
-        const accountId = transaction.accountId;
-
-        // Atomic: delete transaction + recalculate balance
-        await prisma.$transaction(async (tx) => {
-            await tx.transaction.delete({ where: { id } });
-            await recalculateBalance(accountId, tx);
-        });
-
-        res.json({ message: 'Transaction deleted' });
-    } catch (error) {
+        const result = await FinanceService.deleteTransaction(profileId, id);
+        res.json(result);
+    } catch (error: any) {
         console.error('Delete Transaction Error:', error);
-        res.status(500).json({ error: 'Failed to delete transaction' });
+        res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message || 'Failed to delete transaction' });
     }
 };
 
@@ -415,69 +207,12 @@ export const categorizeTransactions = async (req: AuthRequest, res: Response) =>
         const profileId = req.user!.id;
         const { transactionIds } = req.body;
 
-        if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
-            return res.status(400).json({ error: 'Transaction IDs required' });
-        }
-
-        // Fetch transactions
-        const transactions = await prisma.transaction.findMany({
-            where: {
-                id: { in: transactionIds },
-                account: { bank: { profileId } } // Security: user can only categorize their own
-            }
-        });
-
-        if (transactions.length === 0) {
-            return res.status(404).json({ error: 'No transactions found' });
-        }
-
-        // Get user's API key
-        const profile = await prisma.profile.findUnique({
-            where: { id: profileId },
-            select: { settings: true }
-        });
-
-        const apiKey = (profile?.settings as any)?.google_gemini_summaries;
-
-        if (!apiKey) {
-            return res.status(400).json({ error: 'No API key configured. Please add your Gemini API key in Settings.' });
-        }
-
-        // Call categorizer service
-        const txData = transactions.map((t: any) => ({
-            description: t.description,
-            amount: t.amount.toNumber(),
-            id: t.id
-        }));
-
-        const categorizedMap = await categorizerService.categorizeBatch(txData, apiKey);
-
-        // Update transactions with categories
-        const updates = Object.entries(categorizedMap).map(([index, category]) => {
-            const tx = transactions[parseInt(index)];
-            const safeCategory = String(category).substring(0, 255);
-            // Re-validate ID to satisfy static analysis
-            const txId = String(tx.id);
-            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(txId)) {
-                return Promise.resolve();
-            }
-            return prisma.transaction.update({
-                where: { id: txId },
-                data: { category: safeCategory }
-            });
-        });
-
-        await Promise.all(updates);
-
-        res.json({
-            message: 'Categorization complete',
-            categorized: Object.keys(categorizedMap).length,
-            categories: categorizedMap
-        });
-
+        const result = await FinanceService.categorizeTransactions(profileId, transactionIds);
+        res.json(result);
     } catch (error: any) {
         console.error('Categorization Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to categorize transactions' });
+        res.status(error.message.includes('required') || error.message.includes('configured') ? 400 : (error.message.includes('found') ? 404 : 500))
+            .json({ error: error.message || 'Failed to categorize transactions' });
     }
 };
 
@@ -485,11 +220,7 @@ export const categorizeTransactions = async (req: AuthRequest, res: Response) =>
 export const getImportLogs = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        const logs = await prisma.importLog.findMany({
-            where: { profileId },
-            orderBy: { createdAt: 'desc' },
-            take: 20 // Limit to last 20 imports for now
-        });
+        const logs = await FinanceService.getImportLogs(profileId);
         res.json(logs);
     } catch (error) {
         console.error('Fetch Import Logs Error:', error);
@@ -504,71 +235,21 @@ export const exportData = async (req: AuthRequest, res: Response) => {
         const format = req.query.format as string || 'json';
 
         if (format === 'json') {
-            const data = await prisma.profile.findUnique({
-                where: { id: profileId },
-                include: {
-                    banks: {
-                        include: {
-                            accounts: {
-                                include: {
-                                    transactions: true
-                                }
-                            }
-                        }
-                    },
-                    budgets: true
-                }
-            });
-
-            if (!data) return res.status(404).json({ error: 'Profile not found' });
-
-            const exportData = {
-                exportedAt: new Date(),
-                banks: data.banks,
-                budgets: data.budgets
-            };
-
+            const exportData = await FinanceService.exportDataJson(profileId);
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Content-Disposition', `attachment; filename=persotrack_backup_${new Date().toISOString().split('T')[0]}.json`);
             res.json(exportData);
-
         } else if (format === 'csv') {
-            const transactions = await prisma.transaction.findMany({
-                where: { account: { bank: { profileId } } },
-                include: {
-                    account: {
-                        include: { bank: true }
-                    }
-                },
-                orderBy: { date: 'desc' }
-            });
-
-            // Convert to CSV
-            const header = 'Date,Description,Amount,Currency,Category,Details,Account,Bank,Type,Status\n';
-            const rows = transactions.map((t: any) => {
-                const date = t.date.toISOString().split('T')[0];
-                const cleanDesc = t.description.replace(/,/g, ' '); // Simple CSV escape
-                const amount = t.amount.toString();
-                const currency = t.account?.currency || 'EUR';
-                const category = t.category || '';
-                const details = t.classification || '';
-                const account = t.account?.name || '';
-                const bank = t.account?.bank.name || '';
-                const type = (t.classification === 'INTERNAL_INTRA_BANK' || t.classification === 'INTERNAL_INTER_BANK') ? 'Internal' : 'External';
-
-                return `${date},${cleanDesc},${amount},${currency},${category},${details},${account},${bank},${type},${t.classification}`;
-            }).join('\n');
-
+            const csvData = await FinanceService.exportDataCsv(profileId);
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename=persotrack_transactions_${new Date().toISOString().split('T')[0]}.csv`);
-            res.send(header + rows);
+            res.send(csvData);
         } else {
             res.status(400).json({ error: 'Invalid format. Use json or csv.' });
         }
-
-    } catch (error) {
+    } catch (error: any) {
         console.error('Export Error:', error);
-        res.status(500).json({ error: 'Failed to export data' });
+        res.status(error.message === 'Profile not found' ? 404 : 500).json({ error: error.message || 'Failed to export data' });
     }
 };
 
@@ -577,85 +258,11 @@ export const reclassifyAllTransactions = async (req: AuthRequest, res: Response)
     try {
         const profileId = req.user!.id;
 
-        // Fetch UNKNOWN or low-confidence transactions (increased threshold to 0.8)
-        const transactions = await prisma.transaction.findMany({
-            where: {
-                account: { bank: { profileId } },
-                OR: [
-                    { classification: 'UNKNOWN' },
-                    { classificationConfidence: { lt: 0.8 } }
-                ]
-            },
-            include: {
-                account: {
-                    include: { bank: true }
-                }
-            }
-        });
-
-        console.log(`[Reclassify] Found ${transactions.length} target transactions.`);
-
-        let updated = 0;
-        const updatedIds: string[] = [];
-
-        for (const tx of transactions) {
-            if (!tx.account) continue;
-            const bankId = tx.account.bankId;
-
-            const result = await ClassificationService.classifyTransaction(
-                profileId,
-                tx.description,
-                tx.amount.toNumber(),
-                bankId,
-                tx.beneficiaryIban || undefined
-            );
-
-            // Logic:
-            // 1. If result is UNKNOWN, skip
-            // 2. Otherwise update if classification changed OR confidence improved
-            if (result.classification !== 'UNKNOWN') {
-                const hasChanged = result.classification !== tx.classification;
-                const confidenceImproved = (result.confidenceScore || 0) > (tx.classificationConfidence || 0);
-
-                console.log(`[Reclassify] Profile: ${profileId.slice(0, 8)} | TX: ${tx.description.slice(0, 20)} | Old: ${tx.classification}(${tx.classificationConfidence?.toFixed(2)}) | New: ${result.classification}(${result.confidenceScore?.toFixed(2)}) | changed: ${hasChanged} | improved: ${confidenceImproved}`);
-
-                if (hasChanged || confidenceImproved) {
-                    await prisma.transaction.update({
-                        where: { id: tx.id },
-                        data: {
-                            classification: result.classification,
-                            classificationConfidence: result.confidenceScore,
-                            linkedAccountId: result.linkedAccountId
-                        }
-                    });
-                    updated++;
-                    updatedIds.push(tx.id);
-                }
-            } else {
-                console.log(`[Reclassify] Skip UNKNOWN for: ${tx.description.slice(0, 20)}`);
-            }
-        }
-
-        // Trigger Auto-categorization for updated IDs
-        if (updatedIds.length > 0) {
-            const matches = await CategoryMatcherService.matchTransactions(profileId, updatedIds);
-            const matchEntries = Object.entries(matches);
-
-            if (matchEntries.length > 0) {
-                const catUpdates = matchEntries.map(([id, category]) => {
-                    return prisma.transaction.update({
-                        where: { id },
-                        data: { category }
-                    });
-                });
-                await prisma.$transaction(catUpdates);
-            }
-        }
-
-        res.json({ success: true, updated, total: transactions.length });
-    } catch (error) {
+        const result = await FinanceService.reclassifyAllTransactions(profileId);
+        res.json(result);
+    } catch (error: any) {
         console.error('Reclassification Error:', error);
-        res.status(500).json({ error: 'Failed to reclassify transactions' });
+        res.status(500).json({ error: error.message || 'Failed to reclassify transactions' });
     }
 };
 
@@ -665,58 +272,12 @@ export const audit = async (req: AuthRequest, res: Response) => {
         const profileId = req.user!.id;
         const { transactions } = req.body;
 
-        if (!Array.isArray(transactions) || transactions.length === 0) {
-            return res.status(400).json({ error: 'Transactions are required for audit' });
-        }
-
-        // Get user's API key
-        const profile = await prisma.profile.findUnique({
-            where: { id: profileId },
-            select: { settings: true }
-        });
-
-        // Get user's AI settings
-        const settings = (profile?.settings as any) || {};
-        const provider = settings.finance_audit_provider || 'google';
-        const model = settings.finance_audit_model || 'gemini-1.5-flash';
-
-        // Select correct API key based on provider
-        let apiKey = '';
-        if (provider === 'google') {
-            apiKey = settings.google_gemini_summaries || process.env.GEMINI_API_KEY || '';
-        } else {
-            apiKey = settings.perplexity_summaries || process.env.PERPLEXITY_API_KEY || '';
-        }
-
-        if (!apiKey) {
-            const providerName = provider === 'google' ? 'Gemini' : 'Perplexity';
-            return res.status(400).json({ error: `No API key configured for ${providerName}. Please add it in Settings.` });
-        }
-
-        // Prepare context for AI
-        const txList = transactions
-            .slice(0, 50) // Limit to last 50 for cost/speed
-            .map((t: any) => `[${new Date(t.date).toLocaleDateString()}] ${t.amount}€ - ${t.description} (${t.category || t.classification || 'Sans catégorie'})`)
-            .join('\n');
-
-        const systemPrompt = "Tu es un analyste financier personnel expert. Ton objectif est d'analyser les transactions récentes de l'utilisateur et de lui donner un résumé court (max 150 mots), percutant et des conseils actionnables.";
-
-        const prompt = `
-        Voici mes dernières transactions :
-        ${txList}
-
-        Analyse ma situation financière récente. Identifie les tendances de dépenses, les anomalies éventuelles et propose 2-3 conseils concrets pour optimiser mon budget.
-        Réponds en français avec un ton encourageant mais professionnel.
-        `;
-
-        // Use the selected model and provider (aiService handles model mapping)
-        const auditText = await aiService.generateText(prompt, systemPrompt, model, apiKey);
-
-        res.json({ audit: auditText });
-
+        const result = await FinanceService.generateAudit(profileId, req.body.transactions);
+        res.json(result);
     } catch (error: any) {
         console.error('Audit Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to generate financial audit' });
+        res.status(error.message.includes('required') || error.message.includes('configured') ? 400 : 500)
+            .json({ error: error.message || 'Failed to generate financial audit' });
     }
 };
 
@@ -726,34 +287,8 @@ export const autoCategorizeTransactions = async (req: AuthRequest, res: Response
         const profileId = req.user!.id;
         const { transactionIds } = req.body;
 
-        console.log(`[AutoCat] Starting for profile ${profileId}. IDs? ${transactionIds?.length}`);
-
-        // Call the matcher service
-        const matches = await CategoryMatcherService.matchTransactions(profileId, transactionIds);
-        const matchEntries = Object.entries(matches);
-
-        console.log(`[AutoCat] Found ${matchEntries.length} matches.`);
-
-        if (matchEntries.length === 0) {
-            return res.json({ success: true, updated: 0, message: 'No matches found.' });
-        }
-
-        // Update transactions in a batch
-        const updates = matchEntries.map(([id, category]) => {
-            return prisma.transaction.update({
-                where: { id },
-                data: { category }
-            });
-        });
-
-        await prisma.$transaction(updates);
-
-        res.json({
-            success: true,
-            updated: matchEntries.length,
-            matches
-        });
-
+        const result = await FinanceService.autoCategorizeTransactionsLocal(profileId, transactionIds);
+        res.json(result);
     } catch (error: any) {
         console.error('Auto Categorization Error:', error);
         res.status(500).json({ error: error.message || 'Failed to auto-categorize transactions' });
