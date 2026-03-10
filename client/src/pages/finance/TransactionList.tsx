@@ -2,14 +2,16 @@ import React from 'react';
 import { useFinanceStore } from '../../store/financeStore';
 import { ShoppingCart, Home, DollarSign, Coffee, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useLanguage } from '../../components/language-provider';
+import { fr, enUS } from 'date-fns/locale';
 
 export const TransactionList: React.FC = () => {
+    const { t, language } = useLanguage();
     const { getFilteredTransactions } = useFinanceStore();
     const transactions = getFilteredTransactions();
 
     if (transactions.length === 0) {
-        return <div className="text-center text-slate-500 py-10">Aucune transaction ce mois-ci</div>;
+        return <div className="text-center text-slate-500 py-10">{t('finance.tx.noneMonth')}</div>;
     }
 
     // Helper pour icones (à dynamiser selon catégorie réelle)
@@ -25,29 +27,29 @@ export const TransactionList: React.FC = () => {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-200">Transactions Récentes</h3>
-                <button className="text-sm text-blue-400 hover:text-blue-300">Voir tout</button>
+                <h3 className="text-lg font-semibold text-slate-200">{t('finance.tx.recent')}</h3>
+                <button className="text-sm text-blue-400 hover:text-blue-300">{t('finance.tx.viewAll')}</button>
             </div>
 
             <div className="space-y-3">
-                {transactions.map((t) => (
+                {transactions.map((tx) => (
                     <div
-                        key={t.id}
+                        key={tx.id}
                         className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-800 cursor-pointer group"
                     >
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-slate-800 rounded-full border border-slate-700 group-hover:bg-slate-700 transition-colors">
-                                {getIcon((t as any).category?.name || '')}
+                                {getIcon((tx as any).category?.name || '')}
                             </div>
                             <div>
-                                <div className="font-medium text-slate-200">{t.description || "Transaction"}</div>
+                                <div className="font-medium text-slate-200">{tx.description || t('common.transaction') || "Transaction"}</div>
                                 <div className="text-xs text-slate-500">
-                                    {format(new Date(t.date), 'dd MMM yyyy', { locale: fr })} • {(t as any).category?.name || 'Autre'}
+                                    {format(new Date(tx.date), 'dd MMM yyyy', { locale: language === 'fr' ? fr : enUS })} • {(tx as any).category?.name || t('finance.tx.category.none')}
                                 </div>
                             </div>
                         </div>
-                        <div className={`font-bold ${t.type === 'INCOME' ? 'text-emerald-400' : 'text-slate-200'}`}>
-                            {t.type === 'INCOME' ? '+' : '-'}{Math.abs(t.amount).toLocaleString('fr-FR')} €
+                        <div className={`font-bold ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            {tx.type === 'INCOME' ? '+' : '-'}{Math.abs(tx.amount).toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                         </div>
                     </div>
                 ))}

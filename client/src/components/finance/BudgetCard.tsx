@@ -1,6 +1,7 @@
 import { Trash2, Edit2, AlertCircle, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@/lib/utils'; // Assuming cn utility is here
+import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/language-provider';
 
 interface BudgetCardProps {
     budget: any; // Type accurately
@@ -10,6 +11,7 @@ interface BudgetCardProps {
 }
 
 export function BudgetCard({ budget, spent, onEdit, onDelete }: BudgetCardProps) {
+    const { t } = useLanguage();
     const percentage = Math.min((spent / Number(budget.amount)) * 100, 100);
     const isOverBudget = spent > Number(budget.amount);
 
@@ -57,7 +59,7 @@ export function BudgetCard({ budget, spent, onEdit, onDelete }: BudgetCardProps)
                     </div>
                     <div>
                         <h3 className="font-semibold text-sm">{budget.category.name}</h3>
-                        <p className="text-xs text-muted-foreground">{budget.period === 'MONTHLY' ? 'Mensuel' : 'Annuel'}</p>
+                        <p className="text-xs text-muted-foreground">{budget.period === 'MONTHLY' ? t('finance.budget.monthly') : t('finance.budget.yearly')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -79,10 +81,10 @@ export function BudgetCard({ budget, spent, onEdit, onDelete }: BudgetCardProps)
             <div className="space-y-1 mb-2">
                 <div className="flex justify-between text-sm">
                     <span className={cn("font-medium", isOverBudget ? "text-red-500" : "text-slate-700 dark:text-slate-300")}>
-                        {spent.toFixed(2)} €
+                        {spent.toFixed(2)} {t('common.currency')}
                     </span>
                     <span className="text-muted-foreground">
-                        / {Number(budget.amount).toFixed(0)} €
+                        / {Number(budget.amount).toFixed(0)} {t('common.currency')}
                     </span>
                 </div>
 
@@ -99,29 +101,29 @@ export function BudgetCard({ budget, spent, onEdit, onDelete }: BudgetCardProps)
                 {isOverBudget ? (
                     <span className="text-red-500 font-medium flex items-center justify-end gap-1">
                         <AlertCircle className="w-3 h-3" />
-                        Dépas. de {(spent - Number(budget.amount)).toFixed(2)} €
+                        {t('finance.budget.limit.exceeded')} {(spent - Number(budget.amount)).toFixed(2)} {t('common.currency')}
                     </span>
                 ) : (
                     <div className="flex flex-col items-end">
                         <span className="text-green-600 dark:text-green-400">
-                            Reste {(Number(budget.amount) - spent).toFixed(2)} €
+                            {t('finance.budget.remaining')} {(Number(budget.amount) - spent).toFixed(2)} {t('common.currency')}
                         </span>
                         {isMonthly && pacingStatus === 'high' && !isOverBudget && (
                             <span className="text-amber-500 font-medium flex items-center justify-end gap-1 mt-1">
                                 <TrendingUp className="w-3 h-3" />
-                                Rythme élevé (Projec: {projectedSpend.toFixed(0)} €)
+                                {t('finance.budget.pacing.high')} (Projec: {projectedSpend.toFixed(0)} {t('common.currency')})
                             </span>
                         )}
                         {isMonthly && pacingStatus === 'low' && !isOverBudget && (
                             <span className="text-emerald-500 flex items-center justify-end gap-1 mt-1 opacity-80">
                                 <TrendingDown className="w-3 h-3" />
-                                Rythme sain
+                                {t('finance.budget.pacing.low')}
                             </span>
                         )}
                         {isMonthly && pacingStatus === 'on_track' && !isOverBudget && (
                             <span className="text-slate-500 dark:text-slate-400 flex items-center justify-end gap-1 mt-1 opacity-80">
                                 <ArrowRight className="w-3 h-3" />
-                                Dans les clous
+                                {t('finance.budget.pacing.onTrack')}
                             </span>
                         )}
                     </div>

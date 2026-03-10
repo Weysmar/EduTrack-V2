@@ -1,8 +1,10 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useFinanceStore } from '../../store/financeStore';
+import { useLanguage } from '../../components/language-provider';
 
 export const ExpenseDistributionChart: React.FC = () => {
+    const { t, language } = useLanguage();
     const { getFilteredTransactions } = useFinanceStore();
 
     // Calculer la distribution par catégorie
@@ -24,7 +26,7 @@ export const ExpenseDistributionChart: React.FC = () => {
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
     if (data.length === 0) {
-        return <div className="h-full flex items-center justify-center text-slate-500">Pas de données</div>;
+        return <div className="h-full flex items-center justify-center text-slate-500">{t('finance.chart.noData')}</div>;
     }
 
     return (
@@ -46,7 +48,7 @@ export const ExpenseDistributionChart: React.FC = () => {
                 <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                     itemStyle={{ color: '#fff' }}
-                    formatter={(value: number) => `${value.toLocaleString('fr-FR')} €`}
+                    formatter={(value: number) => `${value.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US')} ${t('common.currency')}`}
                 />
                 <Legend
                     verticalAlign="bottom"

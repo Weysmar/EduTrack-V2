@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, PlusCircle, CreditCard } from 'lucide-react'
 import { useState } from 'react';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '@/components/language-provider';
 
 interface Props {
     banks?: Bank[];
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function BankPanel({ banks = [] }: Props) {
+    const { t } = useLanguage();
     const [expandedBanks, setExpandedBanks] = useState<string[]>(banks.map(b => b.id)); // All open by default
 
     const toggleBank = (id: string) => {
@@ -22,7 +24,7 @@ export function BankPanel({ banks = [] }: Props) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-slate-100">Mes Comptes</h2>
+                <h2 className="text-lg font-bold text-slate-100">{t('finance.banks.title') || 'Mes Banques'}</h2>
                 <Link to="/finance/settings" className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-blue-400 transition-colors">
                     <PlusCircle size={18} />
                 </Link>
@@ -30,7 +32,7 @@ export function BankPanel({ banks = [] }: Props) {
 
             {banks.length === 0 && (
                 <div className="p-4 border border-dashed border-slate-700 rounded-lg text-center text-slate-500 text-sm">
-                    Aucune banque connectée
+                    {t('finance.banks.none') || 'Aucune banque connectée'}
                 </div>
             )}
 
@@ -50,14 +52,14 @@ export function BankPanel({ banks = [] }: Props) {
                                 <span className="font-medium text-slate-200">{bank.name}</span>
                             </div>
                             <span className="text-sm font-semibold text-slate-300">
-                                {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(bankTotal)}
+                                {new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: 'EUR' }).format(bankTotal)}
                             </span>
                         </div>
 
                         {isExpanded && bank.accounts && (
                             <div className="divide-y divide-slate-800/50">
                                 {bank.accounts.length === 0 && (
-                                    <p className="p-3 text-xs text-slate-500 italic">Aucun compte</p>
+                                    <p className="p-3 text-xs text-slate-500 italic">{t('finance.banks.noAccounts') || 'Aucun compte'}</p>
                                 )}
                                 {bank.accounts.map(acc => (
                                     <div key={acc.id} className="p-3 pl-8 flex items-center justify-between hover:bg-slate-800/30 transition-colors group">
@@ -69,7 +71,7 @@ export function BankPanel({ banks = [] }: Props) {
                                             </div>
                                         </div>
                                         <span className={clsx("text-sm font-medium", (acc.balance || 0) < 0 ? "text-red-400" : "text-green-400")}>
-                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: acc.currency }).format(acc.balance || 0)}
+                                            {new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: acc.currency }).format(acc.balance || 0)}
                                         </span>
                                     </div>
                                 ))}

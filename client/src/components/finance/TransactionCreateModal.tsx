@@ -2,6 +2,7 @@ import { Dialog } from '@headlessui/react';
 import { Account, TransactionCategory } from '@/types/finance';
 import { X, Check, Calendar, Tag, CreditCard, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from '@/components/language-provider';
 
 interface TransactionCreateModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export function TransactionCreateModal({
     accountId,
     categories
 }: TransactionCreateModalProps) {
+    const { t } = useLanguage();
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         description: '',
@@ -57,9 +59,9 @@ export function TransactionCreateModal({
                     <div className="flex items-start justify-between mb-6">
                         <div>
                             <Dialog.Title className="text-xl font-semibold text-slate-100 italic">
-                                Ajouter une opération ✍️
+                                {t('finance.dashboard.newOp') || "Ajouter une opération ✍️"}
                             </Dialog.Title>
-                            <p className="text-sm text-slate-400 mt-1">Saisie manuelle</p>
+                            <p className="text-sm text-slate-400 mt-1">{t('finance.tx.manual') || "Saisie manuelle"}</p>
                         </div>
                         <button
                             onClick={onClose}
@@ -73,14 +75,14 @@ export function TransactionCreateModal({
                         {/* Description */}
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1">
-                                Description
+                                {t('finance.tx.description') || "Description"}
                             </label>
                             <input
                                 required
                                 type="text"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="ex: Courses Leclerc, Loyer..."
+                                placeholder={t('finance.tx.description.placeholder') || "ex: Courses Leclerc, Loyer..."}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                             />
                         </div>
@@ -89,28 +91,28 @@ export function TransactionCreateModal({
                             {/* Type */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1">
-                                    Type
+                                    {t('finance.tx.type') || "Type"}
                                 </label>
                                 <div className="flex p-1 bg-slate-800 rounded-lg border border-slate-700">
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, type: 'EXPENSE' })}
                                         className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${formData.type === 'EXPENSE'
-                                                ? 'bg-red-500/20 text-red-400 shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-300'
+                                            ? 'bg-red-500/20 text-red-400 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-300'
                                             }`}
                                     >
-                                        Dépense
+                                        {t('finance.tx.type.expense') || "Dépense"}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, type: 'INCOME' })}
                                         className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${formData.type === 'INCOME'
-                                                ? 'bg-emerald-500/20 text-emerald-400 shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-300'
+                                            ? 'bg-emerald-500/20 text-emerald-400 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-300'
                                             }`}
                                     >
-                                        Revenu
+                                        {t('finance.tx.type.income') || "Revenu"}
                                     </button>
                                 </div>
                             </div>
@@ -118,7 +120,7 @@ export function TransactionCreateModal({
                             {/* Amount */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1">
-                                    Montant
+                                    {t('finance.tx.amount') || "Montant"}
                                 </label>
                                 <div className="relative">
                                     <input
@@ -140,7 +142,7 @@ export function TransactionCreateModal({
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                     <Calendar size={12} />
-                                    Date
+                                    {t('finance.tx.date') || "Date"}
                                 </label>
                                 <input
                                     required
@@ -154,7 +156,7 @@ export function TransactionCreateModal({
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
                                     <Tag size={12} />
-                                    Catégorie
+                                    {t('finance.tx.category') || "Catégorie"}
                                 </label>
                                 <div className="relative">
                                     <select
@@ -162,7 +164,7 @@ export function TransactionCreateModal({
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none text-sm"
                                     >
-                                        <option value="">Non classé</option>
+                                        <option value="">{t('finance.tx.category.none') || "Non classé"}</option>
                                         {categories.map(cat => (
                                             <option key={cat.id} value={cat.name}>{cat.name}</option>
                                         ))}
@@ -180,7 +182,7 @@ export function TransactionCreateModal({
                                 disabled={isSaving}
                                 className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors bg-slate-800/50 hover:bg-slate-800 rounded-lg"
                             >
-                                Annuler
+                                {t('common.cancel') || "Annuler"}
                             </button>
                             <button
                                 type="submit"
@@ -188,7 +190,7 @@ export function TransactionCreateModal({
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                             >
                                 <Check size={18} />
-                                {isSaving ? 'Création...' : 'Valider'}
+                                {isSaving ? t('common.loading') : (t('common.submit') || 'Valider')}
                             </button>
                         </div>
                     </form>

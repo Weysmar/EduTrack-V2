@@ -3,6 +3,7 @@ import { useFinanceStore } from '@/store/financeStore';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BudgetCard } from './BudgetCard';
+import { useLanguage } from '@/components/language-provider';
 
 // Simple Modal specific to Budget creation if standard Dialog is too complex to mock
 const SimpleModal = ({ isOpen, onClose, title, children }: any) => {
@@ -23,6 +24,7 @@ const SimpleModal = ({ isOpen, onClose, title, children }: any) => {
 };
 
 export function BudgetManager() {
+    const { t } = useLanguage();
     const { budgets, transactions, categories, addBudget, updateBudget, deleteBudget } = useFinanceStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState<any>(null);
@@ -119,30 +121,31 @@ export function BudgetManager() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Budgets Mensuels</h2>
+                <h2 className="text-lg font-semibold">{t('finance.budget.title') || "Budgets Mensuels"}</h2>
                 <Button size="sm" onClick={() => { setEditingBudget(null); setFormData({ categoryId: '', amount: '', period: 'MONTHLY' }); setIsModalOpen(true); }}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Nouveau Budget
+                    {t('finance.budget.add') || "Nouveau Budget"}
                 </Button>
             </div>
 
             {budgets.length === 0 ? (
                 <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed">
-                    <p className="text-muted-foreground text-sm">Aucun budget défini. Commencez à suivre vos dépenses !</p>
+                    <p className="text-muted-foreground text-sm">{t('finance.budget.none') || "Aucun budget défini. Commencez à suivre vos dépenses !"}</p>
                 </div>
             ) : (
                 <>
                     {/* Global Pacing Banner */}
                     <div className="bg-muted/30 border rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">Vue d'ensemble du mois</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">{t('finance.budget.overview') || "Vue d'ensemble du mois"}</h3>
                             <p className="text-sm mt-1">
-                                Vous êtes à <span className="font-bold text-foreground">{globalStats.percentMonthElapsed}%</span> du mois et avez consommé <span className="font-bold text-foreground">{globalStats.percentBudgetUsed}%</span> de votre enveloppe globale.
+                                {t('finance.budget.status', { month: globalStats.percentMonthElapsed, budget: globalStats.percentBudgetUsed }) ||
+                                    `Vous êtes à ${globalStats.percentMonthElapsed}% du mois et avez consommé ${globalStats.percentBudgetUsed}% de votre enveloppe globale.`}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-muted-foreground">Total Budgété</p>
-                            <p className="text-lg font-bold">{globalStats.totalSpent.toFixed(0)} € / {globalStats.totalBudget.toFixed(0)} €</p>
+                            <p className="text-xs text-muted-foreground">{t('finance.budget.total') || "Total Budgété"}</p>
+                            <p className="text-lg font-bold">{globalStats.totalSpent.toFixed(0)} {t('common.currency')} / {globalStats.totalBudget.toFixed(0)} {t('common.currency')}</p>
                         </div>
                     </div>
 
@@ -163,19 +166,19 @@ export function BudgetManager() {
             <SimpleModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingBudget ? "Modifier le budget" : "Créer un budget"}
+                title={editingBudget ? t('finance.budget.edit') : t('finance.budget.add')}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {!editingBudget && (
                         <div>
-                            <label className="text-sm font-medium mb-1 block">Catégorie</label>
+                            <label className="text-sm font-medium mb-1 block">{t('finance.tx.category') || "Catégorie"}</label>
                             <select
                                 className="w-full p-2 rounded-md bg-background border"
                                 value={formData.categoryId}
                                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                                 required
                             >
-                                <option value="">Choisir une catégorie...</option>
+                                <option value="">{t('finance.tx.category.select') || "Choisir une catégorie..."}</option>
                                 {availableCategories.map(c => (
                                     <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                                 ))}
@@ -184,7 +187,7 @@ export function BudgetManager() {
                     )}
 
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Montant Limite (€)</label>
+                        <label className="text-sm font-medium mb-1 block">{t('finance.budget.limit') || "Montant Limite (€)"}</label>
                         <input
                             type="number"
                             className="w-full p-2 rounded-md bg-background border"
@@ -197,8 +200,8 @@ export function BudgetManager() {
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Annuler</Button>
-                        <Button type="submit">{editingBudget ? "Mettre à jour" : "Créer"}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+                        <Button type="submit">{editingBudget ? t('common.update') : t('common.add')}</Button>
                     </div>
                 </form>
             </SimpleModal>

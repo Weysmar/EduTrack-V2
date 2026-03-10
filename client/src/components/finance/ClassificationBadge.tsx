@@ -1,6 +1,7 @@
 import { TransactionClassification } from '@/types/finance';
 import clsx from 'clsx';
 import { CreditCard, RefreshCw, ArrowRightLeft, HelpCircle } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 interface Props {
     classification: TransactionClassification;
@@ -8,9 +9,10 @@ interface Props {
 }
 
 export function ClassificationBadge({ classification, confidence }: Props) {
+    const { t } = useLanguage();
 
     let config = {
-        label: 'Inconnu',
+        label: t('finance.tx.classification.unknown'),
         color: 'bg-slate-800 text-slate-400',
         icon: HelpCircle
     };
@@ -18,7 +20,7 @@ export function ClassificationBadge({ classification, confidence }: Props) {
     switch (classification) {
         case 'EXTERNAL':
             config = {
-                label: 'Paiement',
+                label: t('finance.tx.classification.external'),
                 color: 'bg-blue-500/20 text-blue-400',
                 icon: CreditCard
             };
@@ -26,7 +28,7 @@ export function ClassificationBadge({ classification, confidence }: Props) {
         case 'INTERNAL_INTRA_BANK':
         case 'INTERNAL_INTER_BANK':
             config = {
-                label: 'Virement Interne',
+                label: t('finance.tx.classification.internal_intra'),
                 color: 'bg-purple-500/20 text-purple-400',
                 icon: ArrowRightLeft
             };
@@ -34,7 +36,7 @@ export function ClassificationBadge({ classification, confidence }: Props) {
         case 'UNKNOWN':
         default:
             config = {
-                label: 'Inconnu',
+                label: t('finance.tx.classification.unknown'),
                 color: 'bg-orange-500/20 text-orange-400',
                 icon: HelpCircle
             };
@@ -49,7 +51,7 @@ export function ClassificationBadge({ classification, confidence }: Props) {
             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-transparent",
             config.color,
             isLowConfidence && "border-amber-500/50"
-        )} title={isLowConfidence ? `Confiance faible (${(confidence! * 100).toFixed(0)}%)` : undefined}>
+        )} title={isLowConfidence ? `${t('finance.badge.confidence.low')} (${(confidence! * 100).toFixed(0)}%)` : undefined}>
             <config.icon className="w-3.5 h-3.5" />
             <span>{config.label}</span>
             {isLowConfidence && <span className="text-amber-500 ml-1">?</span>}

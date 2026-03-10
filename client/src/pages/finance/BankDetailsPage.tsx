@@ -7,10 +7,12 @@ import { Plus, ArrowLeft, Pencil, Trash2, CreditCard, Wallet, Building2, Externa
 import { useState } from 'react';
 import { AccountFormModal } from '@/components/finance/AccountFormModal';
 import { BankFormModal } from '@/components/finance/BankFormModal';
+import { useLanguage } from '@/components/language-provider';
 import { Bank, Account } from '@/types/finance';
 import { toast } from 'sonner';
 
 export default function BankDetailsPage() {
+    const { t } = useLanguage();
     const { bankId } = useParams<{ bankId: string }>();
     const navigate = useNavigate();
     const { banks, deleteBankAsync, deleteAccountAsync, createAccountAsync, updateAccountAsync } = useFinance();
@@ -26,16 +28,16 @@ export default function BankDetailsPage() {
     if (!bank) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <p>Banque non trouvée</p>
+                <p>{t('finance.bank.notFound')}</p>
                 <Button variant="ghost" onClick={() => navigate('/finance/dashboard')}>
-                    Retour au tableau de bord
+                    {t('common.backToDashboard')}
                 </Button>
             </div>
         );
     }
 
     const handleDeleteBank = async () => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette banque ? Cette action est irréversible et supprimera tous les comptes associés.')) {
+        if (confirm(t('finance.bank.delete.confirm'))) {
             try {
                 await deleteBankAsync(bank.id);
                 // toast.success handled in hook
@@ -47,7 +49,7 @@ export default function BankDetailsPage() {
     };
 
     const handleDeleteAccount = async (accountId: string) => {
-        if (confirm('Supprimer ce compte ?')) {
+        if (confirm(t('finance.bank.account.delete.confirm'))) {
             try {
                 await deleteAccountAsync(accountId);
             } catch (error) {
@@ -87,7 +89,7 @@ export default function BankDetailsPage() {
             {/* Header / Navigation */}
             <div className="flex items-center gap-4 text-slate-400 hover:text-slate-200 transition-colors w-fit cursor-pointer" onClick={() => navigate('/finance/dashboard')}>
                 <ArrowLeft size={20} />
-                <span>Retour au tableau de bord</span>
+                <span>{t('common.backToDashboard')}</span>
             </div>
 
             {/* Bank Header Card */}
@@ -101,18 +103,18 @@ export default function BankDetailsPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold text-slate-100">{bank.name}</h1>
-                        <p className="text-slate-400 mt-1">Solde total : <span className="text-emerald-400 font-mono font-medium">{Number(totalBalance).toFixed(2)} €</span></p>
+                        <p className="text-slate-400 mt-1">{t('finance.bank.balance.total')} : <span className="text-emerald-400 font-mono font-medium">{Number(totalBalance).toFixed(2)} {t('common.currency')}</span></p>
                     </div>
                 </div>
 
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setIsBankModalOpen(true)}>
                         <Pencil size={16} className="mr-2" />
-                        Modifier
+                        {t('common.edit')}
                     </Button>
                     <Button variant="destructive" onClick={handleDeleteBank}>
                         <Trash2 size={16} className="mr-2" />
-                        Supprimer
+                        {t('common.delete')}
                     </Button>
                 </div>
             </div>
@@ -122,11 +124,11 @@ export default function BankDetailsPage() {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
                         <Wallet className="text-blue-400" size={20} />
-                        Comptes associés
+                        {t('finance.bank.accounts.associated')}
                     </h2>
                     <Button onClick={openAddAccount} className="bg-blue-600 hover:bg-blue-500">
                         <Plus size={18} className="mr-2" />
-                        Nouveau compte
+                        {t('finance.account.add') || "Nouveau compte"}
                     </Button>
                 </div>
 
@@ -139,7 +141,7 @@ export default function BankDetailsPage() {
                                         {account.name}
                                     </CardTitle>
                                     <CardDescription className="font-mono text-xs text-slate-500 mt-1">
-                                        {account.type} • {account.iban || 'Pas d\'IBAN'}
+                                        {account.type} • {account.iban || t('finance.account.noIban') || 'Pas d\'IBAN'}
                                     </CardDescription>
                                 </div>
                                 <div className="p-2 bg-slate-900/50 rounded-lg text-slate-400">
@@ -149,9 +151,9 @@ export default function BankDetailsPage() {
                             <CardContent>
                                 <div className="flex justify-between items-end mt-4">
                                     <div className="flex flex-col">
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider mb-1">Solde</span>
+                                        <span className="text-xs text-slate-500 uppercase tracking-wider mb-1">{t('finance.account.balance') || "Solde"}</span>
                                         <span className={`text-2xl font-mono font-bold ${Number(account.balance) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {Number(account.balance).toFixed(2)} €
+                                            {Number(account.balance).toFixed(2)} {t('common.currency')}
                                         </span>
                                     </div>
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -170,11 +172,11 @@ export default function BankDetailsPage() {
                     {(!bank.accounts || bank.accounts.length === 0) && (
                         <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-700 rounded-xl text-slate-500">
                             <Wallet size={48} className="mb-4 opacity-20" />
-                            <p className="text-lg font-medium">Aucun compte configuré</p>
-                            <p className="text-sm mb-6 max-w-md text-center opacity-70">Ajoutez un compte courant, une épargne ou une carte de crédit pour commencer à suivre vos transactions.</p>
+                            <p className="text-lg font-medium">{t('finance.bank.accounts.none')}</p>
+                            <p className="text-sm mb-6 max-w-md text-center opacity-70">{t('finance.bank.accounts.none.help')}</p>
                             <Button variant="outline" onClick={openAddAccount}>
                                 <Plus size={16} className="mr-2" />
-                                Ajouter un premier compte
+                                {t('finance.bank.accounts.addFirst')}
                             </Button>
                         </div>
                     )}

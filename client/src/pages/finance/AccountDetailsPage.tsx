@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Calendar, Download, Plus } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { AccountFormModal } from '@/components/finance/AccountFormModal';
+import { useLanguage } from '@/components/language-provider';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
 import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
 import { Transaction, TransactionCategory } from '@/types/finance';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 import { financeApi } from '@/lib/api/financeApi';
 
 export default function AccountDetailsPage() {
+    const { t } = useLanguage();
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
     const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransactionAsync, createTransaction } = useFinance();
@@ -47,16 +49,16 @@ export default function AccountDetailsPage() {
     if (!account) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <p>Compte non trouvé</p>
+                <p>{t('finance.account.notFound')}</p>
                 <Button variant="ghost" onClick={() => navigate('/finance/dashboard')}>
-                    Retour au tableau de bord
+                    {t('common.backToDashboard')}
                 </Button>
             </div>
         );
     }
 
     const handleDeleteAccount = async () => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce compte ? Toutes les transactions associées seront supprimées.')) {
+        if (confirm(t('finance.account.delete.confirm'))) {
             try {
                 await deleteAccountAsync(account.id);
                 navigate(`/finance/bank/${account.bankId}`);
@@ -73,9 +75,9 @@ export default function AccountDetailsPage() {
     const handleSaveTransaction = async (transactionId: string, updates: Partial<Transaction>) => {
         try {
             await updateTransactionAsync({ id: transactionId, data: updates });
-            toast.success('Transaction mise à jour');
+            toast.success(t('finance.tx.update.success'));
         } catch (error) {
-            toast.error('Erreur lors de la mise à jour');
+            toast.error(t('finance.tx.update.error'));
         }
     };
 
@@ -88,7 +90,7 @@ export default function AccountDetailsPage() {
                     onClick={() => navigate(`/finance/bank/${account.bankId}`)}
                 >
                     <ArrowLeft size={20} />
-                    <span>Retour à la banque</span>
+                    <span>{t('finance.bank.backToBank') || "Retour à la banque"}</span>
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -97,13 +99,13 @@ export default function AccountDetailsPage() {
                         onClick={() => setIsCreateModalOpen(true)}
                     >
                         <Plus size={18} />
-                        Nouvelle opération
+                        {t('finance.tx.new') || "Nouvelle opération"}
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditModalOpen(true)}>
-                        Modifier
+                        {t('common.edit')}
                     </Button>
                     <Button variant="destructive" onClick={handleDeleteAccount}>
-                        Supprimer
+                        {t('common.delete')}
                     </Button>
                 </div>
             </div>
@@ -121,9 +123,9 @@ export default function AccountDetailsPage() {
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-slate-400 mb-1">Solde actuel</p>
+                        <p className="text-sm text-slate-400 mb-1">{t('finance.account.balance.current')}</p>
                         <p className={`text-4xl font-mono font-bold ${Number(account.balance) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {Number(account.balance).toFixed(2)} €
+                            {Number(account.balance).toFixed(2)} {t('common.currency')}
                         </p>
                     </div>
                 </div>
@@ -135,8 +137,8 @@ export default function AccountDetailsPage() {
                             <TrendingUp size={20} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-400">Revenus (Total)</p>
-                            <p className="text-xl font-bold text-emerald-400">+{stats.income.toFixed(2)} €</p>
+                            <p className="text-sm text-slate-400">{t('finance.account.income.total')}</p>
+                            <p className="text-xl font-bold text-emerald-400">+{stats.income.toFixed(2)} {t('common.currency')}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -144,8 +146,8 @@ export default function AccountDetailsPage() {
                             <TrendingDown size={20} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-400">Dépenses (Total)</p>
-                            <p className="text-xl font-bold text-red-400">-{stats.expense.toFixed(2)} €</p>
+                            <p className="text-sm text-slate-400">{t('finance.account.expense.total')}</p>
+                            <p className="text-xl font-bold text-red-400">-{stats.expense.toFixed(2)} {t('common.currency')}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -153,7 +155,7 @@ export default function AccountDetailsPage() {
                             <Calendar size={20} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-400">Transactions</p>
+                            <p className="text-sm text-slate-400">{t('finance.tx.history.title') || "Transactions"}</p>
                             <p className="text-xl font-bold text-slate-200">{accountTransactions.length}</p>
                         </div>
                     </div>
@@ -162,7 +164,7 @@ export default function AccountDetailsPage() {
 
             {/* Transactions List */}
             <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-slate-200">Historique des transactions</h2>
+                <h2 className="text-xl font-semibold text-slate-200">{t('finance.account.transactions.history')}</h2>
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
                     <TransactionList
                         transactions={accountTransactions}

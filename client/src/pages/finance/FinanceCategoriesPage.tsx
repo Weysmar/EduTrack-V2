@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { CategoryManager } from '@/components/finance/CategoryManager';
+import { useLanguage } from '@/components/language-provider';
 
 export default function FinanceCategoriesPage() {
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     return (
@@ -13,7 +15,7 @@ export default function FinanceCategoriesPage() {
                 onClick={() => navigate('/finance/dashboard')}
             >
                 <ArrowLeft size={20} />
-                <span>Retour au tableau de bord</span>
+                <span>{t('common.backToDashboard') || "Retour au tableau de bord"}</span>
             </div>
 
             <div className="bg-card rounded-xl border border-slate-800 overflow-hidden shadow-sm h-[80vh]">

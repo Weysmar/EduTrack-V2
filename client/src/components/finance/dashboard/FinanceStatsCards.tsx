@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { useMemo } from 'react';
 import clsx from 'clsx';
 import { startOfMonth, isAfter } from 'date-fns';
+import { useLanguage } from '@/components/language-provider';
 
 interface Props {
     transactions?: Transaction[];
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInternalTransfers = false }: Props) {
+    const { t } = useLanguage();
 
     const stats = useMemo(() => {
         const startOfCurrentMonth = startOfMonth(new Date());
@@ -39,7 +41,7 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
     }, [transactions]);
 
     const formatCurrency = (val: number) =>
-        new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
+        new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -47,36 +49,36 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
             {/* Total Balance */}
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-400">Solde Total</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-400">{t('finance.stats.balance') || 'Solde Total'}</CardTitle>
                     <Wallet className="w-4 h-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-slate-100">{formatCurrency(totalBalance)}</div>
-                    <p className="text-xs text-slate-500 mt-1">Tous comptes confondus</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('finance.stats.balance.all') || 'Tous comptes confondus'}</p>
                 </CardContent>
             </Card>
 
             {/* Income */}
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-400">Revenus (Mois)</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-400">{t('finance.stats.income.month') || 'Revenus (Mois)'}</CardTitle>
                     <TrendingUp className="w-4 h-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-green-400">+{formatCurrency(stats.income)}</div>
-                    <p className="text-xs text-slate-500 mt-1">Ce mois-ci</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('finance.stats.currentMonth') || 'Ce mois-ci'}</p>
                 </CardContent>
             </Card>
 
             {/* Expenses */}
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-slate-400">Dépenses (Mois)</CardTitle>
+                    <CardTitle className="text-sm font-medium text-slate-400">{t('finance.stats.expenses.month') || 'Dépenses (Mois)'}</CardTitle>
                     <TrendingDown className="w-4 h-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-red-400">-{formatCurrency(stats.expenses)}</div>
-                    <p className="text-xs text-slate-500 mt-1">Ce mois-ci</p>
+                    <p className="text-xs text-slate-500 mt-1">{t('finance.stats.currentMonth') || 'Ce mois-ci'}</p>
                 </CardContent>
             </Card>
 

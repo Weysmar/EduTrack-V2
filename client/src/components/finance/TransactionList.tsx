@@ -27,7 +27,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         try {
             await onEnrich(id);
         } catch (error: any) {
-            import('sonner').then(({ toast }) => toast.error(error.message || "Erreur d'enrichissement IA"));
+            import('sonner').then(({ toast }) => toast.error(error.message || t('finance.dashboard.audit.error') || "Erreur d'enrichissement IA"));
         } finally {
             setLoadingMap(prev => ({ ...prev, [id]: false }));
         }
@@ -37,7 +37,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         try {
             setIsReclassifying(true);
             const updated = await reclassifyAll();
-            import('sonner').then(({ toast }) => toast.success(`${updated} transactions reclassifiées.`));
+            import('sonner').then(({ toast }) => toast.success(t('finance.categorize.success', { count: updated }) || `${updated} transactions reclassifiées.`));
         } catch (error: any) {
             console.error(error);
             import('sonner').then(({ toast }) => toast.error(error.message || "Erreur de classification IA"));
@@ -51,7 +51,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
         try {
             return new Date(date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
         } catch (e) {
-            return 'Date invalide';
+            return t('common.invalidDate') || 'Date invalide';
         }
     };
 
@@ -128,7 +128,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
 
                             <div className="flex items-center gap-4">
                                 <span className={`font-bold ${tx.type === 'INCOME' ? 'text-green-500' : (tx.type === 'EXPENSE' ? 'text-red-500' : 'text-blue-500')}`}>
-                                    {tx.type === 'INCOME' ? '+' : (tx.type === 'EXPENSE' ? '-' : '')}{Math.abs(tx.amount).toFixed(2)} €
+                                    {tx.type === 'INCOME' ? '+' : (tx.type === 'EXPENSE' ? '-' : '')}{Math.abs(tx.amount).toFixed(2)} {t('common.currency') || '€'}
                                 </span>
 
                                 <div className="flex gap-2">

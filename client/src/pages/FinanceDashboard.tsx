@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useUIStore } from '@/store/uiStore';
-import { Wallet, RefreshCw, Sparkles, Loader2, Upload, Filter, X, Eye, EyeOff, Trash2, Plus } from 'lucide-react';
+import { Wallet, RefreshCw, Sparkles, Loader2, Filter, X, Trash2, Plus, ArrowLeftRight, Download, ShieldCheck } from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
 import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
@@ -11,6 +11,9 @@ import { ExpenseChart } from '@/components/finance/dashboard/ExpenseChart';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { toast } from 'sonner';
+import {
+    Button
+} from '@/components/ui/Button';
 
 // Helper to get HSL values from CSS variables
 const getHslColor = (variable: string) => {
@@ -60,10 +63,13 @@ export default function FinanceDashboard() {
     const accountIdParam = searchParams.get('accountId');
 
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [auditContent, setAuditContent] = useState<string | null>(null);
-    const [isGeneratingAudit, setIsGeneratingAudit] = useState(false);
+    const [isAuditing, setIsAuditing] = useState(false);
+    const [delAccOpen, setDelAccOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [showInternal, setShowInternal] = useState(!hideInternalTransfers);
 
     // Theme-aware colors
     const [colors, setColors] = useState({
@@ -101,15 +107,15 @@ export default function FinanceDashboard() {
     const handleGenerateAudit = async () => {
         setIsAuditOpen(true);
         if (!auditContent) {
-            setIsGeneratingAudit(true);
+            setIsAuditing(true);
             try {
                 const result = await generateLocalAudit();
                 setAuditContent(result);
             } catch (error: any) {
-                toast.error(error.message || "Erreur lors de la génération de l'audit.");
-                setIsAuditOpen(false); // Close modal on error to not block user
+                toast.error(error.message || t('finance.dashboard.audit.error'));
+                setIsAuditOpen(false);
             } finally {
-                setIsGeneratingAudit(false);
+                setIsAuditing(false);
             }
         }
     };
@@ -142,236 +148,223 @@ export default function FinanceDashboard() {
         : totalBalance;
 
     // Dynamic Title
-    const dashboardTitle = selectedAccount ? selectedAccount.name : "Portefeuille";
-
-
+    const title = selectedAccount ? selectedAccount.name : t('finance.dashboard.title');
 
     return (
-        <div className="animate-in fade-in">
-            {/* Main Content Area */}
-            <div className="p-4 md:p-8 space-y-8">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                            {dashboardTitle} 💰
-                            {selectedAccount && (
-                                <button
-                                    onClick={async () => {
-                                        if (confirm("Supprimer ce compte et toutes ses transactions ?")) {
-                                            await deleteAccount(selectedAccount.id);
-                                            toast.success("Compte supprimé avec succès.");
-                                            setSearchParams(new URLSearchParams());
-                                        }
-                                    }}
-                                    className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
-                                    title="Supprimer ce compte"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            )}
-                        </h1>
-                        <p className="text-muted-foreground">{t('finance.subtitle') || 'Gérez vos finances comme un pro.'}</p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap items-center">
-                        {selectedAccount && (
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition shadow-sm font-medium"
-                                title="Ajouter une opération manuellement"
-                            >
-                                <Plus className="h-4 w-4" />
-                                <span className="hidden sm:inline">Nouvelle opération</span>
-                            </button>
-                        )}
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
+                        <span role="img" aria-label="finance">💰</span>
+                        {title}
+                    </h1>
+                    <p className="text-muted-foreground mt-1 text-lg italic">
+                        {t('finance.subtitle')}
+                    </p>
+                </div>
 
-                        {/* Filter Toggle */}
-                        <button
-                            onClick={toggleInternalTransfers}
-                            className={cn(
-                                "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer",
-                                hideInternalTransfers
-                                    ? "bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
-                                    : "bg-card hover:bg-accent hover:text-accent-foreground"
-                            )}
-                            title={hideInternalTransfers ? 'Afficher les virements internes' : 'Masquer les virements internes'}
-                        >
-                            {hideInternalTransfers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            <span className="hidden sm:inline">Virements internes</span>
-                        </button>
-
-                        <button
-                            onClick={async () => {
-                                try {
-                                    const count = await autoCategorize();
-                                    toast.success(`${count} transaction(s) catégorisée(s) avec succès.`);
-                                } catch (error: any) {
-                                    console.error('Auto-categorize failed:', error);
-                                    toast.error(error.message || "Erreur de catégorisation IA");
+                <div className="flex flex-wrap items-center gap-2">
+                    {selectedAccount && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                                if (confirm(t('finance.dashboard.deleteAccount.confirm'))) {
+                                    deleteAccount(selectedAccount.id);
+                                    toast.success(t('finance.dashboard.deleteAccount.success'));
+                                    setSearchParams({});
                                 }
                             }}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-600 transition shadow-sm font-medium"
-                            title={t('finance.categorize.tooltip')}
+                            title={t('finance.dashboard.deleteAccount')}
                         >
-                            <Filter className="h-4 w-4" />
-                            <span className="hidden sm:inline">{t('finance.categorize')}</span>
-                        </button>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
 
-                        <button
-                            onClick={() => navigate('/finance/import')}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
-                            title="Importer"
-                        >
-                            <Upload className="h-4 w-4" />
-                            <span className="hidden sm:inline">Importer</span>
-                        </button>
+                    <Button
+                        onClick={() => setIsCreateOpen(true)}
+                        className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                        title={t('finance.tx.new')}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        {t('finance.dashboard.newOp')}
+                    </Button>
 
-                        <button
-                            onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition shadow-sm font-medium"
-                            title={t('finance.audit')}
-                        >
-                            <Sparkles className="h-4 w-4" />
-                            <span className="hidden sm:inline">{t('finance.audit')}</span>
-                        </button>
+                    <Button
+                        variant={showInternal ? "secondary" : "outline"}
+                        size="icon"
+                        onClick={() => setShowInternal(!showInternal)}
+                        title={showInternal ? t('finance.dashboard.internal.hide') : t('finance.dashboard.internal.show')}
+                    >
+                        <ArrowLeftRight className="h-4 w-4" />
+                    </Button>
 
-                        <button
-                            onClick={() => fetchTransactions()}
-                            className="p-2 text-muted-foreground hover:bg-muted rounded-md"
-                            title={t('finance.refresh')}
-                        >
-                            <RefreshCw className="h-5 w-5" />
-                        </button>
-                    </div>
+                    <div className="h-8 w-[1px] bg-border/50 mx-1" />
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsFilterOpen(true)}
+                        title={t('finance.filter.advanced')}
+                    >
+                        <Filter className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => navigate('/finance/import')}
+                        title={t('finance.import.title')}
+                    >
+                        <Download className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
+                        disabled={isAuditing}
+                        title={t('finance.audit')}
+                    >
+                        <ShieldCheck className={cn("h-4 w-4", isAuditing && "animate-spin")} />
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fetchTransactions()}
+                        title={t('finance.refresh')}
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                    </Button>
                 </div>
-                {/* Onboarding / Empty State */}
-                {useFinanceStore.getState().banks.length === 0 && (
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg mb-6">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold mb-2">Bienvenue sur FinanceTrack ! 👋</h2>
-                                <p className="text-blue-100 max-w-xl">
-                                    Commencez par ajouter votre première banque pour suivre vos comptes et importer vos transactions.
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => useUIStore.getState().openBankModal()}
-                                className="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-blue-50 transition"
-                            >
-                                Ajouter une banque
-                            </button>
+            </div>
+            {/* Onboarding / Empty State */}
+            {useFinanceStore.getState().banks.length === 0 && (
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white shadow-lg mb-6">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold mb-2">{t('finance.banks.welcome')}</h2>
+                            <p className="text-blue-100 max-w-xl">
+                                {t('finance.banks.welcome.desc')}
+                            </p>
                         </div>
-                    </div>
-                )}
-
-                {/* Header / Active Filter */}
-                {accountIdParam && selectedAccount && (
-                    <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4" />
-                            <span className="font-medium">Filtré par compte : <strong>{selectedAccount.name}</strong></span>
-                        </div>
                         <button
-                            onClick={() => {
-                                setSearchParams({}); // Clear params
-                            }}
-                            className="p-1 hover:bg-primary/20 rounded-full transition-colors"
+                            onClick={() => useUIStore.getState().openBankModal()}
+                            className="bg-white text-blue-600 px-4 py-2 rounded-md font-semibold hover:bg-blue-50 transition"
                         >
-                            <X className="h-4 w-4" />
+                            {t('finance.banks.add')}
                         </button>
                     </div>
-                )}
-
-                {/* Stats Cards */}
-                {/* Stats Cards */}
-                <FinanceStatsCards
-                    transactions={filteredTransactions} // Pass filtered tx (respect both account + internal filter)
-                    totalBalance={displayedBalance}
-                    hideInternalTransfers={hideInternalTransfers}
-                />
-
-                {/* Charts Section */}
-                <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
-                    <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={hideInternalTransfers} />
                 </div>
+            )}
 
-                {/* Budgets Section */}
-                <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <BudgetManager />
-                </div>
-
-                {/* Transaction List */}
-                <div className="bg-card border rounded-xl p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
-                    <TransactionList
-                        transactions={filteredTransactions}
-                        onDelete={deleteTransaction}
-                        onEdit={(tx) => {
-                            setEditingTransaction(tx);
-                        }}
-                        onEnrich={enrichTransaction}
-                    />
-                </div>
-
-                {editingTransaction && (
-                    <TransactionEditModal
-                        transaction={editingTransaction}
-                        accounts={accounts}
-                        isOpen={!!editingTransaction}
-                        onClose={() => {
-                            setEditingTransaction(null);
-                        }}
-                        onSave={async (id, data) => {
-                            await useFinanceStore.getState().updateTransaction(id, data);
-                            setEditingTransaction(null);
-                        }}
-                    />
-                )}
-
-                {isCreateModalOpen && selectedAccount && (
-                    <TransactionCreateModal
-                        isOpen={isCreateModalOpen}
-                        onClose={() => setIsCreateModalOpen(false)}
-                        onSave={async (data) => {
-                            await addTransaction(data);
-                            toast.success("Opération ajoutée");
-                        }}
-                        accountId={selectedAccount.id}
-                        categories={categories}
-                    />
-                )}
-
-                {/* Audit Modal Overlay */}
-                {isAuditOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-                        <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border flex flex-col max-h-[85vh] animate-in zoom-in-95">
-                            <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5 text-purple-500" />
-                                    <h2 className="text-lg font-semibold">{t('finance.audit')}</h2>
-                                </div>
-                                <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">{t('action.close')}</button>
-                            </div>
-                            <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none">
-                                {isGeneratingAudit ? (
-                                    <div className="flex flex-col items-center justify-center py-12 gap-4 text-muted-foreground">
-                                        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-                                        <p>Analyse de vos dépenses en cours...</p>
-                                    </div>
-                                ) : (
-                                    <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                                        {auditContent || "Erreur d'analyse."}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+            {/* Header / Active Filter */}
+            {accountIdParam && selectedAccount && (
+                <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg flex items-center justify-between border border-primary/20">
+                    <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <span className="font-medium">{t('finance.filter.active')} <strong>{selectedAccount.name}</strong></span>
                     </div>
-                )}
-                {/* Closing Main Content Area via flex-1 div end */}
+                    <button
+                        onClick={() => {
+                            setSearchParams({}); // Clear params
+                        }}
+                        className="p-1 hover:bg-primary/20 rounded-full transition-colors"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Stats Cards */}
+            {/* Stats Cards */}
+            <FinanceStatsCards
+                transactions={filteredTransactions} // Pass filtered tx (respect both account + internal filter)
+                totalBalance={displayedBalance}
+                hideInternalTransfers={!showInternal} // Pass the inverted logic to the component
+            />
+
+            {/* Charts Section */}
+            <div className="bg-card border rounded-xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
+                <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={!showInternal} />
             </div>
 
+            {/* Budgets Section */}
+            <div className="bg-card border rounded-xl p-6 shadow-sm">
+                <BudgetManager />
+            </div>
 
-        </div >
+            {/* Transaction List */}
+            <div className="bg-card border rounded-xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-6">{t('finance.history')}</h2>
+                <TransactionList
+                    transactions={filteredTransactions}
+                    onDelete={deleteTransaction}
+                    onEdit={(tx) => {
+                        setEditingTransaction(tx);
+                    }}
+                    onEnrich={enrichTransaction}
+                />
+            </div>
+
+            {editingTransaction && (
+                <TransactionEditModal
+                    transaction={editingTransaction}
+                    accounts={accounts}
+                    isOpen={!!editingTransaction}
+                    onClose={() => {
+                        setEditingTransaction(null);
+                    }}
+                    onSave={async (id, data) => {
+                        await useFinanceStore.getState().updateTransaction(id, data);
+                        setEditingTransaction(null);
+                    }}
+                />
+            )}
+
+            {isCreateOpen && selectedAccount && (
+                <TransactionCreateModal
+                    isOpen={isCreateOpen}
+                    onClose={() => setIsCreateOpen(false)}
+                    onSave={async (data) => {
+                        await addTransaction(data);
+                        toast.success(t('finance.tx.success'));
+                    }}
+                    accountId={selectedAccount.id}
+                    categories={categories}
+                />
+            )}
+
+            {/* Audit Modal Overlay */}
+            {isAuditOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border flex flex-col max-h-[85vh] animate-in zoom-in-95">
+                        <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-purple-500" />
+                                <h2 className="text-lg font-semibold">{t('finance.audit')}</h2>
+                            </div>
+                            <button onClick={() => setIsAuditOpen(false)} className="text-muted-foreground hover:text-foreground">{t('action.close')}</button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1 prose dark:prose-invert max-w-none">
+                            {isAuditing ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-4 text-muted-foreground">
+                                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                                    <p>{t('finance.dashboard.audit.generating')}</p>
+                                </div>
+                            ) : (
+                                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                    {auditContent || t('finance.dashboard.audit.error')}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
     );
 }

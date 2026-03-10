@@ -5,8 +5,9 @@ import {
 } from 'recharts';
 import { useMemo, useState } from 'react';
 import { format, subMonths, subYears, startOfDay, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, startOfMonth, endOfMonth } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { Infinity as InfinityIcon } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 interface Props {
     transactions?: Transaction[];
@@ -24,12 +25,16 @@ const PERIOD_BUTTONS: { key: Period; label: string; isIcon?: boolean }[] = [
     { key: '1m', label: '3m' },
 ];
 
-const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+const formatCurrency = (val: number, locale: string = 'fr-FR') =>
+    new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
 export function ExpenseChart({ transactions = [], hideInternalTransfers = false }: Props) {
+    const { t, language } = useLanguage();
     const [period, setPeriod] = useState<Period>('3m');
     const [yScale, setYScale] = useState(100); // 10–100, slider percentage
+
+    const dateLocale = language === 'en' ? enUS : fr;
+    const currencyLocale = language === 'en' ? 'en-US' : 'fr-FR';
 
     const filtered = transactions;
 
@@ -91,7 +96,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
             let label = "";
             if (useMonthly) {
                 // key is yyyy-MM
-                label = format(new Date(key + '-01'), 'MMM yy', { locale: fr });
+                label = format(new Date(key + '-01'), 'MMM yy', { locale: dateLocale });
             } else {
                 // key is yyyy-ww
                 const [year, weekStr] = key.split('-');
@@ -104,7 +109,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
                     end: now
                 }).find(w => format(w, 'yyyy-ww') === key) || new Date();
 
-                label = format(date, 'd MMM', { locale: fr });
+                label = format(date, 'd MMM', { locale: dateLocale });
             }
             return { label, ...val };
         });
@@ -128,7 +133,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
                     <div key={p.name} className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
                         <span className="text-slate-400">{p.name}:</span>
-                        <span className="font-bold" style={{ color: p.color }}>{formatCurrency(p.value)}</span>
+                        <span className="font-bold" style={{ color: p.color }}>{formatCurrency(p.value, currencyLocale)}</span>
                     </div>
                 ))}
             </div>
@@ -138,7 +143,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
     if (chartData.length === 0) {
         return (
             <div className="h-[320px] flex items-center justify-center text-slate-500 text-sm">
-                Aucune donnée pour cette période
+                {t('finance.chart.noData') || 'Aucune donnée pour cette période'}
             </div>
         );
     }
@@ -147,7 +152,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
         <div className="relative h-[320px] w-full flex gap-2">
             {/* Vertical Y-scale slider */}
             <div className="flex flex-col items-center justify-center gap-1 pr-1">
-                <span className="text-[10px] text-slate-500 rotate-[-90deg] whitespace-nowrap mb-2">Échelle</span>
+                <span className="text-[10px] text-slate-500 rotate-[-90deg] whitespace-nowrap mb-2">{t('finance.chart.scale') || 'Échelle'}</span>
                 <input
                     type="range"
                     min={10}
@@ -199,7 +204,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
                         <Area
                             type="monotone"
                             dataKey="income"
-                            name="Revenus"
+                            name={t('finance.chart.income') || "Revenus"}
                             stroke="#34d399"
                             strokeWidth={2}
                             fill="url(#colorIncome)"
@@ -209,7 +214,7 @@ export function ExpenseChart({ transactions = [], hideInternalTransfers = false 
                         <Area
                             type="monotone"
                             dataKey="expenses"
-                            name="Dépenses"
+                            name={t('finance.chart.expenses') || "Dépenses"}
                             stroke="#f87171"
                             strokeWidth={2}
                             fill="url(#colorExpenses)"

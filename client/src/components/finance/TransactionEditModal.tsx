@@ -3,6 +3,7 @@ import { Transaction, TransactionClassification, Account } from '@/types/finance
 import { X, Save, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ClassificationBadge } from './ClassificationBadge';
+import { useLanguage } from '@/components/language-provider';
 
 interface TransactionEditModalProps {
     transaction: Transaction;
@@ -13,28 +14,6 @@ interface TransactionEditModalProps {
     onReclassify?: (transactionId: string) => Promise<void>;
 }
 
-const CLASSIFICATION_OPTIONS: { value: TransactionClassification; label: string; description: string }[] = [
-    {
-        value: 'EXTERNAL',
-        label: 'Paiement Externe',
-        description: 'Transaction vers un tiers (paiements, prélèvements, virements externes)'
-    },
-    {
-        value: 'INTERNAL_INTRA_BANK',
-        label: 'Virement Interne (Même Banque)',
-        description: 'Transfert entre comptes de la même banque'
-    },
-    {
-        value: 'INTERNAL_INTER_BANK',
-        label: 'Virement Interne (Banques Différentes)',
-        description: 'Transfert entre vos comptes dans des banques différentes'
-    },
-    {
-        value: 'UNKNOWN',
-        label: 'Inconnu',
-        description: 'Classification incertaine ou ambiguë'
-    }
-];
 
 export function TransactionEditModal({
     transaction,
@@ -44,6 +23,30 @@ export function TransactionEditModal({
     onSave,
     onReclassify
 }: TransactionEditModalProps) {
+    const { t } = useLanguage();
+
+    const CLASSIFICATION_OPTIONS: { value: TransactionClassification; label: string; description: string }[] = [
+        {
+            value: 'EXTERNAL',
+            label: t('finance.tx.classification.external'),
+            description: t('finance.tx.classification.external.desc')
+        },
+        {
+            value: 'INTERNAL_INTRA_BANK',
+            label: t('finance.tx.classification.internal_intra'),
+            description: t('finance.tx.classification.internal_intra.desc')
+        },
+        {
+            value: 'INTERNAL_INTER_BANK',
+            label: t('finance.tx.classification.internal_inter'),
+            description: t('finance.tx.classification.internal_inter.desc')
+        },
+        {
+            value: 'UNKNOWN',
+            label: t('finance.tx.classification.unknown'),
+            description: t('finance.tx.classification.unknown.desc')
+        }
+    ];
     const [classification, setClassification] = useState<TransactionClassification>(transaction.classification);
     const [linkedAccountId, setLinkedAccountId] = useState<string>(transaction.linkedAccountId || '');
     const [date, setDate] = useState<string>(new Date(transaction.date).toISOString().split('T')[0]);
@@ -101,7 +104,7 @@ export function TransactionEditModal({
                     <div className="flex items-start justify-between mb-4">
                         <div>
                             <Dialog.Title className="text-xl font-semibold text-slate-100">
-                                Éditer la transaction
+                                {t('finance.tx.edit.title')}
                             </Dialog.Title>
                             <p className="text-sm text-slate-400 mt-1">{transaction.description}</p>
                         </div>
@@ -117,7 +120,7 @@ export function TransactionEditModal({
                     <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div className="space-y-1">
-                                <label className="text-slate-500 block">Date</label>
+                                <label className="text-slate-500 block">{t('finance.tx.date')}</label>
                                 <input
                                     type="date"
                                     value={date}
@@ -126,7 +129,7 @@ export function TransactionEditModal({
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-slate-500 block">Montant (€)</label>
+                                <label className="text-slate-500 block">{t('finance.tx.amount')} ({t('common.currency')})</label>
                                 <div className="relative">
                                     <input
                                         type="number"

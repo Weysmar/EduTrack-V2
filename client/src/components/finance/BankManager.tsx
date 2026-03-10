@@ -8,8 +8,10 @@ import { TransactionCreateModal } from './TransactionCreateModal';
 import { Button } from '@/components/ui/Button';
 import { useFinanceStore } from '@/store/financeStore';
 import { toast } from 'sonner';
+import { useLanguage } from '@/components/language-provider';
 
 export function BankManager() {
+    const { t } = useLanguage();
     const { banks, createBank, updateBank, deleteBank, createAccount, updateAccount, deleteAccount, createTransaction } = useFinance();
     const { categories, fetchCategories } = useFinanceStore();
     const [isInternalModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +50,7 @@ export function BankManager() {
     };
 
     const handleArchive = async (bankId: string) => {
-        if (confirm('Voulez-vous archiver cette banque ? Vous pourrez la restaurer plus tard.')) {
+        if (confirm(t('finance.banks.archive.confirm'))) {
             try {
                 await fetch(`/api/finance/banks/${bankId}/archive`, {
                     method: 'PUT',
@@ -64,7 +66,7 @@ export function BankManager() {
     };
 
     const handleDelete = async (bankId: string) => {
-        if (confirm('⚠️ ATTENTION : Supprimer définitivement cette banque et toutes ses données ? Cette action est irréversible.\n\nPréférez "Archiver" pour conserver vos données.')) {
+        if (confirm(t('finance.banks.delete.confirm'))) {
             await deleteBank(bankId);
         }
     };
@@ -97,7 +99,7 @@ export function BankManager() {
     };
 
     const deleteAccountHandler = async (id: string) => {
-        if (confirm("Supprimer ce compte et toutes ses transactions ?")) {
+        if (confirm(t('finance.accounts.delete.confirm'))) {
             await deleteAccount(id);
         }
     };
@@ -117,12 +119,11 @@ export function BankManager() {
                     </div>
 
                     <h3 className="text-2xl font-bold text-slate-100 mb-2">
-                        Bienvenue dans FinanceTrack ! 👋
+                        {t('finance.banks.welcome')}
                     </h3>
 
                     <p className="text-slate-400 text-center max-w-md mb-8 leading-relaxed">
-                        Commencez par ajouter votre première banque pour centraliser
-                        tous vos comptes et suivre vos finances en temps réel.
+                        {t('finance.banks.welcome.desc')}
                     </p>
 
                     <div className="space-y-4 w-full max-w-sm mb-8">
@@ -162,13 +163,13 @@ export function BankManager() {
             ) : (
                 <>
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold text-slate-100">Mes Banques</h2>
+                        <h2 className="text-xl font-semibold text-slate-100">{t('finance.banks.title')}</h2>
                         <button
                             onClick={openCreateModal}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                         >
                             <Plus size={18} />
-                            Ajouter une banque
+                            {t('finance.banks.add')}
                         </button>
                     </div>
 
@@ -190,7 +191,7 @@ export function BankManager() {
                                         <div>
                                             <h3 className="font-medium text-slate-100">{bank.name}</h3>
                                             <div className="text-sm text-slate-400">
-                                                {(bank.accounts?.length || 0)} comptes
+                                                {t('finance.banks.count', { count: bank.accounts?.length || 0 })}
                                             </div>
                                         </div>
                                     </div>
@@ -198,21 +199,21 @@ export function BankManager() {
                                         <button
                                             onClick={() => openEditModal(bank)}
                                             className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                                            title="Éditer"
+                                            title={t('finance.banks.edit')}
                                         >
                                             <Pencil size={18} />
                                         </button>
                                         <button
                                             onClick={() => handleArchive(bank.id)}
                                             className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
-                                            title="Archiver"
+                                            title={t('finance.banks.archive')}
                                         >
                                             <Archive size={18} />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(bank.id)}
                                             className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                                            title="Supprimer définitivement"
+                                            title={t('finance.banks.delete')}
                                         >
                                             <Trash2 size={18} />
                                         </button>
@@ -234,7 +235,7 @@ export function BankManager() {
                                                 <button
                                                     onClick={() => openCreateTransaction(acc.id)}
                                                     className="p-1 text-slate-400 hover:text-emerald-400"
-                                                    title="Ajouter une opération"
+                                                    title={t('finance.tx.new')}
                                                 >
                                                     <Plus size={14} />
                                                 </button>
@@ -244,7 +245,7 @@ export function BankManager() {
                                         </div>
                                     ))}
                                     {(!bank.accounts || bank.accounts.length === 0) && (
-                                        <div className="text-xs text-slate-500 italic px-2">Aucun compte</div>
+                                        <div className="text-xs text-slate-500 italic px-2">{t('finance.banks.noAccounts')}</div>
                                     )}
                                 </div>
 
@@ -256,7 +257,7 @@ export function BankManager() {
                                     onClick={() => openAddAccount(bank.id)}
                                 >
                                     <Plus size={14} className="mr-2" />
-                                    Ajouter un compte
+                                    {t('finance.accounts.add')}
                                 </Button>
                             </div>
                         ))}
@@ -285,7 +286,7 @@ export function BankManager() {
                     onClose={() => setIsTxModalOpen(false)}
                     onSave={async (data) => {
                         await createTransaction(data);
-                        toast.success("Opération ajoutée");
+                        toast.success(t('finance.tx.success'));
                     }}
                     accountId={selectedAccountIdForTx}
                     categories={categories}

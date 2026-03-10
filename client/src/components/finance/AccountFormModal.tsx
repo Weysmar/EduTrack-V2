@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { useState, useEffect } from 'react';
 import { Account } from '@/types/finance';
 import { Check } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 interface Props {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function AccountFormModal({ isOpen, onClose, onSubmit, initialData, bankId }: Props) {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState({
         name: '',
         type: 'CHECKING',
@@ -52,41 +54,41 @@ export function AccountFormModal({ isOpen, onClose, onSubmit, initialData, bankI
             <div className="fixed inset-0 flex items-center justify-center p-4">
                 <Dialog.Panel className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-xl">
                     <Dialog.Title className="text-xl font-semibold text-slate-100 mb-4">
-                        {initialData ? 'Modifier le compte' : 'Ajouter un compte'}
+                        {initialData ? t('finance.accounts.edit') : t('finance.accounts.add')}
                     </Dialog.Title>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <label htmlFor="name" className="block text-sm font-medium text-slate-300">Nom du compte</label>
+                            <label htmlFor="name" className="block text-sm font-medium text-slate-300">{t('finance.accounts.name')}</label>
                             <input
                                 id="name"
                                 type="text"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="ex: Compte Courant"
+                                placeholder={t('finance.accounts.name.placeholder')}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="type" className="block text-sm font-medium text-slate-300">Type</label>
+                            <label htmlFor="type" className="block text-sm font-medium text-slate-300">{t('finance.accounts.type')}</label>
                             <select
                                 id="type"
                                 value={formData.type}
                                 onChange={e => setFormData({ ...formData, type: e.target.value as any })}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="CHECKING">Compte Courant</option>
-                                <option value="SAVINGS">Épargne</option>
-                                <option value="CREDIT">Crédit</option>
-                                <option value="INVESTMENT">Investissement</option>
+                                <option value="CHECKING">{t('finance.accounts.type.checking')}</option>
+                                <option value="SAVINGS">{t('finance.accounts.type.savings')}</option>
+                                <option value="CREDIT">{t('finance.accounts.type.credit')}</option>
+                                <option value="INVESTMENT">{t('finance.accounts.type.investment')}</option>
                             </select>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label htmlFor="balance" className="block text-sm font-medium text-slate-300">Solde Initial</label>
+                                <label htmlFor="balance" className="block text-sm font-medium text-slate-300">{t('finance.accounts.balance.initial')}</label>
                                 <input
                                     id="balance"
                                     type="number"
@@ -97,7 +99,7 @@ export function AccountFormModal({ isOpen, onClose, onSubmit, initialData, bankI
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label htmlFor="currency" className="block text-sm font-medium text-slate-300">Devise</label>
+                                <label htmlFor="currency" className="block text-sm font-medium text-slate-300">{t('finance.accounts.currency')}</label>
                                 <input
                                     id="currency"
                                     type="text"
@@ -109,13 +111,16 @@ export function AccountFormModal({ isOpen, onClose, onSubmit, initialData, bankI
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="number" className="block text-sm font-medium text-slate-300">Numéro de compte (Optionnel)</label>
+                            <label htmlFor="number" className="block text-sm font-medium text-slate-300">
+                                {t('finance.accounts.number')}
+                                <span className="text-slate-500 font-normal text-xs ml-1">({t('common.optional')})</span>
+                            </label>
                             <input
                                 id="number"
                                 type="text"
                                 value={formData.accountNumber}
                                 onChange={e => setFormData({ ...formData, accountNumber: e.target.value })}
-                                placeholder="ex: ****1234"
+                                placeholder={t('finance.accounts.number.placeholder')}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -126,14 +131,14 @@ export function AccountFormModal({ isOpen, onClose, onSubmit, initialData, bankI
                                 onClick={onClose}
                                 className="px-4 py-2 text-slate-400 hover:text-slate-200"
                             >
-                                Annuler
+                                {t('action.cancel')}
                             </button>
                             <button
                                 type="submit"
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
                             >
                                 <Check size={18} />
-                                Enregistrer
+                                {t('action.save')}
                             </button>
                         </div>
                     </form>

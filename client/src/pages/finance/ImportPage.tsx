@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useFinance, useFinanceImport } from '@/hooks/useFinance';
+import { useLanguage } from '@/components/language-provider';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, ArrowRight, Table as TableIcon, FileSpreadsheet } from 'lucide-react';
 import { ImportPreviewData } from '@/types/finance';
@@ -11,6 +12,7 @@ import { ClassificationBadge } from '@/components/finance/ClassificationBadge';
 import { ImportHistory } from '@/components/finance/ImportHistory';
 
 export default function ImportPage() {
+    const { t } = useLanguage();
     const { banks, accounts, isLoadingBanks } = useFinance(); // Bank and Accounts
     const { previewImport, confirmImport, isPreviewing, isConfirming } = useFinanceImport();
     const navigate = useNavigate();
@@ -49,7 +51,7 @@ export default function ImportPage() {
 
     const handlePreview = async () => {
         if (!file || !selectedBankId) {
-            toast.error("Veuillez sélectionner une banque et un fichier.");
+            toast.error(t('finance.import.toast.error.noFile'));
             return;
         }
 
@@ -73,7 +75,7 @@ export default function ImportPage() {
             const matchingBank = banks.find(b => b.swiftBic === swift);
             if (matchingBank) {
                 setSelectedBankId(matchingBank.id);
-                toast.success(`Banque détectée: ${matchingBank.name} `);
+                toast.success(t('finance.import.toast.detectingBank', { name: matchingBank.name }));
             }
         }
     }, [previewData, banks]);
@@ -83,7 +85,7 @@ export default function ImportPage() {
         try {
             await confirmImport({ bankId: selectedBankId, importData: previewData });
             setStep(3);
-            toast.success("Import réalisé avec succès !");
+            toast.success(t('finance.import.toast.success'));
         } catch (err) {
             console.error(err);
         }
@@ -95,22 +97,22 @@ export default function ImportPage() {
         setStep(1);
     }
 
-    if (isLoadingBanks) return <div className="p-8 text-center text-slate-400">Chargement des banques...</div>;
+    if (isLoadingBanks) return <div className="p-8 text-center text-slate-400">{t('finance.import.loading')}</div>;
 
     return (
         <div className="p-6 max-w-5xl mx-auto space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-100">Importer des Transactions</h1>
-                <p className="text-slate-400 mt-2">Importez vos relevés OFX, CSV ou Excel.</p>
+                <h1 className="text-3xl font-bold text-slate-100">{t('finance.import.title')}</h1>
+                <p className="text-slate-400 mt-2">{t('finance.import.description')}</p>
             </div>
 
             {/* Stepper Visual */}
             <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
-                <span className={clsx(step === 1 && "text-blue-400")}>1. Upload</span>
+                <span className={clsx(step === 1 && "text-blue-400")}>1. {t('finance.import.step.upload')}</span>
                 <ArrowRight size={16} />
-                <span className={clsx(step === 2 && "text-blue-400")}>2. Aperçu</span>
+                <span className={clsx(step === 2 && "text-blue-400")}>2. {t('finance.import.step.preview')}</span>
                 <ArrowRight size={16} />
-                <span className={clsx(step === 3 && "text-green-400")}>3. Résultat</span>
+                <span className={clsx(step === 3 && "text-green-400")}>3. {t('finance.import.step.result')}</span>
             </div>
 
             {/* --- STEP 1: UPLOAD --- */}
@@ -125,20 +127,20 @@ export default function ImportPage() {
                     <div className="space-y-6">
                         {/* Bank Selector */}
                         <div className="space-y-2">
-                            <label className="text-slate-300 font-medium">Banque cible</label>
+                            <label className="text-slate-300 font-medium">{t('finance.import.bank.target')}</label>
                             <select
                                 value={selectedBankId}
                                 onChange={(e) => setSelectedBankId(e.target.value)}
                                 className="w-full md:w-1/2 p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
                             >
-                                <option value="">Sélectionnez une banque...</option>
+                                <option value="">{t('finance.import.bank.select')}</option>
                                 {banks?.map(bank => (
                                     <option key={bank.id} value={bank.id}>{bank.name}</option>
                                 ))}
                             </select>
                             {banks?.length === 0 && (
                                 <p className="text-sm text-amber-500">
-                                    Aucune banque configurée. <a href="/finance/settings" className="underline">Créez-en une d'abord.</a>
+                                    {t('finance.import.bank.none')} <a href="/finance/settings" className="underline">{t('finance.import.bank.createFirst')}</a>
                                 </p>
                             )}
                         </div>
@@ -146,14 +148,14 @@ export default function ImportPage() {
                         {/* Account Selector (Optional but Recommended) */}
                         {selectedBankId && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-slate-300 font-medium">Compte cible (Optionnel)</label>
-                                <p className="text-xs text-slate-500">Sélectionnez un compte pour forcer l'import dessus, sinon FinanceTrack essaiera de le détecter.</p>
+                                <label className="text-slate-300 font-medium">{t('finance.import.account.target')}</label>
+                                <p className="text-xs text-slate-500">{t('finance.import.account.help')}</p>
                                 <select
                                     value={selectedAccountId}
                                     onChange={(e) => setSelectedAccountId(e.target.value)}
                                     className="w-full md:w-1/2 p-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
                                 >
-                                    <option value="">Détection automatique</option>
+                                    <option value="">{t('finance.import.account.auto')}</option>
                                     {accounts?.filter(a => a.bankId === selectedBankId).map(account => (
                                         <option key={account.id} value={account.id}>{account.name} ({account.currency})</option>
                                     ))}
@@ -183,15 +185,15 @@ export default function ImportPage() {
                                             onClick={(e) => { e.stopPropagation(); setFile(null); }}
                                             className="text-xs text-red-400 hover:underline"
                                         >
-                                            Changer de fichier
+                                            {t('finance.import.dropzone.change')}
                                         </button>
                                     </>
                                 ) : (
                                     <>
                                         <Upload className="w-12 h-12 text-slate-500" />
                                         <div>
-                                            <p className="font-medium text-slate-200">Glissez votre fichier ici</p>
-                                            <p className="text-sm text-slate-500">OFX, CSV ou Excel acceptés</p>
+                                            <p className="font-medium text-slate-200">{t('finance.import.dropzone.placeholder')}</p>
+                                            <p className="text-sm text-slate-500">{t('finance.import.dropzone.accepted')}</p>
                                         </div>
                                         <div className="flex gap-2 text-xs text-slate-600 mt-2">
                                             <span className="bg-slate-800 px-2 py-1 rounded">.ofx</span>
@@ -209,7 +211,7 @@ export default function ImportPage() {
                                 disabled={!file || !selectedBankId || isPreviewing}
                                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
                             >
-                                {isPreviewing ? 'Analyse en cours...' : 'Continuer vers Aperçu'}
+                                {isPreviewing ? t('finance.import.action.analyzing') : t('finance.import.action.continue')}
                             </button>
                         </div>
                     </div>
@@ -222,15 +224,15 @@ export default function ImportPage() {
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <h3 className="text-slate-400 text-sm mb-1">Total Transactions</h3>
+                            <h3 className="text-slate-400 text-sm mb-1">{t('finance.import.summary.total')}</h3>
                             <p className="text-2xl font-bold text-slate-100">{previewData.summary.totalTransactions}</p>
                         </div>
                         <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <h3 className="text-slate-400 text-sm mb-1">Nouveaux Ajouts</h3>
+                            <h3 className="text-slate-400 text-sm mb-1">{t('finance.import.summary.new')}</h3>
                             <p className="text-2xl font-bold text-green-400">{previewData.summary.newTransactions}</p>
                         </div>
                         <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <h3 className="text-slate-400 text-sm mb-1">Doublons Ignorés</h3>
+                            <h3 className="text-slate-400 text-sm mb-1">{t('finance.import.summary.duplicates')}</h3>
                             <p className="text-2xl font-bold text-slate-500">{previewData.summary.duplicates}</p>
                         </div>
                     </div>
@@ -238,7 +240,7 @@ export default function ImportPage() {
                     {/* Detected Accounts */}
                     <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-slate-700 font-medium text-slate-200">
-                            Comptes détectés ({previewData.accounts.length})
+                            {t('finance.import.accounts.detected')} ({previewData.accounts.length})
                         </div>
                         <div className="divide-y divide-slate-800">
                             {previewData.accounts.map((acc, i) => (
@@ -259,12 +261,12 @@ export default function ImportPage() {
                                             <p className="text-sm text-slate-500 font-mono">{acc.accountNumber}</p>
                                         </div>
                                         {acc.isNew && (
-                                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded flex-shrink-0">Nouveau</span>
+                                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded flex-shrink-0">{t('common.new') || "Nouveau"}</span>
                                         )}
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-slate-200 font-medium">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: acc.currency }).format(acc.balance)}</p>
-                                        <p className="text-sm text-slate-500">Solde relevé</p>
+                                        <p className="text-slate-200 font-medium">{new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: acc.currency }).format(acc.balance)}</p>
+                                        <p className="text-sm text-slate-500">{t('finance.account.balance.current')}</p>
                                     </div>
                                 </div>
                             ))}
@@ -274,18 +276,18 @@ export default function ImportPage() {
                     {/* Transactions Preview */}
                     <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-slate-700 font-medium text-slate-200 flex justify-between items-center">
-                            <span>Aperçu des transactions ({previewData.transactions.length})</span>
-                            <span className="text-sm text-slate-400">Seules les nouvelles transactions seront importées</span>
+                            <span>{t('finance.import.step.preview')} ({previewData.transactions.length})</span>
+                            <span className="text-sm text-slate-400">{t('finance.import.account.help')}</span>
                         </div>
                         <div className="overflow-x-auto max-h-[600px]">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-800 text-slate-400 sticky top-0 z-10">
                                     <tr>
-                                        <th className="p-3">Date</th>
-                                        <th className="p-3">Description</th>
-                                        <th className="p-3 text-right">Montant</th>
-                                        <th className="p-3 text-center">Type</th>
-                                        <th className="p-3 text-center">Statut</th>
+                                        <th className="p-3">{t('finance.tx.date')}</th>
+                                        <th className="p-3">{t('finance.tx.description')}</th>
+                                        <th className="p-3 text-right">{t('finance.tx.amount')}</th>
+                                        <th className="p-3 text-center">{t('finance.tx.category')}</th>
+                                        <th className="p-3 text-center">{t('common.status') || "Statut"}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
@@ -298,16 +300,16 @@ export default function ImportPage() {
                                                 {tx.description}
                                             </td>
                                             <td className={clsx("p-3 text-right font-medium", tx.amount >= 0 ? "text-green-400" : "text-slate-200")}>
-                                                {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(tx.amount)}
+                                                {new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: 'EUR' }).format(tx.amount)}
                                             </td>
                                             <td className="p-3 text-center">
                                                 <ClassificationBadge classification={tx.classification} confidence={tx.confidence} />
                                             </td>
                                             <td className="p-3 text-center">
                                                 {tx.isDuplicate ? (
-                                                    <span className="text-xs bg-slate-800 text-slate-500 px-2 py-1 rounded">Doublon</span>
+                                                    <span className="text-xs bg-slate-800 text-slate-500 px-2 py-1 rounded">{t('finance.import.summary.duplicates')}</span>
                                                 ) : (
-                                                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Nouveau</span>
+                                                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">{t('common.new') || "Nouveau"}</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -322,14 +324,14 @@ export default function ImportPage() {
                             onClick={() => setStep(1)}
                             className="text-slate-400 hover:text-white px-4 py-2 transition-colors"
                         >
-                            Retour
+                            {t('common.back')}
                         </button>
                         <button
                             onClick={handleConfirm}
                             disabled={isConfirming || previewData.summary.newTransactions === 0}
                             className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                         >
-                            {isConfirming ? 'Importation...' : `Confirmer l'import (${previewData.summary.newTransactions})`}
+                            {isConfirming ? t('finance.import.action.confirming') : t('finance.import.action.confirmCount', { count: previewData.summary.newTransactions })}
                         </button >
                     </div >
                 </div >
@@ -342,9 +344,9 @@ export default function ImportPage() {
                         <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
                             <CheckCircle className="w-8 h-8 text-green-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-100 mb-2">Import réussi !</h2>
+                        <h2 className="text-2xl font-bold text-slate-100 mb-2">{t('finance.import.success.title')}</h2>
                         <p className="text-slate-400 mb-8 max-w-md text-center">
-                            Vos transactions ont été importées et classées.
+                            {t('finance.import.success.description')}
                         </p>
                         <div className="flex gap-4">
                             <button

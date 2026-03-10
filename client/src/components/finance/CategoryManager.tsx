@@ -78,7 +78,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
             <div className="p-4 border-b flex justify-between items-center bg-muted/20">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Tag className="w-5 h-5 text-primary" />
-                    {t('finance.categories.title') || 'Gestion des Catégories'}
+                    {t('finance.categories.title')}
                 </h2>
                 {onClose && (
                     <button onClick={onClose} className="p-1 hover:bg-muted rounded-full">
@@ -94,7 +94,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                             type="text"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            placeholder={t('finance.categories.placeholder') || "Camping, Internet..."}
+                            placeholder={t('finance.categories.placeholder')}
                             className="w-full px-3 py-2 rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
                     </div>
@@ -136,7 +136,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                         type="text"
                         value={newCategoryKeywords}
                         onChange={(e) => setNewCategoryKeywords(e.target.value)}
-                        placeholder="Mots-clés (ex: amazon, netflix...)"
+                        placeholder={t('finance.categories.keywords.placeholder')}
                         className="flex-1 bg-transparent border-none text-xs focus:ring-0 p-0"
                         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                     />
@@ -146,7 +146,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {categories.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground italic">
-                        {t('common.noData') || 'Aucune catégorie définie.'}
+                        {t('common.noData')}
                     </div>
                 )}
 
@@ -161,7 +161,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                                         className="flex-1 px-3 py-1.5 rounded-md border bg-background text-sm"
                                         autoFocus
-                                        placeholder="Nom de la catégorie"
+                                        placeholder={t('finance.categories.edit.name')}
                                     />
                                     <div className="flex items-center gap-1">
                                         <button onClick={handleSaveEdit} className="p-2 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md">
@@ -173,7 +173,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                                     </div>
                                 </div>
                                 <div className="space-y-2 pl-10">
-                                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Mots-clés (Auto-cat)</label>
+                                    <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('finance.categories.edit.keywords')}</label>
                                     <input
                                         value={editForm.keywords?.join(', ')}
                                         onChange={(e) => setEditForm({
@@ -181,9 +181,9 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                                             keywords: e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0)
                                         })}
                                         className="w-full px-3 py-1.5 rounded-md border bg-background text-xs"
-                                        placeholder="amazon, carrefour, netflix..."
+                                        placeholder={t('finance.categories.keywords.placeholder')}
                                     />
-                                    <p className="text-[10px] text-muted-foreground">Séparez par des virgules pour ajouter plusieurs mots-clés.</p>
+                                    <p className="text-[10px] text-muted-foreground">{t('finance.categories.edit.keywords.help')}</p>
                                 </div>
                             </div>
                         ) : (
@@ -198,7 +198,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
                                     <span className="font-medium">{category.name}</span>
                                     {category.keywords && category.keywords.length > 0 && (
                                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                                            {category.keywords.length} mots-clés
+                                            {t('finance.categories.keywords.count', { count: category.keywords.length })}
                                         </span>
                                     )}
                                 </div>
