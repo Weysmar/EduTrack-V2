@@ -12,17 +12,19 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('=== AI Generate Request ===');
         console.log('Body:', JSON.stringify(req.body, null, 2));
 
-        const { prompt, systemPrompt, provider, model, apiKey } = req.body;
+        const { systemPrompt, provider, model, apiKey } = req.body;
+        // Type validation: ensure prompt is a non-empty string
+        const prompt = typeof req.body.prompt === 'string' ? req.body.prompt : undefined;
 
         // Validate required fields
         if (!prompt) {
-            return res.status(400).json({ message: 'Prompt is required' });
+            return res.status(400).json({ message: 'Prompt is required and must be a string' });
         }
 
         console.log('Provider:', provider);
         console.log('Model:', model);
         console.log('Has API Key:', !!apiKey);
-        console.log('Prompt length:', prompt?.length);
+        console.log('Prompt length:', prompt.length);
 
         // Simplify: forcing Gemini for now as installed SDK is Gemini
         if (provider === 'perplexity') {

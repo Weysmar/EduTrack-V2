@@ -75,11 +75,15 @@ export const servePublicFile = async (req: Request, res: Response) => {
             }
         } else {
             const url = await storageService.getFileUrl(key);
-            // Open Redirect Protection: Only redirect to protocol-relative or specific storage URLs
-            if (url.startsWith('/') || (process.env.AWS_BUCKET_NAME && url.includes(process.env.AWS_BUCKET_NAME))) {
-                return res.redirect(url);
+            // Open Redirect Protection: validate that the redirect target is a trusted S3 URL
+            // Only redirect to relative paths or confirmed S3 bucket URLs
+            const bucketName = process.env.AWS_BUCKET_NAME;
+            const isSafeRedirect = url.startsWith('/') ||
+                (bucketName && url.includes(`.amazonaws.com/${bucketName}`));
+            if (!isSafeRedirect) {
+                return res.status(403).send('Invalid redirect target');
             }
-            return res.status(403).send('Invalid redirect target');
+            return res.redirect(url);
         }
 
     } catch (error) {
@@ -117,11 +121,14 @@ export const proxyFile = async (req: Request, res: Response) => {
         } else {
             // S3 Proxy - Redirect to signed URL for better performance/simplicity
             const url = await storageService.getFileUrl(key);
-            // Open Redirect Protection: Only redirect to protocol-relative or specific storage URLs
-            if (url.startsWith('/') || (process.env.AWS_BUCKET_NAME && url.includes(process.env.AWS_BUCKET_NAME))) {
-                return res.redirect(url);
+            // Open Redirect Protection: validate that the redirect target is a trusted S3 URL
+            const bucketName = process.env.AWS_BUCKET_NAME;
+            const isSafeRedirect = url.startsWith('/') ||
+                (bucketName && url.includes(`.amazonaws.com/${bucketName}`));
+            if (!isSafeRedirect) {
+                return res.status(403).json({ message: 'Invalid redirect target' });
             }
-            return res.status(403).json({ message: 'Invalid redirect target' });
+            return res.redirect(url);
         }
     } catch (error) {
         console.error('Proxy Error:', error);

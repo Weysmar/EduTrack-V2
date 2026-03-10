@@ -218,6 +218,13 @@ export function ItemView() {
             if (/^\s*(javascript|vbscript):/i.test(url)) return;
         }
 
+        // Final allowlist check: only allow blob:, https:, http:, and /api/ relative — never javascript:, data:, vbscript:
+        const SAFE_URL_RE = /^(blob:|https?:|\/api\/|\/)/;
+        if (!SAFE_URL_RE.test(url)) {
+            console.warn("Blocked unsafe URL in triggerDownload:", url.slice(0, 80));
+            return;
+        }
+
         const a = document.createElement('a')
         a.href = url
         a.download = name

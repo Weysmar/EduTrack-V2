@@ -191,10 +191,27 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
         const idSchema = z.string().uuid();
         const id = idSchema.parse(rawId);
 
-        const updated = await FinanceService.updateTransaction(profileId, id, req.body);
+        // Validate and sanitize body fields to prevent injection via raw req.body
+        const updateSchema = z.object({
+            amount: z.number().optional(),
+            date: z.string().optional(),
+            description: z.string().max(255).optional(),
+            classification: z.string().max(50).optional(),
+            category: z.string().max(100).optional(),
+            beneficiaryIban: z.string().max(50).optional(),
+            aiEnriched: z.boolean().optional(),
+            aiSuggestions: z.any().optional(),
+            metadata: z.record(z.unknown()).optional(),
+        });
+        const safeBody = updateSchema.parse(req.body);
+
+        const updated = await FinanceService.updateTransaction(profileId, id, safeBody);
         res.json(updated);
     } catch (error: any) {
         console.error('Update Transaction Error:', error);
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid request body', details: error.errors });
+        }
         res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message || 'Failed to update transaction' });
     }
 };

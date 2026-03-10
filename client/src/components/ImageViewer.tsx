@@ -123,7 +123,12 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
                 }}
             >
                 <img
-                    src={displayUrl}
+                    src={
+                        // DOM-XSS: Only allow blob:, https:, http:, and /api/ relative URLs
+                        (displayUrl && /^(blob:|https?:|\/api\/)/.test(displayUrl))
+                            ? displayUrl
+                            : ''
+                    }
                     alt={alt}
                     style={{
                         transform: `scale(${Number.isFinite(scale) ? scale : 1}) rotate(${Number.isFinite(rotation) ? rotation : 0}deg)`,

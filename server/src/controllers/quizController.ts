@@ -43,7 +43,9 @@ export const getQuiz = async (req: AuthRequest, res: Response) => {
 // POST /api/quizzes
 export const createQuiz = async (req: AuthRequest, res: Response) => {
     try {
-        const { name, courseId, difficulty, questions } = req.body;
+        const { name, courseId, difficulty } = req.body;
+        // Type validation: ensure questions is an array before calling .length or .map
+        const questions = Array.isArray(req.body.questions) ? req.body.questions : undefined;
 
         const quiz = await prisma.quiz.create({
             data: {

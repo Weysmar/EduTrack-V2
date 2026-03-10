@@ -43,7 +43,9 @@ export const getFlashcardSet = async (req: AuthRequest, res: Response) => {
 // POST /api/flashcards
 export const createFlashcardSet = async (req: AuthRequest, res: Response) => {
     try {
-        const { name, description, courseId, itemId, cards } = req.body; // cards optional initial array
+        const { name, description, courseId, itemId } = req.body;
+        // Type validation: ensure cards is an array before calling .length or .map
+        const cards = Array.isArray(req.body.cards) ? req.body.cards : undefined;
 
         const set = await prisma.flashcardSet.create({
             data: {
@@ -100,7 +102,11 @@ export const deleteFlashcardSet = async (req: AuthRequest, res: Response) => {
 // Update study progress for multiple cards
 export const updateStudyProgress = async (req: AuthRequest, res: Response) => {
     try {
-        const { updates } = req.body; // Array of { cardId, easeFactor, interval, nextReview }
+        // Type validation: ensure updates is an array before calling .map
+        if (!Array.isArray(req.body.updates)) {
+            return res.status(400).json({ message: 'updates must be an array' });
+        }
+        const updates = req.body.updates;
         const setId = req.params.id;
 
         // Verify ownership access to set slightly redundant if we trust cardIds, but safer

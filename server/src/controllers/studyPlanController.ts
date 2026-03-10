@@ -9,8 +9,14 @@ interface AuthRequest extends Request<any, any, any, any> {
 // POST /api/study-plans
 export const createStudyPlan = async (req: AuthRequest, res: Response) => {
     try {
-        const { courseId, title, goal, deadline, hoursPerWeek, weeks } = req.body;
+        const { courseId, title, goal, deadline, hoursPerWeek } = req.body;
         const profileId = req.user?.id;
+
+        // Type validation: ensure weeks is an array before calling .map
+        if (!Array.isArray(req.body.weeks)) {
+            return res.status(400).json({ error: 'weeks must be an array' });
+        }
+        const weeks: any[] = req.body.weeks;
 
         const result = await prisma.studyPlan.create({
             data: {
@@ -30,13 +36,14 @@ export const createStudyPlan = async (req: AuthRequest, res: Response) => {
                         goal: week.goal,
                         status: week.status,
                         tasks: {
-                            create: week.tasks.map((task: any) => ({
+                            // Type validation: ensure tasks is an array before calling .map
+                            create: Array.isArray(week.tasks) ? week.tasks.map((task: any) => ({
                                 dayNumber: task.dayNumber || task.day,
                                 type: task.type,
                                 description: task.description,
                                 durationMinutes: task.durationMinutes,
                                 isCompleted: false
-                            }))
+                            })) : []
                         }
                     }))
                 }

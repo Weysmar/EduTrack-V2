@@ -42,10 +42,15 @@ export async function encrypt(text: string): Promise<{ cipher: string; iv: strin
     // FALLBACK FOR INSECURE CONTEXTS (HTTP LAN)
     if (!isSecureContext()) {
         console.warn("EduTrack: Running in insecure context (HTTP). Using Base64 encoding for keys.");
-        // Mock IV for compatibility
+        // Mock IV for compatibility — must be set in environment
+        const insecureIv = import.meta.env.VITE_INSECURE_IV;
+        if (!insecureIv) {
+            console.error("CRITICAL: VITE_INSECURE_IV is not defined.");
+            throw new Error("VITE_INSECURE_IV is not defined");
+        }
         return {
             cipher: window.btoa(text),
-            iv: import.meta.env.VITE_INSECURE_IV || "fallback-insecure-iv"
+            iv: insecureIv
         };
     }
 
@@ -72,7 +77,8 @@ export async function encrypt(text: string): Promise<{ cipher: string; iv: strin
 
 export async function decrypt(cipher: string, iv: string): Promise<string> {
     // FALLBACK FOR INSECURE CONTEXTS
-    if (iv === (import.meta.env.VITE_INSECURE_IV || "fallback-insecure-iv") || !isSecureContext()) {
+    const insecureIv = import.meta.env.VITE_INSECURE_IV;
+    if (!isSecureContext() || (insecureIv && iv === insecureIv)) {
         try {
             return window.atob(cipher);
         } catch (e) {
