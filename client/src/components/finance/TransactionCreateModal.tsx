@@ -182,7 +182,7 @@ export function TransactionCreateModal({
                                 disabled={isSaving}
                                 className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors bg-slate-800/50 hover:bg-slate-800 rounded-lg"
                             >
-                                {t('common.cancel') || "Annuler"}
+                                {t('common.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -190,7 +190,7 @@ export function TransactionCreateModal({
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                             >
                                 <Check size={18} />
-                                {isSaving ? t('common.loading') : (t('common.submit') || 'Valider')}
+                                {isSaving ? t('common.loading') : t('common.submit')}
                             </button>
                         </div>
                     </form>

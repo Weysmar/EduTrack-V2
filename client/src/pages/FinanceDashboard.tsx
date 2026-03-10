@@ -204,30 +204,30 @@ export default function FinanceDashboard() {
 
                     <Button
                         variant="outline"
-                        size="icon"
                         onClick={() => setIsFilterOpen(true)}
                         title={t('finance.filter.advanced')}
                     >
-                        <Filter className="h-4 w-4" />
+                        <Filter className="mr-2 h-4 w-4" />
+                        {t('finance.filter.advanced')}
                     </Button>
 
                     <Button
                         variant="outline"
-                        size="icon"
                         onClick={() => navigate('/finance/import')}
                         title={t('finance.import.title')}
                     >
-                        <Download className="h-4 w-4" />
+                        <Download className="mr-2 h-4 w-4" />
+                        {t('finance.import.title')}
                     </Button>
 
                     <Button
                         variant="outline"
-                        size="icon"
                         onClick={() => { setAuditContent(null); handleGenerateAudit(); }}
                         disabled={isAuditing}
                         title={t('finance.audit')}
                     >
-                        <ShieldCheck className={cn("h-4 w-4", isAuditing && "animate-spin")} />
+                        <ShieldCheck className={cn("mr-2 h-4 w-4", isAuditing && "animate-spin")} />
+                        {t('finance.audit')}
                     </Button>
 
                     <Button

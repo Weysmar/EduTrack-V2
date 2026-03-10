@@ -152,7 +152,7 @@ export function BankFormModal({ isOpen, onClose, onSubmit, initialData }: BankFo
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">
                                 {t('finance.banks.swift') || "Code SWIFT/BIC"}
-                                <span className="text-slate-500 font-normal text-xs ml-1">({t('common.optional') || "optionnel"})</span>
+                                <span className="text-slate-500 font-normal text-xs ml-1">({t('common.optional')})</span>
                             </label>
                             <input
                                 type="text"
@@ -162,7 +162,7 @@ export function BankFormModal({ isOpen, onClose, onSubmit, initialData }: BankFo
                                     setFormData({ ...formData, swiftBic: value });
                                     validateSwift(value);
                                 }}
-                                placeholder="Ex: SOGEFRPP"
+                                placeholder={t('finance.banks.swift.placeholder') || "SOGEFRPP"}
                                 maxLength={11}
                                 className={`w-full bg-slate-800 border ${swiftError ? 'border-red-500' : 'border-slate-700'} rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 ${swiftError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} font-mono uppercase`}
                             />

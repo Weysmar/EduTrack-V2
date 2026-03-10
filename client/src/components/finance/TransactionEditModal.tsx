@@ -142,7 +142,7 @@ export function TransactionEditModal({
                                 </div>
                             </div>
                             <div className="col-span-2 mt-2">
-                                <div className="text-slate-500 mb-1">Classification actuelle</div>
+                                <div className="text-slate-500 mb-1">{t('finance.tx.edit.currentClassification')}</div>
                                 <ClassificationBadge
                                     classification={transaction.classification}
                                     confidence={transaction.classificationConfidence}
@@ -155,7 +155,7 @@ export function TransactionEditModal({
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Nouvelle classification
+                                {t('finance.tx.classification.new') || "Nouvelle classification"}
                             </label>
                             <div className="space-y-2">
                                 {CLASSIFICATION_OPTIONS.map((option) => (
@@ -179,14 +179,14 @@ export function TransactionEditModal({
                         {isInternalTransfer && (
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                                    Compte bénéficiaire
+                                    {t('finance.tx.linkedAccount') || "Compte bénéficiaire"}
                                 </label>
                                 <select
                                     value={linkedAccountId}
                                     onChange={(e) => setLinkedAccountId(e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
-                                    <option value="">Sélectionnez un compte...</option>
+                                    <option value="">{t('finance.import.account.select') || "Sélectionnez un compte..."}</option>
                                     {accounts
                                         .filter(acc => acc.id !== transaction.accountId)
                                         .map((acc) => (
@@ -208,7 +208,7 @@ export function TransactionEditModal({
                                 className="flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 <RefreshCw size={16} />
-                                Re-classifier automatiquement
+                                {t('finance.tx.edit.reclassify')}
                             </button>
                         )}
                         <div className="flex gap-3 ml-auto">
@@ -217,7 +217,7 @@ export function TransactionEditModal({
                                 disabled={isSaving}
                                 className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-50"
                             >
-                                Annuler
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={handleSave}
@@ -225,7 +225,7 @@ export function TransactionEditModal({
                                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
                             >
                                 <Save size={18} />
-                                {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+                                {isSaving ? t('common.loading') : t('common.save')}
                             </button>
                         </div>
                     </div>
