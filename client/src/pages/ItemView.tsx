@@ -199,11 +199,30 @@ export function ItemView() {
     }
 
     const triggerDownload = (url: string, name: string) => {
-        // Anti DOM-XSS
-        if (url.trim().toLowerCase().startsWith('javascript:')) return;
+        // Anti DOM-XSS: Validate against dangerous schemes or non-safe origins
+        try {
+            const parsed = new URL(url, window.location.origin);
+            if (['javascript:', 'vbscript:', 'data:'].includes(parsed.protocol)) {
+                // Allow data: only if it's an image/application-safe type
+                if (parsed.protocol === 'data:' && !url.match(/^data:image\/(png|jpeg|webp|gif|svg)/i)) {
+                    console.warn("Blocked unsafe data: URI download");
+                    return;
+                }
+                if (parsed.protocol !== 'data:') {
+                    console.warn("Blocked unsafe URI scheme download:", parsed.protocol);
+                    return;
+                }
+            }
+        } catch (e) {
+            // For opaque strings or malformed URLs that browser might still use in <a> tag
+            if (/^\s*(javascript|vbscript):/i.test(url)) return;
+        }
+
         const a = document.createElement('a')
         a.href = url
         a.download = name
+        // Mitigate DOM-XSS: Use noopener for extra safety if opened in new tab
+        a.rel = "noopener noreferrer"
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
@@ -572,12 +591,12 @@ export function ItemView() {
                                             // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
 
                                             if (isImage) {
-                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
+                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
                                                 return <ImageViewer url={pdfUrl} alt={item.title} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
                                             }
 
                                             if (isOffice) {
-                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
+                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
                                                 return (
                                                     <OfficeViewer
                                                         url={pdfUrl}
@@ -592,7 +611,7 @@ export function ItemView() {
 
                                             // Text/Markdown files
                                             if (isText || isMarkdown) {
-                                                if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
+                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
                                                 return (
                                                     <TextViewer
                                                         url={pdfUrl}
@@ -612,7 +631,7 @@ export function ItemView() {
                                                         {/* Desktop: Native Iframe for best performance */}
                                                         <div className={cn("hidden lg:block", isFocusMode ? "h-full" : "h-[80vh]")}>
                                                             <iframe
-                                                                src={pdfUrl.trim().toLowerCase().startsWith('javascript:') ? 'about:blank' : `${pdfUrl}#view=FitH`}
+                                                                src={/^\s*(javascript|vbscript):/i.test(pdfUrl) ? 'about:blank' : `${pdfUrl}#view=FitH`}
                                                                 title="PDF Document"
                                                                 className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
                                                                 allowFullScreen
@@ -621,14 +640,14 @@ export function ItemView() {
 
                                                         {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
                                                         <div className="block lg:hidden">
-                                                            {pdfUrl.trim().toLowerCase().startsWith('javascript:') ? null : <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />}
+                                                            {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />}
                                                         </div>
                                                     </>
                                                 );
                                             }
 
                                             // Fallback for Unknown Types
-                                            if (pdfUrl.trim().toLowerCase().startsWith('javascript:')) return null;
+                                            if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
                                             return <GenericFileViewer url={pdfUrl} filename={item.fileName} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
                                         })()}
                                     </div>

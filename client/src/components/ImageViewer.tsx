@@ -28,8 +28,8 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
 
         const processImage = async () => {
             try {
-                // Mitigate DOM-XSS via javascript: URI
-                if (url.trim().toLowerCase().startsWith('javascript:')) {
+                // Mitigate DOM-XSS via dangerous URI schemes
+                if (/^\s*(javascript|vbscript):/i.test(url)) {
                     throw new Error('Invalid URL protocol');
                 }
 

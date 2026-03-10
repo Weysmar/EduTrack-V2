@@ -4,7 +4,10 @@
 // a sophisticated attacker with filesystem access could decrypt it.
 // Ideally, we would ask the user for a password to derive the key.
 
-const SALT = import.meta.env.VITE_ENCRYPTION_SALT || "EduTrack_Local_Salt_v1";
+const SALT = import.meta.env.VITE_ENCRYPTION_SALT;
+if (!SALT) {
+    console.error("CRITICAL: VITE_ENCRYPTION_SALT is not defined in environment variables.");
+}
 
 // Helper to check for secure context support
 function isSecureContext() {
@@ -24,7 +27,7 @@ async function getKey(): Promise<CryptoKey> {
     return window.crypto.subtle.deriveKey(
         {
             name: "PBKDF2",
-            salt: enc.encode(import.meta.env.VITE_ENCRYPTION_PBKDF2_SALT || "fixed-salt"),
+            salt: enc.encode(import.meta.env.VITE_ENCRYPTION_PBKDF2_SALT || "fallback-pbkdf2-salt"),
             iterations: 100000,
             hash: "SHA-256"
         },
@@ -42,7 +45,7 @@ export async function encrypt(text: string): Promise<{ cipher: string; iv: strin
         // Mock IV for compatibility
         return {
             cipher: window.btoa(text),
-            iv: "insecure-context-iv"
+            iv: import.meta.env.VITE_INSECURE_IV || "fallback-insecure-iv"
         };
     }
 
@@ -69,7 +72,7 @@ export async function encrypt(text: string): Promise<{ cipher: string; iv: strin
 
 export async function decrypt(cipher: string, iv: string): Promise<string> {
     // FALLBACK FOR INSECURE CONTEXTS
-    if (iv === "insecure-context-iv" || !isSecureContext()) {
+    if (iv === (import.meta.env.VITE_INSECURE_IV || "fallback-insecure-iv") || !isSecureContext()) {
         try {
             return window.atob(cipher);
         } catch (e) {

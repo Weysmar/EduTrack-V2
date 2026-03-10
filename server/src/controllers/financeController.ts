@@ -324,15 +324,9 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
 
-        const rawId = String(req.params.id);
+        const rawId = req.params.id;
         const idSchema = z.string().uuid();
-        const parseResult = idSchema.safeParse(rawId);
-
-        if (!parseResult.success) {
-            return res.status(400).json({ error: 'Invalid ID format' });
-        }
-
-        const id = parseResult.data.slice(0, 36);
+        const id = idSchema.parse(rawId);
 
         const {
             amount,
@@ -365,12 +359,12 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
                 where: { id: safeId },
                 data: {
                     amount: sanitizedAmount,
-                    date: date ? new Date(date) : undefined,
-                    description: description ? String(description) : undefined,
+                    date: date ? new Date(String(date)) : undefined,
+                    description: description ? String(description).slice(0, 255) : undefined,
                     classification: classification ? (String(classification) as any) : undefined,
                     classificationConfidence: classification ? 1.0 : undefined,
-                    category: category ? String(category) : undefined,
-                    beneficiaryIban: beneficiaryIban ? String(beneficiaryIban) : undefined,
+                    category: category ? String(category).slice(0, 100) : undefined,
+                    beneficiaryIban: beneficiaryIban ? String(beneficiaryIban).slice(0, 50) : undefined,
                     metadata: metadata ? (typeof metadata === 'object' ? JSON.parse(JSON.stringify(metadata)) : undefined) : undefined
                 }
             });

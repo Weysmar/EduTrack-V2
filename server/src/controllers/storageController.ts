@@ -42,6 +42,10 @@ export const servePublicFile = async (req: Request, res: Response) => {
                 // Check for resizing request
                 if (width && !isNaN(Number(width))) {
                     const w = parseInt(width as string);
+                    // Resource Limit: prevent excessive memory usage during resize
+                    if (w <= 0 || w > 3840) {
+                        return res.status(400).send('Invalid image width');
+                    }
                     const ext = path.extname(filePath).toLowerCase();
                     if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif', '.avif'].includes(ext)) {
                         try {
@@ -71,7 +75,11 @@ export const servePublicFile = async (req: Request, res: Response) => {
             }
         } else {
             const url = await storageService.getFileUrl(key);
-            return res.redirect(url);
+            // Open Redirect Protection: Only redirect to protocol-relative or specific storage URLs
+            if (url.startsWith('/') || (process.env.AWS_BUCKET_NAME && url.includes(process.env.AWS_BUCKET_NAME))) {
+                return res.redirect(url);
+            }
+            return res.status(403).send('Invalid redirect target');
         }
 
     } catch (error) {
@@ -108,9 +116,12 @@ export const proxyFile = async (req: Request, res: Response) => {
             }
         } else {
             // S3 Proxy - Redirect to signed URL for better performance/simplicity
-            // Or fetch and pipe if stricly needing proxy (rare for simple version)
             const url = await storageService.getFileUrl(key);
-            return res.redirect(url);
+            // Open Redirect Protection: Only redirect to protocol-relative or specific storage URLs
+            if (url.startsWith('/') || (process.env.AWS_BUCKET_NAME && url.includes(process.env.AWS_BUCKET_NAME))) {
+                return res.redirect(url);
+            }
+            return res.status(403).json({ message: 'Invalid redirect target' });
         }
     } catch (error) {
         console.error('Proxy Error:', error);

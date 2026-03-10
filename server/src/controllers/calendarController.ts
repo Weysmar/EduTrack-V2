@@ -54,12 +54,17 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
         const targetUrl = new URL(url);
         targetUrl.hostname = targetAddress;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const response = await fetch(targetUrl.toString(), {
             headers: {
                 'User-Agent': 'EduTrack/1.0 (Calendar Proxy)',
                 'Host': parsedUrl.hostname
-            }
+            },
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             console.error(`Failed to fetch iCal feed: ${response.status} ${response.statusText}`);
