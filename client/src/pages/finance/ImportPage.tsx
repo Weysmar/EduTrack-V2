@@ -353,13 +353,13 @@ export default function ImportPage() {
                                 onClick={() => navigate('/finance/dashboard')}
                                 className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg transition-colors"
                             >
-                                Aller au Dashboard
+                                {t('common.actions.cancel') || 'Dashboard'}
                             </button>
                             <button
                                 onClick={reset}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
                             >
-                                Importer un autre fichier
+                                {t('finance.hero.import.btn') || "Importer"}
                             </button>
                         </div>
                     </div>

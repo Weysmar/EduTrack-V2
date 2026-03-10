@@ -12,7 +12,7 @@ import { useLanguage } from '@/components/language-provider';
 
 export function BankManager() {
     const { t } = useLanguage();
-    const { banks, createBank, updateBank, deleteBank, createAccount, updateAccount, deleteAccount, createTransaction } = useFinance();
+    const { banks, accounts, createBank, updateBank, deleteBank, archiveBank, createAccount, updateAccount, deleteAccount, createTransaction } = useFinance();
     const { categories, fetchCategories } = useFinanceStore();
     const [isInternalModalOpen, setIsModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
@@ -51,17 +51,7 @@ export function BankManager() {
 
     const handleArchive = async (bankId: string) => {
         if (confirm(t('finance.banks.archive.confirm'))) {
-            try {
-                await fetch(`/api/finance/banks/${bankId}/archive`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-                // Refresh banks list
-                window.location.reload();
-            } catch (error) {
-                console.error('Failed to archive bank:', error);
-            }
+            archiveBank(bankId);
         }
     };
 
@@ -130,24 +120,24 @@ export function BankManager() {
                         <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
                             <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-400 font-bold border border-blue-500/20">1</div>
                             <div>
-                                <h4 className="font-medium text-slate-200">Ajoutez une banque</h4>
-                                <p className="text-xs text-slate-400">Créez votre première fiche bancaire</p>
+                                <h4 className="font-medium text-slate-200">{t('finance.banks.step1.title') || "Ajoutez une banque"}</h4>
+                                <p className="text-xs text-slate-400">{t('finance.banks.step1.desc') || "Créez votre première fiche bancaire"}</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
                             <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0 text-purple-400 font-bold border border-purple-500/20">2</div>
                             <div>
-                                <h4 className="font-medium text-slate-200">Importez vos relevés</h4>
-                                <p className="text-xs text-slate-400">Support OFX, CSV et Excel</p>
+                                <h4 className="font-medium text-slate-200">{t('finance.banks.step2.title') || "Importez vos relevés"}</h4>
+                                <p className="text-xs text-slate-400">{t('finance.banks.step2.desc') || "Support OFX, CSV et Excel"}</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800/80 transition-colors">
                             <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0 text-emerald-400 font-bold border border-emerald-500/20">3</div>
                             <div>
-                                <h4 className="font-medium text-slate-200">Pilotez votre budget</h4>
-                                <p className="text-xs text-slate-400">Catégorisation et statistiques auto</p>
+                                <h4 className="font-medium text-slate-200">{t('finance.banks.step3.title') || "Pilotez votre budget"}</h4>
+                                <p className="text-xs text-slate-400">{t('finance.banks.step3.desc') || "Catégorisation et statistiques"}</p>
                             </div>
                         </div>
                     </div>
@@ -157,7 +147,7 @@ export function BankManager() {
                         className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
                     >
                         <Plus size={20} />
-                        Ajouter ma première banque
+                        {t('finance.banks.add.first') || "Ajouter ma première banque"}
                     </button>
                 </div>
             ) : (
@@ -290,6 +280,7 @@ export function BankManager() {
                     }}
                     accountId={selectedAccountIdForTx}
                     categories={categories}
+                    accounts={accounts || []}
                 />
             )}
         </div>

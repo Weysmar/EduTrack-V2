@@ -19,8 +19,8 @@ export const AdvancedFilterBar = ({ isOpen, onClose }: AdvancedFilterBarProps) =
     const applyFilters = () => {
         setFilters({
             ...filters,
-            // Add min/max logic to store filters later. 
-            // For now, we need to update the store interface to accept these.
+            minAmount: minAmount ? parseFloat(minAmount) : null,
+            maxAmount: maxAmount ? parseFloat(maxAmount) : null
         });
         onClose();
     };
@@ -29,11 +29,14 @@ export const AdvancedFilterBar = ({ isOpen, onClose }: AdvancedFilterBarProps) =
         setFilters({
             accountId: null,
             categoryId: null,
+            minAmount: null,
+            maxAmount: null,
             month: new Date().getMonth(),
             year: new Date().getFullYear()
         });
         setMinAmount('');
         setMaxAmount('');
+        onClose();
     };
 
     if (!isOpen) return null;

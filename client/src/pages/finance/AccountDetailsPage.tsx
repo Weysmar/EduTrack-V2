@@ -11,12 +11,14 @@ import { Transaction, TransactionCategory } from '@/types/finance';
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { financeApi } from '@/lib/api/financeApi';
+import { useFinanceStore } from '@/store/financeStore';
 
 export default function AccountDetailsPage() {
     const { t } = useLanguage();
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransactionAsync, createTransaction } = useFinance();
+    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransactionAsync, createTransactionAsync } = useFinance();
+    const { enrichTransaction } = useFinanceStore();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -170,6 +172,7 @@ export default function AccountDetailsPage() {
                         transactions={accountTransactions}
                         onDelete={(id) => deleteTransaction(id)}
                         onEdit={handleEditTransaction}
+                        onEnrich={enrichTransaction}
                     />
                 </div>
             </div>
@@ -199,10 +202,12 @@ export default function AccountDetailsPage() {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onSave={async (data) => {
-                    await createTransaction(data);
+                    await createTransactionAsync(data);
+                    setIsCreateModalOpen(false);
                 }}
                 accountId={account.id}
                 categories={categories}
+                accounts={accounts || []}
             />
         </div>
     );

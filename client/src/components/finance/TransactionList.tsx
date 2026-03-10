@@ -70,7 +70,7 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
     if (!transactions || transactions.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
-                {t('finance.chart.activity')} - {t('item.noContent')}
+                {t('finance.tx.empty') || "Aucune transaction"}
             </div>
         );
     }

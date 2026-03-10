@@ -127,9 +127,49 @@ export class FinanceService {
     }
 
     // --- Transactions ---
-    static async getTransactions(profileId: string) {
+    static async getTransactions(profileId: string, filters?: any) {
+        const whereClause: any = { account: { bank: { profileId } } };
+
+        if (filters) {
+            if (filters.accountId) whereClause.accountId = filters.accountId;
+            if (filters.category) whereClause.category = filters.category;
+
+            if (filters.startDate || filters.endDate) {
+                whereClause.date = {};
+                if (filters.startDate) whereClause.date.gte = filters.startDate;
+                if (filters.endDate) whereClause.date.lte = filters.endDate;
+            }
+
+            if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+                whereClause.amount = {};
+
+                // Si on cherche un montant positif (10 à 50), on veut probablement chercher
+                // les dépenses (qui sont négatives en DB : -50 à -10) OU les revenus (10 à 50).
+                // Pour simplifier, on applique le filtre strictement sur la valeur mathématique,
+                // ou on pourrait faire un `where: { OR: [ {amount: {gte, lte}}, {amount: {gte: -max, lte: -min}} ] }`
+                // On va implémenter la recherche sur les valeurs absolues via un OR pour être permissif
+                const amountFilters = [];
+
+                if (filters.minAmount !== undefined && filters.maxAmount !== undefined) {
+                    amountFilters.push({ amount: { gte: filters.minAmount, lte: filters.maxAmount } });
+                    amountFilters.push({ amount: { gte: -filters.maxAmount, lte: -filters.minAmount } });
+                } else if (filters.minAmount !== undefined) {
+                    amountFilters.push({ amount: { gte: filters.minAmount } });
+                    amountFilters.push({ amount: { lte: -filters.minAmount } });
+                } else if (filters.maxAmount !== undefined) {
+                    amountFilters.push({ amount: { lte: filters.maxAmount } });
+                    amountFilters.push({ amount: { gte: -filters.maxAmount } });
+                }
+
+                delete whereClause.amount;
+                if (amountFilters.length > 0) {
+                    whereClause.OR = whereClause.OR ? [...whereClause.OR, ...amountFilters] : amountFilters;
+                }
+            }
+        }
+
         const transactions = await prisma.transaction.findMany({
-            where: { account: { bank: { profileId } } },
+            where: whereClause,
             include: { account: true },
             orderBy: { date: 'desc' }
         });

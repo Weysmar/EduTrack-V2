@@ -58,6 +58,20 @@ export function useFinance() {
         }
     });
 
+    const archiveBank = useMutation({
+        mutationFn: async (id: string) => {
+            const response = await axios.put(`/finance/banks/${id}/archive`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Banque archivée');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Erreur lors de l\'archivage');
+        }
+    });
+
     // --- ACCOUNTS & TRANSACTIONS ---
 
     const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
@@ -192,6 +206,8 @@ export function useFinance() {
         updateBankAsync: updateBank.mutateAsync,
         deleteBank: deleteBank.mutate,
         deleteBankAsync: deleteBank.mutateAsync,
+        archiveBank: archiveBank.mutate,
+        archiveBankAsync: archiveBank.mutateAsync,
 
         // Accounts
         accounts: accounts || [],

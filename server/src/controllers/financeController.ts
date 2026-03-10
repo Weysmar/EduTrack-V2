@@ -153,7 +153,18 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 export const getTransactions = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
-        const maskedTransactions = await FinanceService.getTransactions(profileId);
+
+        const { startDate, endDate, accountId, category, minAmount, maxAmount } = req.query;
+
+        const filters: any = {};
+        if (startDate) filters.startDate = new Date(startDate as string);
+        if (endDate) filters.endDate = new Date(endDate as string);
+        if (accountId) filters.accountId = accountId as string;
+        if (category) filters.category = category as string;
+        if (minAmount && !isNaN(parseFloat(minAmount as string))) filters.minAmount = parseFloat(minAmount as string);
+        if (maxAmount && !isNaN(parseFloat(maxAmount as string))) filters.maxAmount = parseFloat(maxAmount as string);
+
+        const maskedTransactions = await FinanceService.getTransactions(profileId, filters);
         res.json(maskedTransactions);
     } catch (error) {
         console.error('Fetch Transactions Error:', error);

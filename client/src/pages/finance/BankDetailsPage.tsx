@@ -15,7 +15,7 @@ export default function BankDetailsPage() {
     const { t } = useLanguage();
     const { bankId } = useParams<{ bankId: string }>();
     const navigate = useNavigate();
-    const { banks, deleteBankAsync, deleteAccountAsync, createAccountAsync, updateAccountAsync } = useFinance();
+    const { banks, deleteBankAsync, deleteAccountAsync, createAccountAsync, updateAccountAsync, updateBankAsync } = useFinance();
 
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<Account | undefined>(undefined);
@@ -197,7 +197,7 @@ export default function BankDetailsPage() {
                 onClose={() => setIsBankModalOpen(false)}
                 // @ts-ignore - Assuming BankFormModal handles async internally or we pass wrapper
                 onSubmit={async (data) => {
-                    await useFinance().updateBankAsync({ id: bank.id, data });
+                    await updateBankAsync({ id: bank.id, data });
                     setIsBankModalOpen(false);
                 }}
                 initialData={bank}

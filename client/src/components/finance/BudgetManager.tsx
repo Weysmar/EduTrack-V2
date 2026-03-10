@@ -43,18 +43,26 @@ export function BudgetManager() {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
         const spendMap = new Map<string, number>();
+        const spendMapByName = new Map<string, number>();
 
         transactions.forEach(t => {
-            if (t.amount < 0 && t.category) { // Expenses only - use category string field
+            if (t.amount < 0 && t.category) { // Expenses only
                 const date = new Date(t.date);
                 if (date >= startOfMonth && date <= endOfMonth) {
-                    spendMap.set(t.category, (spendMap.get(t.category) || 0) + Math.abs(t.amount));
+                    // Les catégories dans les transactions sont des chaînes (noms)
+                    spendMapByName.set(t.category, (spendMapByName.get(t.category) || 0) + Math.abs(t.amount));
+
+                    // On tente aussi de faire correspondre avec l'ID depuis la liste des catégories globales
+                    const matchCat = categories.find(c => c.name === t.category);
+                    if (matchCat) {
+                        spendMap.set(matchCat.id, (spendMap.get(matchCat.id) || 0) + Math.abs(t.amount));
+                    }
                 }
             }
         });
 
-        return spendMap;
-    }, [transactions]);
+        return { byId: spendMap, byName: spendMapByName };
+    }, [transactions, categories]);
 
     const globalStats = useMemo(() => {
         const now = new Date();
@@ -70,7 +78,7 @@ export function BudgetManager() {
         budgets.forEach(b => {
             if (b.period === 'MONTHLY') {
                 totalBudget += Number(b.amount);
-                const spent = categorySpend.get(b.category.name) || categorySpend.get(b.categoryId) || 0;
+                const spent = categorySpend.byId.get(b.categoryId) || categorySpend.byName.get(b.category?.name) || 0;
                 totalSpent += spent;
             }
         });
@@ -137,14 +145,14 @@ export function BudgetManager() {
                     {/* Global Pacing Banner */}
                     <div className="bg-muted/30 border rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div>
-                            <h3 className="text-sm font-medium text-muted-foreground">{t('finance.budget.overview') || "Vue d'ensemble du mois"}</h3>
+                            <h3 className="text-sm font-medium text-muted-foreground">{t('finance.budgets.overview') || "Vue d'ensemble du mois"}</h3>
                             <p className="text-sm mt-1">
-                                {t('finance.budget.status', { month: globalStats.percentMonthElapsed, budget: globalStats.percentBudgetUsed }) ||
+                                {t('finance.budgets.pacing', { pmonth: globalStats.percentMonthElapsed, pbudget: globalStats.percentBudgetUsed }) ||
                                     `Vous êtes à ${globalStats.percentMonthElapsed}% du mois et avez consommé ${globalStats.percentBudgetUsed}% de votre enveloppe globale.`}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-muted-foreground">{t('finance.budget.total') || "Total Budgété"}</p>
+                            <p className="text-xs text-muted-foreground">{t('finance.budgets.total') || "Total Budgété"}</p>
                             <p className="text-lg font-bold">{globalStats.totalSpent.toFixed(0)} {t('common.currency')} / {globalStats.totalBudget.toFixed(0)} {t('common.currency')}</p>
                         </div>
                     </div>
@@ -154,14 +162,15 @@ export function BudgetManager() {
                             <BudgetCard
                                 key={budget.id}
                                 budget={budget}
-                                spent={categorySpend.get(budget.category.name) || categorySpend.get(budget.categoryId) || 0} // Try name match if ID fails, store logic varies
+                                spent={categorySpend.byId.get(budget.categoryId) || categorySpend.byName.get(budget.category?.name) || 0}
                                 onEdit={handleEdit}
                                 onDelete={(id) => deleteBudget(id)}
                             />
                         ))}
                     </div>
                 </>
-            )}
+            )
+            }
 
             <SimpleModal
                 isOpen={isModalOpen}
@@ -205,6 +214,6 @@ export function BudgetManager() {
                     </div>
                 </form>
             </SimpleModal>
-        </div>
+        </div >
     );
 }
