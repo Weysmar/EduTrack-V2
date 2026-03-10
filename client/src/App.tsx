@@ -59,6 +59,7 @@ const FinanceDashboard = lazyWithRetry(() => import('@/pages/FinanceDashboard').
 const ImportPage = lazyWithRetry(() => import('@/pages/finance/ImportPage').then(m => ({ default: m.default })))
 const BankDetailsPage = lazyWithRetry(() => import('@/pages/finance/BankDetailsPage').then(m => ({ default: m.default })))
 const AccountDetailsPage = lazyWithRetry(() => import('@/pages/finance/AccountDetailsPage').then(m => ({ default: m.default })))
+const FinanceCategoriesPage = lazyWithRetry(() => import('@/pages/finance/FinanceCategoriesPage').then(m => ({ default: m.default })))
 
 // Remove sessionStorage flag on successful navigation to prevent loops
 window.addEventListener('beforeunload', () => {
@@ -184,6 +185,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'import',
                                 element: <LazyPage><ImportPage /></LazyPage>,
+                            },
+                            {
+                                path: 'categories',
+                                element: <LazyPage><FinanceCategoriesPage /></LazyPage>,
                             },
                             {
                                 path: 'bank/:bankId',

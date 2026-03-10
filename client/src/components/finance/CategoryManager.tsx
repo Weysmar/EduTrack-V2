@@ -12,7 +12,7 @@ const COLORS = [
 ];
 
 interface CategoryManagerProps {
-    onClose: () => void;
+    onClose?: () => void;
 }
 
 export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
@@ -74,15 +74,17 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
     };
 
     return (
-        <div className="flex flex-col h-full max-h-[80vh] w-full max-w-2xl bg-card rounded-xl shadow-xl overflow-hidden border">
+        <div className="flex flex-col h-full w-full bg-card rounded-xl overflow-hidden">
             <div className="p-4 border-b flex justify-between items-center bg-muted/20">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <Tag className="w-5 h-5 text-primary" />
                     {t('finance.categories.title') || 'Gestion des Catégories'}
                 </h2>
-                <button onClick={onClose} className="p-1 hover:bg-muted rounded-full">
-                    <X className="w-5 h-5" />
-                </button>
+                {onClose && (
+                    <button onClick={onClose} className="p-1 hover:bg-muted rounded-full">
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             <div className="p-4 border-b bg-muted/10 space-y-3">

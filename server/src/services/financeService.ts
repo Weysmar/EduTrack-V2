@@ -4,6 +4,7 @@ import { categorizerService } from './categorizerService';
 import { aiService } from './aiService';
 import { CategoryMatcherService } from './categoryMatcherService';
 import { ClassificationService } from './classificationService';
+import { InternalTransferService } from './internalTransferService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
 
 export class FinanceService {
@@ -167,7 +168,7 @@ export class FinanceService {
         }
 
         // Atomic: create transaction + recalculate balance
-        return await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const created = await tx.transaction.create({
                 data: {
                     accountId,
@@ -183,6 +184,11 @@ export class FinanceService {
             await this.recalculateBalance(accountId, tx);
             return created;
         });
+
+        // Trigger internal transfer detection automatically after new transaction
+        await InternalTransferService.detectAndLinkTransfers(profileId).catch(console.error);
+
+        return result;
     }
 
     static async updateTransaction(profileId: string, id: string, data: any) {
@@ -211,8 +217,8 @@ export class FinanceService {
 
         // Atomic: update transaction + recalculate balance
         const sanitizedAmount = amount !== undefined ? parseFloat(String(amount)) : undefined;
-        return await prisma.$transaction(async (tx) => {
-            const result = await tx.transaction.update({
+        const result = await prisma.$transaction(async (tx) => {
+            const updateResult = await tx.transaction.update({
                 where: { id: safeId },
                 data: {
                     amount: sanitizedAmount,
@@ -227,8 +233,14 @@ export class FinanceService {
             });
             // Recalculate from all transactions (prevents drift)
             await this.recalculateBalance(oldTransaction.accountId!, tx);
-            return result;
+            return updateResult;
         });
+
+        // Trigger internal transfer detection automatically after modifying transaction
+        // (amount or date might have changed, creating or breaking a link)
+        await InternalTransferService.detectAndLinkTransfers(profileId).catch(console.error);
+
+        return result;
     }
 
     static async deleteTransaction(profileId: string, id: string) {

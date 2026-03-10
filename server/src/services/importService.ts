@@ -3,6 +3,7 @@ import { OfxParserService } from './ofxParserService';
 import { CsvParserService } from './csvParserService';
 import { XlsxParserService } from './xlsxParserService';
 import { ClassificationService } from './classificationService';
+import { InternalTransferService } from './internalTransferService';
 import { prisma } from '../lib/prisma';
 import fs from 'fs';
 import path from 'path';
@@ -296,6 +297,12 @@ export class ImportService {
                     errors: 0
                 }
             });
+
+            // Trigger internal transfer detection automatically after bulk import
+            if (count > 0) {
+                // Background task to not block the request
+                InternalTransferService.detectAndLinkTransfers(profileId).catch(console.error);
+            }
 
             return {
                 importedTransactions: count,

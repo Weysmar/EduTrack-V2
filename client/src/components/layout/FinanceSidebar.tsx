@@ -19,8 +19,6 @@ export function FinanceSidebar() {
     const logoSrc = '/logo.svg'
 
     const [expandedBanks, setExpandedBanks] = useState<Record<string, boolean>>({});
-    // Local state for Category only
-    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
     // Initial expansion logic
     useEffect(() => {
@@ -111,9 +109,9 @@ export function FinanceSidebar() {
                     <div className="px-3 flex items-center justify-between mb-2">
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Banques</h3>
                         <div className="flex items-center gap-1 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setIsCategoryModalOpen(true)} className="hover:bg-muted p-1 rounded-md transition-colors" title="Catégories">
+                            <Link to="/finance/categories" className="hover:bg-muted p-1 rounded-md transition-colors" title="Catégories">
                                 <Tag className="h-3 w-3" />
-                            </button>
+                            </Link>
                             <button onClick={() => useFinanceStore.getState().exportData?.('json')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export JSON">
                                 <FileJson className="h-3 w-3" />
                             </button>
@@ -268,14 +266,6 @@ export function FinanceSidebar() {
                 onClose={closeBankModal}
                 onSubmit={handleCreateBank}
             />
-
-            {isCategoryModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-                    <CategoryManager
-                        onClose={() => setIsCategoryModalOpen(false)}
-                    />
-                </div>
-            )}
         </div>
     )
 }
