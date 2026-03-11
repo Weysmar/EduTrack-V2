@@ -19,6 +19,7 @@ export interface HealthScoreResult {
         trend: ScoreCriteria;
     };
     tips: string[];
+    hasEnoughData?: boolean;
 }
 
 export class HealthScoreService {
