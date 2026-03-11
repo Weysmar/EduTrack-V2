@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Transaction, FinancialAccount, TransactionCategory } from '../../types/finance';
+import { Transaction, FinancialAccount, TransactionCategory, RecurringTransaction, SavingsGoal, SavingsProjection, ForecastDay, AutoCategorizeRule, RuleCondition, FinanceAlert, HealthScoreResult, MonthlyReport } from '../../types/finance';
 
 export const financeApi = {
     // Accounts
@@ -56,7 +56,6 @@ export const financeApi = {
 
     // AI
     enrich: async (description: string, amount: number) => {
-        // We use a dummy ID '1' or fixed path as per route definition, but body carries data
         const { data } = await apiClient.post('/finance/transactions/1/enrich', { description, amount });
         return data;
     },
@@ -92,7 +91,6 @@ export const financeApi = {
             responseType: 'blob'
         });
 
-        // Trigger download
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
@@ -147,5 +145,110 @@ export const financeApi = {
     },
     deleteBank: async (id: string) => {
         await apiClient.delete(`/finance/banks/${id}`);
+    },
+
+    // --- Recurring Transactions ---
+    getRecurring: async () => {
+        const { data } = await apiClient.get<RecurringTransaction[]>('/finance/recurring');
+        return data;
+    },
+    detectRecurring: async () => {
+        const { data } = await apiClient.post<{ detected: number; created: number; updated: number }>('/finance/recurring/detect');
+        return data;
+    },
+    updateRecurring: async (id: string, updates: Partial<RecurringTransaction>) => {
+        const { data } = await apiClient.put<RecurringTransaction>(`/finance/recurring/${id}`, updates);
+        return data;
+    },
+    deleteRecurring: async (id: string) => {
+        await apiClient.delete(`/finance/recurring/${id}`);
+    },
+
+    // --- Savings Goals ---
+    getSavingsGoals: async () => {
+        const { data } = await apiClient.get<SavingsGoal[]>('/finance/goals');
+        return data;
+    },
+    createSavingsGoal: async (goal: { name: string; targetAmount: number; deadline?: string; icon?: string; color?: string }) => {
+        const { data } = await apiClient.post<SavingsGoal>('/finance/goals', goal);
+        return data;
+    },
+    updateSavingsGoal: async (id: string, updates: Partial<SavingsGoal>) => {
+        const { data } = await apiClient.put<SavingsGoal>(`/finance/goals/${id}`, updates);
+        return data;
+    },
+    deleteSavingsGoal: async (id: string) => {
+        await apiClient.delete(`/finance/goals/${id}`);
+    },
+    getSavingsProjection: async (id: string) => {
+        const { data } = await apiClient.get<SavingsProjection>(`/finance/goals/${id}/projection`);
+        return data;
+    },
+    recalculateSavings: async () => {
+        const { data } = await apiClient.post<{ updated: number; monthlySavings: number }>('/finance/goals/recalculate');
+        return data;
+    },
+    getSavingsRate: async () => {
+        const { data } = await apiClient.get<{ rate: number; income: number; expenses: number; savings: number }>('/finance/savings-rate');
+        return data;
+    },
+
+    // Cashflow Forecast
+    getForecast: async (days: number = 90) => {
+        const { data } = await apiClient.get<ForecastDay[]>(`/finance/forecast?days=${days}`);
+        return data;
+    },
+
+    // Auto-Categorization Rules
+    getRules: async () => {
+        const { data } = await apiClient.get<AutoCategorizeRule[]>('/finance/rules');
+        return data;
+    },
+    createRule: async (rule: { name: string; conditions: RuleCondition[]; categoryName: string; priority?: number }) => {
+        const { data } = await apiClient.post<AutoCategorizeRule>('/finance/rules', rule);
+        return data;
+    },
+    updateRule: async (id: string, updates: Partial<AutoCategorizeRule>) => {
+        const { data } = await apiClient.put<AutoCategorizeRule>(`/finance/rules/${id}`, updates);
+        return data;
+    },
+    deleteRule: async (id: string) => {
+        await apiClient.delete(`/finance/rules/${id}`);
+    },
+    testRule: async (conditions: RuleCondition[]) => {
+        const { data } = await apiClient.post<{ matchCount: number; samples: { id: string; description: string; amount: number }[] }>('/finance/rules/test', { conditions });
+        return data;
+    },
+
+    // Finance Alerts
+    getAlerts: async () => {
+        const { data } = await apiClient.get<FinanceAlert[]>('/finance/alerts');
+        return data;
+    },
+    markAlertRead: async (id: string) => {
+        await apiClient.put(`/finance/alerts/${id}/read`);
+    },
+    dismissAlert: async (id: string) => {
+        await apiClient.put(`/finance/alerts/${id}/dismiss`);
+    },
+    checkAlerts: async () => {
+        const { data } = await apiClient.post<{ newAlerts: number }>('/finance/alerts/check');
+        return data;
+    },
+    getUnreadAlertCount: async () => {
+        const { data } = await apiClient.get<{ count: number }>('/finance/alerts/unread-count');
+        return data;
+    },
+
+    // Health Score
+    getHealthScore: async () => {
+        const { data } = await apiClient.get<HealthScoreResult>('/finance/health-score');
+        return data;
+    },
+
+    // Monthly Reports
+    getMonthlyReport: async (year: number, month: number) => {
+        const { data } = await apiClient.get<MonthlyReport>(`/finance/reports/${year}/${month}`);
+        return data;
     }
 };

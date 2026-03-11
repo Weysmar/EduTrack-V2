@@ -8,6 +8,8 @@ import { TransactionEditModal } from '@/components/finance/TransactionEditModal'
 import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
 import { FinanceStatsCards } from '@/components/finance/dashboard/FinanceStatsCards';
 import { ExpenseChart } from '@/components/finance/dashboard/ExpenseChart';
+import { CashflowChart } from '@/components/finance/dashboard/CashflowChart';
+import { HealthScoreWidget } from '@/components/finance/dashboard/HealthScoreWidget';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { toast } from 'sonner';
@@ -296,6 +298,16 @@ export default function FinanceDashboard() {
             <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <h2 className="text-lg font-semibold mb-4">{t('finance.chart.activity')}</h2>
                 <ExpenseChart transactions={filteredTransactions} hideInternalTransfers={!showInternal} />
+            </div>
+
+            {/* Cashflow Forecast */}
+            <div className="bg-card border rounded-xl p-6 shadow-sm">
+                <CashflowChart />
+            </div>
+
+            {/* Health Score */}
+            <div className="bg-card border rounded-xl p-6 shadow-sm">
+                <HealthScoreWidget />
             </div>
 
             {/* Budgets Section */}

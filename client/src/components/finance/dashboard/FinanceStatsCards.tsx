@@ -1,6 +1,6 @@
 import { Transaction } from '@/types/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
 import { useMemo } from 'react';
 import clsx from 'clsx';
 import { startOfMonth, isAfter } from 'date-fns';
@@ -18,7 +18,6 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
     const stats = useMemo(() => {
         const startOfCurrentMonth = startOfMonth(new Date());
 
-        // Filter transactions for current month
         const currentMonthTransactions = transactions.filter(t =>
             isAfter(new Date(t.date), startOfCurrentMonth)
         );
@@ -27,7 +26,6 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
         let expenses = 0;
 
         currentMonthTransactions.forEach(t => {
-            // Systematically exclude internal transfers from stats
             if (t.classification?.startsWith('INTERNAL')) return;
 
             if (t.amount > 0) {
@@ -37,14 +35,20 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
             }
         });
 
-        return { income, expenses };
+        const savings = income - expenses;
+        const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+
+        return { income, expenses, savings, savingsRate };
     }, [transactions]);
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat(t('common.locale') || 'fr-FR', { style: 'currency', currency: 'EUR' }).format(val);
 
+    const rateColor = stats.savingsRate >= 20 ? 'text-green-400' : stats.savingsRate >= 5 ? 'text-amber-400' : 'text-red-400';
+    const rateBarColor = stats.savingsRate >= 20 ? 'bg-green-500' : stats.savingsRate >= 5 ? 'bg-amber-500' : 'bg-red-500';
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
             {/* Total Balance */}
             <Card className="bg-slate-900 border-slate-800">
@@ -79,6 +83,28 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
                 <CardContent>
                     <div className="text-2xl font-bold text-red-400">-{formatCurrency(stats.expenses)}</div>
                     <p className="text-xs text-slate-500 mt-1">{t('finance.stats.currentMonth') || 'Ce mois-ci'}</p>
+                </CardContent>
+            </Card>
+
+            {/* Savings Rate */}
+            <Card className="bg-slate-900 border-slate-800">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-400">Taux d'épargne</CardTitle>
+                    <PiggyBank className="w-4 h-4 text-emerald-500" />
+                </CardHeader>
+                <CardContent>
+                    <div className={`text-2xl font-bold ${rateColor}`}>
+                        {stats.savingsRate.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all ${rateBarColor}`}
+                            style={{ width: `${Math.min(100, Math.max(0, stats.savingsRate))}%` }}
+                        />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                        {stats.savingsRate >= 20 ? 'Excellent !' : stats.savingsRate >= 5 ? 'Correct' : 'À améliorer'}
+                    </p>
                 </CardContent>
             </Card>
 

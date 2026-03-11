@@ -5,6 +5,7 @@ import { FinanceSidebar } from '@/components/layout/FinanceSidebar'
 import { Menu } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageToggle } from '@/components/language-toggle'
+import { AlertBell } from '@/components/finance/AlertBell'
 import { useEffect } from 'react'
 import { CommandPalette } from '@/components/CommandPalette'
 import { useCommandStore } from '@/store/commandStore'
@@ -90,8 +91,7 @@ export function FinanceLayout() {
                     </button>
 
                     <div className="flex items-center gap-1 md:gap-2">
-                        {/* Finance might not need focus timer or google connect? Kept minimalistic for Finance. */}
-                        {/* Removing FocusTimer/GoogleConnect for Finance Context */}
+                        <AlertBell />
                         <LanguageToggle />
                         <ModeToggle />
                     </div>

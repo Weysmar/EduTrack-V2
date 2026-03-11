@@ -1,4 +1,4 @@
-import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building, Download, Tag, FileJson, FileText } from 'lucide-react'
+import { LayoutGrid, PieChart, Wallet, CreditCard, Settings, PanelLeftClose, PanelLeftOpen, LogOut, Plus, ChevronRight, ChevronDown, Building, Download, Tag, FileJson, FileText, RefreshCw, PiggyBank, Wand2, FileBarChart } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '@/components/language-provider'
 import { useUIStore } from '@/store/uiStore'
@@ -100,6 +100,10 @@ export function FinanceSidebar() {
             {/* Nav */}
             <div className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
                 <NavLink to="/finance/dashboard" icon={LayoutGrid} label={t('finance.title') || "Dashboard"} />
+                <NavLink to="/finance/recurring" icon={RefreshCw} label="Récurrences" />
+                <NavLink to="/finance/savings" icon={PiggyBank} label="Épargne" />
+                <NavLink to="/finance/rules" icon={Wand2} label="Règles" />
+                <NavLink to="/finance/reports" icon={FileBarChart} label="Rapports" />
 
                 {/* Divider */}
                 <div className="my-4 border-t border-border/50" />

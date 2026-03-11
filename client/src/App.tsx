@@ -60,6 +60,10 @@ const ImportPage = lazyWithRetry(() => import('@/pages/finance/ImportPage').then
 const BankDetailsPage = lazyWithRetry(() => import('@/pages/finance/BankDetailsPage').then(m => ({ default: m.default })))
 const AccountDetailsPage = lazyWithRetry(() => import('@/pages/finance/AccountDetailsPage').then(m => ({ default: m.default })))
 const FinanceCategoriesPage = lazyWithRetry(() => import('@/pages/finance/FinanceCategoriesPage').then(m => ({ default: m.default })))
+const RecurringPage = lazyWithRetry(() => import('@/pages/finance/RecurringPage').then(m => ({ default: m.default })))
+const SavingsPage = lazyWithRetry(() => import('@/pages/finance/SavingsPage').then(m => ({ default: m.default })))
+const RulesPage = lazyWithRetry(() => import('@/pages/finance/RulesPage').then(m => ({ default: m.default })))
+const MonthlyReportPage = lazyWithRetry(() => import('@/pages/finance/MonthlyReportPage').then(m => ({ default: m.default })))
 
 // Remove sessionStorage flag on successful navigation to prevent loops
 window.addEventListener('beforeunload', () => {
@@ -201,6 +205,22 @@ const router = createBrowserRouter([
                             {
                                 path: 'settings',
                                 element: <LazyPage><SettingsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'recurring',
+                                element: <LazyPage><RecurringPage /></LazyPage>,
+                            },
+                            {
+                                path: 'savings',
+                                element: <LazyPage><SavingsPage /></LazyPage>,
+                            },
+                            {
+                                path: 'rules',
+                                element: <LazyPage><RulesPage /></LazyPage>,
+                            },
+                            {
+                                path: 'reports',
+                                element: <LazyPage><MonthlyReportPage /></LazyPage>,
                             }
                         ]
                     }

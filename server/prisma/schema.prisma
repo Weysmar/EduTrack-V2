@@ -34,6 +34,10 @@ model Profile {
   // FinanceTrack Relations
   banks             Bank[]
   budgets           Budget[]
+  recurringTransactions RecurringTransaction[]
+  savingsGoals      SavingsGoal[]
+  autoRules         AutoCategorizeRule[]
+  financeAlerts     FinanceAlert[]
 }
 
 // ... existing models ...
@@ -388,3 +392,133 @@ model Budget {
   
   @@index([profileId, categoryId])
 }
+
+// FinanceTrack — Recurring Transactions
+
+model RecurringTransaction {
+  id              String   @id @default(uuid())
+  profileId       String
+
+  description     String
+  averageAmount   Decimal  @db.Decimal(15, 2)
+  estimatedDay    Int
+  frequency       RecurringFrequency @default(MONTHLY)
+  category        String?
+  type            String   // "INCOME" | "EXPENSE"
+
+  lastSeenDate    DateTime?
+  nextExpectedDate DateTime?
+  occurrenceCount Int      @default(0)
+  confidenceScore Float    @default(0.0)
+  isActive        Boolean  @default(true)
+  isPaused        Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, description, frequency])
+  @@index([profileId])
+}
+
+enum RecurringFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// FinanceTrack — Savings Goals
+
+model SavingsGoal {
+  id              String   @id @default(uuid())
+  profileId       String
+
+  name            String
+  targetAmount    Decimal  @db.Decimal(15, 2)
+  currentAmount   Decimal  @db.Decimal(15, 2) @default(0)
+  deadline        DateTime?
+  monthlyTarget   Decimal? @db.Decimal(15, 2)
+
+  icon            String?  @default("🎯")
+  color           String?  @default("#10b981")
+
+  status          SavingsGoalStatus @default(ACTIVE)
+  completedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+enum SavingsGoalStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+// FinanceTrack — Auto-Categorization Rules
+
+model AutoCategorizeRule {
+  id              String   @id @default(uuid())
+  profileId       String
+
+  name            String          // "Carrefour → Alimentation"
+  priority        Int      @default(0) // Lower = higher priority
+  conditions      Json            // Array of {field, operator, value, caseSensitive?}
+  categoryName    String          // Target category name
+
+  isActive        Boolean  @default(true)
+  matchCount      Int      @default(0) // Total matches counter
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+// FinanceTrack — Finance Alerts
+
+model FinanceAlert {
+  id              String   @id @default(uuid())
+  profileId       String
+
+  type            AlertType
+  severity        AlertSeverity
+  title           String
+  message         String
+  data            Json?
+
+  isRead          Boolean  @default(false)
+  isDismissed     Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, isRead])
+}
+
+enum AlertType {
+  BUDGET_EXCEEDED
+  BUDGET_WARNING
+  LOW_BALANCE
+  UNUSUAL_TRANSACTION
+  RECURRING_MISSING
+  GOAL_COMPLETED
+  GOAL_AT_RISK
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+  CELEBRATION
+}
+

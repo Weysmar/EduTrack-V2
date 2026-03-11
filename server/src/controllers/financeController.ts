@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { FinanceService } from '../services/financeService';
 import { ImportService } from '../services/importService'; // Kept for cleanup logic
+import { AutoRuleEngine } from '../services/autoRuleEngine';
+import { RecurringDetectionService } from '../services/recurringDetectionService';
+import { AlertEngine } from '../services/alertEngine';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
@@ -80,6 +83,21 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
         }
 
         const result = await FinanceService.commitImport(profileId, bankId, importData);
+
+        // Post-import automations (fire-and-forget)
+        // 1. Apply auto-categorization rules
+        AutoRuleEngine.applyRules(profileId, (result as any).transactions || []).catch((err: any) =>
+            console.error('[PostImport] AutoRule error:', err)
+        );
+        // 2. Detect recurring transactions
+        RecurringDetectionService.detectRecurrences(profileId).catch((err: any) =>
+            console.error('[PostImport] Recurring detection error:', err)
+        );
+        // 3. Check for alerts
+        AlertEngine.checkAlerts(profileId).catch((err: any) =>
+            console.error('[PostImport] Alert check error:', err)
+        );
+
         res.json(result);
 
     } catch (error: any) {

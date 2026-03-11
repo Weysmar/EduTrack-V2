@@ -129,3 +129,153 @@ export interface ImportLog {
     recordCount: number;
     details?: any;
 }
+
+// --- Recurring Transactions ---
+
+export type RecurringFrequency = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+export interface RecurringTransaction {
+    id: string;
+    description: string;
+    averageAmount: number;
+    estimatedDay: number;
+    frequency: RecurringFrequency;
+    category?: string;
+    type: string; // "INCOME" | "EXPENSE"
+    lastSeenDate?: string;
+    nextExpectedDate?: string;
+    occurrenceCount: number;
+    confidenceScore: number;
+    isActive: boolean;
+    isPaused: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// --- Savings Goals ---
+
+export type SavingsGoalStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED';
+
+export interface SavingsGoal {
+    id: string;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    deadline?: string;
+    monthlyTarget?: number;
+    icon?: string;
+    color?: string;
+    status: SavingsGoalStatus;
+    completedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface SavingsProjection {
+    currentAmount: number;
+    targetAmount: number;
+    monthlyActualSavings: number;
+    monthsRemaining: number | null;
+    projectedCompletionDate: string | null;
+    onTrack: boolean;
+    progress: number;
+}
+
+// --- Cashflow Forecast ---
+
+export interface ForecastEvent {
+    description: string;
+    amount: number;
+    type: 'RECURRING_INCOME' | 'RECURRING_EXPENSE' | 'VARIABLE_ESTIMATE';
+}
+
+export interface ForecastDay {
+    date: string;
+    projectedBalance: number;
+    events: ForecastEvent[];
+}
+
+// --- Auto-Categorization Rules ---
+
+export type RuleOperator = 'contains' | 'startsWith' | 'equals' | 'gt' | 'lt' | 'gte' | 'lte';
+export type RuleField = 'description' | 'amount' | 'beneficiaryIban';
+
+export interface RuleCondition {
+    field: RuleField;
+    operator: RuleOperator;
+    value: string | number;
+    caseSensitive?: boolean;
+}
+
+export interface AutoCategorizeRule {
+    id: string;
+    name: string;
+    priority: number;
+    conditions: RuleCondition[];
+    categoryName: string;
+    isActive: boolean;
+    matchCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// --- Finance Alerts ---
+
+export type AlertType = 'BUDGET_EXCEEDED' | 'BUDGET_WARNING' | 'LOW_BALANCE' | 'UNUSUAL_TRANSACTION' | 'RECURRING_MISSING' | 'GOAL_COMPLETED' | 'GOAL_AT_RISK';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'CELEBRATION';
+
+export interface FinanceAlert {
+    id: string;
+    type: AlertType;
+    severity: AlertSeverity;
+    title: string;
+    message: string;
+    data?: any;
+    isRead: boolean;
+    isDismissed: boolean;
+    createdAt: string;
+}
+
+// --- Health Score ---
+
+export interface ScoreCriteria {
+    score: number;
+    value: number;
+    weight: number;
+    label: string;
+}
+
+export interface HealthScoreResult {
+    globalScore: number;
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
+    breakdown: {
+        savingsRate: ScoreCriteria;
+        budgetCompliance: ScoreCriteria;
+        incomeStability: ScoreCriteria;
+        fixedRatio: ScoreCriteria;
+        diversification: ScoreCriteria;
+        trend: ScoreCriteria;
+    };
+    tips: string[];
+}
+
+// --- Monthly Report ---
+
+export interface MonthlyReport {
+    period: { month: number; year: number };
+    summary: {
+        totalIncome: number;
+        totalExpenses: number;
+        savingsAmount: number;
+        savingsRate: number;
+        incomeVsPreviousMonth: number;
+        expensesVsPreviousMonth: number;
+    };
+    topExpenses: { category: string; amount: number; percentOfTotal: number }[];
+    budgetReport: { category: string; budgeted: number; spent: number; status: string }[];
+    recurringReport: { description: string; amount: number; status: 'OK' | 'MISSED' }[];
+    savingsGoals: { name: string; progress: number; target: number; current: number; onTrack: boolean }[];
+    healthScore: number;
+}
+
+
