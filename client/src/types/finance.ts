@@ -257,6 +257,7 @@ export interface HealthScoreResult {
         trend: ScoreCriteria;
     };
     tips: string[];
+    hasEnoughData?: boolean;
 }
 
 // --- Monthly Report ---

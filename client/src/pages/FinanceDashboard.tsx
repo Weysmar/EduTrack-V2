@@ -145,9 +145,9 @@ export default function FinanceDashboard() {
 
     // If filtering by account, use its specific balance. Otherwise use global calculated balance.
     // If filtering by account, use its specific balance. Otherwise use global calculated balance.
-    const totalBalance = getBalance();
+    const totalBalance = getBalance() || 0;
     const displayedBalance = selectedAccount
-        ? selectedAccount.balance
+        ? (selectedAccount.balance || 0)
         : totalBalance;
 
     // Dynamic Title

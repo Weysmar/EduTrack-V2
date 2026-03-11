@@ -46,6 +46,21 @@ export function HealthScoreWidget() {
 
     if (!data) return null;
 
+    if (data.hasEnoughData === false) {
+        return (
+            <div>
+                <div className="flex items-center gap-2 mb-4">
+                    <h3 className="font-semibold text-slate-200">Santé financière</h3>
+                </div>
+                <div className="flex flex-col items-center justify-center py-6 text-slate-400 gap-3 text-center px-4 rounded-xl border border-dashed border-slate-700 bg-slate-800/20">
+                    <Lightbulb className="h-8 w-8 text-slate-500 mb-1" />
+                    <p className="font-medium text-slate-300">Pas assez de données</p>
+                    <p className="text-sm">Importez des transactions pour débloquer votre score de santé financière.</p>
+                </div>
+            </div>
+        );
+    }
+
     const color = GRADE_COLORS[data.grade] || '#94a3b8';
     const breakdownEntries = Object.values(data.breakdown);
 

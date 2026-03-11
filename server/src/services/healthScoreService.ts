@@ -49,6 +49,25 @@ export class HealthScoreService {
             })
         ]);
 
+        // --- 0. Data Check ---
+        const hasEnoughData = transactions.length > 0;
+        if (!hasEnoughData) {
+            return {
+                globalScore: 0,
+                grade: 'C',
+                breakdown: {
+                    savingsRate: { score: 0, value: 0, weight: 0.30, label: "Taux d'épargne" },
+                    budgetCompliance: { score: 0, value: 0, weight: 0.25, label: 'Respect des budgets' },
+                    incomeStability: { score: 0, value: 0, weight: 0.15, label: 'Stabilité des revenus' },
+                    fixedRatio: { score: 0, value: 0, weight: 0.15, label: 'Ratio charges fixes' },
+                    diversification: { score: 0, value: 0, weight: 0.10, label: 'Diversification' },
+                    trend: { score: 0, value: 0, weight: 0.05, label: 'Tendance' }
+                },
+                tips: ["Connectez une banque pour calculer votre score."],
+                hasEnoughData: false
+            };
+        }
+
         // --- 1. Savings Rate (30%) ---
         const thisMonthTx = transactions.filter(t => new Date(t.date) >= startOfMonth);
         const income = thisMonthTx.filter(t => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount), 0);

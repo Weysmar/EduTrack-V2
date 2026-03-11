@@ -80,7 +80,14 @@ export default function MonthlyReportPage() {
                     <span>Génération du rapport...</span>
                 </div>
             ) : !report ? (
-                <div className="text-center py-16 text-slate-500">Aucune donnée pour cette période.</div>
+                <div className="text-center py-16 text-slate-500">Erreur lors du chargement.</div>
+            ) : report.summary.totalIncome === 0 && report.summary.totalExpenses === 0 ? (
+                <div className="text-center py-20 px-4 bg-slate-900 border border-slate-800 rounded-xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none" />
+                    <FileBarChart className="h-12 w-12 text-slate-700 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-300">Aucune donnée</h3>
+                    <p className="text-slate-500 mt-1">Aucune transaction n'a été enregistrée pour le mois de {MONTH_NAMES[month - 1].toLowerCase()} {year}.</p>
+                </div>
             ) : (
                 <>
                     {/* Summary Cards */}

@@ -39,7 +39,8 @@ export function FinanceSidebar() {
     };
 
     // Group accounts by Bank
-    const accountsByBank = accounts.reduce((acc, account) => {
+    const safeAccounts = Array.isArray(accounts) ? accounts : [];
+    const accountsByBank = safeAccounts.reduce((acc, account) => {
         const key = account.bankId || 'other';
         if (!acc[key]) acc[key] = [];
         acc[key].push(account);
@@ -142,7 +143,7 @@ export function FinanceSidebar() {
 
                 {/* Bank List */}
                 <div className="space-y-4">
-                    {banks.map(bank => (
+                    {Array.isArray(banks) && banks.map((bank) => (
                         <div key={bank.id} className="space-y-1">
                             {!isCollapsed ? (
                                 <>
