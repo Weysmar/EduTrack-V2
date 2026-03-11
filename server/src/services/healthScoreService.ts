@@ -158,7 +158,7 @@ export class HealthScoreService {
         return { globalScore, grade, breakdown, tips: tips.slice(0, 3) };
     }
 
-    private static groupByMonth(transactions: { amount: any; date: Date }[]): Record<string, number> {
+    private static groupByMonth(transactions: { amount: unknown; date: Date }[]): Record<string, number> {
         const groups: Record<string, number> = {};
         for (const tx of transactions) {
             const key = `${new Date(tx.date).getFullYear()}-${new Date(tx.date).getMonth()}`;
