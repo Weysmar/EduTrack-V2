@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma';
 import { ImportService } from './importService';
 import { categorizerService } from './categorizerService';
 import { aiService } from './aiService';
+import { getFinanceApiKey } from './apiKeyService';
 import { CategoryMatcherService } from './categoryMatcherService';
 import { ClassificationService } from './classificationService';
 import { InternalTransferService } from './internalTransferService';
@@ -322,13 +323,11 @@ export class FinanceService {
             throw new Error('No transactions found');
         }
 
-        // Get user's API key
-        const profile = await prisma.profile.findUnique({
-            where: { id: profileId },
-            select: { settings: true }
+        // Get user's API key using standardized service
+        const apiConfig = await getFinanceApiKey(profileId, {
+            preferredProvider: 'google'
         });
-
-        const apiKey = (profile?.settings as any)?.google_gemini_summaries;
+        const apiKey = apiConfig.apiKey;
 
         if (!apiKey) {
             throw new Error('No API key configured. Please add your Gemini API key in Settings.');
@@ -507,21 +506,11 @@ export class FinanceService {
             throw new Error('Transactions are required for audit');
         }
 
-        const profile = await prisma.profile.findUnique({
-            where: { id: profileId },
-            select: { settings: true }
-        });
-
-        const settings = (profile?.settings as any) || {};
-        const provider = settings.finance_audit_provider || 'google';
-        const model = settings.finance_audit_model || 'gemini-1.5-flash';
-
-        let apiKey = '';
-        if (provider === 'google') {
-            apiKey = settings.google_gemini_summaries || process.env.GEMINI_API_KEY || '';
-        } else {
-            apiKey = settings.perplexity_summaries || process.env.PERPLEXITY_API_KEY || '';
-        }
+        // Get API key configuration using standardized service
+        const apiConfig = await getFinanceApiKey(profileId);
+        const provider = apiConfig.provider;
+        const model = apiConfig.model;
+        const apiKey = apiConfig.apiKey;
 
         if (!apiKey) {
             const providerName = provider === 'google' ? 'Gemini' : 'Perplexity';

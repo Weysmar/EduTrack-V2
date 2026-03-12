@@ -1,11 +1,9 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
+import { getApiKey, detectProvider } from '../services/apiKeyService';
+import { contentExtractionService } from '../services/contentExtractionService';
 import { incrementAIGeneration } from './profileController';
-import mammoth from 'mammoth';
-
-const pdfParse = require('pdf-parse');
-
 import { prisma } from '../lib/prisma';
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
@@ -33,25 +31,10 @@ Content to analyze:
 
 Generate a comprehensive mind map now:`;
 
-// Helper to extract text from a file buffer
-const extractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<string> => {
-    try {
-        if (mimetype === 'application/pdf') {
-            const data = await pdfParse(buffer);
-            console.log('PDF Parsed, length:', data.text?.length);
-            return data.text;
-        } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') { // docx
-            const mammoth = require('mammoth');
-            const result = await mammoth.extractRawText({ buffer });
-            return result.value;
-        } else if (mimetype === 'text/plain' || mimetype === 'text/markdown') {
-            return buffer.toString('utf-8');
-        }
-        return '';
-    } catch (error) {
-        console.error('Error extracting text from file:', error);
-        return '';
-    }
+// Helper to extract text from a file buffer - DELEGATED TO contentExtractionService
+// Kept for reference but no longer used directly
+const _legacyExtractTextFromFile = async (buffer: Buffer, mimetype: string): Promise<string> => {
+    throw new Error('Use contentExtractionService.extractTextFromBuffer instead');
 };
 
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
@@ -74,28 +57,13 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        // Resolve usage context
-        const isPerplexity = model.toLowerCase().includes('sonar') || model.toLowerCase().includes('pplx');
-        const provider = isPerplexity ? 'perplexity' : 'google';
-
-        // Resolve API Key: Request > Profile Settings > Environment (handled by service)
-        let effectiveApiKey = apiKey;
-        if (!effectiveApiKey) {
-            const profile = await prisma.profile.findUnique({
-                where: { id: profileId },
-                select: { settings: true }
-            });
-
-            if (profile?.settings) {
-                const settings = profile.settings as any;
-                if (isPerplexity) {
-                    effectiveApiKey = settings.perplexity_summaries || settings.perplexity_exercises;
-                } else {
-                    // Try summaries key first, then exercises, as fallback
-                    effectiveApiKey = settings.google_gemini_summaries || settings.google_gemini_exercises;
-                }
-            }
-        }
+        // Resolve API Key using standardized service
+        const provider = detectProvider(model);
+        const apiConfig = await getApiKey(profileId, provider, {
+            requestApiKey: apiKey,
+            purpose: 'summaries'
+        });
+        const effectiveApiKey = apiConfig.apiKey;
 
         if (!noteIds.length && !fileItemIds.length) {
             return res.status(400).json({ error: 'At least one note or file is required' });
@@ -122,7 +90,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
         const fileNames: string[] = [];
 
-        // Extract content from existing file items (PDF, DOCX)
+        // Extract content from existing file items (PDF, DOCX) using robust service
         if (fileItemIds.length > 0) {
             const fileItems = await prisma.item.findMany({
                 where: {
@@ -131,33 +99,55 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                 }
             });
 
-            const { storageService } = require('../services/storageService'); // Lazy import to avoid circular dep if any
+            const { storageService } = require('../services/storageService');
+            const extractionResults: Array<{ filename: string; text: string; warnings: string[] }> = [];
 
             for (const item of fileItems) {
-                if (item.storageKey) {
-                    const buffer = await storageService.getFileContent(item.storageKey);
-                    if (buffer) {
-                        // Determine mimetype from ext if not stored (Item model doesn't strictly store mimetype but we can guess or it might be in metadata)
-                        // Actually duplicate check: storageService.uploadFile saves mimetype? No.
-                        // We can use item.type or guess from fileName
-                        let mimetype = '';
-                        if (item.fileName?.toLowerCase().endsWith('.pdf')) mimetype = 'application/pdf';
-                        else if (item.fileName?.toLowerCase().endsWith('.docx')) mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-                        else if (item.fileName?.toLowerCase().endsWith('.txt')) mimetype = 'text/plain';
-                        else if (item.fileName?.toLowerCase().endsWith('.md')) mimetype = 'text/markdown';
-
-                        console.log(`Processing file: ${item.fileName}, Mimetype: ${mimetype}, Buffer: ${buffer ? 'Found' : 'Missing'}`);
-
-
-                        const text = await extractTextFromFile(buffer, mimetype);
-                        if (text && text.trim().length > 0) {
-                            combinedContent += `\n\n=== ${item.fileName} ===\n${text.substring(0, 20000)}`; // Limit content per file
-                            fileNames.push(item.fileName || 'Untitled File');
-                        } else {
-                            console.warn(`No text extracted for file: ${item.fileName}`);
-                        }
-                    }
+                if (!item.storageKey) {
+                    console.warn(`File item ${item.id} has no storageKey`);
+                    continue;
                 }
+
+                try {
+                    const buffer = await storageService.getFileContent(item.storageKey);
+                    if (!buffer || buffer.length === 0) {
+                        console.warn(`Empty buffer for file: ${item.fileName}`);
+                        continue;
+                    }
+
+                    const filename = item.fileName || 'unknown';
+                    
+                    // Use robust content extraction service
+                    const result = await contentExtractionService.extractTextFromBuffer(
+                        buffer, 
+                        filename,
+                        { maxLength: 20000 } // Limit per file
+                    );
+
+                    console.log(`[MindMap] Extracted ${result.stats.words} words from ${filename}`);
+
+                    combinedContent += `\n\n=== ${filename} ===\n${result.text}`;
+                    fileNames.push(filename);
+                    extractionResults.push({
+                        filename,
+                        text: result.text,
+                        warnings: result.warnings
+                    });
+
+                    // Log any warnings
+                    result.warnings.forEach(w => console.warn(`[MindMap] ${filename}: ${w}`));
+
+                } catch (error: any) {
+                    console.error(`[MindMap] Failed to extract ${item.fileName}:`, error);
+                    // Continue with other files, don't fail completely
+                }
+            }
+
+            if (fileItemIds.length > 0 && fileNames.length === 0) {
+                return res.status(400).json({ 
+                    error: 'No content could be extracted from selected files',
+                    details: 'All files failed to extract. Check file formats and try again.'
+                });
             }
         }
 
