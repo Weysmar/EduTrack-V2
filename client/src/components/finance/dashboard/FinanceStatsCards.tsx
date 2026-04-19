@@ -111,8 +111,6 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
                 </CardContent>
             </Card>
 
-            </Card>
-
             {/* Uncategorized Warning (Visible only if > 0) */}
             {stats.uncategorizedCount > 0 && (
                 <Card className="bg-amber-500/10 border-amber-500/20 md:col-span-2 lg:col-span-4 border-dashed">
