@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { HealthScoreService } from './healthScoreService';
+import { cacheService } from './cacheService';
 
 export interface MonthlyReport {
     period: { month: number; year: number };
@@ -20,6 +21,10 @@ export interface MonthlyReport {
 
 export class MonthlyReportService {
     static async generateReport(profileId: string, month: number, year: number): Promise<MonthlyReport> {
+        const cacheKey = `profile:${profileId}:report:${year}-${month}`;
+        const cached = cacheService.get<MonthlyReport>(cacheKey);
+        if (cached) return cached;
+
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
         const prevStartDate = new Date(year, month - 2, 1);
@@ -148,5 +153,8 @@ export class MonthlyReportService {
             savingsGoals: savingsGoalsReport,
             healthScore
         };
+
+        cacheService.set(cacheKey, report);
+        return report;
     }
 }

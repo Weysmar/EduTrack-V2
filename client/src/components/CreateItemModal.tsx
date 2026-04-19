@@ -25,19 +25,25 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const [status, setStatus] = useState('todo') // For exercise
     const [difficulty, setDifficulty] = useState('medium') // For exercise
     const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []) // For resource/exercise
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false)
     const { t } = useLanguage()
     const queryClient = useQueryClient()
 
     const createItemMutation = useMutation({
-        mutationFn: itemQueries.create,
+        mutationFn: (data: any) => itemQueries.create(data, {
+            onUploadProgress: (progressEvent: any) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+            }
+        }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['items'] })
             onClose()
-            // Reset form
             setTitle('')
             setContent('')
             setFiles([])
-            // Keep type maybe?
+            setUploadProgress(0)
         }
     })
 
@@ -57,18 +63,21 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!title.trim()) return
+        if (!title.trim() && (type === 'note' || type === 'exercise')) return
+
+        setIsUploading(true)
+        setUploadProgress(0)
 
         if (type === 'resource' && files.length > 0) {
-            // Ensure UI shows loading state during loop
             try {
+                let count = 0;
                 for (const currentFile of files) {
+                    count++;
                     const formData = new FormData();
                     formData.append('type', type);
                     formData.append('courseId', courseId);
                     if (activeProfile?.id) formData.append('profileId', activeProfile.id);
 
-                    // Use explicit title for single file, mostly original filename for multiples
                     const itemTitle = files.length === 1 && title.trim() ? title : currentFile.name.replace(/\.[^/.]+$/, "");
                     formData.append('title', itemTitle);
 
@@ -78,7 +87,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                             const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
                             fileToUpload = await imageCompression(currentFile, options);
                         } catch (error) {
-                            console.error("Image compression failed, using original file", error);
+                            console.error("Image compression failed", error);
                         }
                     }
 
@@ -87,8 +96,15 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                     formData.append('fileType', fileToUpload.type);
                     formData.append('fileSize', fileToUpload.size.toString());
 
-                    // Directly call API to avoid triggering mutation onSuccess prematurely
-                    await itemQueries.create(formData);
+                    // Manual API call to track individual file progress
+                    await itemQueries.create(formData, {
+                        onUploadProgress: (progressEvent: any) => {
+                            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            // Combine global progress (file X of N) with current file %
+                            const totalProgress = ((count - 1) / files.length * 100) + (percentCompleted / files.length);
+                            setUploadProgress(Math.round(totalProgress));
+                        }
+                    });
                 }
 
                 queryClient.invalidateQueries({ queryKey: ['items'] });
@@ -98,6 +114,10 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                 setFiles([]);
             } catch (error) {
                 console.error(error);
+                toast.error("Upload failed");
+            } finally {
+                setIsUploading(false)
+                setUploadProgress(0)
             }
             return;
         }
@@ -111,6 +131,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         if (type === 'note' || type === 'exercise') {
             formData.append('content', content);
         }
+        
         if (type === 'exercise') {
             formData.append('status', status);
             formData.append('difficulty', difficulty);
@@ -136,7 +157,9 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
             await createItemMutation.mutateAsync(formData);
         } catch (error) {
             console.error(error)
-            // Handle error UI
+        } finally {
+            setIsUploading(false)
+            setUploadProgress(0)
         }
     }
 
@@ -286,13 +309,29 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                         </div>
                     )}
 
+                    {isUploading && (
+                        <div className="space-y-2 animate-in fade-in duration-300">
+                            <div className="flex justify-between text-xs font-medium">
+                                <span className="text-muted-foreground">{t('common.uploading') || "Téléchargement..."}</span>
+                                <span className="text-primary">{uploadProgress}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-primary transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex justify-end pt-4">
                         <button
                             type="submit"
-                            disabled={createItemMutation.isPending}
-                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50"
+                            disabled={createItemMutation.isPending || isUploading}
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 min-w-[120px] flex items-center justify-center gap-2"
                         >
-                            {createItemMutation.isPending ? 'Uploading...' : t(`item.form.submit.${type}`)}
+                            {(createItemMutation.isPending || isUploading) && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {isUploading ? (t('common.uploading') || "Upload...") : t(`item.form.submit.${type}`)}
                         </button>
                     </div>
                 </form>

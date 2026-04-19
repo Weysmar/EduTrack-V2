@@ -7,10 +7,12 @@ export interface CourseContentHook {
     isLoading: boolean;
     items: any[];
     allItems: any[];
+    totalItems: number;
+    itemPages: number;
     refetch: () => void;
 }
 
-export function useCourseContent(courseId: string): CourseContentHook {
+export function useCourseContent(courseId: string, itemPage = 1, itemLimit = 20): CourseContentHook {
     // 1. Fetch Course Metadata
     const { data: course, isLoading: isCourseLoading } = useQuery({
         queryKey: ['courses', courseId],
@@ -19,11 +21,15 @@ export function useCourseContent(courseId: string): CourseContentHook {
     })
 
     // 2. Fetch All Content Types
-    const { data: items, refetch: refetchItems } = useQuery({
-        queryKey: ['items', courseId],
-        queryFn: () => itemQueries.getByCourse(courseId),
+    const { data: itemData, refetch: refetchItems } = useQuery({
+        queryKey: ['items', courseId, itemPage],
+        queryFn: () => itemQueries.getByCourse(courseId, itemPage, itemLimit),
         enabled: !!courseId
     })
+
+    const items = itemData?.items || []
+    const totalItems = itemData?.total || 0
+    const itemPages = itemData?.totalPages || 1
 
     const { data: mindMaps } = useQuery({
         queryKey: ['mindmaps', courseId],
@@ -79,8 +85,10 @@ export function useCourseContent(courseId: string): CourseContentHook {
     return {
         course,
         isLoading: isCourseLoading,
-        items, // Raw items if needed
+        items, // Raw items
         allItems, // Aggregated
+        totalItems,
+        itemPages,
         refetch
     }
 }

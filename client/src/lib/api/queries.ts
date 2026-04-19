@@ -1,9 +1,9 @@
 import { apiClient } from './client';
 
 export const courseQueries = {
-    getAll: async () => {
-        const { data } = await apiClient.get('/courses');
-        return data;
+    getAll: async (page = 1, limit = 20) => {
+        const { data } = await apiClient.get(`/courses?page=${page}&limit=${limit}`);
+        return data; // Returns { courses, total, page, totalPages }
     },
     getOne: async (id: string) => {
         const { data } = await apiClient.get(`/courses/${id}`);
@@ -23,39 +23,44 @@ export const courseQueries = {
 };
 
 export const itemQueries = {
-    getByCourse: async (courseId: string) => {
-        const { data } = await apiClient.get(`/items?courseId=${courseId}`);
-        return data;
+    getByCourse: async (courseId: string, page = 1, limit = 20) => {
+        const { data } = await apiClient.get(`/items?courseId=${courseId}&page=${page}&limit=${limit}`);
+        return data; // Returns { items, total, page, totalPages }
     },
-    getAll: async () => {
-        const { data } = await apiClient.get('/items');
-        return data;
+    getAll: async (page = 1, limit = 20) => {
+        const { data } = await apiClient.get(`/items?page=${page}&limit=${limit}`);
+        return data; // Returns { items, total, page, totalPages }
     },
     getOne: async (id: string) => {
         const { data } = await apiClient.get(`/items/${id}`);
         return data;
     },
-    create: async (data: any) => {
-        // Handle multipart if file exists
-        // This is a simplified version, ideally separate logic for file vs json
+    create: async (data: any, config?: any) => {
         if (data instanceof FormData) {
             const { data: res } = await apiClient.post('/items', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                ...config,
+                headers: { 
+                    ...(config?.headers || {}),
+                    'Content-Type': 'multipart/form-data' 
+                }
             });
             return res;
         }
-        const { data: res } = await apiClient.post('/items', data);
+        const { data: res } = await apiClient.post('/items', data, config);
         return res;
     },
-    update: async (id: string, data: any) => {
-        // Handle multipart if file exists (same logic as create)
+    update: async (id: string, data: any, config?: any) => {
         if (data instanceof FormData) {
             const { data: res } = await apiClient.put(`/items/${id}`, data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                ...config,
+                headers: { 
+                    ...(config?.headers || {}),
+                    'Content-Type': 'multipart/form-data' 
+                }
             });
             return res;
         }
-        const { data: res } = await apiClient.put(`/items/${id}`, data);
+        const { data: res } = await apiClient.put(`/items/${id}`, data, config);
         return res;
     },
     delete: async (id: string) => {
@@ -115,6 +120,10 @@ export const quizQueries = {
     },
     submit: async (id: string, score: number) => {
         const { data } = await apiClient.post(`/quizzes/${id}/submit`, { score });
+        return data;
+    },
+    getAttempts: async (id: string) => {
+        const { data } = await apiClient.get(`/quizzes/${id}/attempts`);
         return data;
     }
 };
@@ -238,7 +247,7 @@ export const mindmapQueries = {
         name?: string;
         apiKey?: string;
         model?: string;
-        courseId?: string; // Added optional courseId
+        courseId?: string;
     }) => {
         const { data: res } = await apiClient.post('/mindmaps/generate', data);
         return res;

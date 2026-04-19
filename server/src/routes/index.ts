@@ -19,6 +19,7 @@ import analyticsRoutes from './analyticsRoutes';
 import mindmapRoutes from './mindmapRoutes';
 import financeRoutes from './financeRoutes';
 import calendarRoutes from './calendarRoutes';
+import searchRoutes from './searchRoutes';
 
 const router = Router();
 
@@ -39,5 +40,6 @@ router.use('/analytics', authMiddleware, analyticsRoutes);
 router.use('/mindmaps', authMiddleware, mindmapRoutes);
 router.use('/finance', authMiddleware, financeRoutes);
 router.use('/calendar', authMiddleware, calendarRoutes);
+router.use('/search', authMiddleware, searchRoutes);
 
 export default router;

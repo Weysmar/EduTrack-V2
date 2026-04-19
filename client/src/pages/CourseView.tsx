@@ -29,14 +29,42 @@ export function CourseView() {
     const queryClient = useQueryClient()
     const { t } = useLanguage()
 
+    // --- Pagination State ---
+    const [itemPage, setItemPage] = useState(1)
+    const [allVisibleItems, setAllVisibleItems] = useState<any[]>([])
+
     // --- Hooks ---
-    const { course, isLoading: isCourseLoading, allItems, refetch: refetchContent } = useCourseContent(id)
+    const { 
+        course, 
+        isLoading: isCourseLoading, 
+        allItems, 
+        itemPages,
+        refetch: refetchContent 
+    } = useCourseContent(id, itemPage)
+
+    // Accumulate items when pages change
+    useEffect(() => {
+        if (allItems) {
+            setAllVisibleItems(prev => {
+                const existingIds = new Set(prev.map(i => i.id))
+                const filtered = allItems.filter(i => !existingIds.has(i.id))
+                return [...prev, ...filtered]
+            })
+        }
+    }, [allItems])
+
+    // Reset when course changes
+    useEffect(() => {
+        setAllVisibleItems([])
+        setItemPage(1)
+    }, [id])
+
     const {
         activeFilters, toggleFilter,
         filteredItems,
         sortOption, setSortOption,
         selectedItems, toggleSelection, clearSelection, handleSelectAll
-    } = useCourseFilters(allItems)
+    } = useCourseFilters(allVisibleItems)
 
     // --- State ---
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -46,7 +74,6 @@ export function CourseView() {
     const [showSummary, setShowSummary] = useState(false)
 
     // View Options preserved in local state/storage 
-    // (Note: showThumbnails logic could be moved to hook but kept here for now as preference)
     const [showThumbnails, setShowThumbnails] = useState(() => {
         const saved = localStorage.getItem('showThumbnails');
         return saved !== null ? JSON.parse(saved) : true;
@@ -82,26 +109,14 @@ export function CourseView() {
         }
     }, [t, deleteCourseMutation, id])
 
-
-
     const handleBulkDelete = async () => {
         if (selectedItems.size === 0) return
         if (!confirm(t('bulk.delete_confirm') || 'Confirmer la suppression ?')) return
 
         setIsBulkDeleting(true)
         try {
-            // Import all necessary queries
             const { itemQueries, summaryQueries, flashcardQueries, quizQueries, mindmapQueries } = await import('@/lib/api/queries')
-
-            // Map IDs back to Objects to check type
-            const itemsToDelete = allItems.filter(i => selectedItems.has(i.id))
-
-            // Categorize by type
-            // Note: 'note', 'resource', 'exercise' are stored in Item table -> use itemQueries
-            // 'summary' -> summaryQueries (Table Summary)
-            // 'flashcards' -> flashcardQueries (Table FlashcardSet)
-            // 'quiz' -> quizQueries (Table Quiz)
-            // 'mindmap' -> mindmapQueries (Table MindMap)
+            const itemsToDelete = allVisibleItems.filter(i => selectedItems.has(i.id))
 
             const regularItems = itemsToDelete.filter(i => !['summary', 'flashcards', 'quiz', 'mindmap'].includes(i.type))
             const summaries = itemsToDelete.filter(i => i.type === 'summary')
@@ -110,69 +125,34 @@ export function CourseView() {
             const mindmaps = itemsToDelete.filter(i => i.type === 'mindmap')
 
             const promises = []
-
-            // Bulk Delete for Items (if any)
-            if (regularItems.length > 0) {
-                promises.push(itemQueries.bulkDelete(regularItems.map(i => i.id)))
-            }
-
-            // Individual Deletes for other types (No bulk API yet)
+            if (regularItems.length > 0) promises.push(itemQueries.bulkDelete(regularItems.map(i => i.id)))
             summaries.forEach(s => promises.push(summaryQueries.delete(s.id)))
             flashcards.forEach(f => promises.push(flashcardQueries.delete(f.id)))
             quizzes.forEach(q => promises.push(quizQueries.delete(q.id)))
             mindmaps.forEach(m => promises.push(mindmapQueries.delete(m.id)))
 
-            // Execute all deletions
-            const results = await Promise.allSettled(promises)
-
-            // Log results for debugging
-            const failures = results.filter(r => r.status === 'rejected')
-            if (failures.length > 0) {
-                console.error("Some deletions failed:", failures)
-                toast.warning(t('bulk.delete_partial_error') || "Certains éléments n'ont pas pu être supprimés")
-            } else {
-                toast.success(t('bulk.delete_success') || "Éléments supprimés")
-            }
-
-            // Always refetch to sync UI state
-            refetchContent()
+            await Promise.allSettled(promises)
+            toast.success(t('bulk.delete_success') || "Éléments supprimés")
+            
+            // Clean up local state
+            setAllVisibleItems(prev => prev.filter(i => !selectedItems.has(i.id)))
             clearSelection()
         } catch (error: any) {
-            console.error('Critical failure in bulk delete:', error)
-            toast.error(t('bulk.delete_error') || "Erreur critique lors de la suppression")
+            toast.error(t('bulk.delete_error') || "Erreur lors de la suppression")
         } finally {
             setIsBulkDeleting(false)
         }
     }
 
-    // Aggregated Content Logic
     const getAggregatedContent = async (itemIds?: string[]) => {
-        if (!allItems) return ''
-        const itemsToProcess = itemIds
-            ? allItems.filter(i => itemIds.includes(i.id))
-            : allItems
-
-        // Filter out non-text/non-content items if needed, but for now map broadly
+        if (!allVisibleItems) return ''
+        const itemsToProcess = itemIds ? allVisibleItems.filter(i => itemIds.includes(i.id)) : allVisibleItems
         const content: string[] = []
         for (const i of itemsToProcess) {
             let itemText = i.content || i.extractedContent || ''
-
-            // Smart Fallback: Check if there is a summary for this item
-            // This handles cases where PDF extraction failed but a summary exists
-            const relatedSummary = allItems.find(s => s.type === 'summary' && s.itemId === i.id)
-
-            if (!itemText && relatedSummary && relatedSummary.content) {
-                console.log(`Using summary content for ${i.title} as fallback`)
-                itemText = relatedSummary.content
-                toast.info(`Utilisation du résumé pour "${i.title}" (PDF non extrait)`)
-            } else if (itemText && relatedSummary && relatedSummary.content) {
-                // Enrich: Add summary to context
-                itemText += `\n\n--- Résumé Associé ---\n${relatedSummary.content}`
-            }
-
-            if (itemText) {
-                content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
-            }
+            const relatedSummary = allVisibleItems.find(s => s.type === 'summary' && s.itemId === i.id)
+            if (!itemText && relatedSummary?.content) itemText = relatedSummary.content
+            if (itemText) content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
         }
         return content.join(' ')
     }
@@ -183,14 +163,11 @@ export function CourseView() {
         generateSummary(options, content)
     }
 
-    // Bulk Generation Handler
     const handleBulkGeneration = async (mode: 'flashcards' | 'quiz' | 'summary') => {
         if (selectedItems.size === 0) return
-
         const selectedItemIds = Array.from(selectedItems)
         const content = await getAggregatedContent(selectedItemIds)
         setAggregatedContent(content)
-
         if (mode === 'summary') {
             setShowSummary(true)
             generateSummary(DEFAULT_SUMMARY_OPTIONS, content)
@@ -221,11 +198,7 @@ export function CourseView() {
     }
 
     if (isCourseLoading) return <div className="p-10 text-center">Loading...</div>
-    if (!course) return (
-        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <p>{t('course.notFound')}</p>
-        </div>
-    )
+    if (!course) return <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>{t('course.notFound')}</p></div>
 
     return (
         <div
@@ -295,14 +268,28 @@ export function CourseView() {
                 />
             </div>
 
-            <CourseContent
-                items={filteredItems}
-                viewMode={viewMode}
-                gridColumns={gridColumns}
-                selectedItems={selectedItems}
-                onToggleSelection={toggleSelection}
-                showThumbnails={showThumbnails}
-            />
+            <div className="flex-1 space-y-8">
+                <CourseContent
+                    items={filteredItems}
+                    viewMode={viewMode}
+                    gridColumns={gridColumns}
+                    selectedItems={selectedItems}
+                    onToggleSelection={toggleSelection}
+                    showThumbnails={showThumbnails}
+                />
+
+                {itemPage < itemPages && (
+                    <div className="flex justify-center pb-10">
+                        <button
+                            onClick={() => setItemPage(prev => prev + 1)}
+                            className="px-8 py-3 rounded-full border border-primary/20 hover:bg-primary/5 text-primary font-medium flex items-center gap-2 transition-all shadow-sm"
+                        >
+                            <Plus className="h-4 w-4" />
+                            {t('common.loadMore') || "Charger plus d'éléments"}
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* Modals */}
             <CreateItemModal
@@ -352,4 +339,3 @@ export function CourseView() {
         </div>
     )
 }
-

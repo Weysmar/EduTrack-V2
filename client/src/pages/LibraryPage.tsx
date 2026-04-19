@@ -12,21 +12,35 @@ export function LibraryPage() {
     const { activeProfile } = useProfileStore()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [page, setPage] = useState(1)
+    const [allLoadedCourses, setAllLoadedCourses] = useState<any[]>([])
 
-    const { data: courses, isLoading } = useQuery({
-        queryKey: ['courses'],
-        queryFn: courseQueries.getAll,
-        enabled: !!activeProfile
+    const { data, isLoading, isFetching } = useQuery({
+        queryKey: ['courses', page],
+        queryFn: () => courseQueries.getAll(page, 12),
+        enabled: !!activeProfile,
+        onSuccess: (newData) => {
+            if (page === 1) {
+                setAllLoadedCourses(newData.courses)
+            } else {
+                setAllLoadedCourses(prev => {
+                    const existingIds = new Set(prev.map(c => c.id))
+                    const filtered = newData.courses.filter((c: any) => !existingIds.has(c.id))
+                    return [...prev, ...filtered]
+                })
+            }
+        }
     })
 
-    const courseList = courses || []
+    const totalCount = data?.total || 0
+    const totalPages = data?.totalPages || 1
 
-    const filteredCourses = courseList.filter((course: any) =>
+    const filteredCourses = allLoadedCourses.filter((course: any) =>
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (course.description && course.description.toLowerCase().includes(searchQuery.toLowerCase()))
     )
 
-    if (isLoading) {
+    if (isLoading && page === 1) {
         return (
             <div className="flex h-[50vh] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -40,7 +54,7 @@ export function LibraryPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{t('nav.library') || "Bibliothèque"}</h1>
                     <p className="text-muted-foreground mt-1">
-                        {courseList.length} {t('common.courses') || "cours"} • {t('library.desc') || "Gérez tous vos sujets d'apprentissage"}
+                        {totalCount} {t('common.courses') || "cours"} • {t('library.desc') || "Gérez tous vos sujets d'apprentissage"}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -65,35 +79,50 @@ export function LibraryPage() {
             </div>
 
             {filteredCourses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredCourses.map((course: any) => (
-                        <Link
-                            key={course.id}
-                            to={`/edu/course/${course.id}`}
-                            className="group bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col h-full"
-                        >
-                            <div className="h-3 w-full" style={{ backgroundColor: course.color }} />
-                            <div className="p-6 flex-1 flex flex-col">
-                                <div className="flex justify-between items-start mb-4">
-                                    {course.icon ? (
-                                        <span className="text-3xl bg-muted/30 p-3 rounded-xl">{course.icon}</span>
-                                    ) : (
-                                        <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
-                                            <Folder className="h-6 w-6 text-muted-foreground" />
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredCourses.map((course: any) => (
+                            <Link
+                                key={course.id}
+                                to={`/edu/course/${course.id}`}
+                                className="group bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col h-full"
+                            >
+                                <div className="h-3 w-full" style={{ backgroundColor: course.color }} />
+                                <div className="p-6 flex-1 flex flex-col">
+                                    <div className="flex justify-between items-start mb-4">
+                                        {course.icon ? (
+                                            <span className="text-3xl bg-muted/30 p-3 rounded-xl">{course.icon}</span>
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                                                <Folder className="h-6 w-6 text-muted-foreground" />
+                                            </div>
+                                        )}
+                                        <div className="bg-muted/50 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                         </div>
-                                    )}
-                                    <div className="bg-muted/50 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="font-bold text-xl mb-2 line-clamp-1">{course.title}</h3>
+                                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">{course.description || "Aucune description"}</p>
+                                    <div className="text-xs font-medium text-muted-foreground pt-4 border-t mt-auto">
+                                        {new Date(course.createdAt).toLocaleDateString()}
                                     </div>
                                 </div>
-                                <h3 className="font-bold text-xl mb-2 line-clamp-1">{course.title}</h3>
-                                <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">{course.description || "Aucune description"}</p>
-                                <div className="text-xs font-medium text-muted-foreground pt-4 border-t mt-auto">
-                                    {new Date(course.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
+                            </Link>
+                        ))}
+                    </div>
+
+                    {page < totalPages && (
+                        <div className="flex justify-center pt-8">
+                            <button
+                                onClick={() => setPage(prev => prev + 1)}
+                                disabled={isFetching}
+                                className="px-8 py-3 rounded-full border border-primary/20 hover:bg-primary/5 text-primary font-medium flex items-center gap-2 transition-all disabled:opacity-50"
+                            >
+                                {isFetching && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {t('common.loadMore') || "Charger plus"}
+                            </button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-muted/10 border-2 border-dashed rounded-3xl">

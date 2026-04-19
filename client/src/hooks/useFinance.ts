@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient as axios } from '@/lib/api/client';
-import { Bank, CreateBankDTO, UpdateBankDTO, ImportPreviewData, Account, Transaction } from '../types/finance';
+import { 
+    Bank, CreateBankDTO, UpdateBankDTO, ImportPreviewData, 
+    Account, Transaction, TransactionCategory, Budget,
+    MonthlyReport, ForecastDay
+} from '../types/finance';
 import { toast } from 'sonner';
 
 export function useFinance() {
@@ -24,9 +28,6 @@ export function useFinance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['banks'] });
             toast.success('Banque ajoutée avec succès');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Erreur lors de la création de la banque');
         }
     });
 
@@ -38,9 +39,6 @@ export function useFinance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['banks'] });
             toast.success('Banque mise à jour');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
         }
     });
 
@@ -52,23 +50,6 @@ export function useFinance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['banks'] });
             toast.success('Banque supprimée');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
-        }
-    });
-
-    const archiveBank = useMutation({
-        mutationFn: async (id: string) => {
-            const response = await axios.put(`/finance/banks/${id}/archive`);
-            return response.data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['banks'] });
-            toast.success('Banque archivée');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Erreur lors de l\'archivage');
         }
     });
 
@@ -90,76 +71,104 @@ export function useFinance() {
         }
     });
 
-    // --- ACCOUNT MUTATIONS ---
+    // --- CATEGORIES ---
+
+    const { data: categories, isLoading: isLoadingCategories } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const response = await axios.get<TransactionCategory[]>('/finance/categories');
+            return response.data;
+        }
+    });
+
+    const createCategory = useMutation({
+        mutationFn: async (data: Partial<TransactionCategory>) => {
+            const response = await axios.post<TransactionCategory>('/finance/categories', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            toast.success('Catégorie créée');
+        }
+    });
+
+    const updateCategory = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<TransactionCategory> }) => {
+            const response = await axios.put<TransactionCategory>(`/finance/categories/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            toast.success('Catégorie mise à jour');
+        }
+    });
+
+    const deleteCategory = useMutation({
+        mutationFn: async (id: string) => {
+            await axios.delete(`/finance/categories/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            toast.success('Catégorie supprimée');
+        }
+    });
+
+    // --- BUDGETS ---
+
+    const { data: budgets, isLoading: isLoadingBudgets } = useQuery({
+        queryKey: ['budgets'],
+        queryFn: async () => {
+            const response = await axios.get<Budget[]>('/finance/budgets');
+            return response.data;
+        }
+    });
+
+    const updateBudget = useMutation({
+        mutationFn: async (data: Partial<Budget>) => {
+            const response = await axios.post<Budget>('/finance/budgets', data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['budgets'] });
+            toast.success('Budget mis à jour');
+        }
+    });
+
+    // --- REPORTS & FORECAST ---
+
+    const getMonthlyReport = (month: number, year: number) => {
+        return useQuery({
+            queryKey: ['monthly-report', month, year],
+            queryFn: async () => {
+                const response = await axios.get<MonthlyReport>(`/finance/reports/monthly?month=${month + 1}&year=${year}`);
+                return response.data;
+            }
+        });
+    };
+
+    const { data: forecast, isLoading: isLoadingForecast } = useQuery({
+        queryKey: ['forecast'],
+        queryFn: async () => {
+            const response = await axios.get<ForecastDay[]>('/finance/forecast?days=90');
+            return response.data;
+        }
+    });
+
+    // --- ACTIONS ---
 
     const createAccount = useMutation({
         mutationFn: async (data: Partial<Account> & { bankId: string }) => {
             const response = await axios.post<Account>('/finance/accounts', data);
-            const newAccount = response.data;
-
-            // Auto-create initial transaction if balance is set
-            if (data.balance && Number(data.balance) !== 0) {
-                try {
-                    await axios.post('/finance/transactions', {
-                        accountId: newAccount.id,
-                        amount: Number(data.balance),
-                        date: new Date().toISOString(),
-                        description: "Solde initial",
-                        type: Number(data.balance) > 0 ? 'INCOME' : 'EXPENSE',
-                        classification: 'UNKNOWN',
-                        category: 'Solde Initial',
-                        isRecurring: false,
-                        profileId: 'current-user-id' // Fallback
-                    });
-                } catch (err) {
-                    console.error("Failed to create initial balance transaction", err);
-                }
-            }
-            return newAccount;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['accounts'] });
-            queryClient.invalidateQueries({ queryKey: ['banks'] });
-            toast.success('Compte créé');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Erreur création compte');
-        }
-    });
-
-    const updateAccount = useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: Partial<Account> }) => {
-            const response = await axios.put<Account>(`/finance/accounts/${id}`, data);
             return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
             queryClient.invalidateQueries({ queryKey: ['banks'] });
-            toast.success('Compte mis à jour');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Erreur mise à jour compte');
+            toast.success('Compte créé');
         }
     });
 
-    const deleteAccount = useMutation({
-        mutationFn: async (id: string) => {
-            await axios.delete(`/finance/accounts/${id}`);
-            return id;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['accounts'] });
-            queryClient.invalidateQueries({ queryKey: ['banks'] });
-            toast.success('Compte supprimé');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Erreur suppression compte');
-        }
-    });
-
-    // --- TRANSACTION MUTATIONS ---
-
-    const createTransactionMutation = useMutation({
+    const createTransaction = useMutation({
         mutationFn: async (data: Partial<Transaction>) => {
             const response = await axios.post<Transaction>('/finance/transactions', data);
             return response.data;
@@ -168,11 +177,10 @@ export function useFinance() {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
             toast.success('Transaction créée');
-        },
-        onError: (err: any) => toast.error('Erreur lors de la création')
+        }
     });
 
-    const updateTransactionMutation = useMutation({
+    const updateTransaction = useMutation({
         mutationFn: async ({ id, data }: { id: string; data: Partial<Transaction> }) => {
             const response = await axios.put<Transaction>(`/finance/transactions/${id}`, data);
             return response.data;
@@ -184,7 +192,7 @@ export function useFinance() {
         }
     });
 
-    const deleteTransactionMutation = useMutation({
+    const deleteTransaction = useMutation({
         mutationFn: async (id: string) => {
             await axios.delete(`/finance/transactions/${id}`);
         },
@@ -195,39 +203,85 @@ export function useFinance() {
         }
     });
 
+    const autoCategorize = useMutation({
+        mutationFn: async (ids?: string[]) => {
+            const response = await axios.post<{ updated: number }>('/finance/transactions/auto-categorize', { transactionIds: ids });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            toast.success(`${data.updated} transactions catégorisées automatiquement`);
+        }
+    });
+
+    const reclassifyAll = useMutation({
+        mutationFn: async () => {
+            const response = await axios.post<{ updated: number }>('/finance/transactions/reclassify-all');
+            return response.data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            toast.success(`${data.updated} transactions reclassifiées`);
+        }
+    });
+
+    const enrichTransaction = useMutation({
+        mutationFn: async (id: string) => {
+            const response = await axios.post(`/finance/transactions/${id}/enrich`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            toast.success('Transaction enrichie par l\'IA');
+        }
+    });
+
     return {
-        // Banks
+        // Data
         banks: banks || [],
-        isLoadingBanks,
-        banksError,
-        createBank: createBank.mutate,
-        createBankAsync: createBank.mutateAsync,
-        updateBank: updateBank.mutate,
-        updateBankAsync: updateBank.mutateAsync,
-        deleteBank: deleteBank.mutate,
-        deleteBankAsync: deleteBank.mutateAsync,
-        archiveBank: archiveBank.mutate,
-        archiveBankAsync: archiveBank.mutateAsync,
-
-        // Accounts
         accounts: accounts || [],
-        isLoadingAccounts,
-        createAccount: createAccount.mutate,
-        createAccountAsync: createAccount.mutateAsync,
-        updateAccount: updateAccount.mutate,
-        updateAccountAsync: updateAccount.mutateAsync,
-        deleteAccount: deleteAccount.mutate,
-        deleteAccountAsync: deleteAccount.mutateAsync,
-
-        // Transactions
         transactions: transactions || [],
+        categories: categories || [],
+        budgets: budgets || [],
+        forecast: forecast || [],
+        
+        // Loading states
+        isLoadingBanks,
+        isLoadingAccounts,
         isLoadingTransactions,
-        createTransaction: createTransactionMutation.mutate,
-        createTransactionAsync: createTransactionMutation.mutateAsync,
-        updateTransaction: updateTransactionMutation.mutate,
-        updateTransactionAsync: updateTransactionMutation.mutateAsync,
-        deleteTransaction: deleteTransactionMutation.mutate,
-        deleteTransactionAsync: deleteTransactionMutation.mutateAsync,
+        isLoadingCategories,
+        isLoadingBudgets,
+        isLoadingForecast,
+
+        // Mutations
+        createBank: createBank.mutateAsync,
+        updateBank: updateBank.mutateAsync,
+        deleteBank: deleteBank.mutateAsync,
+        createAccount: createAccount.mutateAsync,
+        createTransaction: createTransaction.mutateAsync,
+        updateTransaction: updateTransaction.mutateAsync,
+        deleteTransaction: deleteTransaction.mutateAsync,
+        createCategory: createCategory.mutateAsync,
+        updateCategory: updateCategory.mutateAsync,
+        deleteCategory: deleteCategory.mutateAsync,
+        updateBudget: updateBudget.mutateAsync,
+        autoCategorize: autoCategorize.mutateAsync,
+        reclassifyAll: reclassifyAll.mutateAsync,
+        enrichTransaction: enrichTransaction.mutateAsync,
+
+        // Helper for report
+        getMonthlyReport,
+
+        // History
+        useBalanceHistory: (months: number = 6) => {
+            return useQuery({
+                queryKey: ['balance-history', months],
+                queryFn: async () => {
+                    const response = await axios.get<BalanceHistoryRecord[]>(`/finance/history/balance?months=${months}`);
+                    return response.data;
+                }
+            });
+        }
     };
 }
 

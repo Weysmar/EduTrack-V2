@@ -99,11 +99,25 @@ export const deleteQuiz = async (req: AuthRequest, res: Response) => {
 // POST /api/quizzes/:id/submit
 export const submitQuizResult = async (req: AuthRequest, res: Response) => {
     try {
-        const { score } = req.body;
+        const { score, correctAnswers, totalQuestions } = req.body;
         const quizId = req.params.id;
 
-        const quiz = await prisma.quiz.findFirst({ where: { id: quizId, profileId: req.user!.id } });
+        const quiz = await prisma.quiz.findFirst({ 
+            where: { id: quizId, profileId: req.user!.id },
+            include: { questions: true }
+        });
         if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+        // Log the attempt
+        await prisma.quizAttempt.create({
+            data: {
+                profileId: req.user!.id,
+                quizId: quizId,
+                score: score,
+                correctAnswers: correctAnswers || 0,
+                totalQuestions: totalQuestions || quiz.questions.length
+            }
+        });
 
         // Update best score if higher
         let updated = false;
@@ -115,8 +129,6 @@ export const submitQuizResult = async (req: AuthRequest, res: Response) => {
             updated = true;
         }
 
-        // Ideally log attempt in a QuizAttempt table, but for now just update best score
-
         if (updated) {
             socketService.emitToProfile(req.user!.id, 'quiz:updated', { id: quizId });
         }
@@ -124,5 +136,21 @@ export const submitQuizResult = async (req: AuthRequest, res: Response) => {
 
     } catch (error) {
         res.status(500).json({ message: 'Error submitting result', error });
+    }
+};
+
+// GET /api/quizzes/:id/attempts
+export const getQuizAttempts = async (req: AuthRequest, res: Response) => {
+    try {
+        const attempts = await prisma.quizAttempt.findMany({
+            where: { 
+                quizId: req.params.id,
+                profileId: req.user!.id 
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+        res.json(attempts);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching quiz attempts', error });
     }
 };

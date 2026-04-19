@@ -73,14 +73,15 @@ export function ItemView() {
     // Inline Edit Mode
     const [isEditMode, setIsEditMode] = useState(false)
     const [editedContent, setEditedContent] = useState('')
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const queryClient = useQueryClient()
 
     // Sync content when item loads
     useEffect(() => {
-        if (item?.content) {
+        if (item?.content && !isEditMode) {
             setEditedContent(item.content)
         }
-    }, [item])
+    }, [item, isEditMode])
 
     const updateMutation = useMutation({
         mutationFn: (content: string) => {
@@ -89,15 +90,30 @@ export function ItemView() {
             formData.append('content', content)
             return itemQueries.update(String(item.id), formData)
         },
+        onMutate: () => {
+            setSaveStatus('saving')
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['items', id] })
-            setIsEditMode(false)
-            toast.success('Note updated successfully')
+            setSaveStatus('saved')
+            setTimeout(() => setSaveStatus('idle'), 2000)
         },
         onError: () => {
+            setSaveStatus('error')
             toast.error('Failed to update note')
         }
     })
+
+    // Auto-save effect
+    useEffect(() => {
+        if (!isEditMode || editedContent === item?.content) return
+
+        const timer = setTimeout(() => {
+            updateMutation.mutate(editedContent)
+        }, 3000) // 3s debounce
+
+        return () => clearTimeout(timer)
+    }, [editedContent, isEditMode, item?.content])
 
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
@@ -199,40 +215,33 @@ export function ItemView() {
     }
 
     const triggerDownload = (url: string, name: string) => {
-        // Anti DOM-XSS: Validate against dangerous schemes or non-safe origins
-        try {
-            const parsed = new URL(url, window.location.origin);
-            if (['javascript:', 'vbscript:', 'data:'].includes(parsed.protocol)) {
-                // Allow data: only if it's an image/application-safe type
-                if (parsed.protocol === 'data:' && !url.match(/^data:image\/(png|jpeg|webp|gif|svg)/i)) {
-                    console.warn("Blocked unsafe data: URI download");
-                    return;
-                }
-                if (parsed.protocol !== 'data:') {
-                    console.warn("Blocked unsafe URI scheme download:", parsed.protocol);
-                    return;
-                }
-            }
-        } catch (e) {
-            // For opaque strings or malformed URLs that browser might still use in <a> tag
-            if (/^\s*(javascript|vbscript):/i.test(url)) return;
-        }
+        if (!url) return;
 
-        // Final allowlist check: only allow blob:, https:, http:, and /api/ relative — never javascript:, data:, vbscript:
-        const SAFE_URL_RE = /^(blob:|https?:|\/api\/|\/)/;
-        if (!SAFE_URL_RE.test(url)) {
-            console.warn("Blocked unsafe URL in triggerDownload:", url.slice(0, 80));
+        // Anti DOM-XSS: Strictly allow only safe protocols
+        const SAFE_PROTOCOLS = ['blob:', 'https:', 'http:', '/api/', '/'];
+        const isSafe = SAFE_PROTOCOLS.some(proto => url.startsWith(proto));
+        
+        // Block dangerous protocols explicitly even if regex fails
+        if (!isSafe || /^\s*(javascript|vbscript|data):/i.test(url)) {
+            console.warn("Blocked potentially unsafe download URL:", url.slice(0, 50));
             return;
         }
 
-        const a = document.createElement('a')
-        a.href = url
-        a.download = name
-        // Mitigate DOM-XSS: Use noopener for extra safety if opened in new tab
-        a.rel = "noopener noreferrer"
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name || 'download';
+        a.style.display = 'none';
+        a.rel = "noopener noreferrer";
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup with short delay to ensure click registered
+        setTimeout(() => {
+            if (document.body.contains(a)) {
+                document.body.removeChild(a);
+            }
+        }, 100);
     }
 
 
@@ -415,7 +424,26 @@ export function ItemView() {
 
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-base md:text-xl font-bold truncate leading-snug">{item.title}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-base md:text-xl font-bold truncate leading-snug">{item.title}</h1>
+                            {isEditMode && saveStatus !== 'idle' && (
+                                <div className={cn(
+                                    "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-in fade-in slide-in-from-left-2",
+                                    saveStatus === 'saving' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30",
+                                    saveStatus === 'saved' && "bg-green-100 text-green-700 dark:bg-green-900/30",
+                                    saveStatus === 'error' && "bg-red-100 text-red-700 dark:bg-red-900/30"
+                                )}>
+                                    {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
+                                    {saveStatus === 'saved' && <Check className="h-3 w-3" />}
+                                    {saveStatus === 'error' && <AlertCircle className="h-3 w-3" />}
+                                    <span>
+                                        {saveStatus === 'saving' ? (t('common.saving') || "Enregistrement...") :
+                                         saveStatus === 'saved' ? (t('common.saved') || "Enregistré") :
+                                         (t('common.error') || "Erreur")}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-col gap-0.5">
                             {course && <p className="text-xs text-muted-foreground truncate leading-relaxed">{course.title}</p>}
                             {item.type === 'resource' && (

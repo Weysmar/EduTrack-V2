@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useFinanceStore } from '@/store/financeStore';
+import React, { useState } from 'react';
+import { useFinance } from '@/hooks/useFinance';
 import { useLanguage } from '@/components/language-provider';
 import { Plus, X, Edit2, Trash2, Check, Palette, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -17,7 +17,9 @@ interface CategoryManagerProps {
 
 export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
     const { t } = useLanguage();
-    const { categories, fetchCategories, addCategory, updateCategory, deleteCategory } = useFinanceStore();
+    const { 
+        categories, createCategory, updateCategory, deleteCategory, isLoadingCategories 
+    } = useFinance();
 
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState(COLORS[6]); // Default blue
@@ -26,23 +28,18 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
     const [isEditing, setIsEditing] = useState<string | null>(null); // ID of category being edited
     const [editForm, setEditForm] = useState<Partial<TransactionCategory>>({});
 
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
     const handleAdd = async () => {
         if (!newCategoryName.trim()) return;
 
-        // Parse keywords from string (comma separated)
         const keywords = newCategoryKeywords
             .split(',')
             .map(k => k.trim())
             .filter(k => k.length > 0);
 
-        await addCategory({
+        await createCategory({
             name: newCategoryName,
             color: newCategoryColor,
-            icon: 'tag', // Default icon
+            icon: 'tag',
             keywords
         });
         setNewCategoryName('');
@@ -57,11 +54,14 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => 
 
     const handleSaveEdit = async () => {
         if (isEditing && editForm.name) {
-            await updateCategory(isEditing, {
-                name: editForm.name,
-                color: editForm.color,
-                icon: editForm.icon,
-                keywords: editForm.keywords
+            await updateCategory({
+                id: isEditing,
+                data: {
+                    name: editForm.name,
+                    color: editForm.color,
+                    icon: editForm.icon,
+                    keywords: editForm.keywords
+                }
             });
             setIsEditing(null);
         }

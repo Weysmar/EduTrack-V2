@@ -5,6 +5,7 @@ import { ImportService } from '../services/importService'; // Kept for cleanup l
 import { AutoRuleEngine } from '../services/autoRuleEngine';
 import { RecurringDetectionService } from '../services/recurringDetectionService';
 import { AlertEngine } from '../services/alertEngine';
+import { cacheService } from '../services/cacheService';
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
@@ -83,6 +84,9 @@ export const confirmImport = async (req: AuthRequest, res: Response) => {
         }
 
         const result = await FinanceService.commitImport(profileId, bankId, importData);
+        
+        // Invalidate cache
+        cacheService.clearProfileCache(profileId);
 
         // Post-import automations (fire-and-forget)
         // 1. Apply auto-categorization rules
@@ -134,6 +138,7 @@ export const createAccount = async (req: AuthRequest, res: Response) => {
         if (!profileId) return res.status(400).json({ error: 'Profile ID not found in token' });
 
         const account = await FinanceService.createAccount(profileId, req.body);
+        cacheService.clearProfileCache(profileId);
         res.status(201).json(account);
     } catch (error: any) {
         console.error('Create Account Error:', error);
@@ -147,6 +152,7 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
 
         const updated = await FinanceService.updateAccount(profileId, id, req.body);
+        cacheService.clearProfileCache(profileId);
         res.json(updated);
     } catch (error: any) {
         console.error('Update Account Error:', error);
@@ -160,6 +166,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
 
         const result = await FinanceService.deleteAccount(profileId, id);
+        cacheService.clearProfileCache(profileId);
         res.json(result);
     } catch (error: any) {
         console.error('Delete Account Error:', error);
@@ -172,7 +179,7 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
     try {
         const profileId = req.user!.id;
 
-        const { startDate, endDate, accountId, category, minAmount, maxAmount } = req.query;
+        const { startDate, endDate, accountId, category, minAmount, maxAmount, limit, page } = req.query;
 
         const filters: any = {};
         if (startDate) filters.startDate = new Date(startDate as string);
@@ -181,6 +188,8 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         if (category) filters.category = category as string;
         if (minAmount && !isNaN(parseFloat(minAmount as string))) filters.minAmount = parseFloat(minAmount as string);
         if (maxAmount && !isNaN(parseFloat(maxAmount as string))) filters.maxAmount = parseFloat(maxAmount as string);
+        if (limit) filters.limit = limit;
+        if (page) filters.page = page;
 
         const maskedTransactions = await FinanceService.getTransactions(profileId, filters);
         res.json(maskedTransactions);
@@ -224,6 +233,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
         const safeBody = updateSchema.parse(req.body);
 
         const updated = await FinanceService.updateTransaction(profileId, id, safeBody);
+        cacheService.clearProfileCache(profileId);
         res.json(updated);
     } catch (error: any) {
         console.error('Update Transaction Error:', error);
@@ -240,6 +250,7 @@ export const deleteTransaction = async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
 
         const result = await FinanceService.deleteTransaction(profileId, id);
+        cacheService.clearProfileCache(profileId);
         res.json(result);
     } catch (error: any) {
         console.error('Delete Transaction Error:', error);

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useFinanceStore } from '@/store/financeStore';
+import { useFinance } from '@/hooks/useFinance';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BudgetCard } from './BudgetCard';
@@ -25,7 +25,10 @@ const SimpleModal = ({ isOpen, onClose, title, children }: any) => {
 
 export function BudgetManager() {
     const { t } = useLanguage();
-    const { budgets, transactions, categories, addBudget, updateBudget, deleteBudget } = useFinanceStore();
+    const { 
+        budgets, transactions, categories, updateBudget, deleteCategory 
+    } = useFinance();
+    // updateBudget in useFinance handles both create and update via the same endpoint in this implementation
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState<any>(null);
 
@@ -95,18 +98,11 @@ export function BudgetManager() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingBudget) {
-            await updateBudget(editingBudget.id, {
-                amount: parseFloat(formData.amount),
-                period: formData.period
-            });
-        } else {
-            await addBudget({
-                categoryId: formData.categoryId,
-                amount: parseFloat(formData.amount),
-                period: formData.period
-            });
-        }
+        await updateBudget({
+            categoryId: formData.categoryId,
+            amount: parseFloat(formData.amount),
+            period: formData.period as 'MONTHLY' | 'YEARLY'
+        });
         setIsModalOpen(false);
         setEditingBudget(null);
         setFormData({ categoryId: '', amount: '', period: 'MONTHLY' });

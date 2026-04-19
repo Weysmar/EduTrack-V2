@@ -10,7 +10,7 @@ export interface Bank {
     color: string;
     icon?: string;
     active: boolean;
-    isArchived?: boolean; // Added for UI compatibility
+    isArchived?: boolean;
     accounts?: Account[];
     metadata?: any;
     createdAt: string;
@@ -41,7 +41,7 @@ export interface Transaction {
     id: string;
     accountId: string;
     account?: Account;
-    profileId?: string; // Added for frontend compatibility
+    profileId?: string;
     date: string;
     amount: number;
     description: string;
@@ -51,10 +51,10 @@ export interface Transaction {
     linkedAccountId?: string;
     category?: string;
     importSource?: string;
-    type?: TransactionType; // Added for frontend compatibility
-    isRecurring?: boolean; // Added for frontend compatibility
-    aiEnriched?: boolean; // AI enrichment flag
-    aiSuggestions?: any; // AI suggestions data
+    type?: TransactionType;
+    isRecurring?: boolean;
+    aiEnriched?: boolean;
+    aiSuggestions?: any;
     metadata?: any;
     createdAt: string;
     updatedAt: string;
@@ -69,8 +69,6 @@ export interface CreateBankDTO {
 
 export interface UpdateBankDTO extends Partial<CreateBankDTO> { }
 
-// --- Import Types ---
-
 export interface ImportPreviewData {
     detectedBankId: string;
     accounts: {
@@ -81,7 +79,7 @@ export interface ImportPreviewData {
         currency: string;
     }[];
     transactions: {
-        date: string; // ISO date string from JSON
+        date: string;
         amount: number;
         description: string;
         classification: TransactionClassification;
@@ -130,8 +128,6 @@ export interface ImportLog {
     details?: any;
 }
 
-// --- Recurring Transactions ---
-
 export type RecurringFrequency = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 
 export interface RecurringTransaction {
@@ -141,7 +137,7 @@ export interface RecurringTransaction {
     estimatedDay: number;
     frequency: RecurringFrequency;
     category?: string;
-    type: string; // "INCOME" | "EXPENSE"
+    type: string;
     lastSeenDate?: string;
     nextExpectedDate?: string;
     occurrenceCount: number;
@@ -151,8 +147,6 @@ export interface RecurringTransaction {
     createdAt: string;
     updatedAt: string;
 }
-
-// --- Savings Goals ---
 
 export type SavingsGoalStatus = 'ACTIVE' | 'COMPLETED' | 'ABANDONED';
 
@@ -181,8 +175,6 @@ export interface SavingsProjection {
     progress: number;
 }
 
-// --- Cashflow Forecast ---
-
 export interface ForecastEvent {
     description: string;
     amount: number;
@@ -194,8 +186,6 @@ export interface ForecastDay {
     projectedBalance: number;
     events: ForecastEvent[];
 }
-
-// --- Auto-Categorization Rules ---
 
 export type RuleOperator = 'contains' | 'startsWith' | 'equals' | 'gt' | 'lt' | 'gte' | 'lte';
 export type RuleField = 'description' | 'amount' | 'beneficiaryIban';
@@ -219,8 +209,6 @@ export interface AutoCategorizeRule {
     updatedAt: string;
 }
 
-// --- Finance Alerts ---
-
 export type AlertType = 'BUDGET_EXCEEDED' | 'BUDGET_WARNING' | 'LOW_BALANCE' | 'UNUSUAL_TRANSACTION' | 'RECURRING_MISSING' | 'GOAL_COMPLETED' | 'GOAL_AT_RISK';
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'CELEBRATION';
 
@@ -235,8 +223,6 @@ export interface FinanceAlert {
     isDismissed: boolean;
     createdAt: string;
 }
-
-// --- Health Score ---
 
 export interface ScoreCriteria {
     score: number;
@@ -260,8 +246,6 @@ export interface HealthScoreResult {
     hasEnoughData?: boolean;
 }
 
-// --- Monthly Report ---
-
 export interface MonthlyReport {
     period: { month: number; year: number };
     summary: {
@@ -279,4 +263,8 @@ export interface MonthlyReport {
     healthScore: number;
 }
 
-
+export interface BalanceHistoryRecord {
+    date: string;
+    label: string;
+    value: number;
+}

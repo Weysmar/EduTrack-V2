@@ -8,10 +8,13 @@ interface AuthRequest extends Request {
     file?: Express.Multer.File;
 }
 
-// GET /api/items?courseId=xxx
+// GET /api/items?courseId=xxx&page=1&limit=20
 export const getItems = async (req: AuthRequest, res: Response) => {
     try {
-        const { courseId } = req.query;
+        const { courseId, page = '1', limit = '20' } = req.query;
+        const pageNum = parseInt(page as string, 10);
+        const limitNum = parseInt(limit as string, 10);
+        const skip = (pageNum - 1) * limitNum;
 
         const where: any = {
             profileId: req.user!.id
@@ -20,13 +23,23 @@ export const getItems = async (req: AuthRequest, res: Response) => {
             where.courseId = String(courseId);
         }
 
-        const items = await prisma.item.findMany({
-            where,
-            orderBy: { createdAt: 'desc' }
-        });
+        const [items, total] = await Promise.all([
+            prisma.item.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limitNum
+            }),
+            prisma.item.count({ where })
+        ]);
 
         res.set('Cache-Control', 'no-store');
-        res.json(items);
+        res.json({
+            items,
+            total,
+            page: pageNum,
+            totalPages: Math.ceil(total / limitNum)
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching items', error });
     }

@@ -6,18 +6,36 @@ interface AuthRequest extends Request {
     user?: { id: string };
 }
 
-// GET /api/courses
+// GET /api/courses?page=1&limit=20
 export const getCourses = async (req: AuthRequest, res: Response) => {
     try {
-        const courses = await prisma.course.findMany({
-            where: { profileId: req.user!.id },
-            include: {
-                folder: true,
-                _count: { select: { items: true } }
-            },
-            orderBy: { createdAt: 'desc' }
+        const { page = '1', limit = '20' } = req.query;
+        const pageNum = parseInt(page as string, 10);
+        const limitNum = parseInt(limit as string, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+        const where = { profileId: req.user!.id };
+
+        const [courses, total] = await Promise.all([
+            prisma.course.findMany({
+                where,
+                include: {
+                    folder: true,
+                    _count: { select: { items: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limitNum
+            }),
+            prisma.course.count({ where })
+        ]);
+
+        res.json({
+            courses,
+            total,
+            page: pageNum,
+            totalPages: Math.ceil(total / limitNum)
         });
-        res.json(courses);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching courses', error });
     }

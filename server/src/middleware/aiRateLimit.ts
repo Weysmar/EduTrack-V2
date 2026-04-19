@@ -51,6 +51,6 @@ export const aiRateLimit = async (req: AuthRequest, res: Response, next: NextFun
         next();
     } catch (error) {
         console.error('[AI Rate Limit] Error:', error);
-        next(); // Fail open (allow request if rate limit check fails)
+        res.status(500).json({ error: 'Internal Server Error', message: 'Impossible de vérifier la limite de génération IA.' });
     }
 };

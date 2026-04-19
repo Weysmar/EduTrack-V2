@@ -7,6 +7,7 @@ import { CategoryMatcherService } from './categoryMatcherService';
 import { ClassificationService } from './classificationService';
 import { InternalTransferService } from './internalTransferService';
 import { maskIban, maskAccountNumber } from '../utils/maskIban';
+import { cacheService } from './cacheService';
 
 export class FinanceService {
     // Helper: Recalculate account balance from transactions (prevents drift)
@@ -128,10 +129,14 @@ export class FinanceService {
     }
 
     // --- Transactions ---
-    static async getTransactions(profileId: string, filters?: any) {
+    static async getTransactions(profileId: string, filters: any = {}) {
+        const { limit, page, ...restFilters } = filters;
+        const take = limit ? parseInt(limit) : undefined;
+        const skip = page && take ? (parseInt(page) - 1) * take : undefined;
+
         const whereClause: any = { account: { bank: { profileId } } };
 
-        if (filters) {
+        if (restFilters) {
             if (filters.accountId) whereClause.accountId = filters.accountId;
             if (filters.category) whereClause.category = filters.category;
 
@@ -169,14 +174,18 @@ export class FinanceService {
             }
         }
 
-        const transactions = await prisma.transaction.findMany({
-            where: whereClause,
-            include: { account: true },
-            orderBy: { date: 'desc' }
-        });
+        const [transactions, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where: whereClause,
+                include: { account: true },
+                orderBy: { date: 'desc' },
+                take,
+                skip
+            }),
+            prisma.transaction.count({ where: whereClause })
+        ]);
 
-        // Mask IBANs in account data and beneficiaryIban
-        return transactions.map((tx: any) => ({
+        const masked = transactions.map((tx: any) => ({
             ...tx,
             beneficiaryIban: maskIban(tx.beneficiaryIban),
             account: tx.account ? {
@@ -185,6 +194,20 @@ export class FinanceService {
                 accountNumber: maskAccountNumber(tx.account.accountNumber)
             } : undefined
         }));
+
+        if (limit) {
+            return {
+                transactions: masked,
+                pagination: {
+                    total,
+                    page: parseInt(page) || 1,
+                    limit: take,
+                    totalPages: Math.ceil(total / (take || 1))
+                }
+            };
+        }
+
+        return masked;
     }
 
     static async createTransaction(profileId: string, data: any) {
@@ -210,6 +233,7 @@ export class FinanceService {
 
         // Atomic: create transaction + recalculate balance
         const result = await prisma.$transaction(async (tx) => {
+            // ... (keep logic)
             const created = await tx.transaction.create({
                 data: {
                     accountId,
@@ -225,6 +249,9 @@ export class FinanceService {
             await this.recalculateBalance(accountId, tx);
             return created;
         });
+
+        // Invalidate cache
+        cacheService.clearProfileCache(profileId);
 
         // Trigger internal transfer detection automatically after new transaction
         await InternalTransferService.detectAndLinkTransfers(profileId).catch(console.error);

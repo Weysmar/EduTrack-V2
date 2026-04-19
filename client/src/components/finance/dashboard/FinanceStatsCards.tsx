@@ -1,6 +1,7 @@
 import { Transaction } from '@/types/finance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { useMemo } from 'react';
 import clsx from 'clsx';
 import { startOfMonth, isAfter } from 'date-fns';
@@ -38,7 +39,9 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
         const savings = income - expenses;
         const savingsRate = income > 0 ? (savings / income) * 100 : 0;
 
-        return { income, expenses, savings, savingsRate };
+        const uncategorizedCount = transactions.filter(t => !t.category || t.category === 'Non catégorisé' || t.category === 'Sans catégorie' || t.category === '').length;
+
+        return { income, expenses, savings, savingsRate, uncategorizedCount };
     }, [transactions]);
 
     const formatCurrency = (val: number) =>
@@ -107,6 +110,25 @@ export function FinanceStatsCards({ transactions = [], totalBalance = 0, hideInt
                     </p>
                 </CardContent>
             </Card>
+
+            </Card>
+
+            {/* Uncategorized Warning (Visible only if > 0) */}
+            {stats.uncategorizedCount > 0 && (
+                <Card className="bg-amber-500/10 border-amber-500/20 md:col-span-2 lg:col-span-4 border-dashed">
+                    <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-amber-500">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                                {stats.uncategorizedCount} transactions en attente de catégorisation. Améliorez vos rapports !
+                            </span>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-8 text-amber-600 hover:bg-amber-500/20" onClick={() => {/* Future: Trigger auto-categorize modal */}}>
+                            Catégoriser
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
 
         </div>
     );

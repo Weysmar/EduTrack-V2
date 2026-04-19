@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import compression from 'compression';
 import { Server } from 'socket.io';
+import { performanceMiddleware } from './middleware/performanceMiddleware';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ if (!process.env.JWT_SECRET) {
 app.set('trust proxy', 1);
 
 // Middleware
+app.use(performanceMiddleware);
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
@@ -130,8 +132,17 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-httpServer.listen(Number(PORT), '0.0.0.0', async () => {
-    await initializeApp();
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+const startServer = async () => {
+    try {
+        await initializeApp();
+        httpServer.listen(Number(PORT), '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        });
+    } catch (error) {
+        console.error('FAILED to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

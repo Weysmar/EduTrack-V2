@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { quizQueries } from '@/lib/api/queries'
 import { QuizQuestion } from '@/components/QuizQuestion'
-import { ArrowLeft, ArrowRight, CheckCircle, Trophy, RotateCcw, LayoutGrid } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { QuizHistoryChart } from '@/components/item/QuizHistoryChart'
 
 export function QuizStudy() {
     const { id } = useParams()
@@ -22,10 +21,19 @@ export function QuizStudy() {
         enabled: !!id
     })
 
+    const { data: attempts, refetch: refetchAttempts } = useQuery({
+        queryKey: ['quizzes', id, 'attempts'],
+        queryFn: () => quizQueries.getAttempts(id!),
+        enabled: isFinished && !!id
+    })
+
     const questions = quiz?.questions || []
 
     const submitResultMutation = useMutation({
-        mutationFn: (score: number) => quizQueries.submit(id!, score)
+        mutationFn: (score: number) => quizQueries.submit(id!, score),
+        onSuccess: () => {
+            refetchAttempts()
+        }
     })
 
     useEffect(() => {
@@ -115,6 +123,17 @@ export function QuizStudy() {
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Temps</p>
                             <p className="text-3xl font-bold">{Math.round(Object.values(answers).reduce((a, b) => a + b.time, 0))}s</p>
                         </div>
+                    </div>
+
+                    <div className="pt-6 border-t">
+                        <div className="flex items-center justify-between mb-4 px-2">
+                            <h2 className="text-lg font-semibold flex items-center gap-2">
+                                <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                                Évolution des performances
+                            </h2>
+                            <span className="text-xs text-muted-foreground">{attempts?.length || 0} tentatives</span>
+                        </div>
+                        <QuizHistoryChart attempts={attempts || []} />
                     </div>
 
                     <div className="flex gap-4 justify-center">

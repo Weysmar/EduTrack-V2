@@ -26,10 +26,12 @@ model Profile {
   items      Item[]
   flashcards FlashcardSet[]
   quizzes    Quiz[]
+  quizAttempts QuizAttempt[]
   summaries  Summary[]
   studyPlans StudyPlan[]
   mindmaps   MindMap[]
   studySessions StudySession[]
+  notifications Notification[]
   
   // FinanceTrack Relations
   banks             Bank[]
@@ -79,6 +81,9 @@ model Course {
   studySessions StudySession[]
   summaries Summary[]
   mindmaps  MindMap[]
+
+  @@index([profileId])
+  @@index([folderId])
 }
 
 model Folder {
@@ -92,6 +97,9 @@ model Folder {
   parent   Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
   children Folder[] @relation("FolderHierarchy")
   courses  Course[]
+
+  @@index([profileId])
+  @@index([parentId])
 }
 
 model Item {
@@ -116,6 +124,10 @@ model Item {
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([courseId])
+  @@index([type])
 }
 
 model FlashcardSet {
@@ -131,6 +143,10 @@ model FlashcardSet {
   
   profile    Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
   flashcards Flashcard[]
+
+  @@index([profileId])
+  @@index([courseId])
+  @@index([itemId])
 }
 
 model Flashcard {
@@ -145,6 +161,9 @@ model Flashcard {
   lastReviewed DateTime?
   
   set FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId])
+  @@index([nextReview])
 }
 
 model Quiz {
@@ -159,6 +178,26 @@ model Quiz {
   
   profile   Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
   questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([profileId])
+  @@index([courseId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  profileId String
+  quizId    String
+  score     Int
+  correctAnswers Int
+  totalQuestions Int
+  createdAt DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([quizId])
 }
 
 model QuizQuestion {
@@ -170,6 +209,8 @@ model QuizQuestion {
   explanation   String   @db.Text
   
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
 }
 
 model Summary {
@@ -207,6 +248,9 @@ model StudyPlan {
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   weeks   StudyWeek[]
   tasks   StudyTask[]
+
+  @@index([profileId])
+  @@index([courseId])
 }
 
 model StudyWeek {
@@ -220,6 +264,8 @@ model StudyWeek {
   
   plan  StudyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
   tasks StudyTask[]
+
+  @@index([planId])
 }
 
 model StudyTask {
@@ -234,6 +280,9 @@ model StudyTask {
   
   week StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
   plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([weekId])
+  @@index([planId])
 }
 
 model MindMap {
@@ -333,9 +382,9 @@ model Transaction {
   
   @@unique([accountId, fitId])
   @@unique([accountId, date, amount, description])
-  @@index([accountId])
-  @@index([date])
+  @@index([accountId, date])
   @@index([classification])
+  @@index([category])
 }
 
 enum TransactionClassification {
@@ -481,6 +530,23 @@ model AutoCategorizeRule {
   profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
+}
+
+// Notifications
+model Notification {
+  id              String   @id @default(uuid())
+  profileId       String
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  type            String   // "QUIZ_RESULT" | "BUDGET_WARNING" | "STUDY_REMINDER" | "SYSTEM"
+  title           String
+  message         String
+  data            Json?    // Contextual data (e.g., { courseId, quizId, amount })
+  
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([profileId, isRead])
 }
 
 // FinanceTrack — Finance Alerts

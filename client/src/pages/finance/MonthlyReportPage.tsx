@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
-import { financeApi } from '@/lib/api/financeApi';
-import { MonthlyReport } from '@/types/finance';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, Loader2, FileBarChart, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { useFinance } from '@/hooks/useFinance';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, Loader2, FileBarChart, CheckCircle2, AlertCircle, XCircle, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/components/language-provider';
+import html2pdf from 'html2pdf.js';
 
-const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const getMonthName = (monthIndex: number, lang: string) => {
+    return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'long' }).format(new Date(2024, monthIndex, 1));
+};
 
-const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+const formatCurrency = (val: number, lang: string) =>
+    new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
 const ChangeIndicator = ({ value }: { value: number }) => {
     if (Math.abs(value) < 0.5) return <span className="text-xs text-slate-500 flex items-center gap-0.5"><Minus className="h-3 w-3" /> 0%</span>;
@@ -28,28 +32,46 @@ const BUDGET_STATUS_ICON = {
 
 export default function MonthlyReportPage() {
     const now = new Date();
-    const [month, setMonth] = useState(now.getMonth() + 1);
+    const { t, language } = useLanguage();
+    const [month, setMonth] = useState(now.getMonth()); // 0-based
     const [year, setYear] = useState(now.getFullYear());
-    const [report, setReport] = useState<MonthlyReport | null>(null);
-    const [loading, setLoading] = useState(true);
+    const reportRef = useRef<HTMLDivElement>(null);
+    
+    const { getMonthlyReport } = useFinance();
+    const { data: report, isLoading: loading } = getMonthlyReport(month, year);
 
-    useEffect(() => {
-        setLoading(true);
-        financeApi.getMonthlyReport(year, month)
-            .then(setReport)
-            .catch(() => setReport(null))
-            .finally(() => setLoading(false));
-    }, [month, year]);
+    const exportToPdf = () => {
+        if (!reportRef.current) return;
+        const element = reportRef.current;
+        const opt = {
+            margin: 10,
+            filename: `rapport-financier-${year}-${month + 1}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(opt).save();
+    };
 
     const prevMonth = () => {
-        if (month === 1) { setMonth(12); setYear(y => y - 1); }
-        else setMonth(m => m - 1);
+        if (month === 0) {
+            setMonth(11);
+            setYear(y => y - 1);
+        } else {
+            setMonth(m => m - 1);
+        }
     };
+    
     const nextMonth = () => {
-        if (month === 12) { setMonth(1); setYear(y => y + 1); }
-        else setMonth(m => m + 1);
+        if (month === 11) {
+            setMonth(0);
+            setYear(y => y + 1);
+        } else {
+            setMonth(m => m + 1);
+        }
     };
-    const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+    
+    const isCurrentMonth = month === now.getMonth() && year === now.getFullYear();
 
     return (
         <div className="space-y-6">
@@ -65,8 +87,8 @@ export default function MonthlyReportPage() {
                     <button onClick={prevMonth} className="p-1.5 hover:bg-slate-700 rounded-md transition-colors">
                         <ChevronLeft className="h-4 w-4 text-slate-400" />
                     </button>
-                    <span className="text-sm font-medium text-slate-200 min-w-[140px] text-center">
-                        {MONTH_NAMES[month - 1]} {year}
+                    <span className="text-sm font-medium text-slate-200 min-w-[140px] text-center capitalize">
+                        {getMonthName(month, language)} {year}
                     </span>
                     <button onClick={nextMonth} disabled={isCurrentMonth} className="p-1.5 hover:bg-slate-700 rounded-md transition-colors disabled:opacity-30">
                         <ChevronRight className="h-4 w-4 text-slate-400" />
@@ -86,36 +108,37 @@ export default function MonthlyReportPage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none" />
                     <FileBarChart className="h-12 w-12 text-slate-700 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-300">Aucune donnée</h3>
-                    <p className="text-slate-500 mt-1">Aucune transaction n'a été enregistrée pour le mois de {MONTH_NAMES[month - 1].toLowerCase()} {year}.</p>
+                    <p className="text-slate-500 mt-1">Aucune transaction n'a été enregistrée pour ce mois.</p>
                 </div>
             ) : (
                 <>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Card className="bg-slate-900 border-slate-800">
-                            <CardContent className="p-4">
-                                <p className="text-xs text-slate-400 mb-1">Revenus</p>
-                                <p className="text-xl font-bold text-emerald-400">{formatCurrency(report.summary.totalIncome)}</p>
-                                <ChangeIndicator value={report.summary.incomeVsPreviousMonth} />
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-slate-900 border-slate-800">
-                            <CardContent className="p-4">
-                                <p className="text-xs text-slate-400 mb-1">Dépenses</p>
-                                <p className="text-xl font-bold text-red-400">{formatCurrency(report.summary.totalExpenses)}</p>
-                                <ChangeIndicator value={report.summary.expensesVsPreviousMonth} />
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-slate-900 border-slate-800">
-                            <CardContent className="p-4">
-                                <p className="text-xs text-slate-400 mb-1">Épargne</p>
-                                <p className={`text-xl font-bold ${report.summary.savingsAmount >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
-                                    {formatCurrency(report.summary.savingsAmount)}
-                                </p>
-                                <span className="text-xs text-slate-500">{report.summary.savingsRate.toFixed(1)}% du revenu</span>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <div ref={reportRef} className="space-y-6 pt-4">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <Card className="bg-slate-900 border-slate-800">
+                                <CardContent className="p-4">
+                                    <p className="text-xs text-slate-400 mb-1">Revenus</p>
+                                    <p className="text-xl font-bold text-emerald-400">{formatCurrency(report.summary.totalIncome, language)}</p>
+                                    <ChangeIndicator value={report.summary.incomeVsPreviousMonth} />
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-slate-900 border-slate-800">
+                                <CardContent className="p-4">
+                                    <p className="text-xs text-slate-400 mb-1">Dépenses</p>
+                                    <p className="text-xl font-bold text-red-400">{formatCurrency(report.summary.totalExpenses, language)}</p>
+                                    <ChangeIndicator value={report.summary.expensesVsPreviousMonth} />
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-slate-900 border-slate-800">
+                                <CardContent className="p-4">
+                                    <p className="text-xs text-slate-400 mb-1">Épargne</p>
+                                    <p className={`text-xl font-bold ${report.summary.savingsAmount >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                                        {formatCurrency(report.summary.savingsAmount, language)}
+                                    </p>
+                                    <span className="text-xs text-slate-500">{report.summary.savingsRate.toFixed(1)}% du revenu</span>
+                                </CardContent>
+                            </Card>
+                        </div>
 
                     {/* Two-column layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -128,7 +151,7 @@ export default function MonthlyReportPage() {
                                         <div key={i}>
                                             <div className="flex justify-between text-sm mb-1">
                                                 <span className="text-slate-300">{exp.category}</span>
-                                                <span className="text-slate-400">{formatCurrency(exp.amount)} ({exp.percentOfTotal}%)</span>
+                                                <span className="text-slate-400">{formatCurrency(exp.amount, language)} ({exp.percentOfTotal}%)</span>
                                             </div>
                                             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                                                 <div
@@ -156,7 +179,7 @@ export default function MonthlyReportPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <span className="text-sm text-slate-300 truncate block">{b.category}</span>
                                                 </div>
-                                                <span className="text-xs text-slate-400">{formatCurrency(b.spent)} / {formatCurrency(b.budgeted)}</span>
+                                                <span className="text-xs text-slate-400">{formatCurrency(b.spent, language)} / {formatCurrency(b.budgeted, language)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -179,7 +202,7 @@ export default function MonthlyReportPage() {
                                                     : <XCircle className="h-4 w-4 text-red-400 shrink-0" />
                                                 }
                                                 <span className="text-slate-300 flex-1 truncate">{r.description}</span>
-                                                <span className="text-xs text-slate-500">{formatCurrency(r.amount)}</span>
+                                                <span className="text-xs text-slate-500">{formatCurrency(r.amount, language)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -208,12 +231,12 @@ export default function MonthlyReportPage() {
                                                         className="h-full rounded-full transition-all"
                                                         style={{
                                                             width: `${Math.min(g.progress, 100)}%`,
-                                                            backgroundColor: g.onTrack ? '#10b981' : '#ef4444'
+                                                    backgroundColor: g.onTrack ? '#10b981' : '#ef4444'
                                                         }}
                                                     />
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 mt-0.5">
-                                                    {formatCurrency(g.current)} / {formatCurrency(g.target)} ({g.progress.toFixed(0)}%)
+                                                    {formatCurrency(g.current, language)} / {formatCurrency(g.target, language)} ({g.progress.toFixed(0)}%)
                                                 </p>
                                             </div>
                                         ))}
@@ -243,6 +266,7 @@ export default function MonthlyReportPage() {
                             </div>
                         </CardContent>
                     </Card>
+                </div>
                 </>
             )}
         </div>

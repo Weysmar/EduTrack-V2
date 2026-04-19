@@ -14,6 +14,7 @@ import { getRules, createRule, updateRule, deleteRule, testRule } from '../contr
 import { getAlerts, markAsRead, dismissAlert, checkAlerts, getUnreadCount } from '../controllers/alertController';
 import { getHealthScore } from '../controllers/healthScoreController';
 import { getMonthlyReport } from '../controllers/reportController';
+import { getBalanceHistory } from '../controllers/historyController';
 import categoryRoutes from './categoryRoutes';
 import multer from 'multer';
 import path from 'path';
@@ -71,6 +72,9 @@ router.get('/imports', getImportLogs);
 
 // Export Route
 router.get('/export', exportData);
+
+// History Routes
+router.get('/history/balance', getBalanceHistory);
 
 // AI Audit
 router.post('/audit', audit);

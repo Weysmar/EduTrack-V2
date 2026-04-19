@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { cacheService } from './cacheService';
 
 interface ScoreCriteria {
     score: number;
@@ -24,6 +25,10 @@ export interface HealthScoreResult {
 
 export class HealthScoreService {
     static async calculateScore(profileId: string): Promise<HealthScoreResult> {
+        const cacheKey = `profile:${profileId}:health-score`;
+        const cached = cacheService.get<HealthScoreResult>(cacheKey);
+        if (cached) return cached;
+
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
@@ -155,7 +160,9 @@ export class HealthScoreService {
         if (trendScore < 40) tips.push('Votre situation financière se dégrade. Analysez vos dernières dépenses.');
         if (tips.length === 0) tips.push('Excellent ! Continuez à maintenir cette discipline financière.');
 
-        return { globalScore, grade, breakdown, tips: tips.slice(0, 3) };
+        const result = { globalScore, grade, breakdown, tips: tips.slice(0, 3) };
+        cacheService.set(cacheKey, result);
+        return result;
     }
 
     private static groupByMonth(transactions: { amount: unknown; date: Date }[]): Record<string, number> {

@@ -79,6 +79,24 @@ export function CashflowChart() {
         );
     }
 
+    const isDataEmpty = chartData.length === 0 || chartData.every(d => d.balance === 0);
+
+    if (isDataEmpty) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                <div className="p-3 bg-slate-800/50 rounded-full">
+                    <TrendingUp className="h-6 w-6 text-slate-500" />
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-slate-300">Données insuffisantes</p>
+                    <p className="text-xs text-slate-500 max-w-[200px] mx-auto">
+                        Importez vos transactions pour visualiser vos prévisions de trésorerie.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div>
             <div className="flex items-center justify-between mb-4">
