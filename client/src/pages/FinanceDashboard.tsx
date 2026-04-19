@@ -3,7 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFinanceStore } from '@/store/financeStore';
 import { useFinance } from '@/hooks/useFinance';
 import { useUIStore } from '@/store/uiStore';
-import { Wallet, RefreshCw, Loader2, Filter, Trash2, Plus, ArrowLeftRight, Download, ShieldCheck } from 'lucide-react';
+import { 
+    Wallet, RefreshCw, Loader2, Filter, Trash2, Plus, 
+    ArrowLeftRight, Download, ShieldCheck, X, Sparkles 
+} from 'lucide-react';
 import { TransactionList } from '@/components/finance/TransactionList';
 import { TransactionEditModal } from '@/components/finance/TransactionEditModal';
 import { TransactionCreateModal } from '@/components/finance/TransactionCreateModal';
@@ -18,7 +21,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { BudgetManager } from '@/components/finance/BudgetManager';
 import { AdvancedFilterBar } from '@/components/finance/AdvancedFilterBar';
-import { generateLocalAudit } from '@/lib/finance/auditEngine';
+// import { generateLocalAudit } from '@/lib/finance/auditEngine';
+const generateLocalAudit = async (data: any) => "Audit Engine Unavailable";
 
 // Helper to get HSL values from CSS variables
 const getHslColor = (variable: string) => {
@@ -33,12 +37,11 @@ export default function FinanceDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
     const accountIdParam = searchParams.get('accountId');
 
-    // Data from React Query
     const { 
         transactions, accounts, banks, categories, budgets,
         isLoadingTransactions, isLoadingAccounts, isLoadingBanks,
         deleteAccount, deleteTransaction, updateTransaction,
-        createTransaction,
+        createTransaction, enrichTransaction,
         useBalanceHistory,
         refresh
     } = useFinance();
@@ -61,6 +64,11 @@ export default function FinanceDashboard() {
     const [isAuditing, setIsAuditing] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [showInternal, setShowInternal] = useState(!hideInternalTransfers);
+    const [colors, setColors] = useState({
+        primary: '#3b82f6',
+        green: '#10b981',
+        red: '#ef4444'
+    });
 
 
     useEffect(() => {

@@ -19,8 +19,9 @@ interface FinanceState {
         year: number;
         accountId: string | null;
         categoryId: string | null;
-        minAmount?: number;
-        maxAmount?: number;
+        minAmount: number | null;
+        maxAmount: number | null;
+        hideInternalTransfers: boolean;
     };
     setFilters: (filters: Partial<FinanceState['filters']>) => void;
     resetFilters: () => void;
@@ -45,6 +46,9 @@ export const useFinanceStore = create<FinanceState>()(
                 year: now.getFullYear(),
                 accountId: null,
                 categoryId: null,
+                minAmount: null,
+                maxAmount: null,
+                hideInternalTransfers: true,
             },
 
             setFilters: (newFilters) => set((state) => ({
@@ -57,6 +61,9 @@ export const useFinanceStore = create<FinanceState>()(
                     year: now.getFullYear(),
                     accountId: null,
                     categoryId: null,
+                    minAmount: null,
+                    maxAmount: null,
+                    hideInternalTransfers: true,
                 }
             }),
         }),

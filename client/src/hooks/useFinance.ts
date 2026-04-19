@@ -7,6 +7,12 @@ import {
 } from '../types/finance';
 import { toast } from 'sonner';
 
+export interface BalanceHistoryRecord {
+    date: Date;
+    label: string;
+    value: number;
+}
+
 export function useFinance() {
     const queryClient = useQueryClient();
 
@@ -50,6 +56,16 @@ export function useFinance() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['banks'] });
             toast.success('Banque supprimée');
+        }
+    });
+
+    const archiveBank = useMutation({
+        mutationFn: async ({ id, archive }: { id: string; archive: boolean }) => {
+            await axios.post(`/finance/banks/${id}/archive`, { archive });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Statut archive mis à jour');
         }
     });
 
@@ -168,6 +184,29 @@ export function useFinance() {
         }
     });
 
+    const updateAccount = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<Account> }) => {
+            const response = await axios.put<Account>(`/finance/accounts/${id}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Compte mis à jour');
+        }
+    });
+
+    const deleteAccount = useMutation({
+        mutationFn: async (id: string) => {
+            await axios.delete(`/finance/accounts/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            toast.success('Compte supprimé');
+        }
+    });
+
     const createTransaction = useMutation({
         mutationFn: async (data: Partial<Transaction>) => {
             const response = await axios.post<Transaction>('/finance/transactions', data);
@@ -244,6 +283,14 @@ export function useFinance() {
         categories: categories || [],
         budgets: budgets || [],
         forecast: forecast || [],
+        importLogs: [], // Placeholder
+        fetchImportLogs: async () => {
+             const res = await axios.get('/finance/import/logs');
+             return res.data;
+        },
+        exportData: async (format: string = 'csv') => {
+             window.open(`${import.meta.env.VITE_API_URL || '/api'}/finance/export?format=${format}`, '_blank');
+        },
         
         // Loading states
         isLoadingBanks,
@@ -257,20 +304,58 @@ export function useFinance() {
         createBank: createBank.mutateAsync,
         updateBank: updateBank.mutateAsync,
         deleteBank: deleteBank.mutateAsync,
+        createBankAsync: createBank.mutateAsync, // Alises
+        updateBankAsync: updateBank.mutateAsync,
+        deleteBankAsync: deleteBank.mutateAsync,
+        archiveBank: archiveBank.mutateAsync,
+        
         createAccount: createAccount.mutateAsync,
+        createAccountAsync: createAccount.mutateAsync,
+        updateAccount: updateAccount.mutateAsync,
+        updateAccountAsync: updateAccount.mutateAsync,
+        deleteAccount: deleteAccount.mutateAsync,
+        deleteAccountAsync: deleteAccount.mutateAsync,
+
         createTransaction: createTransaction.mutateAsync,
+        createTransactionAsync: createTransaction.mutateAsync,
         updateTransaction: updateTransaction.mutateAsync,
+        updateTransactionAsync: updateTransaction.mutateAsync,
         deleteTransaction: deleteTransaction.mutateAsync,
+
         createCategory: createCategory.mutateAsync,
         updateCategory: updateCategory.mutateAsync,
         deleteCategory: deleteCategory.mutateAsync,
+        createBudget: async (data: any) => {
+             const res = await axios.post('/finance/budgets', data);
+             queryClient.invalidateQueries({ queryKey: ['budgets'] });
+             return res.data;
+        },
         updateBudget: updateBudget.mutateAsync,
+        deleteBudget: async (id: string) => {
+             await axios.delete(`/finance/budgets/${id}`);
+             queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        },
         autoCategorize: autoCategorize.mutateAsync,
         reclassifyAll: reclassifyAll.mutateAsync,
         enrichTransaction: enrichTransaction.mutateAsync,
 
         // Helper for report
         getMonthlyReport,
+        getFilteredTransactions: (txs: Transaction[], filterParams: any) => {
+            if (!txs) return [];
+            let filtered = [...txs];
+            if (filterParams.hideInternalTransfers) {
+                filtered = filtered.filter(t => t.classification === 'EXTERNAL' || t.classification === 'UNKNOWN');
+            }
+            if (filterParams.accountId && filterParams.accountId !== 'null') {
+                filtered = filtered.filter(t => t.accountId === filterParams.accountId);
+            }
+            if (filterParams.categoryId && filterParams.categoryId !== 'null') {
+                // Since category is a string in Transaction, we might need more logic or just match name
+                filtered = filtered.filter(t => t.category === filterParams.categoryId);
+            }
+            return filtered;
+        },
 
         // History
         useBalanceHistory: (months: number = 6) => {

@@ -4,7 +4,7 @@ import { useProfileStore } from '@/store/profileStore'
 import { Link } from 'react-router-dom'
 import { Folder, ArrowRight, Loader2, Plus, Search } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 
 export function LibraryPage() {

@@ -4,6 +4,10 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { quizQueries } from '@/lib/api/queries'
 import { QuizQuestion } from '@/components/QuizQuestion'
 import { QuizHistoryChart } from '@/components/item/QuizHistoryChart'
+import { 
+    Trophy, RotateCcw, LayoutGrid, ArrowLeft, CheckCircle, ArrowRight 
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export function QuizStudy() {
     const { id } = useParams()

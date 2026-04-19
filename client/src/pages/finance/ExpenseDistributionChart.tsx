@@ -3,25 +3,28 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { useFinanceStore } from '../../store/financeStore';
 import { useLanguage } from '../../components/language-provider';
 
+import { useFinance } from '../../hooks/useFinance';
+
 export const ExpenseDistributionChart: React.FC = () => {
     const { t, language } = useLanguage();
-    const { getFilteredTransactions } = useFinanceStore();
+    const { filters } = useFinanceStore();
+    const { transactions: allTransactions, getFilteredTransactions } = useFinance();
 
     // Calculer la distribution par catégorie
     const data = React.useMemo(() => {
-        const expenses = getFilteredTransactions().filter(t => t.type === 'EXPENSE');
+        const expenses = getFilteredTransactions(allTransactions, filters).filter(t => t.type === 'EXPENSE');
         const distribution: Record<string, number> = {};
 
         expenses.forEach((t: any) => {
-            const cat = t.category?.name || 'Autre';
-            distribution[cat] = (distribution[cat] || 0) + t.amount;
+            const cat = t.category?.name || t.category || 'Autre';
+            distribution[cat] = (distribution[cat] || 0) + Math.abs(t.amount);
         });
 
         return Object.keys(distribution).map(key => ({
             name: key,
             value: distribution[key]
         }));
-    }, [getFilteredTransactions]);
+    }, [allTransactions, filters, getFilteredTransactions]);
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 

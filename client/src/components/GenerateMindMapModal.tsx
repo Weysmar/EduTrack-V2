@@ -2,12 +2,16 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition, Combobox } from '@headlessui/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Sparkles, FileText, Check, ChevronsUpDown, Loader2, Plus, Upload, BrainCircuit } from 'lucide-react';
+import { 
+    X, Sparkles, FileText, Check, ChevronsUpDown, Loader2, Plus, 
+    Upload, BrainCircuit, Trophy, RotateCcw, LayoutGrid, ArrowLeft, 
+    CheckCircle, ArrowRight 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { itemQueries } from '@/lib/api/queries';
 import { mindmapQueries } from '@/lib/api/queries/mindmapQueries';
 import { useLanguage } from '@/components/language-provider';
-import { cn } from '@/lib/utils'; // Assuming you have a utility for class names
 
 interface GenerateMindMapModalProps {
     isOpen: boolean;
@@ -41,11 +45,13 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
 
 
     // Fetch available notes
-    const { data: allItems } = useQuery({
+    const { data: itemsData } = useQuery({
         queryKey: ['items', 'all'],
-        queryFn: itemQueries.getAll,
+        queryFn: () => itemQueries.getAll(1, 1000), // Get a large batch for selection
         staleTime: 5 * 60 * 1000
     });
+
+    const allItems = itemsData?.items || [];
 
     const notes = allItems?.filter((item: any) => item.type === 'note') || [];
     const files = allItems?.filter((item: any) => item.type === 'resource') || [];

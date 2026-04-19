@@ -35,7 +35,7 @@ export function Dashboard() {
         enabled: !!activeProfile
     })
 
-    const itemList = itemsData?.items || []
+    const allItems = itemsData?.items || []
 
     const { data: mindMaps } = useQuery({
         queryKey: ['mindmaps'],

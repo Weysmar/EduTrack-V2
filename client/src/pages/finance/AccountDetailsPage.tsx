@@ -17,8 +17,11 @@ export default function AccountDetailsPage() {
     const { t } = useLanguage();
     const { accountId } = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { accounts, transactions, deleteAccountAsync, updateAccountAsync, deleteTransaction, updateTransactionAsync, createTransactionAsync } = useFinance();
-    const { enrichTransaction } = useFinanceStore();
+    const { 
+        accounts, transactions, deleteAccountAsync, updateAccountAsync, 
+        deleteTransaction, updateTransactionAsync, createTransactionAsync,
+        enrichTransaction 
+    } = useFinance();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);

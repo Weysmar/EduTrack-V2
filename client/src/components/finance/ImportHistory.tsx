@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { useFinanceStore } from '@/store/financeStore';
+import { useFinance } from '@/hooks/useFinance';
 import { CheckCircle, AlertCircle, FileText, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 
 export const ImportHistory = () => {
     const { t, language } = useLanguage();
-    const { importLogs, fetchImportLogs } = useFinanceStore();
+    const { importLogs, fetchImportLogs } = useFinance();
 
     useEffect(() => {
         fetchImportLogs();

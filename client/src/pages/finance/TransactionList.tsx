@@ -5,10 +5,13 @@ import { format } from 'date-fns';
 import { useLanguage } from '../../components/language-provider';
 import { fr, enUS } from 'date-fns/locale';
 
+import { useFinance } from '../../hooks/useFinance';
+
 export const TransactionList: React.FC = () => {
     const { t, language } = useLanguage();
-    const { getFilteredTransactions } = useFinanceStore();
-    const transactions = getFilteredTransactions();
+    const { filters } = useFinanceStore();
+    const { transactions: allTransactions, getFilteredTransactions } = useFinance();
+    const transactions = getFilteredTransactions(allTransactions, filters);
 
     if (transactions.length === 0) {
         return <div className="text-center text-slate-500 py-10">{t('finance.tx.noneMonth')}</div>;

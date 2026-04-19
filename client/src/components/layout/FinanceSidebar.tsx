@@ -14,7 +14,7 @@ export function FinanceSidebar() {
     const { t } = useLanguage()
     const { isCollapsed, toggleCollapse, isBankModalOpen, closeBankModal, openBankModal } = useUIStore()
     // Use useFinance hook directly for better sync with TanStack Query
-    const { banks, accounts, createBank } = useFinance()
+    const { banks, accounts, createBank, exportData } = useFinance()
     const location = useLocation()
     const logoSrc = '/logo.svg'
 
@@ -117,10 +117,10 @@ export function FinanceSidebar() {
                             <Link to="/finance/categories" className="hover:bg-muted p-1 rounded-md transition-colors" title="Catégories">
                                 <Tag className="h-3 w-3" />
                             </Link>
-                            <button onClick={() => useFinanceStore.getState().exportData?.('json')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export JSON">
+                            <button onClick={() => exportData?.('json')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export JSON">
                                 <FileJson className="h-3 w-3" />
                             </button>
-                            <button onClick={() => useFinanceStore.getState().exportData?.('csv')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export CSV">
+                            <button onClick={() => exportData?.('csv')} className="hover:bg-muted p-1 rounded-md transition-colors" title="Export CSV">
                                 <FileText className="h-3 w-3" />
                             </button>
                             <Link to="/finance/import" className="hover:bg-muted p-1 rounded-md transition-colors" title="Importer OFX">

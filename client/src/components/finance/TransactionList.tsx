@@ -15,10 +15,12 @@ interface TransactionListProps {
 
 const PAGE_SIZE = 50;
 
+import { useFinance } from '@/hooks/useFinance';
+
 export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: TransactionListProps) {
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
     const { t, language } = useLanguage();
-    const { reclassifyAll } = useFinanceStore();
+    const { reclassifyAll } = useFinance();
     const [isReclassifying, setIsReclassifying] = useState(false);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -36,8 +38,9 @@ export function TransactionList({ transactions, onDelete, onEdit, onEnrich }: Tr
     const handleReclassifyAll = async () => {
         try {
             setIsReclassifying(true);
-            const updated = await reclassifyAll();
-            import('sonner').then(({ toast }) => toast.success(t('finance.categorize.success', { count: updated }) || `${updated} transactions reclassifiées.`));
+            const data = await reclassifyAll();
+            const updatedCount = (data as any)?.updated ?? data;
+            import('sonner').then(({ toast }) => toast.success(t('finance.categorize.success', { count: updatedCount }) || `${updatedCount} transactions reclassifiées.`));
         } catch (error: any) {
             console.error(error);
             import('sonner').then(({ toast }) => toast.error(error.message || "Erreur de classification IA"));

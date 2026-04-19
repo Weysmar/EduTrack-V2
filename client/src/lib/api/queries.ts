@@ -31,13 +31,19 @@ export const courseQueries = {
 };
 
 export const itemQueries = {
-    getByCourse: async (courseId: string, page = 1, limit = 20) => {
-        const { data } = await apiClient.get(`/items?courseId=${courseId}&page=${page}&limit=${limit}`);
-        return data; // Returns { items, total, page, totalPages }
+    getByCourse: async (courseId: any, pageArg: any = 1, limitArg: any = 20) => {
+        // Handle React Query sending context object as first arg
+        const id = typeof courseId === 'string' ? courseId : courseId?.queryKey?.[1];
+        const page = typeof pageArg === 'number' ? pageArg : 1;
+        const limit = typeof limitArg === 'number' ? limitArg : 20;
+        const { data } = await apiClient.get(`/items?courseId=${id}&page=${page}&limit=${limit}`);
+        return data; 
     },
-    getAll: async (page = 1, limit = 20) => {
+    getAll: async (pageArg: any = 1, limitArg: any = 20) => {
+        const page = typeof pageArg === 'number' ? pageArg : 1;
+        const limit = typeof limitArg === 'number' ? limitArg : 20;
         const { data } = await apiClient.get(`/items?page=${page}&limit=${limit}`);
-        return data; // Returns { items, total, page, totalPages }
+        return data;
     },
     getOne: async (id: string) => {
         const { data } = await apiClient.get(`/items/${id}`);

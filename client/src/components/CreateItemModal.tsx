@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Dumbbell, FileText, FolderOpen } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'

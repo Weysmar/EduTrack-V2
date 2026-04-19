@@ -26,7 +26,7 @@ const SimpleModal = ({ isOpen, onClose, title, children }: any) => {
 export function BudgetManager() {
     const { t } = useLanguage();
     const { 
-        budgets, transactions, categories, updateBudget, deleteCategory 
+        budgets, transactions, categories, updateBudget, deleteBudget, deleteCategory 
     } = useFinance();
     // updateBudget in useFinance handles both create and update via the same endpoint in this implementation
     const [isModalOpen, setIsModalOpen] = useState(false);

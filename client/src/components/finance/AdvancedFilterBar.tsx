@@ -8,8 +8,11 @@ interface AdvancedFilterBarProps {
     onClose: () => void;
 }
 
+import { useFinance } from '@/hooks/useFinance';
+
 export const AdvancedFilterBar = ({ isOpen, onClose }: AdvancedFilterBarProps) => {
-    const { filters, setFilters, accounts, banks, transactions } = useFinanceStore();
+    const { filters, setFilters } = useFinanceStore();
+    const { accounts, banks, transactions } = useFinance();
     const { t } = useLanguage();
 
     // Local state for deferred update (don't update on every keystroke)

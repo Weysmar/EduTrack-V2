@@ -50,7 +50,7 @@ export default function MonthlyReportPage() {
             html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        html2pdf().from(element).set(opt).save();
+        html2pdf().from(element).set(opt as any).save();
     };
 
     const prevMonth = () => {

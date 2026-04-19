@@ -12,8 +12,12 @@ import { useLanguage } from '@/components/language-provider';
 
 export function BankManager() {
     const { t } = useLanguage();
-    const { banks, accounts, createBank, updateBank, deleteBank, archiveBank, createAccount, updateAccount, deleteAccount, createTransaction } = useFinance();
-    const { categories, fetchCategories } = useFinanceStore();
+    const { 
+        banks, accounts, categories,
+        createBank, updateBank, deleteBank, archiveBank, 
+        createAccount, updateAccount, deleteAccount, createTransaction 
+    } = useFinance();
+    
     const [isInternalModalOpen, setIsModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
     const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -51,7 +55,7 @@ export function BankManager() {
 
     const handleArchive = async (bankId: string) => {
         if (confirm(t('finance.banks.archive.confirm'))) {
-            archiveBank(bankId);
+            archiveBank({ id: bankId, archive: true });
         }
     };
 
@@ -97,7 +101,6 @@ export function BankManager() {
     const openCreateTransaction = (accountId: string) => {
         setSelectedAccountIdForTx(accountId);
         setIsTxModalOpen(true);
-        fetchCategories(); // Ensure categories are loaded
     };
 
     return (
