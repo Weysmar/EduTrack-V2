@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0] - 2026-04-19
+
+### 🚀 Performance Backend (Partie 3.1)
+- **Moteur de Cache** : Implémentation de `node-cache` pour les rapports financiers et scores de santé.
+- **Optimisation Algorithmique** : Reconstruction de l'historique du solde passée de $O(N \times M)$ à $O(N)$.
+- **Indexation BDD** : Ajout d'index critiques sur les transactions et comptes pour des calculs instantanés.
+- **Monitoring** : Middleware de performance avec logging des requêtes lentes et header `X-Response-Time`.
+- **Pagination** : Support de la pagination côté serveur pour les listes de transactions volumineuses.
+
+### 💰 FinanceTrack (Optimisations & UX)
+- **Filtres Avancés** : Recherche multicritère (dates, montant, compte, catégorie).
+- **Audit Financier** : Amélioration du prompt IA et gestion du cache pour le score de santé.
+- **Gestion des Comptes** : Invalidation intelligente du cache lors des modifications.
+- **Sécurité** : Audit Snyk réalisé et correction des vulnérabilités de dépendances.
+
+---
+
 ## [1.4.0] - 2026-01-23
 
 ### ✨ Nouveautés

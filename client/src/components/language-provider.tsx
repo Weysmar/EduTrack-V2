@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useState, useMemo } from "react"
+import { createContext, useContext, useEffect, useState, useMemo } from "react"
 
 export type Language = "en" | "fr" | "mc"
 
@@ -356,6 +356,25 @@ const translations: Translations = {
         "stt.error.https": "Speech recognition requires a secure HTTPS connection (or localhost).",
         "stt.error.blocked": "Please allow microphone access in your browser settings.",
         "stt.error.generic": "Speech recognition failed.",
+
+        "changelog.v150.title": "Finance & Performance Update 💰⚡",
+        "changelog.v150.caching": "Server-side Caching: Integrated node-cache for instant loading of financial reports and health scores.",
+        "changelog.v150.algorithm": "High-speed Reconstruction: Optimized balance history algorithm from O(N*M) to O(N).",
+        "changelog.v150.pagination": "Data Scalability: Server-side pagination for transaction lists to handle large datasets effortlessly.",
+        "changelog.v150.indexing": "Database Performance: Strategic indexing for faster queries and reduced backend latency.",
+        "changelog.v150.monitoring": "Performance Observability: New monitoring middleware with response time headers and slow request logging.",
+        
+        "changelog.v140.title": "Focus & Accessibility 🎯",
+        "changelog.v140.focus": "Unified Focus Mode: Consolidated all fullscreen modes into a single immersive Zen experience.",
+        "changelog.v140.mobile": "Mobile Refinements: Improved gaps and layout for the Bulk Action Bar and Calendar on small screens.",
+        "changelog.v140.perf": "Font Optimization: Async font loading to improve First Contentful Paint (FCP).",
+        "changelog.v140.aria": "Accessibility Overhaul: Added ARIA labels to all critical UI components for screen readers.",
+
+        "changelog.v131.title": "Technical Sprint & Quality 🛠️",
+        "changelog.v131.refactor": "Code Cleanup: Refactored CourseView for better maintainability and stability.",
+        "changelog.v131.tests": "Testing Suite: Added Vitest infrastructure and initial unit tests.",
+        "changelog.v131.perf": "Optimized Loading: Implemented dynamic imports for heavy PDF/DOCX libraries.",
+        "changelog.v131.stability": "Bug Fixes: Resolved Prisma client sync issues and improved responsive types.",
 
         "changelog.v051.title": "Mobility & Stability 📱⚡",
         "changelog.v051.mobile": "Mobile Optimization: Reworked Course View for smartphones with compact cards, an intelligent header, and optimized file previews.",
@@ -1064,6 +1083,25 @@ const translations: Translations = {
         "stt.error.https": "La reconnaissance vocale nécessite une connexion sécurisée HTTPS (ou localhost).",
         "stt.error.blocked": "Veuillez autoriser l'accès au micro dans les paramètres du navigateur.",
         "stt.error.generic": "Échec de la reconnaissance vocale.",
+
+        "changelog.v150.title": "Mise à jour Finance & Performance 💰⚡",
+        "changelog.v150.caching": "Cache Serveur : Intégration de node-cache pour un chargement instantané des rapports et scores de santé.",
+        "changelog.v150.algorithm": "Reconstruction Rapide : Algorithme d'historique de solde optimisé de O(N*M) à O(N).",
+        "changelog.v150.pagination": "Scalabilité des Données : Pagination côté serveur pour gérer des milliers de transactions sans latence.",
+        "changelog.v150.indexing": "Performance BDD : Indexation stratégique pour des calculs financiers instantanés.",
+        "changelog.v150.monitoring": "Observabilité : Nouveau middleware de monitoring avec headers de temps de réponse et logging des requêtes lentes.",
+        
+        "changelog.v140.title": "Focus & Accessibilité 🎯",
+        "changelog.v140.focus": "Mode Focus Unifié : Consolidation des modes plein écran en une expérience Zen immersive unique.",
+        "changelog.v140.mobile": "Affinage Mobile : Amélioration du layout de la barre d'action groupée et du calendrier sur petits écrans.",
+        "changelog.v140.perf": "Optimisation Fontes : Chargement asynchrone des polices pour améliorer le temps de premier affichage (FCP).",
+        "changelog.v140.aria": "Refonte Accessibilité : Ajout de labels ARIA sur tous les composants critiques pour les lecteurs d'écran.",
+
+        "changelog.v131.title": "Sprint Technique & Qualité 🛠️",
+        "changelog.v131.refactor": "Nettoyage de Code : Refonte de CourseView pour une meilleure maintenabilité.",
+        "changelog.v131.tests": "Tests Unitaires : Ajout de l'infrastructure Vitest et des premiers tests.",
+        "changelog.v131.perf": "Chargement Optimisé : Imports dynamiques pour les librairies PDF/DOCX lourdes.",
+        "changelog.v131.stability": "Correctifs : Résolution des problèmes de synchro Prisma et types responsifs.",
 
         "changelog.v051.title": "Mobilité & Stabilité 📱⚡",
         "changelog.v051.mobile": "Optimisation Mobile : Refonte de la vue cours, aperçus de fichiers plus fluides et en-tête intelligent pour smartphones.",
