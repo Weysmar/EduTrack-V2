@@ -18,18 +18,22 @@ export function useKnowledgeMapData() {
     });
 
     // 2. Fetch all Courses
-    const { data: courses = [] } = useQuery({
+    const { data: coursesData } = useQuery({
         queryKey: ['courses', activeProfile?.id],
-        queryFn: courseQueries.getAll,
+        queryFn: () => courseQueries.getAll(1, 1000),
         enabled: !!activeProfile?.id
     });
 
+    const courses = coursesData?.courses || [];
+
     // 3. Fetch all Items (Documents)
-    const { data: items = [] } = useQuery({
+    const { data: itemsData } = useQuery({
         queryKey: ['items', activeProfile?.id],
-        queryFn: itemQueries.getAll,
+        queryFn: () => itemQueries.getAll(1, 1000),
         enabled: !!activeProfile?.id
     });
+
+    const items = itemsData?.items || [];
 
     // 4. Load Layouts from LocalStorage
     const savedLayoutSnapshot = useMemo(() => {

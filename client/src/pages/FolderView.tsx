@@ -32,14 +32,14 @@ export function FolderView() {
         enabled: !!activeProfile
     })
 
-    const { data: allCourses } = useQuery({
+    const { data: coursesData } = useQuery({
         queryKey: ['courses'],
-        queryFn: courseQueries.getAll,
+        queryFn: () => courseQueries.getAll(1, 1000), // Get all to filter locally
         enabled: !!activeProfile
     })
 
     const subFolders = allFolders?.filter((f: any) => f.parentId === folderId) || []
-    const courses = allCourses?.filter((c: any) => c.folderId === folderId) || []
+    const courses = coursesData?.courses?.filter((c: any) => c.folderId === folderId) || []
 
     const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false)
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
@@ -92,13 +92,14 @@ export function FolderView() {
             // Using itemQueries.getAll() and filtering active courseIds? 
             // Better: itemQueries could accept a list or we loop?
             // For now, let's fetch all items (which might be cached) and filter.
-            const itemsRes = await itemQueries.getAll()
+            const itemsRes = await itemQueries.getAll(1, 1000)
+            const items = itemsRes.items || []
             const courseIds = courses.map((c: any) => c.id)
-            const items = itemsRes.filter((i: any) => courseIds.includes(i.courseId));
+            const filteredItems = items.filter((i: any) => courseIds.includes(i.courseId));
 
             const itemsToProcess: string[] = []
 
-            for (const i of items) {
+            for (const i of filteredItems) {
                 let itemText = i.extractedContent || i.content || ''
                 if (itemText.trim().length > 0) {
                     itemsToProcess.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)

@@ -19,18 +19,21 @@ export function LibraryPage() {
         queryKey: ['courses', page],
         queryFn: () => courseQueries.getAll(page, 12),
         enabled: !!activeProfile,
-        onSuccess: (newData) => {
+    })
+
+    useEffect(() => {
+        if (data) {
             if (page === 1) {
-                setAllLoadedCourses(newData.courses)
+                setAllLoadedCourses(data.courses)
             } else {
                 setAllLoadedCourses(prev => {
                     const existingIds = new Set(prev.map(c => c.id))
-                    const filtered = newData.courses.filter((c: any) => !existingIds.has(c.id))
+                    const filtered = data.courses.filter((c: any) => !existingIds.has(c.id))
                     return [...prev, ...filtered]
                 })
             }
         }
-    })
+    }, [data, page])
 
     const totalCount = data?.total || 0
     const totalPages = data?.totalPages || 1

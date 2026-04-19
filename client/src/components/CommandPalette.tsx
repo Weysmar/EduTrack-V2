@@ -37,17 +37,21 @@ export function CommandPalette() {
     }, [toggle]);
 
     // Data for Search
-    const { data: courses } = useQuery({
+    const { data: coursesData } = useQuery({
         queryKey: ['courses'],
-        queryFn: courseQueries.getAll,
+        queryFn: () => courseQueries.getAll(1, 1000),
         enabled: !!activeProfile
     });
 
-    const { data: items } = useQuery({
+    const courses = coursesData?.courses || [];
+
+    const { data: itemsData } = useQuery({
         queryKey: ['items'],
-        queryFn: itemQueries.getAll,
+        queryFn: () => itemQueries.getAll(1, 1000),
         enabled: !!activeProfile
     });
+
+    const items = itemsData?.items || [];
 
     const runCommand = (command: () => void) => {
         command();

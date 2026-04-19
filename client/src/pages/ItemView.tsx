@@ -217,31 +217,31 @@ export function ItemView() {
     const triggerDownload = (url: string, name: string) => {
         if (!url) return;
 
-        // Anti DOM-XSS: Strictly allow only safe protocols
-        const SAFE_PROTOCOLS = ['blob:', 'https:', 'http:', '/api/', '/'];
-        const isSafe = SAFE_PROTOCOLS.some(proto => url.startsWith(proto));
-        
-        // Block dangerous protocols explicitly even if regex fails
-        if (!isSafe || /^\s*(javascript|vbscript|data):/i.test(url)) {
-            console.warn("Blocked potentially unsafe download URL:", url.slice(0, 50));
+        // Strict URI validation
+        const isBlob = url.startsWith('blob:');
+        const isSafeProtocol = /^(https?|blob|data):/i.test(url);
+        const isJavaScript = /javascript:/i.test(url);
+
+        if (!isSafeProtocol || isJavaScript) {
+            console.error("Blocked unsafe download URL:", url.slice(0, 50));
             return;
         }
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = name || 'download';
+        a.download = (name || 'download').replace(/[<>:"/\\|?*]/g, '_'); // Sanitize filename
         a.style.display = 'none';
         a.rel = "noopener noreferrer";
         
         document.body.appendChild(a);
-        a.click();
-        
-        // Cleanup with short delay to ensure click registered
-        setTimeout(() => {
+        try {
+            a.click();
+        } finally {
+            // Cleanup immediately
             if (document.body.contains(a)) {
                 document.body.removeChild(a);
             }
-        }, 100);
+        }
     }
 
 

@@ -21,11 +21,13 @@ export function EduSidebar() {
 
     const logoSrc = '/logo.svg'
 
-    const { data: courses } = useQuery({
+    const { data } = useQuery({
         queryKey: ['courses'],
-        queryFn: courseQueries.getAll,
+        queryFn: () => courseQueries.getAll(1, 1000), // Get all for sidebar
         enabled: !!activeProfile
     })
+
+    const courses = data?.courses || []
 
     const { data: folders } = useQuery({
         queryKey: ['folders'],

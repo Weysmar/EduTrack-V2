@@ -1,9 +1,17 @@
 import { apiClient } from './client';
 
 export const courseQueries = {
-    getAll: async (page = 1, limit = 20) => {
+    getAll: async (pageArg: any = 1, limitArg: any = 20) => {
+        // Handle React Query sending context object as first arg
+        const page = typeof pageArg === 'number' ? pageArg : 1;
+        const limit = typeof limitArg === 'number' ? limitArg : 20;
         const { data } = await apiClient.get(`/courses?page=${page}&limit=${limit}`);
-        return data; // Returns { courses, total, page, totalPages }
+        return {
+            courses: data.courses || [],
+            total: data.total || 0,
+            page: data.page || page,
+            totalPages: data.totalPages || 1
+        };
     },
     getOne: async (id: string) => {
         const { data } = await apiClient.get(`/courses/${id}`);

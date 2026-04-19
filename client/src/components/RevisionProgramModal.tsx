@@ -42,7 +42,12 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
         : (apiKeys?.perplexity_exercises || apiKeys?.perplexity_summaries);
 
     // Data Fetching
-    const { data: courses } = useQuery({ queryKey: ['courses'], queryFn: courseQueries.getAll })
+    const { data: coursesData } = useQuery({ 
+        queryKey: ['courses'], 
+        queryFn: () => courseQueries.getAll(1, 1000) 
+    })
+    const courses = coursesData?.courses || []
+    
     const { data: folders } = useQuery({ queryKey: ['folders'], queryFn: folderQueries.getAll })
 
     const generateMutation = useMutation({

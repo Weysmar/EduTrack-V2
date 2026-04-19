@@ -21,17 +21,21 @@ export function Dashboard() {
     const queryClient = useQueryClient()
 
     // Queries
-    const { data: courses } = useQuery({
+    const { data: coursesData } = useQuery({
         queryKey: ['courses'],
-        queryFn: courseQueries.getAll,
+        queryFn: () => courseQueries.getAll(1, 10), // Get recent for dashboard
         enabled: !!activeProfile
     })
 
-    const { data: allItems } = useQuery({
+    const courses = coursesData?.courses || []
+
+    const { data: itemsData } = useQuery({
         queryKey: ['items'],
-        queryFn: itemQueries.getAll,
+        queryFn: () => itemQueries.getAll(1, 1000), // Get all items for stats
         enabled: !!activeProfile
     })
+
+    const itemList = itemsData?.items || []
 
     const { data: mindMaps } = useQuery({
         queryKey: ['mindmaps'],
