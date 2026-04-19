@@ -1078,6 +1078,10 @@ const translations: Translations = {
         "stt.error.blocked": "Veuillez autoriser l'accès au micro dans les paramètres du navigateur.",
         "stt.error.generic": "Échec de la reconnaissance vocale.",
 
+        "changelog.v151.title": "Restauration des Données 🛠️",
+        "changelog.v151.regression": "Correction des données manquantes : Résolution d'un problème critique où les cours et éléments disparaissaient suite à la mise à jour de la pagination API.",
+        "changelog.v151.health": "Santé du système : Amélioration de la robustesse du tableau de bord et des vérifications d'intégrité des données.",
+        
         "changelog.v150.title": "Mise à jour Finance & Performance 💰⚡",
         "changelog.v150.caching": "Cache Serveur : Intégration de node-cache pour un chargement instantané des rapports et scores de santé.",
         "changelog.v150.algorithm": "Reconstruction Rapide : Algorithme d'historique de solde optimisé de O(N*M) à O(N).",
