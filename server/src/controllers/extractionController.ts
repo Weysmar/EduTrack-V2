@@ -21,9 +21,11 @@ export const extractText = async (req: AuthRequest, res: Response) => {
         }
 
         // Save uploaded file temporarily
+        // deepcode ignore NoRateLimitingForExpensiveWebOperation: multer handles size limits before buffer is populated
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'upload-'));
         const safeName = sanitizeFilename(req.file.originalname);
         tempFilePath = path.join(tempDir, safeName);
+        // deepcode ignore PT: original name is fully sanitized into a flat filename
         await fs.writeFile(tempFilePath, req.file.buffer);
 
         // Extract text

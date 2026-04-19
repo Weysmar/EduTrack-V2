@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { CategoryMatcherService } from './src/services/categoryMatcherService';
+import process from 'process';
 
 const prisma = new PrismaClient();
 

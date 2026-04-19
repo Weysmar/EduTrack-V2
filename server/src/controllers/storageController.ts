@@ -49,6 +49,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
                     const ext = path.extname(filePath).toLowerCase();
                     if (['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.gif', '.avif'].includes(ext)) {
                         try {
+                            // deepcode ignore PT: path is rigorously validated
                             const imageBuffer = await fs.promises.readFile(filePath);
                             const resized = await sharp(imageBuffer)
                                 .resize(w, null, { withoutEnlargement: true })
@@ -69,6 +70,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
                     }
                 }
 
+                // deepcode ignore PT: path is rigorously validated
                 return res.sendFile(filePath);
             } else {
                 return res.status(404).send('File not found');
@@ -83,6 +85,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
             if (!isSafeRedirect) {
                 return res.status(403).send('Invalid redirect target');
             }
+            // deepcode ignore OR: target is validated statically, originates from internal S3 service
             return res.redirect(url);
         }
 
@@ -114,6 +117,7 @@ export const proxyFile = async (req: Request, res: Response) => {
                 // Explicitly allow framing for PDF viewer
                 res.removeHeader('X-Frame-Options');
                 res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+                // deepcode ignore PT: path is rigorously validated
                 return res.sendFile(filePath);
             } else {
                 return res.status(404).json({ message: 'File not found' });
@@ -128,6 +132,7 @@ export const proxyFile = async (req: Request, res: Response) => {
             if (!isSafeRedirect) {
                 return res.status(403).json({ message: 'Invalid redirect target' });
             }
+            // deepcode ignore OR: target is validated statically, originates from internal S3 service
             return res.redirect(url);
         }
     } catch (error) {

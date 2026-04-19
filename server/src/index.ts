@@ -5,7 +5,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { createServer } from 'http';
+import http from 'http';
+import https from 'https';
+import fs from 'fs';
 import compression from 'compression';
 import { Server } from 'socket.io';
 import { performanceMiddleware } from './middleware/performanceMiddleware';
@@ -21,7 +23,9 @@ console.log('[Server] DATABASE_URL provided?', !!process.env.DATABASE_URL);
 console.log('[Server] CORS_ORIGIN:', process.env.CORS_ORIGIN);
 console.log('-------------------------------------------');
 
-const httpServer = createServer(app);
+const httpServer = process.env.HTTPS === 'true' 
+    ? https.createServer({ key: fs.readFileSync('./key.pem'), cert: fs.readFileSync('./cert.pem') }, app)
+    : http.createServer(app);
 const io = new Server(httpServer, {
     cors: {
         origin: process.env.CORS_ORIGIN || '*',
