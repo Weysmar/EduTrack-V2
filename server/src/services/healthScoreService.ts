@@ -149,7 +149,7 @@ export class HealthScoreService {
             breakdown.trend.score * 0.05
         );
 
-        const grade = globalScore >= 90 ? 'A' : globalScore >= 75 ? 'B' : globalScore >= 60 ? 'C' : globalScore >= 40 ? 'D' : 'F';
+        const grade = (globalScore >= 90 ? 'A' : globalScore >= 75 ? 'B' : globalScore >= 60 ? 'C' : globalScore >= 40 ? 'D' : 'F') as "A" | "B" | "C" | "D" | "F";
 
         // --- Tips ---
         const tips: string[] = [];

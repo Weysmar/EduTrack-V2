@@ -137,7 +137,7 @@ export class MonthlyReportService {
             healthScore = scoreResult.globalScore;
         } catch { /* fallback to 50 */ }
 
-        return {
+        const report = {
             period: { month, year },
             summary: {
                 totalIncome: Math.round(totalIncome * 100) / 100,
