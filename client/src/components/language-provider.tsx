@@ -408,12 +408,6 @@ const translations: Translations = {
         "changelog.v059.dashboard": "Dashboard Light Mode: Hero section now supports a clean light theme for better visibility.",
         "changelog.v059.notes": "Note Standardization: Improved note layout to match the editor's visual structure.",
 
-        // v1.3.1
-        "changelog.v131.title": "Technical Sprint & Quality 🛠️",
-        "changelog.v131.refactor": "Code Cleanup: Refactored CourseView for better maintainability and stability.",
-        "changelog.v131.tests": "Testing Suite: Added Vitest infrastructure and initial unit tests.",
-        "changelog.v131.perf": "Optimized Loading: Implemented dynamic imports for heavy PDF/DOCX libraries.",
-        "changelog.v131.stability": "Bug Fixes: Resolved Prisma client sync issues and improved responsive types.",
 
         // v1.3.0
         "changelog.v130.title": "Performance & Mobile 🚀",
@@ -1097,11 +1091,6 @@ const translations: Translations = {
         "changelog.v140.perf": "Optimisation Fontes : Chargement asynchrone des polices pour améliorer le temps de premier affichage (FCP).",
         "changelog.v140.aria": "Refonte Accessibilité : Ajout de labels ARIA sur tous les composants critiques pour les lecteurs d'écran.",
 
-        "changelog.v131.title": "Sprint Technique & Qualité 🛠️",
-        "changelog.v131.refactor": "Nettoyage de Code : Refonte de CourseView pour une meilleure maintenabilité.",
-        "changelog.v131.tests": "Tests Unitaires : Ajout de l'infrastructure Vitest et des premiers tests.",
-        "changelog.v131.perf": "Chargement Optimisé : Imports dynamiques pour les librairies PDF/DOCX lourdes.",
-        "changelog.v131.stability": "Correctifs : Résolution des problèmes de synchro Prisma et types responsifs.",
 
         "changelog.v051.title": "Mobilité & Stabilité 📱⚡",
         "changelog.v051.mobile": "Optimisation Mobile : Refonte de la vue cours, aperçus de fichiers plus fluides et en-tête intelligent pour smartphones.",

@@ -281,6 +281,13 @@ export function useFinance() {
                     return response.data;
                 }
             });
+        },
+
+        // Manual Refresh
+        refresh: () => {
+            queryClient.invalidateQueries({ queryKey: ['banks'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
         }
     };
 }

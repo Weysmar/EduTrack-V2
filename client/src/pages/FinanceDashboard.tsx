@@ -39,7 +39,8 @@ export default function FinanceDashboard() {
         isLoadingTransactions, isLoadingAccounts, isLoadingBanks,
         deleteAccount, deleteTransaction, updateTransaction,
         createTransaction,
-        useBalanceHistory
+        useBalanceHistory,
+        refresh
     } = useFinance();
 
     const { data: balanceHistory, isLoading: isLoadingHistory } = useBalanceHistory(6);
@@ -147,8 +148,14 @@ export default function FinanceDashboard() {
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     )}
-{/* ... other buttons ... */}
-                        <RefreshCw className="h-4 w-4" />
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={refresh}
+                        disabled={isLoadingTransactions}
+                        title={t('finance.refresh')}
+                    >
+                        <RefreshCw className={cn("h-4 w-4", isLoadingTransactions && "animate-spin")} />
                     </Button>
 
                     <Button
