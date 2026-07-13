@@ -49,6 +49,7 @@ services:
         condition: service_healthy
     networks:
       - edutrack-network
+      - dokploy-network
     restart: unless-stopped
 
   # Frontend Service
@@ -67,6 +68,7 @@ services:
       - backend
     networks:
       - edutrack-network
+      - dokploy-network
     restart: unless-stopped
 
   # MinIO Service (Optional S3 simplified for Dokploy)
@@ -89,6 +91,9 @@ services:
 networks:
   edutrack-network:
     driver: bridge
+  dokploy-network:
+    name: dokploy-network
+    external: true
 
 volumes:
   postgres_data:
