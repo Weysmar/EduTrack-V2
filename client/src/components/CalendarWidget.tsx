@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon, Externa
 import { format, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
 import { fr, enUS } from 'date-fns/locale'
 import { useProfileStore } from '@/store/profileStore'
+import { useCalendarStore } from '@/store/calendarStore'
 import { fetchICalFeed, ICalEvent } from '@/lib/ical-parser'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
