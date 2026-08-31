@@ -8,7 +8,7 @@ import { CalendarWidget } from '@/components/CalendarWidget'
 import { useProfileStore } from '@/store/profileStore'
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown'
 import { useQuery } from '@tanstack/react-query'
-import { courseQueries, itemQueries, analyticsQueries, mindmapQueries } from '@/lib/api/queries'
+import { courseQueries, itemQueries, analyticsQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { StatCardVariant } from '@/components/ui/StatCard';
@@ -36,12 +36,6 @@ export function Dashboard() {
     })
 
     const allItems = itemsData?.items || []
-
-    const { data: mindMaps } = useQuery({
-        queryKey: ['mindmaps'],
-        queryFn: () => mindmapQueries.getAll(),
-        enabled: !!activeProfile
-    })
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
@@ -192,16 +186,13 @@ export function Dashboard() {
     const lastActiveCourse = recentCourses[0];
 
     // Enrich activity
-    const mixedActivity = [
-        ...itemList.map((i: any) => ({ ...i, sortDate: i.createdAt, activityType: i.type })),
-        ...(mindMaps || []).map((m: any) => ({ ...m, sortDate: m.createdAt, activityType: 'mindmap', title: m.name, courseTitle: 'AI Generated' }))
-    ];
-
-    const activity = mixedActivity.sort((a: any, b: any) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime()).slice(0, 5).map((item: any) => {
-        if (item.activityType === 'mindmap') return item;
-        const course = courseList.find((c: any) => c.id === item.courseId)
-        return { ...item, courseTitle: course?.title }
-    })
+    const activity = itemList
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map((item: any) => {
+            const course = courseList.find((c: any) => c.id === item.courseId);
+            return { ...item, courseTitle: course?.title };
+        });
 
     // Quick Actions
     const quickActions = [

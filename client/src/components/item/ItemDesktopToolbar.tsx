@@ -23,7 +23,6 @@ interface ItemDesktopToolbarProps {
     isAIMenuOpen: boolean;
     setIsAIMenuOpen: (val: boolean) => void;
     handleOpenExercise: (mode: 'flashcards' | 'quiz') => void;
-    setIsMindMapModalOpen: (val: boolean) => void;
     hasSummary: boolean;
     setShowSummary: (val: boolean) => void;
     setIsSummaryOptionsOpen: (val: boolean) => void;
@@ -35,7 +34,7 @@ export function ItemDesktopToolbar({
     item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
-    setIsMindMapModalOpen, hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
+    hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
 }: ItemDesktopToolbarProps) {
     return (
         <div className="hidden md:flex items-center gap-2 justify-end">
@@ -198,17 +197,6 @@ export function ItemDesktopToolbar({
                                 >
                                     <CheckSquare className="h-4 w-4 text-green-500" />
                                     Générer QCM
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setIsAIMenuOpen(false)
-                                        setIsMindMapModalOpen(true)
-                                    }}
-                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                >
-                                    <BrainCircuit className="h-4 w-4 text-blue-500" />
-                                    Générer Mind Map
                                 </button>
 
                                 <button

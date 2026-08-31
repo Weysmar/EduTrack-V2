@@ -52,7 +52,7 @@ export function HubPage() {
                                 <BrainCircuit className="h-8 w-8" />
                             </div>
                             <h2 className="text-3xl font-bold mb-2">EduTrack</h2>
-                            <p className="text-muted-foreground">Gestion de cours, révisions IA, Mindmaps et planification.</p>
+                            <p className="text-muted-foreground">Gestion de cours, révisions IA, Flashcards, QCM et planification.</p>
                         </div>
 
                         <div className="relative z-10 flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">

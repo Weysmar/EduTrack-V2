@@ -98,7 +98,7 @@ export function CourseView() {
     const deleteCourseMutation = useMutation({
         mutationFn: courseQueries.delete,
         onSuccess: () => {
-            navigate('/')
+            navigate('/edu/dashboard')
             queryClient.invalidateQueries({ queryKey: ['courses'] })
         }
     })

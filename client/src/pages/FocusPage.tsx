@@ -72,7 +72,7 @@ export function FocusPage() {
             {/* Header Controls */}
             <div className="w-full flex items-center justify-between p-4 z-10 max-w-4xl mx-auto absolute top-0 left-0 right-0">
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/edu/dashboard')}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ChevronLeft className="w-5 h-5" />

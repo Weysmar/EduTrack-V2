@@ -11,7 +11,6 @@ interface ItemMobileToolbarProps {
     setIsAIMenuOpen: (val: boolean) => void;
     handleDelete: () => void;
     handleOpenExercise: (mode: 'flashcards' | 'quiz') => void;
-    setIsMindMapModalOpen: (val: boolean) => void;
     hasSummary: boolean;
     setShowSummary: (val: boolean) => void;
     setIsSummaryOptionsOpen: (val: boolean) => void;
@@ -28,7 +27,6 @@ export function ItemMobileToolbar({
     setIsAIMenuOpen,
     handleDelete,
     handleOpenExercise,
-    setIsMindMapModalOpen,
     hasSummary,
     setShowSummary,
     setIsSummaryOptionsOpen,
@@ -131,22 +129,6 @@ export function ItemMobileToolbar({
                                 <div className="text-left">
                                     <div className="font-semibold">QCM</div>
                                     <div className="text-xs text-muted-foreground">Testez vos connaissances</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    setIsMindMapModalOpen(true)
-                                }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                                    <BrainCircuit className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">Mind Map</div>
-                                    <div className="text-xs text-muted-foreground">Visualisez les relations</div>
                                 </div>
                             </button>
 

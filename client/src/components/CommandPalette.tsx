@@ -105,9 +105,6 @@ export function CommandPalette() {
                         <CommandItem icon={LayoutDashboard} onSelect={() => runCommand(() => navigate('/edu/dashboard'))}>
                             Dashboard
                         </CommandItem>
-                        <CommandItem icon={MapIcon} onSelect={() => runCommand(() => navigate('/edu/board'))}>
-                            Investigation Board 🕵️
-                        </CommandItem>
                         <CommandItem icon={Calendar} onSelect={() => runCommand(() => navigate('/edu/calendar'))}>
                             Calendar
                         </CommandItem>

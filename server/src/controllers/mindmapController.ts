@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
 import { getApiKey, detectProvider } from '../services/apiKeyService';
 import { contentExtractionService } from '../services/contentExtractionService';
+import { storageService } from '../services/storageService';
 import { incrementAIGeneration } from './profileController';
 import { prisma } from '../lib/prisma';
 
@@ -99,7 +100,6 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                 }
             });
 
-            const { storageService } = require('../services/storageService');
             const extractionResults: Array<{ filename: string; text: string; warnings: string[] }> = [];
 
             for (const item of fileItems) {

@@ -132,8 +132,9 @@ export const quizQueries = {
     delete: async (id: string) => {
         await apiClient.delete(`/quizzes/${id}`);
     },
-    submit: async (id: string, score: number) => {
-        const { data } = await apiClient.post(`/quizzes/${id}/submit`, { score });
+    submit: async (id: string, payload: number | { score: number; correctAnswers?: number; totalQuestions?: number }) => {
+        const body = typeof payload === 'number' ? { score: payload } : payload;
+        const { data } = await apiClient.post(`/quizzes/${id}/submit`, body);
         return data;
     },
     getAttempts: async (id: string) => {

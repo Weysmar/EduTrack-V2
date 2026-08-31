@@ -25,7 +25,6 @@ import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
 import { EditItemModal } from '@/components/EditItemModal'
 import { TTSControls } from '@/components/TTSControls'
-import { GenerateMindMapModal } from '@/components/GenerateMindMapModal'
 
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 import { Editor } from '@/components/Editor'
@@ -59,7 +58,6 @@ export function ItemView() {
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
     const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
-    const [isMindMapModalOpen, setIsMindMapModalOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
     const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft' | 'local'>('microsoft') // Lifted state
@@ -532,7 +530,6 @@ export function ItemView() {
                     isAIMenuOpen={isAIMenuOpen}
                     setIsAIMenuOpen={setIsAIMenuOpen}
                     handleOpenExercise={handleOpenExercise}
-                    setIsMindMapModalOpen={setIsMindMapModalOpen}
                     hasSummary={!!summary}
                     setShowSummary={setShowSummary}
                     setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
@@ -551,7 +548,6 @@ export function ItemView() {
                 setIsAIMenuOpen={setIsAIMenuOpen}
                 handleDelete={handleDelete}
                 handleOpenExercise={handleOpenExercise}
-                setIsMindMapModalOpen={setIsMindMapModalOpen}
                 hasSummary={!!summary}
                 setShowSummary={setShowSummary}
                 setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
@@ -916,15 +912,7 @@ export function ItemView() {
                 item={item}
                 courseId={courseId || ""}
             />
-
-            <GenerateMindMapModal
-                isOpen={isMindMapModalOpen}
-                onClose={() => setIsMindMapModalOpen(false)}
-                courseId={courseId}
-                initialSelectedNotes={item.type === 'note' ? [item] : []}
-                initialSelectedFile={item.type === 'resource' ? item : undefined}
-            />
-        </div >
+        </div>
     )
 }
 

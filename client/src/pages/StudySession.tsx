@@ -89,6 +89,40 @@ export function StudySession() {
         setCurrentIndex(prev => prev + 1);
     }
 
+    // Keyboard navigation (Space to flip, 1-4 to rate)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isFinished || isSetLoading || !currentCard) return;
+
+            // Ignore if typing in an input/textarea
+            if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+            if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                if (!isFlipped) {
+                    setIsFlipped(true);
+                }
+            } else if (isFlipped) {
+                if (e.key === '1' || e.code === 'Numpad1') {
+                    e.preventDefault();
+                    handleRate('again');
+                } else if (e.key === '2' || e.code === 'Numpad2') {
+                    e.preventDefault();
+                    handleRate('hard');
+                } else if (e.key === '3' || e.code === 'Numpad3') {
+                    e.preventDefault();
+                    handleRate('good');
+                } else if (e.key === '4' || e.code === 'Numpad4') {
+                    e.preventDefault();
+                    handleRate('easy');
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFlipped, currentCard, isFinished, isSetLoading]);
+
     if (isSetLoading) return <div className="p-10 text-center">Loading study session...</div>
 
     if (isFinished) {
@@ -184,7 +218,7 @@ export function StudySession() {
                         {/* Front */}
                         <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-8 border rounded-2xl">
                             <h2 className="text-2xl md:text-3xl font-bold leading-tight select-none">{currentCard?.front}</h2>
-                            <p className="mt-8 text-sm text-muted-foreground animate-pulse">[ Space to Show Answer ]</p>
+                            <p className="mt-8 text-sm text-muted-foreground animate-pulse">[ Appuyez sur Espace ou cliquez pour révéler ]</p>
                         </div>
                         {/* Back */}
                         <div
@@ -202,18 +236,27 @@ export function StudySession() {
             {/* Controls */}
             <div className="h-24 md:h-32 border-t bg-card p-4 md:p-6 flex items-center justify-center gap-4">
                 {!isFlipped ? (
-                    <button onClick={() => setIsFlipped(true)} className="w-full max-w-md bg-primary text-primary-foreground h-14 rounded-xl font-bold text-lg shadow-lg">
-                        Show Answer
+                    <button onClick={() => setIsFlipped(true)} className="w-full max-w-md bg-primary text-primary-foreground h-14 rounded-xl font-bold text-lg shadow-lg hover:opacity-95 transition-opacity">
+                        Afficher la réponse <span className="text-xs font-normal opacity-80 ml-2">(Espace)</span>
                     </button>
                 ) : (
                     <div className="grid grid-cols-4 gap-2 md:gap-4 w-full max-w-2xl">
-                        {['again', 'hard', 'good', 'easy'].map((r: any) => (
+                        {[
+                            { key: 'again', label: 'À revoir', shortcut: '1', color: 'hover:border-red-500 hover:text-red-500' },
+                            { key: 'hard', label: 'Difficile', shortcut: '2', color: 'hover:border-amber-500 hover:text-amber-500' },
+                            { key: 'good', label: 'Bon', shortcut: '3', color: 'hover:border-blue-500 hover:text-blue-500' },
+                            { key: 'easy', label: 'Facile', shortcut: '4', color: 'hover:border-green-500 hover:text-green-500' }
+                        ].map((r: any) => (
                             <button
-                                key={r}
-                                onClick={() => handleRate(r)}
-                                className="flex flex-col items-center justify-center p-2 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors uppercase font-bold text-sm"
+                                key={r.key}
+                                onClick={() => handleRate(r.key)}
+                                className={cn(
+                                    "flex flex-col items-center justify-center p-2 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors uppercase font-bold text-xs md:text-sm relative group",
+                                    r.color
+                                )}
                             >
-                                {r}
+                                <span>{r.label}</span>
+                                <span className="text-[10px] text-muted-foreground opacity-70 group-hover:opacity-100 mt-1">({r.shortcut})</span>
                             </button>
                         ))}
                     </div>

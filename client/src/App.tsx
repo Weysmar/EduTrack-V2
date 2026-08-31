@@ -53,8 +53,6 @@ const QuizStudy = lazyWithRetry(() => import('@/pages/QuizStudy').then(m => ({ d
 const CalendarPage = lazyWithRetry(() => import('@/pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const ProfileManager = lazyWithRetry(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
 const SettingsPage = lazyWithRetry(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
-const MindMapsPage = lazyWithRetry(() => import('@/pages/MindMapsPage').then(m => ({ default: m.MindMapsPage })))
-const InvestigationBoard = lazyWithRetry(() => import('@/pages/InvestigationBoard').then(m => ({ default: m.InvestigationBoard })))
 const FinanceDashboard = lazyWithRetry(() => import('@/pages/FinanceDashboard').then(m => ({ default: m.default })))
 const ImportPage = lazyWithRetry(() => import('@/pages/finance/ImportPage').then(m => ({ default: m.default })))
 const BankDetailsPage = lazyWithRetry(() => import('@/pages/finance/BankDetailsPage').then(m => ({ default: m.default })))
@@ -130,14 +128,6 @@ const router = createBrowserRouter([
                             {
                                 path: 'settings',
                                 element: <LazyPage><SettingsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'board',
-                                element: <LazyPage><InvestigationBoard /></LazyPage>,
-                            },
-                            {
-                                path: 'mindmaps',
-                                element: <LazyPage><MindMapsPage /></LazyPage>,
                             },
                             {
                                 path: 'course/:courseId',

@@ -104,14 +104,12 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500",
                         item.type === 'quiz' && "bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-500",
                         item.type === 'flashcards' && "bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500",
-                        item.type === 'mindmap' && "bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-500",
                         item.type === 'summary' && "bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500"
                     )}>
                         {item.type === 'note' && <FileText className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                         {item.type === 'exercise' && <Dumbbell className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                         {item.type === 'quiz' && <CheckSquare className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                         {item.type === 'flashcards' && <Layers className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                        {item.type === 'mindmap' && <Brain className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                         {item.type === 'summary' && <FileCheck className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
                     </div>
                 )}
@@ -125,7 +123,6 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         item.type === 'exercise' && "bg-green-500/90 text-white",
                         item.type === 'quiz' && "bg-purple-500/90 text-white",
                         item.type === 'flashcards' && "bg-orange-500/90 text-white",
-                        item.type === 'mindmap' && "bg-pink-500/90 text-white",
                         item.type === 'summary' && "bg-cyan-500/90 text-white"
                     )}>
                         {t(typeKey)}

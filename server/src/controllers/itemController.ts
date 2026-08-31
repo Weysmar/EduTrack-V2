@@ -70,31 +70,18 @@ export const createItem = async (req: AuthRequest, res: Response) => {
         let fileName = null;
         let fileSize = null;
 
+        let thumbnailUrl = null;
+        let fileType = null;
+
         if (req.file) {
             const uploadResult = await storageService.uploadFile(req.file);
             fileUrl = uploadResult.url;
             storageKey = uploadResult.key;
             fileName = req.file.originalname;
             fileSize = req.file.size;
+            fileType = req.file.mimetype;
 
-            // Generate Thumbnail
-            const thumbnailBuffer = await storageService.generateThumbnail(req.file);
-            if (thumbnailBuffer) {
-                const thumbFile = {
-                    ...req.file,
-                    buffer: thumbnailBuffer,
-                    originalname: `thumb-${req.file.originalname.split('.')[0]}.webp`,
-                    mimetype: 'image/webp'
-                } as Express.Multer.File;
-
-                const thumbUpload = await storageService.uploadFile(thumbFile);
-                // We could add thumbnailUrl to item data here
-                // But I need to define thumbnailUrl variable first
-            }
-        }
-
-        let thumbnailUrl = null;
-        if (req.file) {
+            // Generate Thumbnail for images
             const thumbnailBuffer = await storageService.generateThumbnail(req.file);
             if (thumbnailBuffer) {
                 const thumbFile = {
@@ -122,6 +109,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 fileUrl,
                 storageKey,
                 fileName,
+                fileType,
                 fileSize: fileSize ? parseInt(String(fileSize)) : null,
                 thumbnailUrl
             }

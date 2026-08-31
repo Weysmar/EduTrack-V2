@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
 interface ItemMarkdownDisplayProps {
@@ -37,9 +38,25 @@ export function ItemMarkdownDisplay({ content, isSummary = false, className }: I
         li: ({ children }: any) => <li className="marker:text-primary">{children}</li>,
     };
 
-    const formattedContent = typeof content === 'string'
-        ? (isSummary ? content.replace(/•\s?/g, '\n- ') : content)
-        : '';
+    const rawContent = typeof content === 'string' ? content : '';
+    const formattedContent = isSummary ? rawContent.replace(/•\s?/g, '\n- ') : rawContent;
+
+    // Check if content contains HTML markup (typical from Tiptap editor: <p>, <h1>, <ul>, etc.)
+    const isHtml = /<\/?(?:p|h[1-6]|ul|ol|li|div|span|strong|em|b|i|u|table|tr|td|th|pre|code|br|blockquote|mark)\b/i.test(formattedContent);
+
+    if (isHtml) {
+        const sanitizedHtml = DOMPurify.sanitize(formattedContent, {
+            ADD_TAGS: ['mark'],
+            ADD_ATTR: ['target']
+        });
+
+        return (
+            <div
+                className={cn(defaultClasses, className)}
+                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+            />
+        );
+    }
 
     return (
         <div className={cn(defaultClasses, className)}>

@@ -34,7 +34,8 @@ export function QuizStudy() {
     const questions = quiz?.questions || []
 
     const submitResultMutation = useMutation({
-        mutationFn: (score: number) => quizQueries.submit(id!, score),
+        mutationFn: (payload: { score: number; correctAnswers: number; totalQuestions: number }) => 
+            quizQueries.submit(id!, payload),
         onSuccess: () => {
             refetchAttempts()
         }
@@ -91,7 +92,11 @@ export function QuizStudy() {
 
         const score = Math.round((correctCount / questions.length) * 100)
 
-        submitResultMutation.mutate(score)
+        submitResultMutation.mutate({
+            score,
+            correctAnswers: correctCount,
+            totalQuestions: questions.length
+        })
     }
 
     if (isLoading || !quiz) return <div className="flex items-center justify-center h-screen">Loading...</div>
