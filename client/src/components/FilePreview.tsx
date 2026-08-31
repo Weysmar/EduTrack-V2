@@ -24,6 +24,8 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
+    const [pdfError, setPdfError] = useState(false);
+
     // Determine file extension and type
     const ext = (fileName?.split('.').pop() || fileType?.split('/')[1] || '').toLowerCase();
 
@@ -39,6 +41,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     useEffect(() => {
         let isMounted = true;
         setLoading(true);
+        setPdfError(false);
 
         const preparePreview = async () => {
             if (!url) {
@@ -99,7 +102,9 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         resizeObserver.observe(containerRef.current);
 
         // Initial set
-        setContainerWidth(containerRef.current.clientWidth);
+        if (containerRef.current) {
+            setContainerWidth(containerRef.current.clientWidth);
+        }
 
         return () => {
             resizeObserver.disconnect();
@@ -134,38 +139,48 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         );
     }
 
-    // 2. PDF Preview Card
+    // 2. PDF Preview Thumbnail
     if (isPDF) {
-        return (
-            <div
-                className={cn(
-                    "w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/20",
-                    className
-                )}
-            >
-                {/* PDF Badge */}
-                <div className="absolute top-2.5 left-2.5 bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm z-10 tracking-wider">
-                    PDF
-                </div>
-
-                {/* Decorative Document Center */}
-                <div className="flex flex-col items-center justify-center gap-2 transform group-hover:scale-105 transition-transform duration-200">
-                    <div className="w-12 h-14 bg-card border-2 border-red-500/30 rounded-lg shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500/20 rounded-bl" />
-                        <FileText className="h-6 w-6 text-red-500" />
-                        <div className="w-6 h-0.5 bg-red-500/30 rounded-full mt-1" />
-                    </div>
-                    {fileName && (
-                        <span className="text-[11px] font-medium text-muted-foreground line-clamp-1 max-w-[140px] px-2 text-center">
-                            {fileName.replace(/\.pdf$/i, '')}
-                        </span>
+        if (url && showThumbnails && !pdfError) {
+            return (
+                <div
+                    ref={containerRef}
+                    className={cn(
+                        "w-full h-full bg-slate-100 dark:bg-slate-900 overflow-hidden relative flex items-start justify-center",
+                        className
                     )}
-                </div>
+                >
+                    {/* PDF Badge */}
+                    <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-sm z-20 tracking-wider">
+                        PDF
+                    </div>
 
-                {/* Corner Fold Effect */}
-                <div className="absolute top-0 right-0 w-8 h-8 bg-red-500/10 rounded-bl-2xl border-b border-l border-red-500/20" />
-            </div>
-        );
+                    <Document
+                        file={url}
+                        loading={
+                            <div className="w-full h-full flex items-center justify-center bg-muted/30 min-h-[140px]">
+                                <Loader2 className="h-5 w-5 animate-spin text-red-500/70" />
+                            </div>
+                        }
+                        error={
+                            <PDFCardFallback className={className} fileName={fileName} />
+                        }
+                        onLoadError={() => setPdfError(true)}
+                        className="w-full flex items-start justify-center"
+                    >
+                        <Page
+                            pageNumber={1}
+                            width={containerWidth || 280}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            className="w-full object-cover pointer-events-none select-none shadow-sm"
+                        />
+                    </Document>
+                </div>
+            );
+        }
+
+        return <PDFCardFallback className={className} fileName={fileName} />;
     }
 
     // 3. Office Live Thumbnails (PPTX, Excel, Word)
@@ -252,3 +267,36 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     );
 });
 FilePreview.displayName = "FilePreview";
+
+function PDFCardFallback({ className, fileName }: { className?: string; fileName?: string }) {
+    return (
+        <div
+            className={cn(
+                "w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/20",
+                className
+            )}
+        >
+            {/* PDF Badge */}
+            <div className="absolute top-2.5 left-2.5 bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm z-10 tracking-wider">
+                PDF
+            </div>
+
+            {/* Decorative Document Center */}
+            <div className="flex flex-col items-center justify-center gap-2 transform group-hover:scale-105 transition-transform duration-200">
+                <div className="w-12 h-14 bg-card border-2 border-red-500/30 rounded-lg shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500/20 rounded-bl" />
+                    <FileText className="h-6 w-6 text-red-500" />
+                    <div className="w-6 h-0.5 bg-red-500/30 rounded-full mt-1" />
+                </div>
+                {fileName && (
+                    <span className="text-[11px] font-medium text-muted-foreground line-clamp-1 max-w-[140px] px-2 text-center">
+                        {fileName.replace(/\.pdf$/i, '')}
+                    </span>
+                )}
+            </div>
+
+            {/* Corner Fold Effect */}
+            <div className="absolute top-0 right-0 w-8 h-8 bg-red-500/10 rounded-bl-2xl border-b border-l border-red-500/20" />
+        </div>
+    );
+}
