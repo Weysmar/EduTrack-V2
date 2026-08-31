@@ -52,7 +52,7 @@ export const useProfileStore = create<ProfileState>()(
                 google_gemini_summaries: null,
                 google_gemini_exercises: null,
                 finance_audit_provider: 'google',
-                finance_audit_model: 'gemini-1.5-flash'
+                finance_audit_model: 'gemini-3.7-flash'
             },
             isLoading: false,
 
@@ -103,15 +103,26 @@ export const useProfileStore = create<ProfileState>()(
                         google_gemini_summaries: null,
                         google_gemini_exercises: null,
                         finance_audit_provider: 'google',
-                        finance_audit_model: 'gemini-1.5-flash'
+                        finance_audit_model: 'gemini-3.7-flash'
                     }
                 });
             },
 
             setApiKey: async (service: keyof ApiKeyMap, key: string) => {
-                set(state => ({
-                    apiKeys: { ...state.apiKeys, [service]: key }
-                }));
+                const { activeProfile, apiKeys } = get();
+                const newKeys = { ...apiKeys, [service]: key };
+                set({ apiKeys: newKeys });
+
+                if (activeProfile) {
+                    try {
+                        await apiClient.put(`/profiles/${activeProfile.id}`, {
+                            settings: newKeys
+                        });
+                        set({ activeProfile: { ...activeProfile, settings: newKeys } as any });
+                    } catch (e) {
+                        console.error("Failed to sync API key to server", e);
+                    }
+                }
             },
 
             updateApiKeys: async (newKeys: ApiKeyMap) => {

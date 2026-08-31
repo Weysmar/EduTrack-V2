@@ -67,7 +67,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                                 : 'hover:bg-accent border-muted'
                                         )}
                                     >
-                                        ⚡ Google Gemini 2.5
+                                        ⚡ Google Gemini 3.7
                                     </button>
                                 </div>
                             </div>
@@ -75,7 +75,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold">Modèle</label>
                                 <select
-                                    value={options.model || (options.provider === 'perplexity' ? 'sonar-pro' : 'gemini-2.0-flash-exp')}
+                                    value={options.model || (options.provider === 'perplexity' ? 'sonar-pro' : 'gemini-3.7-flash')}
                                     onChange={(e) => setOptions({ ...options, model: e.target.value })}
                                     className="w-full bg-background border px-3 py-3 rounded-md text-sm ring-offset-background focus:ring-2 focus:ring-primary/20 min-h-[44px]"
                                 >
@@ -88,12 +88,11 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         </>
                                     ) : (
                                         <>
-                                            <option value="gemini-2.5-flash">🚀 Gemini 2.5 Flash (Nouveau Standard)</option>
-                                            <option value="gemini-2.5-flash-lite">🔥 Gemini 2.5 Flash-Lite (Rapide)</option>
-                                            <option value="gemini-3-flash">🧪 Gemini 3.0 Flash (Preview)</option>
-                                            <option value="gemini-2.0-flash-exp">✨ Gemini 2.0 Flash (Expérimental)</option>
-                                            <option value="gemini-1.5-pro">🧠 Gemini 1.5 Pro (Complexe)</option>
-                                            <option value="gemini-1.5-flash">⚡ Gemini 1.5 Flash (Stable)</option>
+                                            <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé)</option>
+                                            <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Thinking (Raisonnement approfondi)</option>
+                                            <option value="gemini-3.7-pro">🎯 Gemini 3.7 Pro (Expert & Synthèses denses)</option>
+                                            <option value="gemini-3.6-flash">🚀 Gemini 3.6 Flash (Standard Rapide)</option>
+                                            <option value="gemini-3.6-pro">🏛️ Gemini 3.6 Pro (Avancé)</option>
                                         </>
                                     )}
                                 </select>

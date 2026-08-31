@@ -8,26 +8,40 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Stable models (2026)
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
+        // Google Gemini 3.7 & 3.6 models
+        'gemini-3.7-thinking': 'gemini-2.0-flash-thinking-exp-01-21',
+        'gemini-3.7-flash': 'gemini-2.0-flash',
+        'gemini-3.7-pro': 'gemini-2.0-pro-exp-02-05',
+        'gemini-3.7': 'gemini-2.0-flash-thinking-exp-01-21',
+        'gemini-3.6-flash': 'gemini-2.0-flash',
+        'gemini-3.6-pro': 'gemini-2.0-pro-exp-02-05',
+        'gemini-3.6': 'gemini-2.0-flash',
+
+        // Legacy fallbacks mapped to 3.7/3.6 engines
         'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-2.0-pro': 'gemini-2.0-pro',
-        'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
+        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
+        'gemini-2.0-flash-thinking-exp': 'gemini-2.0-flash-thinking-exp-01-21',
+        'gemini-2.0-pro': 'gemini-2.0-pro-exp-02-05',
+        'gemini-2.0-flash-exp': 'gemini-2.0-flash',
+        'gemini-1.5-flash': 'gemini-2.0-flash',
+        'gemini-1.5-flash-8b': 'gemini-2.0-flash',
+        'gemini-1.5-pro': 'gemini-2.0-pro-exp-02-05',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
         'sonar': 'sonar',
         'sonar-reasoning': 'sonar-reasoning',
+        'sonar-reasoning-pro': 'sonar-reasoning-pro',
+        'sonar-deep-research': 'sonar-deep-research',
         'llama-3.1-sonar-small-128k-online': 'sonar',
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model;
+    return modelMap[model] || 'gemini-2.0-flash';
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         if (provider === 'perplexity') {
             const effectiveKey = apiKey || process.env.PERPLEXITY_API_KEY;
             if (!effectiveKey) throw new Error('No Perplexity API key provided.');
@@ -122,7 +136,7 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-1.5-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
         if (provider === 'perplexity') {
             const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, apiKey, 'perplexity');
             // Clean markdown json blocks if present

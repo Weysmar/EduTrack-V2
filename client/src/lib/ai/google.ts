@@ -71,7 +71,7 @@ INSTRUCTIONS DE CONTENU :
 -   Vérifie qu'aucun caractère Markdown brut (#, *) ne reste visible s'il n'est pas interprété par le rendu final.
 `;
 
-        const model = geminiOptions.model || 'gemini-2.0-flash-exp';
+        const model = geminiOptions.model || 'gemini-3.7-flash';
 
         try {
             const { data } = await apiClient.post('/ai/generate', {
@@ -91,7 +91,7 @@ INSTRUCTIONS DE CONTENU :
             const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown error";
 
             if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
-                throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 1.5 Flash) ou réessayer plus tard.");
+                throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 3.6 Flash) ou réessayer plus tard.");
             }
 
             throw error;
@@ -107,7 +107,7 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
             prompt: prompt,
             systemPrompt: systemPrompt,
             provider: 'google',
-            model: model || 'gemini-2.0-flash-exp',
+            model: model || 'gemini-3.7-flash',
             apiKey: API_KEY
         });
         return data.text;
@@ -118,7 +118,7 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
         const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown error";
 
         if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
-            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 1.5 Flash) ou réessayer plus tard.");
+            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 3.6 Flash) ou réessayer plus tard.");
         }
 
         throw error;

@@ -1,11 +1,17 @@
 import React from 'react'
 import { CalendarWidget } from '@/components/CalendarWidget'
 import { useCalendarStore } from '@/store/calendarStore'
+import { useProfileStore } from '@/store/profileStore'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { Calendar } from 'lucide-react'
+import { useLanguage } from '@/components/language-provider'
 
 export function CalendarPage() {
-    const { isConnected } = useCalendarStore()
+    const { isConnected: storeConnected, icalUrl: storeUrl } = useCalendarStore()
+    const { apiKeys } = useProfileStore()
+    const { language } = useLanguage()
+
+    const isConnected = !!(apiKeys.google_calendar || storeConnected || storeUrl)
 
     if (!isConnected) {
         return (
@@ -14,9 +20,13 @@ export function CalendarPage() {
                     <Calendar className="h-16 w-16 text-muted-foreground" />
                 </div>
                 <div className="text-center max-w-md space-y-2">
-                    <h1 className="text-2xl font-bold">Connect your Calendar</h1>
-                    <p className="text-muted-foreground">
-                        Integrate your Google Calendar (iCal) to view your schedule alongside your learning materials.
+                    <h1 className="text-2xl font-bold">
+                        {language === 'fr' ? 'Connecter Google Agenda' : 'Connect your Calendar'}
+                    </h1>
+                    <p className="text-muted-foreground text-sm">
+                        {language === 'fr'
+                            ? 'Intégrez votre Google Agenda via le flux secret iCal pour visualiser votre planning aux côtés de vos cours et révisions.'
+                            : 'Integrate your Google Calendar (iCal) to view your schedule alongside your learning materials.'}
                     </p>
                 </div>
                 <GoogleConnectButton />
@@ -27,15 +37,12 @@ export function CalendarPage() {
     return (
         <div className="h-full flex flex-col space-y-6">
             <header className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold flex items-center gap-3">
-                    <Calendar className="h-8 w-8 text-primary" />
-                    My Calendar
+                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                    <Calendar className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+                    <span>{language === 'fr' ? 'Mon Agenda' : 'My Calendar'}</span>
                 </h1>
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-full flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
-                        Connected
-                    </span>
+                    <GoogleConnectButton />
                 </div>
             </header>
 

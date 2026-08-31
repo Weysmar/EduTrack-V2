@@ -3,8 +3,10 @@ import { toast } from "sonner"
 import { Course, Folder } from '@/lib/types';
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { ChevronRight, Folder as FolderIcon } from 'lucide-react'
+import { ChevronRight, Folder as FolderIcon, Pencil } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useLanguage } from '@/components/language-provider'
+import { EditFolderModal } from '@/components/EditFolderModal'
 
 interface FolderTreeProps {
     folders: Folder[]
@@ -47,11 +49,10 @@ export function FolderTree({ folders, courses, parentId, level = 0 }: FolderTree
     )
 }
 
-import { useLanguage } from '@/components/language-provider'
-
 function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder, allFolders: Folder[], allCourses: Course[], level: number }) {
     const { t } = useLanguage()
     const [isOpen, setIsOpen] = useState(true)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const location = useLocation()
     const isActive = location.pathname === `/edu/folder/${folder.id}`
     const queryClient = useQueryClient()
@@ -61,11 +62,6 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
         e.stopPropagation()
         const courseId = e.dataTransfer.getData('courseId')
         if (courseId) {
-            // Check if courseId is purely numeric (legacy) or string (UUID)
-            // But db.courses.update accepts the key type.
-            // If the ID coming from setData is string "123", we might need to parse it if the DB key is number 123.
-            // Let's try to be smart.
-
             const idToUpdate = String(courseId);
 
             // Dropping course into folder
@@ -92,18 +88,32 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
             >
-                <div className="flex items-center gap-2 overflow-hidden flex-1">
+                <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
                     <button
                         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen) }}
-                        className="p-0.5 hover:bg-muted-foreground/10 rounded-sm transition-colors"
+                        className="p-0.5 hover:bg-muted-foreground/10 rounded-sm transition-colors shrink-0"
                     >
                         <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200", isOpen && "rotate-90")} />
                     </button>
 
-                    <Link to={`/edu/folder/${folder.id}`} className="flex items-center gap-2 flex-1 truncate py-0.5">
-                        <FolderIcon className={cn("h-4 w-4", isOpen ? "fill-current" : "fill-transparent")} />
+                    <Link to={`/edu/folder/${folder.id}`} className="flex items-center gap-2 flex-1 truncate py-0.5 min-w-0">
+                        <FolderIcon className={cn("h-4 w-4 shrink-0", isOpen ? "fill-current" : "fill-transparent")} />
                         <span className="truncate">{folder.name}</span>
                     </Link>
+                </div>
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setIsEditModalOpen(true)
+                        }}
+                        className="p-1 hover:bg-muted-foreground/15 rounded text-muted-foreground hover:text-foreground transition-colors"
+                        title={t('folder.edit') || "Renommer le dossier"}
+                    >
+                        <Pencil className="h-3 w-3" />
+                    </button>
                 </div>
             </div>
 
@@ -115,6 +125,12 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                     level={level + 1}
                 />
             )}
+
+            <EditFolderModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                folder={folder}
+            />
         </div>
     )
 }

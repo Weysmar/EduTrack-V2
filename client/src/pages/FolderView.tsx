@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderQueries, courseQueries, itemQueries } from '@/lib/api/queries'
 import { useState } from 'react'
 import { useLanguage } from '@/components/language-provider'
-import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2 } from 'lucide-react'
+import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2, Pencil } from 'lucide-react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
+import { EditFolderModal } from '@/components/EditFolderModal'
 import { useProfileStore } from '@/store/profileStore'
 
 export function FolderView() {
@@ -42,6 +43,7 @@ export function FolderView() {
     const courses = coursesData?.courses?.filter((c: any) => c.folderId === folderId) || []
 
     const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false)
+    const [isEditFolderOpen, setIsEditFolderOpen] = useState(false)
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
     const [isAggregating, setIsAggregating] = useState(false)
     const [aggregatedContent, setAggregatedContent] = useState('')
@@ -142,7 +144,16 @@ export function FolderView() {
                         <FolderIcon className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold">{folder.name}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold">{folder.name}</h1>
+                            <button
+                                onClick={() => setIsEditFolderOpen(true)}
+                                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                title={t('folder.edit') || "Renommer le dossier"}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </button>
+                        </div>
                         <p className="text-muted-foreground text-sm">
                             {subFolders?.length || 0} folders • {courses?.length || 0} courses
                         </p>
@@ -163,6 +174,14 @@ export function FolderView() {
                     >
                         <FolderPlus className="h-4 w-4" />
                         <span>{t('folder.create.sub')}</span>
+                    </button>
+                    <button
+                        onClick={() => setIsEditFolderOpen(true)}
+                        className="flex items-center gap-2 bg-muted text-muted-foreground py-2 px-3 rounded-md hover:bg-muted/80 transition-colors text-sm font-medium"
+                        title={t('folder.edit') || "Renommer"}
+                    >
+                        <Pencil className="h-4 w-4" />
+                        <span className="hidden sm:inline">{t('folder.edit') || "Renommer"}</span>
                     </button>
 
                     <div className="h-8 w-px bg-border mx-2" />
@@ -255,6 +274,12 @@ export function FolderView() {
                 onClose={() => setIsGenerateModalOpen(false)}
                 sourceContent={aggregatedContent}
                 sourceTitle={folder.name}
+            />
+
+            <EditFolderModal
+                isOpen={isEditFolderOpen}
+                onClose={() => setIsEditFolderOpen(false)}
+                folder={folder}
             />
         </div>
     )

@@ -27,10 +27,17 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'URL parameter is required' });
         }
 
-        // 1. Validate URL Protocol strictly
+        // 1. Normalize Protocol (handle webcal:// and webcals:// from Google Calendar)
+        let normalizedUrl = url.trim();
+        if (normalizedUrl.startsWith('webcal://')) {
+            normalizedUrl = 'https://' + normalizedUrl.substring(9);
+        } else if (normalizedUrl.startsWith('webcals://')) {
+            normalizedUrl = 'https://' + normalizedUrl.substring(10);
+        }
+
         let parsedUrl: URL;
         try {
-            parsedUrl = new URL(url);
+            parsedUrl = new URL(normalizedUrl);
             if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
                 return res.status(400).json({ error: 'Invalid URL protocol' });
             }
@@ -38,7 +45,6 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Invalid URL format' });
         }
 
-        let targetAddress: string;
         // 2. SSRF Protection: Resolve hostname and check for private IP to avoid TOCTOU
         try {
             const { address } = await lookup(parsedUrl.hostname);
@@ -46,58 +52,57 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
                 console.warn(`Blocked SSRF attempt to ${url} (resolved to ${address})`);
                 return res.status(403).json({ error: 'Access to internal resources is forbidden' });
             }
-            targetAddress = address;
         } catch (e) {
             return res.status(400).json({ error: 'Invalid hostname' });
         }
 
-        // 1. SSRF Protection: Rebuild the target URL from scratch using ONLY validated components
-        // This breaks the taint chain from the input 'url' parameter
-        const safeTargetUrl = new URL(`${parsedUrl.protocol}//${targetAddress}${parsedUrl.pathname}${parsedUrl.search}`);
-
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); 
+        const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
-        // Strictly use the validated URL object
-        // deepcode ignore Ssrf: Hostname is forcibly resolved and validated against a private IP blacklist
-        const response = await fetch(safeTargetUrl.toString(), {
+        // Fetch using validated HTTPS/HTTP URL with proper SNI and redirect following
+        const response = await fetch(parsedUrl.href, {
             headers: {
-                'User-Agent': 'EduTrack/1.2 (Calendar Proxy)',
-                'Host': parsedUrl.hostname // Essential for the backend server to recognize the host
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) EduTrack/1.2 (Calendar Proxy)',
+                'Accept': 'text/calendar, text/plain, */*'
             },
+            redirect: 'follow',
             signal: controller.signal
         });
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            return res.status(response.status).json({ error: 'Failed to fetch iCal feed from provider' });
+            return res.status(response.status).json({ error: `Failed to fetch iCal feed from provider (status ${response.status})` });
         }
 
-        const rawIcsData = await response.text();
+        let rawIcsData = await response.text();
 
-        // 2. XSS Protection: Deep sanitization of the fetched string
-        // We ensure it starts with VCALENDAR and contains NO HTML tags
-        if (!rawIcsData.trim().startsWith('BEGIN:VCALENDAR')) {
-            return res.status(400).json({ error: 'Invalid iCal feed format' });
+        // Strip UTF-8 BOM if present
+        if (rawIcsData.charCodeAt(0) === 0xFEFF) {
+            rawIcsData = rawIcsData.slice(1);
         }
 
-        // Strip ALL HTML tags and script-like content just in case
+        // 3. Validation: Verify iCal format
+        if (!rawIcsData.toUpperCase().includes('BEGIN:VCALENDAR')) {
+            return res.status(400).json({ error: 'Invalid iCal feed format: missing BEGIN:VCALENDAR' });
+        }
+
+        // Strip HTML tags just in case of injection
         const sanitizedIcs = rawIcsData.replace(/<[^>]*>?/gm, '');
         
-        // Use Buffer to break the string taint for some scanners
         const outputBuffer = Buffer.from(sanitizedIcs, 'utf-8');
 
-        // Force strictly text/calendar and use CSP to disable all execution
+        // Force strictly text/calendar and use CSP
         res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'none'; object-src 'none';");
-        res.setHeader('Content-Disposition', 'attachment; filename="calendar.ics"');
+        res.setHeader('Content-Disposition', 'inline; filename="calendar.ics"');
 
-        // 3. XSS Protection: Use end() with Buffer for maximum isolation from stream-based injection
-        // deepcode ignore XSS: Content is strictly vetted and served with text/calendar Content-Type
         res.status(200).send(outputBuffer);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Calendar Proxy Error:', error);
+        if (error.name === 'AbortError') {
+            return res.status(504).json({ error: 'Timeout while fetching calendar feed' });
+        }
         res.status(500).json({ error: 'Internal server error while fetching calendar feed' });
     }
 };

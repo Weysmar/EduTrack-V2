@@ -156,6 +156,10 @@ export const folderQueries = {
         const { data: res } = await apiClient.post('/folders', data);
         return res;
     },
+    update: async (id: string, data: { name?: string; parentId?: string | null }) => {
+        const { data: res } = await apiClient.put(`/folders/${id}`, data);
+        return res;
+    },
     delete: async (id: string) => {
         await apiClient.delete(`/folders/${id}`);
     }

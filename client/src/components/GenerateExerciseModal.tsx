@@ -268,7 +268,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                             : "hover:bg-accent border-muted"
                                                     )}
                                                 >
-                                                    ⚡ Google Gemini 2.5
+                                                    ⚡ Google Gemini 3.7
                                                 </button>
                                             </div>
                                         </div>
@@ -278,16 +278,15 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             <div>
                                                 <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
                                                 <select
-                                                    value={model}
+                                                    value={model || 'gemini-3.7-flash'}
                                                     onChange={(e) => setModel(e.target.value)}
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
-                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommandé)</option>
-                                                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Rapide)</option>
-                                                    <option value="gemini-3-flash">Gemini 3.0 Flash (Preview)</option>
-                                                    <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
-                                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Expert)</option>
+                                                    <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé)</option>
+                                                    <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Thinking (Raisonnement approfondi)</option>
+                                                    <option value="gemini-3.7-pro">🎯 Gemini 3.7 Pro (Expert & Synthèses denses)</option>
+                                                    <option value="gemini-3.6-flash">🚀 Gemini 3.6 Flash (Standard Rapide)</option>
+                                                    <option value="gemini-3.6-pro">🏛️ Gemini 3.6 Pro (Avancé)</option>
                                                 </select>
                                             </div>
                                         )}

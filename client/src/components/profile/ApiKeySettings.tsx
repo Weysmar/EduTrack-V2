@@ -136,22 +136,25 @@ export function ApiKeySettings() {
 
                     <ApiKeyInput
                         id="google_calendar"
-                        label={t('settings.api.calendar')}
+                        label="Google Calendar (URL iCal)"
                         value={keys.google_calendar}
                         onChange={v => setKeys(prev => ({ ...prev, google_calendar: v }))}
                         show={showKey['google_calendar']}
                         onToggle={() => toggleShow('google_calendar')}
-                        placeholder={t('settings.api.placeholder.bearer')}
+                        placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
                     />
                 </div>
+            </div>
 
-                {/* Finance Audit Section */}
+            {/* FinanceTrack Settings */}
+            <div className="space-y-4 pt-4">
+                <div className="flex items-center gap-2 border-b pb-2">
+                    <Wallet className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-base">{t('settings.api.finance.title')}</h3>
+                </div>
+
                 <div className="space-y-4">
-                    <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">
-                        {t('settings.api.finance.title')}
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-sm font-medium">{t('settings.api.finance.provider')}</label>
                             <select
@@ -161,7 +164,7 @@ export function ApiKeySettings() {
                                     setKeys(prev => ({
                                         ...prev,
                                         finance_audit_provider: provider,
-                                        finance_audit_model: provider === 'google' ? 'gemini-1.5-flash' : 'sonar'
+                                        finance_audit_model: provider === 'google' ? 'gemini-3.7-flash' : 'sonar'
                                     }));
                                 }}
                                 className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -180,10 +183,11 @@ export function ApiKeySettings() {
                             >
                                 {keys.finance_audit_provider === 'google' ? (
                                     <>
-                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
-                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                                        <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash (Recommandé)</option>
+                                        <option value="gemini-3.7-thinking">Gemini 3.7 Thinking (Raisonnement)</option>
+                                        <option value="gemini-3.7-pro">Gemini 3.7 Pro (Expert)</option>
+                                        <option value="gemini-3.6-flash">Gemini 3.6 Flash (Standard Rapide)</option>
+                                        <option value="gemini-3.6-pro">Gemini 3.6 Pro (Avancé)</option>
                                     </>
                                 ) : (
                                     <>

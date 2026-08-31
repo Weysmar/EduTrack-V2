@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/language-provider'
 
 export function CalendarWidget() {
     const { apiKeys } = useProfileStore()
+    const { icalUrl: storeUrl } = useCalendarStore()
     const { language, t } = useLanguage()
     const [currentDate, setCurrentDate] = useState(new Date())
     const [events, setEvents] = useState<ICalEvent[]>([])
@@ -16,7 +17,7 @@ export function CalendarWidget() {
     const [error, setError] = useState<string | null>(null)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
 
-    const icalUrl = apiKeys.google_calendar;
+    const icalUrl = apiKeys.google_calendar || storeUrl;
     const isConnected = !!icalUrl;
 
     const locale = language === 'fr' ? fr : enUS
