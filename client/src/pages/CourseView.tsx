@@ -42,29 +42,34 @@ export function CourseView() {
         refetch: refetchContent 
     } = useCourseContent(id, itemPage)
 
-    // Accumulate items when pages change
+    // Reset pagination when course id changes
     useEffect(() => {
-        if (allItems) {
+        setItemPage(1)
+    }, [id])
+
+    // Synchronize allVisibleItems properly without race conditions
+    useEffect(() => {
+        if (!allItems) return
+        if (itemPage === 1) {
+            setAllVisibleItems(allItems)
+        } else {
             setAllVisibleItems(prev => {
                 const existingIds = new Set(prev.map(i => i.id))
                 const filtered = allItems.filter(i => !existingIds.has(i.id))
                 return [...prev, ...filtered]
             })
         }
-    }, [allItems])
+    }, [allItems, itemPage, id])
 
-    // Reset when course changes
-    useEffect(() => {
-        setAllVisibleItems([])
-        setItemPage(1)
-    }, [id])
+    // Fallback directly to allItems so items are immediately visible on navigation
+    const activeCourseItems = allVisibleItems.length > 0 ? allVisibleItems : (allItems || [])
 
     const {
         activeFilters, toggleFilter,
         filteredItems,
         sortOption, setSortOption,
         selectedItems, toggleSelection, clearSelection, handleSelectAll
-    } = useCourseFilters(allVisibleItems)
+    } = useCourseFilters(activeCourseItems)
 
     // --- State ---
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -116,7 +121,7 @@ export function CourseView() {
         setIsBulkDeleting(true)
         try {
             const { itemQueries, summaryQueries, flashcardQueries, quizQueries, mindmapQueries } = await import('@/lib/api/queries')
-            const itemsToDelete = allVisibleItems.filter(i => selectedItems.has(i.id))
+            const itemsToDelete = activeCourseItems.filter(i => selectedItems.has(i.id))
 
             const regularItems = itemsToDelete.filter(i => !['summary', 'flashcards', 'quiz', 'mindmap'].includes(i.type))
             const summaries = itemsToDelete.filter(i => i.type === 'summary')
@@ -145,12 +150,12 @@ export function CourseView() {
     }
 
     const getAggregatedContent = async (itemIds?: string[]) => {
-        if (!allVisibleItems) return ''
-        const itemsToProcess = itemIds ? allVisibleItems.filter(i => itemIds.includes(i.id)) : allVisibleItems
+        if (!activeCourseItems || activeCourseItems.length === 0) return ''
+        const itemsToProcess = itemIds ? activeCourseItems.filter(i => itemIds.includes(i.id)) : activeCourseItems
         const content: string[] = []
         for (const i of itemsToProcess) {
             let itemText = i.content || i.extractedContent || ''
-            const relatedSummary = allVisibleItems.find(s => s.type === 'summary' && s.itemId === i.id)
+            const relatedSummary = activeCourseItems.find(s => s.type === 'summary' && s.itemId === i.id)
             if (!itemText && relatedSummary?.content) itemText = relatedSummary.content
             if (itemText) content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
         }
