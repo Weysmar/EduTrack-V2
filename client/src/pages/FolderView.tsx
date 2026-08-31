@@ -132,88 +132,77 @@ export function FolderView() {
     return (
         <div className="flex-1 h-full flex flex-col overflow-hidden bg-background/50">
             {/* Header */}
-            <div className="border-b bg-card/50 backdrop-blur-sm p-6 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
+            <div className="p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
                         className="p-2 hover:bg-muted rounded-full transition-colors"
+                        title={t('common.back')}
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </button>
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                        <FolderIcon className="h-8 w-8 text-primary" />
+                    <div className="p-2.5 md:p-3 bg-primary/10 rounded-lg shrink-0">
+                        <FolderIcon className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold">{folder.name}</h1>
+                            <h1 className="text-xl md:text-2xl font-bold truncate">{folder.name}</h1>
                             <button
                                 onClick={() => setIsEditFolderOpen(true)}
-                                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
                                 title={t('folder.edit') || "Renommer le dossier"}
                             >
                                 <Pencil className="h-4 w-4" />
                             </button>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                            {subFolders?.length || 0} folders • {courses?.length || 0} courses
+                        <p className="text-muted-foreground text-xs md:text-sm truncate">
+                            {subFolders?.length || 0} dossiers • {courses?.length || 0} cours
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         onClick={() => setIsCreateCourseOpen(true)}
-                        className="flex items-center gap-2 bg-primary text-primary-foreground py-2 px-4 rounded-md hover:opacity-90 transition-opacity text-sm font-medium"
+                        className="flex items-center gap-1.5 bg-primary text-primary-foreground py-2 px-3 sm:px-4 rounded-md hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
                     >
                         <Plus className="h-4 w-4" />
                         <span>{t('nav.newCourse')}</span>
                     </button>
                     <button
                         onClick={handleCreateFolder}
-                        className="flex items-center gap-2 bg-muted text-muted-foreground py-2 px-4 rounded-md hover:bg-muted/80 transition-colors text-sm font-medium"
+                        className="flex items-center gap-1.5 bg-muted text-muted-foreground py-2 px-3 sm:px-4 rounded-md hover:bg-muted/80 transition-colors text-xs sm:text-sm font-medium"
                     >
                         <FolderPlus className="h-4 w-4" />
                         <span>{t('folder.create.sub')}</span>
                     </button>
-                    <button
-                        onClick={() => setIsEditFolderOpen(true)}
-                        className="flex items-center gap-2 bg-muted text-muted-foreground py-2 px-3 rounded-md hover:bg-muted/80 transition-colors text-sm font-medium"
-                        title={t('folder.edit') || "Renommer"}
-                    >
-                        <Pencil className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t('folder.edit') || "Renommer"}</span>
-                    </button>
-
-                    <div className="h-8 w-px bg-border mx-2" />
 
                     <button
                         onClick={handleOpenGeneration}
                         disabled={isAggregating}
-                        className="flex items-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-indigo-600 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50"
                     >
                         {isAggregating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-                        <span>Générer Exercices IA</span>
+                        <span className="hidden sm:inline">Générer Exercices IA</span>
+                        <span className="sm:hidden">Exercices IA</span>
                     </button>
 
                     <button
                         onClick={() => {
                             if (confirm(t('folder.delete.confirm'))) {
-                                // Logic handled by Delete Mutation? 
-                                // Ideally backend handles recursive delete or we move items to parent?
-                                // Let's delete for now as moving is complex to implement without backend support
                                 deleteFolderMutation.mutate(folderId!)
                             }
                         }}
                         className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors ml-auto"
                         title={t('action.delete')}
                     >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                 </div>
             </div>
 
             {/* Content Grid */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
                     {/* Render Sub-Folders */}

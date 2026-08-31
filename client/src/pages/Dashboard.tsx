@@ -249,30 +249,30 @@ export function Dashboard() {
                         )}
                     </div>
 
-                    {/* DOCK (Quick Actions) - Grid 2x2 mobile, row desktop */}
-                    <div className="grid grid-cols-2 sm:flex gap-3 md:gap-4 w-full sm:w-auto">
+                    {/* DOCK (Quick Actions) - Grid 4 cols on mobile, flex on desktop */}
+                    <div className="grid grid-cols-4 sm:flex gap-2 sm:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
                         {quickActions.map((action, idx) => (
                             action.link ? (
                                 <Link
                                     key={idx}
                                     to={action.link}
-                                    className="group flex flex-col items-center gap-2 sm:gap-1.5"
+                                    className="group flex flex-col items-center gap-1 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-14 h-14 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
-                                        <action.icon className="w-7 h-7 sm:w-6 sm:h-6" />
+                                    <div className={cn("w-12 h-12 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95", action.color)}>
+                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
+                                    <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center truncate max-w-[70px] sm:max-w-none dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
                                 </Link>
                             ) : (
                                 <button
                                     key={idx}
                                     onClick={action.action}
-                                    className="group flex flex-col items-center gap-2 sm:gap-1.5"
+                                    className="group flex flex-col items-center gap-1 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-14 h-14 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", action.color)}>
-                                        <action.icon className="w-7 h-7 sm:w-6 sm:h-6" />
+                                    <div className={cn("w-12 h-12 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95", action.color)}>
+                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
+                                    <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center truncate max-w-[70px] sm:max-w-none dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
                                 </button>
                             )
                         ))}

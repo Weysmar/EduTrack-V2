@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 import { EduSidebar } from '@/components/layout/EduSidebar'
@@ -22,6 +22,7 @@ import { useLanguage } from '@/components/language-provider'
 export function EduLayout() {
     const { t } = useLanguage()
     useSocket()
+    const location = useLocation()
 
     const { user, isAuthenticated } = useAuthStore()
     const { activeProfile, switchProfile } = useProfileStore()
@@ -70,7 +71,13 @@ export function EduLayout() {
             if (window.innerWidth < 1024) closeSidebar()
         }
         handleResize()
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
     }, [closeSidebar])
+
+    useEffect(() => {
+        if (window.innerWidth < 1024) closeSidebar()
+    }, [location.pathname, closeSidebar])
 
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background relative">
