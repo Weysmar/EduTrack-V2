@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { useProfileStore } from '@/store/profileStore'
-import { Eye, EyeOff, Save, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Save, AlertCircle, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 
