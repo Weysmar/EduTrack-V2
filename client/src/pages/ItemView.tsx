@@ -408,33 +408,31 @@ export function ItemView() {
             />
 
             {/* Header */}
-            <div className="min-h-[3rem] h-auto border-b flex flex-col gap-2 px-3 md:px-6 py-2 bg-card sticky top-0 z-40 transition-all">
-                <div className="flex items-start md:items-center gap-3 md:gap-4 flex-1 min-w-0 w-full">
+            <div className="border-b flex flex-col md:flex-row md:items-center justify-between gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-card sticky top-0 z-40 transition-all shadow-xs">
+                <div className="flex items-center gap-2.5 md:gap-3 flex-1 min-w-0">
                     <button
                         onClick={() => navigate(`/edu/course/${courseId}`)}
-                        className="p-2 mt-1 md:mt-0 hover:bg-muted rounded-full transition-colors flex items-center gap-2 text-muted-foreground hover:text-foreground flex-shrink-0"
+                        className="p-1.5 hover:bg-muted rounded-lg transition-colors flex items-center gap-1.5 text-muted-foreground hover:text-foreground flex-shrink-0 text-xs font-medium"
                     >
-                        <ArrowLeft className="h-5 w-5" />
-                        <span className="font-medium hidden sm:inline">{t('course.return')}</span>
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">{t('course.return')}</span>
                     </button>
-                    <div className="h-8 md:h-6 w-px bg-border text-muted-foreground hidden sm:block" />
-                    <div className={cn("p-2 rounded-md flex-shrink-0 mt-1 md:mt-0",
+                    <div className="h-5 w-px bg-border hidden sm:block flex-shrink-0" />
+                    <div className={cn("p-1.5 rounded-lg flex-shrink-0",
                         item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                         item.type === 'resource' && (isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
-
                     )}>
-                        {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
-                        {item.type === 'note' && <FileText className="h-5 w-5" />}
-                        {item.type === 'resource' && (isImage ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
-
+                        {item.type === 'exercise' && <Dumbbell className="h-4 w-4" />}
+                        {item.type === 'note' && <FileText className="h-4 w-4" />}
+                        {item.type === 'resource' && (isImage ? <ImageIcon className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />)}
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                            <h1 className="text-base md:text-xl font-bold truncate leading-snug">{item.title}</h1>
+                            <h1 className="text-sm md:text-base font-bold truncate leading-tight">{item.title}</h1>
                             {isEditMode && saveStatus !== 'idle' && (
                                 <div className={cn(
-                                    "flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-in fade-in slide-in-from-left-2",
+                                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-in fade-in",
                                     saveStatus === 'saving' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30",
                                     saveStatus === 'saved' && "bg-green-100 text-green-700 dark:bg-green-900/30",
                                     saveStatus === 'error' && "bg-red-100 text-red-700 dark:bg-red-900/30"
@@ -450,10 +448,11 @@ export function ItemView() {
                                 </div>
                             )}
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                            {course && <p className="text-xs text-muted-foreground truncate leading-relaxed">{course.title}</p>}
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                            {course && <span className="truncate">{course.title}</span>}
                             {item.type === 'resource' && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                                <>
+                                    {course && <span>•</span>}
                                     {(() => {
                                         const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
                                         const isWord = ['DOC', 'DOCX'].includes(ext);
@@ -482,14 +481,14 @@ export function ItemView() {
                                         }
 
                                         return (
-                                            <span className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider border border-transparent", badgeClass)}>
-                                                <Icon className="h-3 w-3" />
+                                            <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold tracking-wider", badgeClass)}>
+                                                <Icon className="h-2.5 w-2.5" />
                                                 {ext}
                                             </span>
                                         );
                                     })()}
                                     {item.fileName && (
-                                        <span className="opacity-75">{item.fileName}</span>
+                                        <span className="opacity-75 truncate max-w-[200px]">{item.fileName}</span>
                                     )}
                                     {item.createdAt && (
                                         <>
@@ -503,7 +502,7 @@ export function ItemView() {
                                             </span>
                                         </>
                                     )}
-                                </div>
+                                </>
                             )}
                         </div>
                     </div>
@@ -554,8 +553,14 @@ export function ItemView() {
                 t={t}
             />
             {/* Main Content Area */}
-            <div className="flex-1 overflow-auto bg-muted/5 flex flex-col p-0 md:p-10 pb-24 md:pb-10">
-                <div className={cn("w-full space-y-0 md:space-y-6", showSummary ? "" : (isExcel ? "max-w-none" : "max-w-5xl mx-auto"))}>
+            <div className={cn(
+                "flex-1 overflow-auto bg-muted/5 flex flex-col",
+                item.type === 'resource' ? "p-0 md:p-3 pb-20 md:pb-3" : "p-0 md:p-8 pb-24 md:pb-8"
+            )}>
+                <div className={cn(
+                    "w-full h-full",
+                    showSummary ? "" : (item.type === 'resource' ? "max-w-none" : "max-w-5xl mx-auto space-y-0 md:space-y-6")
+                )}>
 
                     {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
                     {item.type === 'exercise' && item.status && item.difficulty && (
