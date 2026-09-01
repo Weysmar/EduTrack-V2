@@ -14,8 +14,47 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
     const [pageWidth, setPageWidth] = useState<number | null>(null)
+    const [blobUrl, setBlobUrl] = useState<string | null>(null)
+    const [fetchError, setFetchError] = useState<string | null>(null)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    // Pre-fetch PDF as a local blob URL so web workers don't encounter cross-origin, authorization, or range request issues on mobile
+    useEffect(() => {
+        let isMounted = true
+        let objectUrl: string | null = null
+
+        const loadPdfBlob = async () => {
+            setLoading(true)
+            setFetchError(null)
+            try {
+                const response = await fetch(url)
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+                }
+                const blob = await response.blob()
+                if (isMounted) {
+                    objectUrl = URL.createObjectURL(blob)
+                    setBlobUrl(objectUrl)
+                }
+            } catch (err: any) {
+                console.error("PDF Blob fetch error:", err)
+                if (isMounted) {
+                    // Fallback directly to original URL if blob fetch fails
+                    setBlobUrl(url)
+                }
+            }
+        }
+
+        loadPdfBlob()
+
+        return () => {
+            isMounted = false
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl)
+            }
+        }
+    }, [url, key])
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -38,7 +77,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     }
 
     function onDocumentLoadError(error: Error) {
-        console.error('Error loading PDF:', error)
+        console.error('Error loading PDF in worker:', error)
         setLoading(false)
     }
 
@@ -95,65 +134,68 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
             {/* PDF Document - Scrollable Area */}
             <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-4">
                 <div ref={containerRef} className="flex flex-col items-center gap-4 min-h-full w-full">
-                    <Document
-                        key={key}
-                        file={url}
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        onLoadError={onDocumentLoadError}
-                        loading={
-                            <div className="flex items-center justify-center p-12">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                            </div>
-                        }
-                        error={
-                            <div className="text-center p-8 md:p-12 max-w-md mx-auto my-auto flex flex-col items-center justify-center">
-                                <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
-                                    <AlertCircle className="h-6 w-6" />
+                    {blobUrl && (
+                        <Document
+                            key={`${key}-${blobUrl}`}
+                            file={blobUrl}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            onLoadError={onDocumentLoadError}
+                            loading={
+                                <div className="flex items-center justify-center p-12">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                                 </div>
-                                <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du PDF</p>
-                                <p className="text-sm text-muted-foreground mb-6">
-                                    Impossible de charger le visualiseur sur cet appareil. Vous pouvez réessayer ou ouvrir le fichier directement.
-                                </p>
-                                <div className="flex flex-wrap items-center justify-center gap-3 w-full">
-                                    <button
-                                        onClick={handleRetry}
-                                        className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-                                    >
-                                        <RotateCw className="h-4 w-4" />
-                                        <span>Réessayer</span>
-                                    </button>
-                                    <a
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
-                                    >
-                                        <ExternalLink className="h-4 w-4" />
-                                        <span>Ouvrir le PDF</span>
-                                    </a>
+                            }
+                            error={
+                                <div className="text-center p-8 md:p-12 max-w-md mx-auto my-auto flex flex-col items-center justify-center">
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
+                                        <AlertCircle className="h-6 w-6" />
+                                    </div>
+                                    <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du PDF</p>
+                                    <p className="text-sm text-muted-foreground mb-6">
+                                        Impossible de charger le visualiseur sur cet appareil. Vous pouvez réessayer ou ouvrir le fichier directement.
+                                    </p>
+                                    <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                                        <button
+                                            onClick={handleRetry}
+                                            className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                        >
+                                            <RotateCw className="h-4 w-4" />
+                                            <span>Réessayer</span>
+                                        </button>
+                                        <a
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                            <span>Ouvrir le PDF</span>
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>
-                        }
-                        className="flex flex-col gap-4"
-                    >
-                        {numPages && Array.from(new Array(numPages), (el, index) => (
-                            <Page
-                                key={`page_${index + 1}`}
-                                pageNumber={index + 1}
-                                scale={scale}
-                                width={pageWidth || undefined}
-                                renderTextLayer={false}
-                                renderAnnotationLayer={false}
-                                className="shadow-lg bg-white"
-                                loading={
-                                    <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
-                                }
-                            />
-                        ))}
-                    </Document>
+                            }
+                            className="flex flex-col gap-4"
+                        >
+                            {numPages && Array.from(new Array(numPages), (el, index) => (
+                                <Page
+                                    key={`page_${index + 1}`}
+                                    pageNumber={index + 1}
+                                    scale={scale}
+                                    width={pageWidth || undefined}
+                                    renderTextLayer={false}
+                                    renderAnnotationLayer={false}
+                                    className="shadow-lg bg-white"
+                                    loading={
+                                        <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
+                                    }
+                                />
+                            ))}
+                        </Document>
+                    )}
                 </div>
             </div>
         </div>
     )
 }
+
 
