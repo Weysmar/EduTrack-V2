@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Document, Page, pdfjs } from 'react-pdf'
-import { ZoomIn, ZoomOut } from 'lucide-react'
+import { Document, Page } from 'react-pdf'
+import { ZoomIn, ZoomOut, ExternalLink, RotateCw, AlertCircle } from 'lucide-react'
 import { useLanguage } from './language-provider'
-
-// PDF.js worker is configured globally in main.tsx
 
 interface PDFViewerProps {
     url: string
@@ -16,6 +14,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
     const [pageWidth, setPageWidth] = useState<number | null>(null)
+    const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -41,6 +40,11 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
     function onDocumentLoadError(error: Error) {
         console.error('Error loading PDF:', error)
         setLoading(false)
+    }
+
+    const handleRetry = () => {
+        setLoading(true)
+        setKey(prev => prev + 1)
     }
 
     const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3))
@@ -72,6 +76,19 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                     >
                         <ZoomIn className="h-4 w-4" />
                     </button>
+
+                    <div className="h-4 w-px bg-border mx-0.5" />
+
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors text-foreground flex items-center gap-1 text-xs font-medium"
+                        title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="hidden sm:inline">Ouvrir</span>
+                    </a>
                 </div>
             </div>
 
@@ -79,6 +96,7 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
             <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-4">
                 <div ref={containerRef} className="flex flex-col items-center gap-4 min-h-full w-full">
                     <Document
+                        key={key}
                         file={url}
                         onLoadSuccess={onDocumentLoadSuccess}
                         onLoadError={onDocumentLoadError}
@@ -88,9 +106,32 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                             </div>
                         }
                         error={
-                            <div className="text-center p-12 text-destructive">
-                                <p className="font-semibold mb-2">Erreur de chargement du PDF</p>
-                                <p className="text-sm">Veuillez réessayer ou utiliser le bouton "Ouvrir le PDF"</p>
+                            <div className="text-center p-8 md:p-12 max-w-md mx-auto my-auto flex flex-col items-center justify-center">
+                                <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
+                                    <AlertCircle className="h-6 w-6" />
+                                </div>
+                                <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du PDF</p>
+                                <p className="text-sm text-muted-foreground mb-6">
+                                    Impossible de charger le visualiseur sur cet appareil. Vous pouvez réessayer ou ouvrir le fichier directement.
+                                </p>
+                                <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                                    <button
+                                        onClick={handleRetry}
+                                        className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                    >
+                                        <RotateCw className="h-4 w-4" />
+                                        <span>Réessayer</span>
+                                    </button>
+                                    <a
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        <span>Ouvrir le PDF</span>
+                                    </a>
+                                </div>
                             </div>
                         }
                         className="flex flex-col gap-4"
@@ -115,3 +156,4 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
         </div>
     )
 }
+

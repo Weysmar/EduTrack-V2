@@ -506,6 +506,19 @@ export function ItemView() {
                             )}
                         </div>
                     </div>
+
+                    {/* Mobile quick Open in new tab button */}
+                    {item.type === 'resource' && pdfUrl && (
+                        <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+                            title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
+                        >
+                            <ExternalLink className="h-4 w-4" />
+                        </a>
+                    )}
                 </div>
 
                 <ItemDesktopToolbar
@@ -731,28 +744,42 @@ export function ItemView() {
                                     </div>
                                 )}
 
-                                {/* File Attachment - Always show for content view, even if PDF is shown (for download) */}
+                                {/* File Attachment - Always show for content view, even if PDF is shown (for download / open) */}
                                 {(!isFocusMode && (item.fileData || item.type === 'resource')) && (
                                     <div className="mt-8 border-t pt-6">
-                                        <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-3 bg-background rounded-md border">
+                                        <div className="border rounded-lg p-4 bg-muted/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="p-3 bg-background rounded-md border shrink-0">
                                                     <FolderOpen className="h-8 w-8 text-primary" />
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium text-base">{item.fileName || t('file.attached')}</p>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-base truncate">{item.fileName || t('file.attached')}</p>
                                                     <p className="text-sm text-muted-foreground">
                                                         {item.fileSize ? `${(item.fileSize / 1024).toFixed(1)} KB` : t('file.unknownSize')}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={handleDownload}
-                                                className="px-4 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2"
-                                            >
-                                                <Download className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
-                                                <span>{t('file.download')}</span>
-                                            </button>
+                                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                                {pdfUrl && (
+                                                    <a
+                                                        href={pdfUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-3 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md border border-transparent transition-all flex items-center gap-2 text-sm font-medium"
+                                                        title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
+                                                    >
+                                                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                                        <span>{t('action.openNewTab') || "Ouvrir le PDF"}</span>
+                                                    </a>
+                                                )}
+                                                <button
+                                                    onClick={handleDownload}
+                                                    className="px-3 py-2 hover:bg-background rounded-md border border-transparent hover:border-border transition-all flex items-center gap-2 text-sm font-medium"
+                                                >
+                                                    <Download className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                                                    <span>{t('file.download')}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
