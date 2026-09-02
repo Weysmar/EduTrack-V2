@@ -7,15 +7,21 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 const STORAGE_TYPE = process.env.STORAGE_TYPE || 'local';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
 
-// S3 Configuration
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-    },
-    endpoint: process.env.AWS_ENDPOINT // For MinIO
-});
+// Lazy S3 Configuration (only instantiated if STORAGE_TYPE is explicitly 's3')
+let s3ClientInstance: S3Client | null = null;
+function getS3Client(): S3Client {
+    if (!s3ClientInstance) {
+        s3ClientInstance = new S3Client({
+            region: process.env.AWS_REGION || 'us-east-1',
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+            },
+            endpoint: process.env.AWS_ENDPOINT
+        });
+    }
+    return s3ClientInstance;
+}
 
 export const storageService = {
 
@@ -31,11 +37,11 @@ export const storageService = {
                 ContentType: file.mimetype
             });
 
-            await s3Client.send(command);
+            await getS3Client().send(command);
 
             // Generate URL (Signed or Public depending on config)
             // For this implementation, we assume signed URLs or public bucket
-            const url = await getSignedUrl(s3Client, new GetObjectCommand({
+            const url = await getSignedUrl(getS3Client(), new GetObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: key
             }), { expiresIn: 3600 * 24 * 7 }); // 7 days
@@ -62,7 +68,7 @@ export const storageService = {
         if (!key) return;
 
         if (STORAGE_TYPE === 's3') {
-            await s3Client.send(new DeleteObjectCommand({
+            await getS3Client().send(new DeleteObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: key
             }));
@@ -78,7 +84,7 @@ export const storageService = {
 
     async getFileUrl(key: string): Promise<string> {
         if (STORAGE_TYPE === 's3') {
-            return getSignedUrl(s3Client, new GetObjectCommand({
+            return getSignedUrl(getS3Client(), new GetObjectCommand({
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: key
             }), { expiresIn: 3600 });
@@ -112,7 +118,7 @@ export const storageService = {
                     Bucket: process.env.AWS_BUCKET_NAME,
                     Key: key
                 });
-                const response = await s3Client.send(command);
+                const response = await getS3Client().send(command);
                 if (response.Body) {
                     // Convert stream to buffer
                     const streamToBuffer = (stream: any) =>
