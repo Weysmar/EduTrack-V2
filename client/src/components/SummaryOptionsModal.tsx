@@ -83,7 +83,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         🤖 Perplexity Pro
                                     </button>
                                     <button
-                                        onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-3.7-flash' })}
+                                        onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-3.6-flash' })}
                                         className={cn(
                                             "px-3 py-3 rounded-md text-sm font-medium border flex items-center justify-center gap-2 min-h-[44px] touch-manipulation",
                                             options.provider === 'google'
@@ -91,7 +91,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                                 : 'hover:bg-accent border-muted'
                                         )}
                                     >
-                                        ⚡ Google Gemini 3.7
+                                        ⚡ Google Gemini
                                     </button>
                                 </div>
                                 {!hasKeyForSelectedProvider && (
@@ -130,10 +130,8 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         </>
                                     ) : (
                                         <>
-                                            <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé)</option>
-                                            <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Thinking (Raisonnement approfondi)</option>
-                                            <option value="gemini-3.7-pro">🎯 Gemini 3.7 Pro (Expert & Synthèses denses)</option>
-                                            <option value="gemini-3.6-flash">🚀 Gemini 3.6 Flash (Standard Rapide)</option>
+                                            <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (Recommandé)</option>
+                                            <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Standard)</option>
                                             <option value="gemini-3.6-pro">🏛️ Gemini 3.6 Pro (Avancé)</option>
                                         </>
                                     )}

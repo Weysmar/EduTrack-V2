@@ -6,24 +6,23 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini 3.7 & 3.6 models
-        'gemini-3.7-thinking': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-3.7-flash': 'gemini-2.0-flash',
-        'gemini-3.7-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-3.7': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-3.6-flash': 'gemini-2.0-flash',
-        'gemini-3.6-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-3.6': 'gemini-2.0-flash',
-
-        // Legacy fallbacks mapped to 3.7/3.6 engines
-        'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
-        'gemini-2.0-flash-thinking-exp': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-2.0-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-2.0-flash-exp': 'gemini-2.0-flash',
-        'gemini-1.5-flash': 'gemini-2.0-flash',
-        'gemini-1.5-flash-8b': 'gemini-2.0-flash',
-        'gemini-1.5-pro': 'gemini-2.0-pro-exp-02-05',
+        // Google Gemini models
+        'gemini-3.7-flash': 'gemini-3.6-flash',
+        'gemini-3.7-thinking': 'gemini-3.6-pro',
+        'gemini-3.7-pro': 'gemini-3.6-pro',
+        'gemini-3.7': 'gemini-3.6-flash',
+        'gemini-3.6-flash': 'gemini-3.6-flash',
+        'gemini-3.6-pro': 'gemini-3.6-pro',
+        'gemini-3.6': 'gemini-3.6-flash',
+        'gemini-2.5-flash': 'gemini-3.6-flash',
+        'gemini-2.0-flash': 'gemini-3.6-flash',
+        'gemini-2.0-flash-lite': 'gemini-3.6-flash',
+        'gemini-2.0-flash-thinking-exp': 'gemini-3.6-pro',
+        'gemini-2.0-pro': 'gemini-3.6-pro',
+        'gemini-2.0-flash-exp': 'gemini-3.6-flash',
+        'gemini-1.5-flash': 'gemini-1.5-flash',
+        'gemini-1.5-flash-8b': 'gemini-1.5-flash',
+        'gemini-1.5-pro': 'gemini-1.5-pro',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
@@ -35,7 +34,7 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || 'gemini-2.0-flash';
+    return modelMap[model] || model || 'gemini-3.6-flash';
 };
 
 export const aiService = {
@@ -114,8 +113,20 @@ export const aiService = {
             // But for simple compat:
             // MOVED UP
 
-            const result = await modelInstance.generateContent(fullPrompt);
-            const response = await result.response;
+            let response;
+            try {
+                const result = await modelInstance.generateContent(fullPrompt);
+                response = await result.response;
+            } catch (modelErr: any) {
+                if ((modelErr.message?.includes('404') || modelErr.message?.includes('not found') || modelErr.message?.includes('no longer available')) && apiModel !== 'gemini-1.5-flash') {
+                    console.warn(`[AI Service] Model ${apiModel} unavailable, falling back to gemini-1.5-flash...`);
+                    const fallbackModel = client.getGenerativeModel({ model: 'gemini-1.5-flash' }, { timeout: 120000 });
+                    const fallbackResult = await fallbackModel.generateContent(fullPrompt);
+                    response = await fallbackResult.response;
+                } else {
+                    throw modelErr;
+                }
+            }
             return response.text();
         } catch (error: any) {
             console.error('AI Generation Error Service:', error);
