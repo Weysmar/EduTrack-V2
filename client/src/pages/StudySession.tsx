@@ -8,6 +8,16 @@ import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 // import { AnalyticsService } from '@/lib/analytics/tracker' // Temporary disabled/Adapt to API
 
+// Helper to format flashcard content for clean spacing & lists
+const formatCardContent = (text?: string) => {
+    if (!text) return '';
+    return text
+        // Ensure inline numbers like "1. **foo** 2. **bar**" break into clean list lines
+        .replace(/([^\n])\s+(\d+\.\s+)/g, '$1\n\n$2')
+        // Ensure paragraph breaks between ending bold tag and following sentence
+        .replace(/(\*\*[^*]+\*\*)\s+([A-ZÀ-Ÿ][a-zà-ÿ])/g, '$1\n\n$2');
+};
+
 export function StudySession() {
     const { setId } = useParams()
     const navigate = useNavigate()
@@ -219,15 +229,16 @@ export function StudySession() {
                     >
                         {/* Front */}
                         <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-6 md:p-10 border rounded-2xl overflow-y-auto">
-                            <div className="prose dark:prose-invert max-w-none text-center select-none text-xl sm:text-2xl md:text-3xl font-bold leading-snug">
+                            <div className="max-w-none text-center select-none text-xl sm:text-2xl md:text-3xl font-bold leading-snug text-foreground">
                                 <ReactMarkdown
                                     components={{
                                         p: ({ children }) => <p className="mb-0 inline">{children}</p>,
-                                        strong: ({ children }) => <strong className="font-extrabold text-foreground">{children}</strong>,
-                                        em: ({ children }) => <em className="italic text-primary">{children}</em>
+                                        strong: ({ children }) => <strong className="font-extrabold text-amber-400 dark:text-amber-300">{children}</strong>,
+                                        b: ({ children }) => <b className="font-extrabold text-amber-400 dark:text-amber-300">{children}</b>,
+                                        em: ({ children }) => <em className="italic text-primary-400">{children}</em>
                                     }}
                                 >
-                                    {currentCard?.front || ''}
+                                    {formatCardContent(currentCard?.front)}
                                 </ReactMarkdown>
                             </div>
                             <p className="mt-6 text-xs md:text-sm text-muted-foreground animate-pulse">[ Appuyez sur Espace ou cliquez pour révéler ]</p>
@@ -237,18 +248,19 @@ export function StudySession() {
                             className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-6 md:p-10 rotate-y-180 bg-card border rounded-2xl overflow-y-auto"
                             style={{ transform: 'rotateY(180deg)' }}
                         >
-                            <div className="prose dark:prose-invert max-w-none text-center select-none text-base sm:text-lg md:text-xl font-medium leading-relaxed">
+                            <div className="w-full text-left select-none text-base sm:text-lg md:text-xl font-normal leading-relaxed text-foreground">
                                 <ReactMarkdown
                                     components={{
-                                        p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
-                                        strong: ({ children }) => <strong className="font-extrabold text-primary dark:text-primary-foreground bg-primary/10 px-1.5 py-0.5 rounded mx-0.5">{children}</strong>,
-                                        em: ({ children }) => <em className="italic text-foreground/80">{children}</em>,
-                                        ul: ({ children }) => <ul className="text-left list-disc list-inside space-y-1.5 my-2 inline-block max-w-full">{children}</ul>,
-                                        ol: ({ children }) => <ol className="text-left list-decimal list-inside space-y-1.5 my-2 inline-block max-w-full">{children}</ol>,
-                                        li: ({ children }) => <li className="leading-relaxed">{children}</li>
+                                        p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-foreground">{children}</p>,
+                                        strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>,
+                                        b: ({ children }) => <b className="font-bold text-amber-400 dark:text-amber-300">{children}</b>,
+                                        em: ({ children }) => <em className="italic text-foreground/90">{children}</em>,
+                                        ul: ({ children }) => <ul className="list-disc pl-5 space-y-2 my-3 text-foreground">{children}</ul>,
+                                        ol: ({ children }) => <ol className="list-decimal pl-5 space-y-2 my-3 text-foreground">{children}</ol>,
+                                        li: ({ children }) => <li className="leading-relaxed text-foreground pl-1">{children}</li>
                                     }}
                                 >
-                                    {currentCard?.back || ''}
+                                    {formatCardContent(currentCard?.back)}
                                 </ReactMarkdown>
                             </div>
                         </div>
