@@ -9,6 +9,7 @@ interface User {
     profileId: string;
     theme: string;
     language: string;
+    isAdmin?: boolean;
 }
 
 interface AuthState {
@@ -16,9 +17,11 @@ interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
     login: (email: string, password?: string) => Promise<void>;
-    register: (name: string, email: string, password?: string) => Promise<void>;
+    register: (name: string, email: string, password?: string) => Promise<any>;
     logout: () => void;
     deleteAccount: () => Promise<void>;
+    fetchUsers: () => Promise<any[]>;
+    deleteUser: (id: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -44,8 +47,13 @@ export const useAuthStore = create<AuthState>()(
                     const response = await apiClient.post('/auth/register', { name, email, password });
                     const { token, user } = response.data;
 
-                    localStorage.setItem('jwt_token', token);
-                    set({ user, token, isAuthenticated: true });
+                    // Only switch current session if not already logged in
+                    const currentToken = localStorage.getItem('jwt_token');
+                    if (!currentToken) {
+                        localStorage.setItem('jwt_token', token);
+                        set({ user, token, isAuthenticated: true });
+                    }
+                    return response.data;
                 } catch (error) {
                     console.error('Registration error:', error);
                     throw error;
@@ -62,6 +70,23 @@ export const useAuthStore = create<AuthState>()(
                     set({ user: null, token: null, isAuthenticated: false });
                 } catch (error) {
                     console.error('Delete account error:', error);
+                    throw error;
+                }
+            },
+            fetchUsers: async () => {
+                try {
+                    const response = await apiClient.get('/auth/users');
+                    return response.data;
+                } catch (error) {
+                    console.error('Failed to fetch users:', error);
+                    throw error;
+                }
+            },
+            deleteUser: async (id: string) => {
+                try {
+                    await apiClient.delete(`/auth/users/${id}`);
+                } catch (error) {
+                    console.error('Failed to delete user:', error);
                     throw error;
                 }
             }

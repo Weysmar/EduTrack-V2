@@ -1,21 +1,27 @@
 import { useState } from 'react'
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
-import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout } from "lucide-react"
+import { AdminUserManagement } from "@/components/settings/AdminUserManagement"
+import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users } from "lucide-react"
 import { useTheme } from '@/components/theme-provider'
 import { useLanguage } from '@/components/language-provider'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
+import { useAuthStore } from '@/store/authStore'
 import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog'>('api')
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users'>('api')
     const { theme, setTheme, themeColor, setThemeColor } = useTheme()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const useNavigateCallback = useNavigate()
     const { activeProfile, updateProfile } = useProfileStore()
+    const { user } = useAuthStore()
+
+    const isAdmin = !!user?.isAdmin || user?.email?.toLowerCase() === 'intelli.vince@gmail.com'
 
     const tabs = [
+        ...(isAdmin ? [{ id: 'users', label: language === 'fr' ? 'Utilisateurs' : 'Users', icon: Users }] : []),
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
         { id: 'appearance', label: t('settings.tabs.appearance'), icon: Sun },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
@@ -64,6 +70,20 @@ export function SettingsPage() {
                 <main className="bg-card border rounded-2xl shadow-sm overflow-hidden min-h-[500px]">
                     <div className="p-8">
 
+
+                        {activeTab === 'users' && isAdmin && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">{language === 'fr' ? "Administration des Utilisateurs" : "User Administration"}</h2>
+                                    <p className="text-sm text-muted-foreground mb-6">
+                                        {language === 'fr'
+                                            ? "Créez et gérez les comptes autorisés à accéder à la plateforme."
+                                            : "Create and manage accounts authorized to access the platform."}
+                                    </p>
+                                </div>
+                                <AdminUserManagement />
+                            </div>
+                        )}
 
                         {activeTab === 'api' && (
                             <div className="space-y-6">

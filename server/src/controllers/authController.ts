@@ -4,6 +4,14 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
+
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'intelli.vince@gmail.com').toLowerCase();
+
+export const isUserAdmin = (email?: string | null): boolean => {
+    if (!email) return false;
+    return email.toLowerCase().trim() === ADMIN_EMAIL;
+};
 
 const registerSchema = z.object({
     name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
@@ -12,8 +20,22 @@ const registerSchema = z.object({
     language: z.string().optional()
 });
 
-export const register = async (req: Request, res: Response) => {
+/**
+ * Account registration: Restricted to Admin (or initial bootstrap if 0 profiles exist)
+ */
+export const register = async (req: AuthRequest, res: Response) => {
     try {
+        const userCount = await prisma.profile.count();
+
+        // If users already exist, only the admin can create new accounts
+        if (userCount > 0) {
+            if (!req.user || !isUserAdmin(req.user.email)) {
+                return res.status(403).json({
+                    message: "L'inscription publique est désactivée. Seul l'administrateur peut créer des comptes."
+                });
+            }
+        }
+
         const validatedData = registerSchema.safeParse(req.body);
         if (!validatedData.success) {
             return res.status(400).json({
@@ -27,7 +49,7 @@ export const register = async (req: Request, res: Response) => {
         // Check if user exists
         const existingUser = await prisma.profile.findUnique({ where: { email } });
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'Cet utilisateur existe déjà' });
         }
 
         // Hash password
@@ -51,7 +73,13 @@ export const register = async (req: Request, res: Response) => {
             { expiresIn: '7d' }
         );
 
-        res.status(201).json({ token, user });
+        const { passwordHash: _, ...userWithoutPassword } = user;
+        const isAdmin = isUserAdmin(user.email);
+
+        res.status(201).json({
+            token,
+            user: { ...userWithoutPassword, isAdmin }
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
@@ -101,8 +129,9 @@ export const login = async (req: Request, res: Response) => {
 
         // Remove password hash from response
         const { passwordHash, ...userWithoutPassword } = user;
+        const isAdmin = isUserAdmin(user.email);
 
-        res.json({ token, user: userWithoutPassword });
+        res.json({ token, user: { ...userWithoutPassword, isAdmin } });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
@@ -117,8 +146,76 @@ export const getMe = async (req: any, res: Response) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const { passwordHash, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
+        const isAdmin = isUserAdmin(user.email);
+
+        res.json({ ...userWithoutPassword, isAdmin });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+/**
+ * Admin only: List all registered profiles
+ */
+export const getAllUsers = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user || !isUserAdmin(req.user.email)) {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const users = await prisma.profile.findMany({
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true,
+                lastAccessed: true,
+                avatar: true,
+                _count: {
+                    select: {
+                        courses: true,
+                        items: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const usersWithAdmin = users.map(u => ({
+            ...u,
+            isAdmin: isUserAdmin(u.email)
+        }));
+
+        res.json(usersWithAdmin);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+/**
+ * Admin only: Delete user profile
+ */
+export const deleteUserByAdmin = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user || !isUserAdmin(req.user.email)) {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const { id } = req.params;
+        const targetUser = await prisma.profile.findUnique({ where: { id } });
+
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Utilisateur introuvable' });
+        }
+
+        if (isUserAdmin(targetUser.email)) {
+            return res.status(400).json({ message: "Impossible de supprimer le compte administrateur principal." });
+        }
+
+        await prisma.profile.delete({ where: { id } });
+        res.json({ message: 'Utilisateur supprimé avec succès' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
