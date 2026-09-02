@@ -33,10 +33,12 @@ export class GoogleGeminiService {
     }
 
     static async generateSummary(text: string, options: SummaryOptions, geminiOptions: GoogleGeminiOptions): Promise<string> {
-        const profileKey = useProfileStore.getState().getApiKey('google_gemini_summaries')
+        const API_KEY = useProfileStore.getState().getApiKey('google_gemini_summaries')
             || useProfileStore.getState().getApiKey('google_gemini_exercises');
-        const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
-        const API_KEY = profileKey || envKey;
+
+        if (!API_KEY) {
+            throw new Error("Clé API Google Gemini manquante. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.");
+        }
 
         const systemPrompt = `Tu es un expert en synthèse académique structurée et pédagogique.
 Ton objectif est de produire des résumés PROFESSIONNELS, LISIBLES et PRÊTS À L'EMPLOI pour des étudiants.
@@ -103,10 +105,12 @@ INSTRUCTIONS DE CONTENU :
 }
 
 export async function generateWithGoogle(prompt: string, systemPrompt?: string, model?: string): Promise<string> {
-    const profileKey = useProfileStore.getState().getApiKey('google_gemini_exercises')
+    const API_KEY = useProfileStore.getState().getApiKey('google_gemini_exercises')
         || useProfileStore.getState().getApiKey('google_gemini_summaries');
-    const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
-    const API_KEY = profileKey || envKey;
+
+    if (!API_KEY) {
+        throw new Error("Clé API Google Gemini manquante. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.");
+    }
 
     try {
         const { data } = await apiClient.post('/ai/generate', {

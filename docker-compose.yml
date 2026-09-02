@@ -36,10 +36,6 @@ services:
       # Storage configuration (Local storage)
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       UPLOAD_DIR: uploads
-      # AI Configuration (Gemini)
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-${VITE_GOOGLE_API_KEY}}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-${VITE_GOOGLE_API_KEY}}
-      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}
     volumes:
       - uploads:/app/uploads
     ports:

@@ -18,7 +18,14 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
 
         // Validate required fields
         if (!prompt) {
-            return res.status(400).json({ message: 'Prompt is required and must be a string' });
+            return res.status(400).json({ message: 'Le texte/prompt est requis et doit être une chaîne de caractères.' });
+        }
+
+        if (!apiKey) {
+            return res.status(400).json({
+                message: 'Clé API manquante',
+                error: 'Aucune clé API configurée. Veuillez renseigner votre clé API personnelle dans Profil > Paramètres > Clés API.'
+            });
         }
 
         console.log('Provider:', provider);
@@ -28,7 +35,7 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
 
         // Simplify: forcing Gemini for now as installed SDK is Gemini
         if (provider === 'perplexity') {
-            console.warn('Perplexity provider not yet implemented, using Gemini fallback');
+            console.warn('Perplexity provider not yet implemented on backend, using Gemini fallback');
         }
 
         console.log('Calling aiService.generateText...');
@@ -67,6 +74,12 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
 export const generateJSON = async (req: AuthRequest, res: Response) => {
     try {
         const { prompt, systemPrompt, provider, model, apiKey } = req.body;
+        if (!apiKey) {
+            return res.status(400).json({
+                message: 'Clé API manquante',
+                error: 'Aucune clé API configurée. Veuillez renseigner votre clé API personnelle dans Profil > Paramètres > Clés API.'
+            });
+        }
         const response = await aiService.generateJSON(prompt, systemPrompt, model, apiKey);
 
         // Increment AI generation counter if user is authenticated

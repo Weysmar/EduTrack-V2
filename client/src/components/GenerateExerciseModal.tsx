@@ -24,16 +24,22 @@ import { useLanguage } from '@/components/language-provider'
 export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle, initialMode = 'flashcards' }: GenerateExerciseModalProps) {
     const { t } = useLanguage()
     const navigate = useNavigate()
-    const { activeProfile } = useProfileStore()
+    const { activeProfile, getApiKey } = useProfileStore()
+    const geminiKey = getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries')
+    const perplexityKey = getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries')
+    const initialProvider = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
+
     const [mode, setMode] = useState<'flashcards' | 'quiz'>(initialMode)
-    const [provider, setProvider] = useState<'perplexity' | 'google'>('perplexity')
-    const [model, setModel] = useState<string | undefined>('sonar-pro') // Default for perplexity
+    const [provider, setProvider] = useState<'perplexity' | 'google'>(initialProvider)
+    const [model, setModel] = useState<string | undefined>(initialProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
     const [isLoading, setIsLoading] = useState(false)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
     const [count, setCount] = useState<number>(10)
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['concept', 'fact'])
     const [error, setError] = useState<string | null>(null)
     const isOnline = useOnlineStatus()
+
+    const hasKeyForSelectedProvider = provider === 'google' ? !!geminiKey : !!perplexityKey
 
     useEffect(() => {
         if (isOpen) {
@@ -42,8 +48,12 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
             setDifficulty('mixed')
             setSelectedTypes(['concept', 'fact'])
             setError(null)
+            if (!perplexityKey && geminiKey) {
+                setProvider('google')
+                setModel('gemini-3.7-flash')
+            }
         }
-    }, [isOpen, initialMode])
+    }, [isOpen, initialMode, geminiKey, perplexityKey])
 
     const handleTypeToggle = (type: string) => {
         if (selectedTypes.includes(type)) {
@@ -54,6 +64,11 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
     }
 
     const handleGenerate = async () => {
+        if (!hasKeyForSelectedProvider) {
+            setError(`Clé API manquante pour ${provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.`);
+            return;
+        }
+
         if (!sourceContent || !sourceContent.trim()) {
             setError(t('exercise.error.noContent') || "Aucun contenu disponible pour la génération. Veuillez vous assurer que le document contient du texte.");
             return;
@@ -271,6 +286,24 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     ⚡ Google Gemini 3.7
                                                 </button>
                                             </div>
+                                            {!hasKeyForSelectedProvider && (
+                                                <div className="mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs animate-in fade-in">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                                                        <span className="truncate">Clé manquante pour {provider === 'google' ? 'Google Gemini' : 'Perplexity'}.</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            onClose()
+                                                            navigate('/settings')
+                                                        }}
+                                                        className="font-semibold underline hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs"
+                                                    >
+                                                        Paramètres ↗
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Specific Model Selection (conditional) */}

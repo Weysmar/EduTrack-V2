@@ -1,8 +1,10 @@
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS, CompressionLevel, SummaryFormat } from '@/lib/summary/types'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+import { useProfileStore } from '@/store/profileStore'
 
-import { X, Sliders } from 'lucide-react'
-import { useState } from 'react'
+import { X, Sliders, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useLanguage } from '@/components/language-provider'
 
 interface SummaryOptionsModalProps {
@@ -13,12 +15,34 @@ interface SummaryOptionsModalProps {
 }
 
 export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOptions = DEFAULT_SUMMARY_OPTIONS }: SummaryOptionsModalProps) {
-    const [options, setOptions] = useState<SummaryOptions>(initialOptions)
+    const navigate = useNavigate()
+    const { getApiKey } = useProfileStore()
+    const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises')
+    const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises')
+    const initialProvider = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
+
+    const [options, setOptions] = useState<SummaryOptions>({
+        ...initialOptions,
+        provider: initialOptions?.provider || initialProvider
+    })
     const { t } = useLanguage()
+
+    useEffect(() => {
+        if (isOpen && !perplexityKey && geminiKey && options.provider !== 'google') {
+            setOptions(prev => ({ ...prev, provider: 'google', model: 'gemini-3.7-flash' }))
+        }
+    }, [isOpen, geminiKey, perplexityKey])
 
     if (!isOpen) return null
 
+    const hasKeyForSelectedProvider = options.provider === 'google' ? !!geminiKey : !!perplexityKey
+
     const handleGenerate = () => {
+        if (!hasKeyForSelectedProvider) {
+            navigate('/settings')
+            onClose()
+            return
+        }
         onGenerate(options)
         onClose()
     }
@@ -59,7 +83,7 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         🤖 Perplexity Pro
                                     </button>
                                     <button
-                                        onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-2.5-flash' })}
+                                        onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-3.7-flash' })}
                                         className={cn(
                                             "px-3 py-3 rounded-md text-sm font-medium border flex items-center justify-center gap-2 min-h-[44px] touch-manipulation",
                                             options.provider === 'google'
@@ -70,6 +94,24 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         ⚡ Google Gemini 3.7
                                     </button>
                                 </div>
+                                {!hasKeyForSelectedProvider && (
+                                    <div className="mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs animate-in fade-in">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                                            <span className="truncate">Clé manquante pour {options.provider === 'google' ? 'Google Gemini' : 'Perplexity'}.</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                onClose()
+                                                navigate('/settings')
+                                            }}
+                                            className="font-semibold underline hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs"
+                                        >
+                                            Paramètres ↗
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-2">

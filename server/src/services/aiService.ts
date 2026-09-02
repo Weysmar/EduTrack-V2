@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
-// Initialize Gemini
-// Note: In a real app, you might want to instantiate this per request if using User's Key
-// For now, we use server env key OR pass key from request
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Multi-user architecture: Each user provides their own API key (BYOK)
+// Keys are passed per-request from the user's saved profile settings.
 
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
@@ -43,8 +41,8 @@ const mapModelName = (model: string): string => {
 export const aiService = {
     async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         if (provider === 'perplexity') {
-            const effectiveKey = apiKey || process.env.PERPLEXITY_API_KEY;
-            if (!effectiveKey) throw new Error('No Perplexity API key provided.');
+            const effectiveKey = apiKey;
+            if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
 
             const response = await fetch('https://api.perplexity.ai/chat/completions', {
                 method: 'POST',
@@ -71,10 +69,10 @@ export const aiService = {
         }
 
         try {
-            // Validate API key with fallbacks
-            const effectiveKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY;
+            // Validate per-user API key (BYOK architecture)
+            const effectiveKey = apiKey;
             if (!effectiveKey) {
-                throw new Error('Aucune clé API Google Gemini trouvée. Veuillez renseigner votre clé API dans les Paramètres de profil ou configurer GEMINI_API_KEY.');
+                throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
@@ -145,9 +143,9 @@ export const aiService = {
         }
 
         try {
-            const effectiveKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY;
+            const effectiveKey = apiKey;
             if (!effectiveKey) {
-                throw new Error('Aucune clé API Google Gemini trouvée. Veuillez renseigner votre clé API dans les Paramètres de profil ou configurer GEMINI_API_KEY.');
+                throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
             // Map model name
