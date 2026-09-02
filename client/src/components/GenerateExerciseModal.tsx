@@ -54,14 +54,14 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
     }
 
     const handleGenerate = async () => {
-        if (!sourceContent.trim()) {
-            setError("No content available to generate from.")
-            return
+        if (!sourceContent || !sourceContent.trim()) {
+            setError(t('exercise.error.noContent') || "Aucun contenu disponible pour la génération. Veuillez vous assurer que le document contient du texte.");
+            return;
         }
 
         if (selectedTypes.length === 0) {
-            setError("Please select at least one focus area.")
-            return
+            setError(t('exercise.error.noFocus') || "Veuillez sélectionner au moins un axe de travail.");
+            return;
         }
 
         setIsLoading(true)

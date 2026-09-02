@@ -10,14 +10,16 @@ if (typeof URL.parse === 'undefined') {
 }
 
 import { pdfjs } from 'react-pdf';
-import { GlobalWorkerOptions } from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist';
 
 // Use standard CDN-backed worker URL matched with exact pdfjs-dist version 5.4.296
 const workerUrl = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
 try {
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    GlobalWorkerOptions.workerSrc = workerUrl;
+    if (pdfjsLib?.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+    }
 } catch (e) {
     console.warn("Could not set workerSrc globally:", e);
 }

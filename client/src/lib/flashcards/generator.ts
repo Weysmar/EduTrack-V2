@@ -50,18 +50,23 @@ export async function generateFlashcards(params: GenerationParams): Promise<Part
   try {
     const textOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
 
-    // Parse JSON from text (handle algorithm blocks if present)
-    const jsonStart = textOutput.indexOf('{');
-    const jsonEnd = textOutput.lastIndexOf('}');
-    const jsonString = textOutput.substring(jsonStart, jsonEnd + 1);
+    // Clean markdown code fences if present
+    let cleanText = textOutput.trim();
+    if (cleanText.startsWith('```json')) cleanText = cleanText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+    else if (cleanText.startsWith('```')) cleanText = cleanText.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+
+    const jsonStart = cleanText.indexOf('{');
+    const jsonEnd = cleanText.lastIndexOf('}');
+    const jsonString = (jsonStart !== -1 && jsonEnd !== -1) ? cleanText.substring(jsonStart, jsonEnd + 1) : cleanText;
 
     const parsed = JSON.parse(jsonString);
+    const cards = parsed.flashcards || parsed.cards || (Array.isArray(parsed) ? parsed : null);
 
-    if (!parsed.flashcards || !Array.isArray(parsed.flashcards)) {
-      throw new Error("Invalid format received from AI");
+    if (!cards || !Array.isArray(cards)) {
+      throw new Error("Format JSON invalide reçu de l'IA (aucune flashcard trouvée)");
     }
 
-    return parsed.flashcards;
+    return cards;
 
   } catch (error) {
     console.error("Flashcard generation failed:", error);

@@ -59,6 +59,7 @@ export function ItemView() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
     const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
+    const [exerciseContent, setExerciseContent] = useState('')
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
@@ -88,6 +89,9 @@ export function ItemView() {
                 setEditedContent(item.content || '')
             } else if (searchParams.get('edit') === 'true') {
                 setEditedContent(item.content || '')
+            }
+            if (item.extractedContent) {
+                setExerciseContent(item.extractedContent)
             }
         }
     }, [item, isEditMode, searchParams])
@@ -327,35 +331,30 @@ export function ItemView() {
 
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
         try {
-            let textContent = item.content || ''
+            let textContent = exerciseContent || item.extractedContent || item.content || ''
             if (item.type === 'resource') {
-                if (item.extractedContent) {
-                    textContent = item.extractedContent
-                } else {
-                    // We might not have fileData locally if it's purely remote.
-                    // If backend handles extraction, use that.
-                    // Or if we can fetch the file content to extract.
-                    // Currently extractText runs in browser using pdfjs-dist.
-                    // Needs a Blob/File.
-
+                if (!textContent) {
                     if (pdfUrl) {
                         setIsExtracting(true)
                         setShowSummary(true)
                         try {
                             const res = await fetch(pdfUrl);
                             const blob = await res.blob();
-                            const file = new File([blob], item.fileName || 'file', { type: item.fileType || 'application/pdf' })
+                            const safeName = item.fileName || (item.fileType?.includes('pdf') ? 'doc.pdf' : 'doc.docx');
+                            const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
                             const extractionResult = await extractText(file)
                             textContent = extractionResult.text
-                            if (item.id) await itemQueries.update(item.id, { extractedContent: textContent })
+                            setExerciseContent(textContent)
+                            if (item.id) {
+                                await itemQueries.update(item.id, { extractedContent: textContent })
+                                queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, extractedContent: textContent } : old)
+                            }
                         } catch (extractionErr: any) {
                             console.error("Extraction error:", extractionErr)
                             setIsExtracting(false)
                             return
                         }
                         setIsExtracting(false)
-                    } else {
-                        // Fallback?
                     }
                 }
             }
@@ -369,7 +368,7 @@ export function ItemView() {
 
     const handleOpenExercise = async (mode: 'flashcards' | 'quiz') => {
         // Ensure text is extracted if it's a file
-        let effectiveContent = item.content || item.extractedContent || '';
+        let effectiveContent = exerciseContent || item.extractedContent || item.content || '';
 
         if (item.type === 'resource' && !effectiveContent && pdfUrl) {
             setIsExtracting(true)
@@ -392,13 +391,17 @@ export function ItemView() {
                     });
                 }
 
+                effectiveContent = textContent;
+                setExerciseContent(textContent);
+
                 try {
-                    if (item.id) await itemQueries.update(item.id, { extractedContent: textContent });
+                    if (item.id) {
+                        await itemQueries.update(item.id, { extractedContent: textContent });
+                        queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, extractedContent: textContent } : old);
+                    }
                 } catch (saveError) {
                     console.warn("Could not save extracted content (non-fatal):", saveError);
                 }
-
-                effectiveContent = textContent;
 
             } catch (e: any) {
                 console.error("Auto-extraction failed:", e);
@@ -413,7 +416,7 @@ export function ItemView() {
         }
 
         // Stricter validation: check trim() and minimum length
-        const trimmedContent = effectiveContent.trim();
+        const trimmedContent = (effectiveContent || exerciseContent).trim();
         if (!trimmedContent || trimmedContent.length < 50) {
             console.warn("Content too short:", trimmedContent.length, "characters");
             if (trimmedContent.length === 0) {
@@ -429,8 +432,9 @@ export function ItemView() {
         }
 
         console.log("Opening exercise modal with content length:", trimmedContent.length);
-        setExerciseMode(mode)
-        setIsExerciseModalOpen(true)
+        setExerciseContent(trimmedContent);
+        setExerciseMode(mode);
+        setIsExerciseModalOpen(true);
     }
 
     return (
@@ -456,7 +460,7 @@ export function ItemView() {
             <GenerateExerciseModal
                 isOpen={isExerciseModalOpen}
                 onClose={() => setIsExerciseModalOpen(false)}
-                sourceContent={item.content || item.extractedContent || ''}
+                sourceContent={exerciseContent || item.extractedContent || item.content || ''}
                 sourceTitle={item.title}
                 courseId={String(course?.id || '')}
                 itemId={String(item.id || '')}

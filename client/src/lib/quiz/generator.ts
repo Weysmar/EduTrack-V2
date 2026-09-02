@@ -67,19 +67,24 @@ export async function generateQuizQuestions(params: QuizGenerationParams): Promi
     try {
         const textOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
 
-        // Parse JSON
-        const jsonStart = textOutput.indexOf('{');
-        const jsonEnd = textOutput.lastIndexOf('}');
-        const jsonString = textOutput.substring(jsonStart, jsonEnd + 1);
+        // Clean markdown code fences if present
+        let cleanText = textOutput.trim();
+        if (cleanText.startsWith('```json')) cleanText = cleanText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+        else if (cleanText.startsWith('```')) cleanText = cleanText.replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+
+        const jsonStart = cleanText.indexOf('{');
+        const jsonEnd = cleanText.lastIndexOf('}');
+        const jsonString = (jsonStart !== -1 && jsonEnd !== -1) ? cleanText.substring(jsonStart, jsonEnd + 1) : cleanText;
 
         const parsed = JSON.parse(jsonString);
+        const questions = parsed.questions || (Array.isArray(parsed) ? parsed : null);
 
-        if (!parsed.questions || !Array.isArray(parsed.questions)) {
-            throw new Error("Invalid format received from AI");
+        if (!questions || !Array.isArray(questions)) {
+            throw new Error("Format JSON invalide reçu de l'IA (aucune question trouvée)");
         }
 
         // Shuffle options and update correctAnswer
-        const shuffledQuestions = parsed.questions.map((q: any) => {
+        const shuffledQuestions = questions.map((q: any) => {
             if (!q.options || q.correctAnswer === undefined) return q;
 
             // Create pairs of [option, originalIndex]

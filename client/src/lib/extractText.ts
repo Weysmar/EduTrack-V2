@@ -3,8 +3,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { apiClient } from '@/lib/api/client';
 
-// PDF.js worker is configured globally in main.tsx to ensure version consistency
-// with react-pdf.
+// PDF.js worker configured with absolute CDN to avoid relative /edu/course/pdf.worker.mjs 404
+if (typeof window !== 'undefined' && pdfjsLib?.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+}
 
 // Note: Verbosity control not available in this pdfjs-dist version
 // Warnings will still appear but are non-blocking
