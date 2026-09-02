@@ -33,12 +33,13 @@ export function StudySession() {
             // Filter due or new. API returns string dates.
             const due = setInfo.flashcards.filter((c: any) => new Date(c.nextReview) <= now || c.interval === 0)
                 .sort((a: any, b: any) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime());
-            setSessionCards(due);
+            // If none are strictly due (e.g. fresh cards or minor clock skew), load all cards so the user can study immediately
+            setSessionCards(due.length > 0 ? due : setInfo.flashcards);
         }
     }, [setInfo, sessionCards.length])
 
     const currentCard = sessionCards[currentIndex];
-    const isFinished = setInfo && !isSetLoading && currentIndex >= sessionCards.length;
+    const isFinished = setInfo && !isSetLoading && sessionCards.length > 0 && currentIndex >= sessionCards.length;
 
     // Mutation to update progress
     const updateProgressMutation = useMutation({

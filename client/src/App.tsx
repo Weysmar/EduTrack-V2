@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, useParams } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { EduLayout } from '@/layouts/EduLayout'
 import { FinanceLayout } from '@/layouts/FinanceLayout'
@@ -35,6 +35,17 @@ const lazyWithRetry = (factory: () => Promise<any>) => {
             throw error;
         }
     });
+};
+
+// Legacy route redirect helpers
+const LegacyFlashcardRedirect = () => {
+    const { setId } = useParams();
+    return <Navigate to={setId ? `/edu/flashcards/study/${setId}` : '/edu/flashcards'} replace />;
+};
+
+const LegacyQuizRedirect = () => {
+    const { id } = useParams();
+    return <Navigate to={id ? `/edu/quiz/study/${id}` : '/edu/dashboard'} replace />;
 };
 
 // Lazy load pages
@@ -113,6 +124,19 @@ const router = createBrowserRouter([
                     {
                         path: '/hub',
                         element: <LazyPage><HubPage /></LazyPage>
+                    },
+                    // Redirects for legacy root routes to EduTrack
+                    {
+                        path: '/flashcards',
+                        element: <Navigate to="/edu/flashcards" replace />
+                    },
+                    {
+                        path: '/flashcards/study/:setId',
+                        element: <LegacyFlashcardRedirect />
+                    },
+                    {
+                        path: '/quiz/study/:id',
+                        element: <LegacyQuizRedirect />
                     },
                     // EduTrack Routes
                     {

@@ -5,6 +5,7 @@ import { generateFlashcards, GenerationParams } from '@/lib/flashcards/generator
 import { generateQuizQuestions } from '@/lib/quiz/generator'
 import { Loader2, Brain, AlertCircle, CheckSquare, Layers } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useProfileStore } from '@/store/profileStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -24,6 +25,7 @@ import { useLanguage } from '@/components/language-provider'
 export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle, initialMode = 'flashcards' }: GenerateExerciseModalProps) {
     const { t } = useLanguage()
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
     const { activeProfile, getApiKey } = useProfileStore()
     const geminiKey = getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries')
     const perplexityKey = getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries')
@@ -115,11 +117,16 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                 })
 
 
-                /* Cards handled in create payload */
+                /* Invalidate queries so that courses and flashcard deck list are instantly refreshed */
+                queryClient.invalidateQueries({ queryKey: ['flashcards'] })
+                if (courseId) {
+                    queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                }
 
                 toast.success("Flashcards générées avec succès !")
                 onClose()
-                navigate(`/flashcards/study/${createdSet.id}`)
+                navigate(`/edu/flashcards/study/${createdSet.id}`)
 
             } else {
                 // Quiz Generation
@@ -174,11 +181,16 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                 // I will assume `quizQueries.create` works and accepts questions or I call `quizQuestionQueries`.
 
 
-                /* Questions/Cards are handled by the create payload above */
+                /* Invalidate queries so that quiz list is instantly refreshed */
+                queryClient.invalidateQueries({ queryKey: ['quizzes'] })
+                if (courseId) {
+                    queryClient.invalidateQueries({ queryKey: ['quizzes', courseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                }
 
                 toast.success("Quiz généré avec succès !")
                 onClose()
-                navigate(`/quiz/study/${quiz.id}`)
+                navigate(`/edu/quiz/study/${quiz.id}`)
             }
 
         } catch (e: any) {
