@@ -7,7 +7,8 @@ import { useLanguage } from '@/components/language-provider'
 import { useProfileStore } from '@/store/profileStore'
 import { itemQueries } from '@/lib/api/queries'
 import { Item } from '@/lib/types'
-import { toast } from 'sonner' // Requires toast
+import { toast } from 'sonner'
+import { GoogleDrivePickerButton } from '@/components/drive/GoogleDrivePickerButton'
 
 interface EditItemModalProps {
     isOpen: boolean
@@ -80,6 +81,12 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
             formData.append('file', file);
             formData.append('fileName', file.name);
             formData.append('fileSize', file.size.toString());
+
+            const driveFileId = (file as any).driveFileId;
+            if (driveFileId) {
+                const currentTags = (item.tags || []).filter((t: string) => !t.startsWith('gdrive:'));
+                formData.append('tags', JSON.stringify([...currentTags, `gdrive:${driveFileId}`]));
+            }
         }
 
         try {
@@ -184,7 +191,16 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                     {item.type === 'resource' && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">{t('item.form.file')}</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">{t('item.form.file')}</label>
+                                    <GoogleDrivePickerButton
+                                        onFilesSelected={picked => {
+                                            if (picked.length > 0) {
+                                                setFile(picked[0]);
+                                            }
+                                        }}
+                                    />
+                                </div>
 
                                 <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/5 transition-colors cursor-pointer relative">
                                     <input
