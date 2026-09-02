@@ -141,7 +141,7 @@ export function EduLayout() {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-auto p-0 md:p-4 lg:p-6">
+                <main className={cn("flex-1 flex flex-col min-h-0", location.pathname.includes('/study/') ? "p-0 overflow-hidden" : "overflow-auto p-0 md:p-4 lg:p-6")}>
                     <Outlet />
                 </main>
             </div>

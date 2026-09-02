@@ -184,20 +184,20 @@ export function StudySession() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
+        <div className="flex flex-col h-full flex-1 bg-background text-foreground overflow-hidden">
             {/* Top Bar */}
-            <div className="h-14 border-b flex items-center justify-between px-4 bg-card">
-                <button onClick={() => navigate('/edu/flashcards')} className="p-2 hover:bg-muted rounded-full">
+            <div className="h-12 md:h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+                <button onClick={() => navigate('/edu/flashcards')} className="p-1.5 md:p-2 hover:bg-muted rounded-full transition-colors" title="Retour aux flashcards">
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div className="font-semibold text-sm">
+                <div className="font-semibold text-xs md:text-sm truncate max-w-xs md:max-w-md">
                     {setInfo.name} • {currentIndex + 1} / {sessionCards.length}
                 </div>
                 <div className="w-9" />
             </div>
 
             {/* Progress Bar */}
-            <div className="h-1 bg-muted">
+            <div className="h-1 bg-muted shrink-0">
                 <div
                     className="h-full bg-primary transition-all duration-300"
                     style={{ width: `${((currentIndex) / sessionCards.length) * 100}%` }}
@@ -205,29 +205,29 @@ export function StudySession() {
             </div>
 
             {/* Flashcard Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-3xl mx-auto w-full">
+            <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-3 md:p-6 max-w-3xl mx-auto w-full overflow-hidden">
                 <div
-                    className="relative w-full aspect-[4/3] md:aspect-[16/9] perspective-1000 cursor-pointer group"
+                    className="relative w-full h-[260px] sm:h-[320px] md:h-[360px] max-h-[52vh] perspective-1000 cursor-pointer group"
                     onClick={() => !isFlipped && setIsFlipped(true)}
                 >
                     <div className={cn(
-                        "w-full h-full transition-all duration-500 preserve-3d relative bg-card border rounded-2xl shadow-xl flex items-center justify-center p-8 md:p-16 text-center",
+                        "w-full h-full transition-all duration-500 preserve-3d relative bg-card border rounded-2xl shadow-lg flex items-center justify-center text-center",
                         isFlipped ? "rotate-y-180" : ""
                     )}
                         style={{ transformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
                     >
                         {/* Front */}
-                        <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-8 border rounded-2xl">
-                            <h2 className="text-2xl md:text-3xl font-bold leading-tight select-none">{currentCard?.front}</h2>
-                            <p className="mt-8 text-sm text-muted-foreground animate-pulse">[ Appuyez sur Espace ou cliquez pour révéler ]</p>
+                        <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-6 md:p-10 border rounded-2xl overflow-y-auto">
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold leading-snug select-none">{currentCard?.front}</h2>
+                            <p className="mt-6 text-xs md:text-sm text-muted-foreground animate-pulse">[ Appuyez sur Espace ou cliquez pour révéler ]</p>
                         </div>
                         {/* Back */}
                         <div
-                            className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-8 rotate-y-180 bg-card border rounded-2xl"
+                            className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-6 md:p-10 rotate-y-180 bg-card border rounded-2xl overflow-y-auto"
                             style={{ transform: 'rotateY(180deg)' }}
                         >
-                            <div className="prose dark:prose-invert prose-lg max-w-none select-none">
-                                <p className="text-xl md:text-2xl font-medium leading-relaxed">{currentCard?.back}</p>
+                            <div className="prose dark:prose-invert max-w-none select-none">
+                                <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed">{currentCard?.back}</p>
                             </div>
                         </div>
                     </div>
@@ -235,29 +235,32 @@ export function StudySession() {
             </div>
 
             {/* Controls */}
-            <div className="h-24 md:h-32 border-t bg-card p-4 md:p-6 flex items-center justify-center gap-4">
+            <div className="h-20 md:h-24 border-t bg-card/95 backdrop-blur px-4 py-3 flex items-center justify-center gap-4 shrink-0 shadow-sm">
                 {!isFlipped ? (
-                    <button onClick={() => setIsFlipped(true)} className="w-full max-w-md bg-primary text-primary-foreground h-14 rounded-xl font-bold text-lg shadow-lg hover:opacity-95 transition-opacity">
+                    <button
+                        onClick={() => setIsFlipped(true)}
+                        className="w-full max-w-md bg-primary text-primary-foreground h-12 md:h-14 rounded-xl font-bold text-base md:text-lg shadow-md hover:opacity-95 transition-all active:scale-[0.98] flex items-center justify-center"
+                    >
                         Afficher la réponse <span className="text-xs font-normal opacity-80 ml-2">(Espace)</span>
                     </button>
                 ) : (
-                    <div className="grid grid-cols-4 gap-2 md:gap-4 w-full max-w-2xl">
+                    <div className="grid grid-cols-4 gap-2 md:gap-3 w-full max-w-xl">
                         {[
-                            { key: 'again', label: 'À revoir', shortcut: '1', color: 'hover:border-red-500 hover:text-red-500' },
-                            { key: 'hard', label: 'Difficile', shortcut: '2', color: 'hover:border-amber-500 hover:text-amber-500' },
-                            { key: 'good', label: 'Bon', shortcut: '3', color: 'hover:border-blue-500 hover:text-blue-500' },
-                            { key: 'easy', label: 'Facile', shortcut: '4', color: 'hover:border-green-500 hover:text-green-500' }
+                            { key: 'again', label: 'À revoir', shortcut: '1', color: 'hover:border-red-500 hover:text-red-500 text-red-500 border-red-500/20' },
+                            { key: 'hard', label: 'Difficile', shortcut: '2', color: 'hover:border-amber-500 hover:text-amber-500 text-amber-500 border-amber-500/20' },
+                            { key: 'good', label: 'Bon', shortcut: '3', color: 'hover:border-blue-500 hover:text-blue-500 text-blue-500 border-blue-500/20' },
+                            { key: 'easy', label: 'Facile', shortcut: '4', color: 'hover:border-green-500 hover:text-green-500 text-green-500 border-green-500/20' }
                         ].map((r: any) => (
                             <button
                                 key={r.key}
                                 onClick={() => handleRate(r.key)}
                                 className={cn(
-                                    "flex flex-col items-center justify-center p-2 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors uppercase font-bold text-xs md:text-sm relative group",
+                                    "flex flex-col items-center justify-center h-12 md:h-14 rounded-xl border bg-muted/30 hover:bg-muted/60 transition-all uppercase font-bold text-[11px] md:text-xs relative group active:scale-[0.97]",
                                     r.color
                                 )}
                             >
                                 <span>{r.label}</span>
-                                <span className="text-[10px] text-muted-foreground opacity-70 group-hover:opacity-100 mt-1">({r.shortcut})</span>
+                                <span className="text-[9px] md:text-[10px] opacity-70 mt-0.5">({r.shortcut})</span>
                             </button>
                         ))}
                     </div>
