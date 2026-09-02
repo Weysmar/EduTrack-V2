@@ -12,15 +12,15 @@ if (typeof URL.parse === 'undefined') {
 import { pdfjs } from 'react-pdf';
 import { GlobalWorkerOptions } from 'pdfjs-dist';
 
-// Use local worker bundled by Vite instead of external unpkg CDN
-// This eliminates CDN network errors, CORS issues, and MIME-type restrictions on mobile devices
-const workerUrl = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-).toString();
+// Use standard CDN-backed worker URL matched with exact pdfjs-dist version 5.4.296
+const workerUrl = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-GlobalWorkerOptions.workerSrc = workerUrl;
+try {
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+    GlobalWorkerOptions.workerSrc = workerUrl;
+} catch (e) {
+    console.warn("Could not set workerSrc globally:", e);
+}
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
