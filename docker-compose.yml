@@ -54,9 +54,13 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_API_KEY: ${VITE_GOOGLE_API_KEY}
     container_name: edutrack_frontend
     environment:
       VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      VITE_GOOGLE_API_KEY: ${VITE_GOOGLE_API_KEY}
     ports:
       - "80" # Expose 80 internally to Dokploy network only
     depends_on:
