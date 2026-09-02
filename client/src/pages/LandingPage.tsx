@@ -140,7 +140,17 @@ export function LandingPage() {
 
             {/* Footer */}
             <footer className="border-t py-8 text-center text-sm text-muted-foreground bg-muted/20">
-                <p>&copy; {new Date().getFullYear()} HubTrack. Tous droits réservés.</p>
+                <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p>&copy; {new Date().getFullYear()} HubTrack. Tous droits réservés.</p>
+                    <div className="flex items-center gap-6 text-xs font-medium">
+                        <Link to="/privacy" className="hover:text-primary transition-colors">
+                            Politique de confidentialité
+                        </Link>
+                        <Link to="/terms" className="hover:text-primary transition-colors">
+                            Conditions d'utilisation
+                        </Link>
+                    </div>
+                </div>
             </footer>
         </div>
     );
