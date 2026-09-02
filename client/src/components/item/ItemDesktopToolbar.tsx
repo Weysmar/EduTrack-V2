@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2 } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2 } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -11,6 +11,7 @@ interface ItemDesktopToolbarProps {
     API_URL: string;
     officeEngine: 'google' | 'microsoft' | 'local';
     pdfUrl: string | null;
+    handleDownload?: () => void;
     setMobileTab: (tab: 'pdf' | 'summary') => void;
     setIsFocusMode: (val: boolean) => void;
     isEditMode: boolean;
@@ -31,7 +32,7 @@ interface ItemDesktopToolbarProps {
 }
 
 export function ItemDesktopToolbar({
-    item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl,
+    item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl, handleDownload,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
     hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
@@ -49,38 +50,54 @@ export function ItemDesktopToolbar({
                 </div>
             )}
 
-            {/* Universal View/Download Button */}
-            {item.type === 'resource' && item.storageKey && (
+            {/* Universal View / Open in New Tab & Download Buttons */}
+            {(item.fileData || item.type === 'resource' || pdfUrl) && (
                 (() => {
                     // Construct Public URL
-                    const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
-                    const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-                    const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
-                    const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
+                    let targetUrl = pdfUrl || '';
+                    if (item.storageKey) {
+                        const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+                        const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+                        const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
+                        const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
 
-                    // Determine Target URL for "View in New Tab"
-                    let targetUrl = publicRawUrl;
-                    if (isOffice) {
-                        if (officeEngine === 'microsoft') {
-                            targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
+                        if (isOffice) {
+                            if (officeEngine === 'microsoft') {
+                                targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
+                            } else {
+                                targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+                            }
                         } else {
-                            targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+                            targetUrl = publicRawUrl;
                         }
                     }
 
                     return (
-                        <>
-                            <a
-                                href={targetUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                                title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
-                            >
-                                <ExternalLink className="h-4 w-4" />
-                            </a>
+                        <div className="flex items-center gap-1">
+                            {targetUrl && (
+                                <a
+                                    href={targetUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium"
+                                    title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
+                                >
+                                    <ExternalLink className="h-4 w-4" />
+                                    <span className="hidden lg:inline">{t('action.openNewTab') || "Ouvrir"}</span>
+                                </a>
+                            )}
+                            {handleDownload && (
+                                <button
+                                    onClick={handleDownload}
+                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium"
+                                    title={t('file.download') || "Télécharger"}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    <span className="hidden lg:inline">{t('file.download') || "Télécharger"}</span>
+                                </button>
+                            )}
                             <div className="h-4 w-px bg-border mx-0.5" />
-                        </>
+                        </div>
                     );
                 })()
             )}
