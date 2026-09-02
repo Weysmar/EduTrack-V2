@@ -135,7 +135,7 @@ export function StudySession() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isFlipped, currentCard, isFinished, isSetLoading]);
 
-    if (isSetLoading) return <div className="p-10 text-center">Loading study session...</div>
+    if (isSetLoading) return <div className="p-10 text-center text-muted-foreground">Chargement de la session d'étude...</div>
 
     if (isFinished) {
         return (
@@ -144,26 +144,26 @@ export function StudySession() {
                     <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle className="w-10 h-10" />
                     </div>
-                    <h1 className="text-3xl font-bold">Session Complete!</h1>
-                    <p className="text-muted-foreground">You reviewed {sessionStats.studied} cards.</p>
+                    <h1 className="text-3xl font-bold">Session terminée ! 🎉</h1>
+                    <p className="text-muted-foreground">Vous avez révisé {sessionStats.studied} carte{sessionStats.studied > 1 ? 's' : ''}.</p>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted p-4 rounded-xl">
                             <div className="text-2xl font-bold text-primary">{Math.round((sessionStats.correct / (sessionStats.studied || 1)) * 100)}%</div>
-                            <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Accuracy</div>
+                            <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Précision</div>
                         </div>
                         <div className="bg-muted p-4 rounded-xl">
                             <div className="text-2xl font-bold">{sessionCards.length}</div>
-                            <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Total Cards</div>
+                            <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Total de cartes</div>
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <button
                             onClick={() => navigate('/edu/flashcards')}
-                            className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90"
+                            className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity"
                         >
-                            Return to Deck List
+                            Retour aux paquets
                         </button>
                     </div>
                 </div>
@@ -174,11 +174,11 @@ export function StudySession() {
     if (sessionCards.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
-                <h2 className="text-2xl font-bold mb-2">All caught up! 🎉</h2>
-                <p className="text-muted-foreground mb-6 max-w-sm">No cards due for review.</p>
+                <h2 className="text-2xl font-bold mb-2">Vous êtes à jour ! 🎉</h2>
+                <p className="text-muted-foreground mb-6 max-w-sm">Aucune carte à réviser pour le moment.</p>
                 <div className="flex gap-4">
                     <button onClick={() => navigate('/edu/flashcards')} className="px-6 py-2 bg-muted rounded-lg font-medium hover:bg-muted/80 transition-colors">
-                        Return to list
+                        Retour aux paquets
                     </button>
                     <button
                         onClick={() => {
@@ -187,7 +187,7 @@ export function StudySession() {
                         }}
                         className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors"
                     >
-                        Review All Anyway
+                        Tout réviser quand même
                     </button>
                 </div>
             </div>

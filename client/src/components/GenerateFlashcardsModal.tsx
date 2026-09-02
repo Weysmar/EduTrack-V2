@@ -51,12 +51,13 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
                 provider: 'perplexity'
             })
 
+            const difficultyLabel = difficulty === 'easy' ? 'Facile' : difficulty === 'hard' ? 'Difficile' : difficulty === 'mixed' ? 'Mixte' : 'Moyen'
             // Construct payload for API
             const payload = {
                 courseId,
                 itemId,
                 name: `${sourceTitle} - Flashcards`,
-                description: `Generated from ${sourceTitle} (${difficulty}, ${count} cards)`,
+                description: `Généré depuis ${sourceTitle} (${difficultyLabel}, ${count} cartes)`,
                 cards: cards.map(c => ({
                     front: c.front || '?',
                     back: c.back || '...',

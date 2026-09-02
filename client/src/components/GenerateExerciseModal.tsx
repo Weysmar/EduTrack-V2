@@ -102,12 +102,13 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
                 const { flashcardQueries } = await import('@/lib/api/queries')
 
+                const difficultyLabel = difficulty === 'easy' ? 'Facile' : difficulty === 'hard' ? 'Difficile' : difficulty === 'mixed' ? 'Mixte' : 'Moyen'
                 const createdSet = await flashcardQueries.create({
                     courseId,
                     itemId,
                     profileId: activeProfile?.id || "",
                     name: `${sourceTitle} - Flashcards`,
-                    description: `Generated from ${sourceTitle} (${difficulty}, ${count} cards)`,
+                    description: `Généré depuis ${sourceTitle} (${difficultyLabel}, ${count} cartes)`,
                     count: cards.length,
                     cards: cards.map(c => ({
                         front: c.front || '?',

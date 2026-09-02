@@ -29,21 +29,21 @@ export function Flashcards() {
         return Math.round((mastered / total) * 100);
     }
 
-    if (isLoading) return <div className="p-10 text-center">Loading sets...</div>
+    if (isLoading) return <div className="p-10 text-center text-muted-foreground">Chargement des paquets de flashcards...</div>
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in pb-20">
             <header className="flex justify-between items-center">
                 <div>
                     <h1 className="text-4xl font-bold tracking-tight">Flashcards</h1>
-                    <p className="text-muted-foreground text-lg">Spaced repetition reviews</p>
+                    <p className="text-muted-foreground text-lg">Révision par répétition espacée</p>
                 </div>
             </header>
 
             {!sets || sets.length === 0 ? (
                 <div className="text-center py-20 border-2 border-dashed rounded-xl">
-                    <h2 className="text-2xl font-bold text-muted-foreground mb-2">No flashcards yet</h2>
-                    <p className="text-muted-foreground mb-6">Create flashcards from your notes to start learning.</p>
+                    <h2 className="text-2xl font-bold text-muted-foreground mb-2">Aucun paquet de flashcards</h2>
+                    <p className="text-muted-foreground mb-6">Générez des flashcards à partir de vos documents pour commencer à mémoriser.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -52,14 +52,15 @@ export function Flashcards() {
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <h3 className="font-bold text-xl line-clamp-1">{set.name}</h3>
-                                    <p className="text-sm text-muted-foreground">{set.count} cards</p>
+                                    <p className="text-sm text-muted-foreground">{set.count} carte{set.count > 1 ? 's' : ''}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => {
-                                            if (confirm('Delete set?')) deleteSetMutation.mutate(set.id)
+                                            if (confirm('Voulez-vous vraiment supprimer ce paquet de flashcards ?')) deleteSetMutation.mutate(set.id)
                                         }}
                                         className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                                        title="Supprimer le paquet"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </button>
@@ -69,7 +70,7 @@ export function Flashcards() {
                             {/* Progress Bar */}
                             <div className="space-y-2 mb-6">
                                 <div className="flex justify-between text-xs font-medium">
-                                    <span>Mastery</span>
+                                    <span>Maîtrise</span>
                                     <span>{getProgress(set.mastered, set.count)}%</span>
                                 </div>
                                 <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
@@ -86,9 +87,9 @@ export function Flashcards() {
                                     className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                 >
                                     <Play className="h-4 w-4 fill-current" />
-                                    Study
+                                    Réviser
                                 </Link>
-                                <button className="p-2 border rounded-lg hover:bg-muted transition-colors" title="Export Anki">
+                                <button className="p-2 border rounded-lg hover:bg-muted transition-colors" title="Exporter vers Anki">
                                     <Download className="h-4 w-4" />
                                 </button>
                             </div>
