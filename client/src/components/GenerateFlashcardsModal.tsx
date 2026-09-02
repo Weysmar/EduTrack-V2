@@ -69,7 +69,7 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
             const newSet = await flashcardQueries.create(payload);
 
             onClose()
-            navigate(`/flashcards/study/${newSet.id}`)
+            navigate(`/edu/flashcards/study/${newSet.id}`)
 
         } catch (e: any) {
             console.error(e)

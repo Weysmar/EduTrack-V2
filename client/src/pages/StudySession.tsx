@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { calculateNextReview, ReviewGrade } from '@/lib/flashcards/spaced-repetition'
 import { ArrowLeft, CheckCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import ReactMarkdown from 'react-markdown'
 // import { AnalyticsService } from '@/lib/analytics/tracker' // Temporary disabled/Adapt to API
 
 export function StudySession() {
@@ -218,7 +219,17 @@ export function StudySession() {
                     >
                         {/* Front */}
                         <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-6 md:p-10 border rounded-2xl overflow-y-auto">
-                            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold leading-snug select-none">{currentCard?.front}</h2>
+                            <div className="prose dark:prose-invert max-w-none text-center select-none text-xl sm:text-2xl md:text-3xl font-bold leading-snug">
+                                <ReactMarkdown
+                                    components={{
+                                        p: ({ children }) => <p className="mb-0 inline">{children}</p>,
+                                        strong: ({ children }) => <strong className="font-extrabold text-foreground">{children}</strong>,
+                                        em: ({ children }) => <em className="italic text-primary">{children}</em>
+                                    }}
+                                >
+                                    {currentCard?.front || ''}
+                                </ReactMarkdown>
+                            </div>
                             <p className="mt-6 text-xs md:text-sm text-muted-foreground animate-pulse">[ Appuyez sur Espace ou cliquez pour révéler ]</p>
                         </div>
                         {/* Back */}
@@ -226,8 +237,19 @@ export function StudySession() {
                             className="absolute inset-0 backface-hidden flex flex-col items-center justify-center p-6 md:p-10 rotate-y-180 bg-card border rounded-2xl overflow-y-auto"
                             style={{ transform: 'rotateY(180deg)' }}
                         >
-                            <div className="prose dark:prose-invert max-w-none select-none">
-                                <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed">{currentCard?.back}</p>
+                            <div className="prose dark:prose-invert max-w-none text-center select-none text-base sm:text-lg md:text-xl font-medium leading-relaxed">
+                                <ReactMarkdown
+                                    components={{
+                                        p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                                        strong: ({ children }) => <strong className="font-extrabold text-primary dark:text-primary-foreground bg-primary/10 px-1.5 py-0.5 rounded mx-0.5">{children}</strong>,
+                                        em: ({ children }) => <em className="italic text-foreground/80">{children}</em>,
+                                        ul: ({ children }) => <ul className="text-left list-disc list-inside space-y-1.5 my-2 inline-block max-w-full">{children}</ul>,
+                                        ol: ({ children }) => <ol className="text-left list-decimal list-inside space-y-1.5 my-2 inline-block max-w-full">{children}</ol>,
+                                        li: ({ children }) => <li className="leading-relaxed">{children}</li>
+                                    }}
+                                >
+                                    {currentCard?.back || ''}
+                                </ReactMarkdown>
                             </div>
                         </div>
                     </div>
