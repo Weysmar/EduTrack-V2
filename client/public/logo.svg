@@ -1,12 +1,41 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Signature Blue: #3b82f6 -->
-  
-  <!-- Folder Outline -->
-  <path d="M80 60 H200 C220 60, 230 60, 240 80 L250 100 C260 120, 270 120, 280 120 H432 C454.091 120 472 137.909 472 160 V432 C472 454.091 454.091 472 432 472 H80 C57.9086 472 40 454.091 40 432 V100 C40 77.9086 57.9086 60 80 60Z" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- Plus Sign (Centered in the body area) 
-       Body is approx 120 to 472. Center Y = 296. Center X = 256.
-  -->
-  <path d="M256 220 V372" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M180 296 H332" stroke="#3b82f6" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <!-- Dark premium background gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    
+    <!-- Neon blue to indigo gradient for the icon -->
+    <linearGradient id="primaryGrad" x1="120" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+
+    <!-- Subtle glow / drop shadow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#3b82f6" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Full circular background with safe zone padding for adaptive icons -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <circle cx="256" cy="256" r="236" stroke="#1e293b" stroke-width="6" fill="none" />
+
+  <!-- Center Group with safe margin for iOS & Android circles (scale ~ 0.58 centered at (256, 256)) -->
+  <g transform="translate(256, 256) scale(0.58) translate(-256, -266)" filter="url(#glow)">
+    <!-- Folder Outline with modern curves -->
+    <path d="M80 70 H195 C215 70, 225 70, 235 90 L245 110 C255 130, 265 130, 285 130 H432 C458 130, 472 144, 472 170 V420 C472 446, 458 460, 432 460 H80 C54 460, 40 446, 40 420 V110 C40 84, 54 70, 80 70Z" 
+          stroke="url(#primaryGrad)" 
+          stroke-width="36" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          fill="#1e293b"
+          fill-opacity="0.2" />
+
+    <!-- Plus Sign in Center Body -->
+    <path d="M256 225 V365" stroke="url(#primaryGrad)" stroke-width="38" stroke-linecap="round" />
+    <path d="M186 295 H326" stroke="url(#primaryGrad)" stroke-width="38" stroke-linecap="round" />
+  </g>
 </svg>
