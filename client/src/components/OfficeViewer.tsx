@@ -62,17 +62,17 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     if (engine === 'local') {
         if (isDocx) {
             return (
-                <div className={`flex flex-col h-full bg-slate-50 md:border md:rounded-lg overflow-hidden ${className}`}>
-                    <div className="flex items-center justify-between px-4 py-2 bg-white border-b text-sm">
+                <div className={`flex flex-col h-full bg-slate-100 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
+                    <div className="flex items-center justify-between p-2 md:p-3 bg-slate-200 dark:bg-slate-800 border-b text-sm">
                         <div className="flex items-center gap-3">
-                            <span className="font-medium text-muted-foreground flex items-center gap-2">
+                            <span className="font-medium text-foreground flex items-center gap-2">
                                 <Laptop className="h-4 w-4" />
                                 <span className="hidden sm:inline">Mode Local (Rapide)</span>
                                 <span className="sm:hidden">Local</span>
                             </span>
                             <button
                                 onClick={() => setEngine('microsoft')}
-                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                             >
                                 <RefreshCw className="h-3 w-3" />
                                 <span className="hidden sm:inline">Passer en Haute Fidélité</span>
@@ -80,12 +80,12 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                             </button>
                         </div>
                         <div className="flex gap-2">
-                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-white rounded text-xs">
+                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 transition-opacity">
                                 <Download className="h-3 w-3" /> Télécharger
                             </a>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden relative">
+                    <div className="flex-1 overflow-hidden relative bg-slate-50 dark:bg-slate-950">
                         <DocxViewer url={initialUrl} className="h-full w-full" />
                     </div>
                 </div>
@@ -98,7 +98,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     // Render Error State for Online Viewers
     if (hasError || (isLocalhost && (engine === 'google' || engine === 'microsoft'))) {
         return (
-            <div className={`flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-900 border rounded-lg h-full ${className}`}>
+            <div className={`flex flex-col items-center justify-center p-8 bg-slate-100 dark:bg-slate-900 border rounded-lg h-full ${className}`}>
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-sm mb-4">
                     <FileText className="h-10 w-10 text-orange-500" />
                 </div>
@@ -131,7 +131,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     {!isLocalhost && (
                         <button
                             onClick={() => { setHasError(false); setEngine(engine === 'google' ? 'microsoft' : 'google'); }}
-                            className="flex items-center justify-center gap-2 px-4 py-2 border hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors text-sm"
+                            className="flex items-center justify-center gap-2 px-4 py-2 border hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors text-sm"
                         >
                             <RefreshCw className="h-4 w-4" />
                             Essayer {engine === 'google' ? 'Microsoft' : 'Google'}
@@ -141,7 +141,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     <a
                         href={viewerUrl}
                         download
-                        className="flex items-center justify-center gap-2 px-4 py-2 border border-dashed hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors text-sm"
+                        className="flex items-center justify-center gap-2 px-4 py-2 border border-dashed hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors text-sm"
                     >
                         <Download className="h-4 w-4" />
                         Télécharger le fichier
@@ -154,11 +154,11 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     const currentSrc = engine === 'google' ? googleViewerUrl : officeViewerUrl;
 
     return (
-        <div className={`flex flex-col h-full bg-slate-50 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
+        <div className={`flex flex-col h-full bg-slate-100 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-950 border-b text-sm">
+            <div className="flex items-center justify-between p-2 md:p-3 bg-slate-200 dark:bg-slate-800 border-b text-sm">
                 <div className="flex items-center gap-3">
-                    <span className="font-medium text-muted-foreground flex items-center gap-2 hidden sm:flex">
+                    <span className="font-medium text-foreground flex items-center gap-2 hidden sm:flex">
                         Aperçu ({engine === 'google' ? 'Google' : 'Microsoft'})
                     </span>
 
@@ -166,7 +166,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     {isDocx && (
                         <button
                             onClick={() => setEngine('local')}
-                            className="text-xs flex items-center gap-1 text-slate-600 hover:text-slate-900 border px-2 py-0.5 rounded"
+                            className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground border border-border/60 bg-background/50 px-2 py-0.5 rounded transition-colors"
                             title="Utiliser le rendu navigateur (plus rapide, moins fidèle)"
                         >
                             <Laptop className="h-3 w-3" />
@@ -176,10 +176,10 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => setEngine(engine === 'google' ? 'microsoft' : 'google')}
-                        className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 px-2"
+                        className="text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline px-2"
                     >
                         <RefreshCw className="h-3 w-3" />
                         <span className="hidden sm:inline">Changer moteur</span>
@@ -187,7 +187,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     <a
                         href={viewerUrl}
                         download
-                        className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-foreground transition-colors"
+                        className="flex items-center gap-1.5 p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded text-foreground transition-colors"
                     >
                         <Download className="h-4 w-4" />
                     </a>
@@ -195,7 +195,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
             </div>
 
             {/* Viewer Iframe */}
-            <div className="flex-1 relative bg-white">
+            <div className="flex-1 relative bg-white dark:bg-slate-950">
                 <iframe
                     key={engine}
                     src={currentSrc}
