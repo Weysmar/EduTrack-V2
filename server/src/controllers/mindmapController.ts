@@ -41,7 +41,7 @@ const _legacyExtractTextFromFile = async (buffer: Buffer, mimetype: string): Pro
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
         // Updated to remove 'files' for direct upload
-        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-2.0-flash-exp', courseId } = req.body;
+        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-3.8-flash', courseId } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {

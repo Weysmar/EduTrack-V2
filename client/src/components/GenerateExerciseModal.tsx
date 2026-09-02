@@ -31,7 +31,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
     const [mode, setMode] = useState<'flashcards' | 'quiz'>(initialMode)
     const [provider, setProvider] = useState<'perplexity' | 'google'>(initialProvider)
-    const [model, setModel] = useState<string | undefined>(initialProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
+    const [model, setModel] = useState<string | undefined>(initialProvider === 'google' ? 'gemini-3.8-flash' : 'sonar-pro')
     const [isLoading, setIsLoading] = useState(false)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
     const [count, setCount] = useState<number>(10)
@@ -50,7 +50,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
             setError(null)
             if (!perplexityKey && geminiKey) {
                 setProvider('google')
-                setModel('gemini-3.7-flash')
+                setModel('gemini-3.8-flash')
             }
         }
     }, [isOpen, initialMode, geminiKey, perplexityKey])
@@ -311,13 +311,15 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                             <div>
                                                 <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
                                                 <select
-                                                    value={model || 'gemini-3.6-flash'}
+                                                    value={model || 'gemini-3.8-flash'}
                                                     onChange={(e) => setModel(e.target.value)}
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
-                                                    <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (Recommandé)</option>
-                                                    <option value="gemini-1.5-flash">🚀 Gemini 1.5 Flash (Standard)</option>
-                                                    <option value="gemini-3.6-pro">🏛️ Gemini 3.6 Pro (Avancé)</option>
+                                                    <option value="gemini-3.8-flash">🔥 Gemini 3.8 Flash (Recommandé - Ultra-rapide)</option>
+                                                    <option value="gemini-3.8-pro">🎯 Gemini 3.8 Pro (Expert & Raisonnement)</option>
+                                                    <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Standard Rapide)</option>
+                                                    <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Thinking (Raisonnement détaillé)</option>
+                                                    <option value="gemini-3.7-pro">🏛️ Gemini 3.7 Pro (Avancé)</option>
                                                 </select>
                                             </div>
                                         )}

@@ -209,11 +209,11 @@ export function ApiKeySettings() {
                             >
                                 {keys.finance_audit_provider === 'google' ? (
                                     <>
-                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash (Recommandé)</option>
+                                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommandé)</option>
+                                        <option value="gemini-3.8-pro">Gemini 3.8 Pro (Expert)</option>
+                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
                                         <option value="gemini-3.7-thinking">Gemini 3.7 Thinking (Raisonnement)</option>
-                                        <option value="gemini-3.7-pro">Gemini 3.7 Pro (Expert)</option>
-                                        <option value="gemini-3.6-flash">Gemini 3.6 Flash (Standard Rapide)</option>
-                                        <option value="gemini-3.6-pro">Gemini 3.6 Pro (Avancé)</option>
+                                        <option value="gemini-3.7-pro">Gemini 3.7 Pro (Avancé)</option>
                                     </>
                                 ) : (
                                     <>

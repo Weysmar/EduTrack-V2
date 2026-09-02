@@ -13,24 +13,19 @@ export interface ApiKeyConfig {
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini 3.7 & 3.6 models
-        'gemini-3.7-thinking': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-3.7-flash': 'gemini-2.0-flash',
-        'gemini-3.7-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-3.7': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-3.6-flash': 'gemini-2.0-flash',
-        'gemini-3.6-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-3.6': 'gemini-2.0-flash',
-        
-        // Legacy fallbacks mapped to 3.7/3.6 engines
-        'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
-        'gemini-2.0-flash-thinking-exp': 'gemini-2.0-flash-thinking-exp-01-21',
-        'gemini-2.0-pro': 'gemini-2.0-pro-exp-02-05',
-        'gemini-2.0-flash-exp': 'gemini-2.0-flash',
-        'gemini-1.5-flash': 'gemini-2.0-flash',
-        'gemini-1.5-flash-8b': 'gemini-2.0-flash',
-        'gemini-1.5-pro': 'gemini-2.0-pro-exp-02-05',
+        // Google Gemini 3.8 & 3.7 models
+        'gemini-3.8-flash': 'gemini-3.8-flash',
+        'gemini-3.8-pro': 'gemini-3.8-pro',
+        'gemini-3.8': 'gemini-3.8-flash',
+        'gemini-3.7-thinking': 'gemini-3.7-thinking',
+        'gemini-3.7-flash': 'gemini-3.7-flash',
+        'gemini-3.7-pro': 'gemini-3.7-pro',
+        'gemini-3.7': 'gemini-3.7-flash',
+        'gemini-3.6-flash': 'gemini-3.6-flash',
+        'gemini-3.6-pro': 'gemini-3.6-pro',
+        'gemini-3.6': 'gemini-3.6-flash',
+        'gemini-1.5-flash': 'gemini-1.5-flash',
+        'gemini-1.5-pro': 'gemini-1.5-pro',
         
         // Perplexity models
         'sonar-pro': 'sonar-pro',
@@ -42,7 +37,7 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || 'gemini-2.0-flash';
+    return modelMap[model] || model || 'gemini-3.8-flash';
 };
 
 // Detect provider from model name

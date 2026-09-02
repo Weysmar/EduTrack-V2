@@ -34,7 +34,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
-    const [model, setModel] = useState('gemini-2.0-flash-exp');
+    const [model, setModel] = useState('gemini-3.8-flash');
 
     useEffect(() => {
         if (isOpen) {

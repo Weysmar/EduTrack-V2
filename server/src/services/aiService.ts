@@ -6,22 +6,18 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini models
-        'gemini-3.7-flash': 'gemini-3.6-flash',
-        'gemini-3.7-thinking': 'gemini-3.6-pro',
-        'gemini-3.7-pro': 'gemini-3.6-pro',
-        'gemini-3.7': 'gemini-3.6-flash',
+        // Google Gemini 3.8 & 3.7 models
+        'gemini-3.8-flash': 'gemini-3.8-flash',
+        'gemini-3.8-pro': 'gemini-3.8-pro',
+        'gemini-3.8': 'gemini-3.8-flash',
+        'gemini-3.7-flash': 'gemini-3.7-flash',
+        'gemini-3.7-thinking': 'gemini-3.7-thinking',
+        'gemini-3.7-pro': 'gemini-3.7-pro',
+        'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.6-flash': 'gemini-3.6-flash',
         'gemini-3.6-pro': 'gemini-3.6-pro',
         'gemini-3.6': 'gemini-3.6-flash',
-        'gemini-2.5-flash': 'gemini-3.6-flash',
-        'gemini-2.0-flash': 'gemini-3.6-flash',
-        'gemini-2.0-flash-lite': 'gemini-3.6-flash',
-        'gemini-2.0-flash-thinking-exp': 'gemini-3.6-pro',
-        'gemini-2.0-pro': 'gemini-3.6-pro',
-        'gemini-2.0-flash-exp': 'gemini-3.6-flash',
         'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-flash-8b': 'gemini-1.5-flash',
         'gemini-1.5-pro': 'gemini-1.5-pro',
 
         // Perplexity mappings
@@ -34,11 +30,11 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model || 'gemini-3.6-flash';
+    return modelMap[model] || model || 'gemini-3.8-flash';
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         if (provider === 'perplexity') {
             const effectiveKey = apiKey;
             if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
@@ -74,16 +70,12 @@ export const aiService = {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
-            // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
-            // But for simple compat:
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
 
-            // Perform basic validation
             if (!fullPrompt || fullPrompt.length === 0) {
                 throw new Error('Prompt is empty');
             }
 
-            // Validate prompt length (security: prevent excessive costs)
             const MAX_PROMPT_LENGTH = 50000;
             if (fullPrompt.length > MAX_PROMPT_LENGTH) {
                 throw new Error(
@@ -93,40 +85,46 @@ export const aiService = {
                 );
             }
             const apiModel = mapModelName(model);
-            console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars. Key contents: ${effectiveKey.substring(0, 4)}...`);
+            console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars.`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            // Use specific model version for stability or catch 404
-            const modelInstance = client.getGenerativeModel({
-                model: apiModel,
-                safetySettings: [
-                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
-                ]
-            }, {
-                timeout: 120000 // 2 minutes timeout for large PDFs
-            });
 
-            // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
-            // But for simple compat:
-            // MOVED UP
-
+            // Cascading candidate models to gracefully handle endpoint availability
+            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-1.5-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
-            try {
-                const result = await modelInstance.generateContent(fullPrompt);
-                response = await result.response;
-            } catch (modelErr: any) {
-                if ((modelErr.message?.includes('404') || modelErr.message?.includes('not found') || modelErr.message?.includes('no longer available')) && apiModel !== 'gemini-1.5-flash') {
-                    console.warn(`[AI Service] Model ${apiModel} unavailable, falling back to gemini-1.5-flash...`);
-                    const fallbackModel = client.getGenerativeModel({ model: 'gemini-1.5-flash' }, { timeout: 120000 });
-                    const fallbackResult = await fallbackModel.generateContent(fullPrompt);
-                    response = await fallbackResult.response;
-                } else {
+            let lastErr: any;
+
+            for (const tryModel of candidateModels) {
+                try {
+                    const modelInstance = client.getGenerativeModel({
+                        model: tryModel,
+                        safetySettings: [
+                            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
+                        ]
+                    }, {
+                        timeout: 120000 // 2 minutes timeout for large documents
+                    });
+
+                    const result = await modelInstance.generateContent(fullPrompt);
+                    response = await result.response;
+                    if (tryModel !== apiModel) {
+                        console.log(`[AI Service] Fallback succeeded with model: ${tryModel}`);
+                    }
+                    break;
+                } catch (modelErr: any) {
+                    lastErr = modelErr;
+                    if (modelErr.message?.includes('404') || modelErr.message?.includes('not found') || modelErr.message?.includes('no longer available')) {
+                        console.warn(`[AI Service] Model ${tryModel} unavailable (404), checking next candidate...`);
+                        continue;
+                    }
                     throw modelErr;
                 }
             }
+
+            if (!response) throw lastErr;
             return response.text();
         } catch (error: any) {
             console.error('AI Generation Error Service:', error);
@@ -145,7 +143,7 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
         if (provider === 'perplexity') {
             const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, apiKey, 'perplexity');
             // Clean markdown json blocks if present
