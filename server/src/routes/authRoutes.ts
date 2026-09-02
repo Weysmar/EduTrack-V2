@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, getAllUsers, deleteUserByAdmin } from '../controllers/authController';
+import { register, login, getMe, getAllUsers, deleteUserByAdmin, updateUserByAdmin } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -21,6 +21,7 @@ router.post('/register', (req, res, next) => {
 }, register as any);
 
 router.get('/users', authenticate, getAllUsers as any);
+router.put('/users/:id', authenticate, updateUserByAdmin as any);
 router.delete('/users/:id', authenticate, deleteUserByAdmin as any);
 
 export default router;

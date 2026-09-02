@@ -21,6 +21,7 @@ interface AuthState {
     logout: () => void;
     deleteAccount: () => Promise<void>;
     fetchUsers: () => Promise<any[]>;
+    updateUser: (id: string, data: { name?: string; email?: string; password?: string }) => Promise<any>;
     deleteUser: (id: string) => Promise<void>;
 }
 
@@ -79,6 +80,15 @@ export const useAuthStore = create<AuthState>()(
                     return response.data;
                 } catch (error) {
                     console.error('Failed to fetch users:', error);
+                    throw error;
+                }
+            },
+            updateUser: async (id: string, data: { name?: string; email?: string; password?: string }) => {
+                try {
+                    const response = await apiClient.put(`/auth/users/${id}`, data);
+                    return response.data;
+                } catch (error) {
+                    console.error('Failed to update user:', error);
                     throw error;
                 }
             },

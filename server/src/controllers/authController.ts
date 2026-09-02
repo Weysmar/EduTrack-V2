@@ -193,6 +193,64 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * Admin only: Update user profile (name, email) or reset password
+ */
+export const updateUserByAdmin = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user || !isUserAdmin(req.user.email)) {
+            return res.status(403).json({ message: 'Accès non autorisé' });
+        }
+
+        const { id } = req.params;
+        const { name, email, password } = req.body;
+
+        const targetUser = await prisma.profile.findUnique({ where: { id } });
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Utilisateur introuvable' });
+        }
+
+        const updateData: any = {};
+
+        if (name && typeof name === 'string' && name.trim().length >= 2) {
+            updateData.name = name.trim();
+        }
+
+        if (email && typeof email === 'string' && email.trim() !== targetUser.email) {
+            const cleanEmail = email.trim().toLowerCase();
+            const emailTaken = await prisma.profile.findUnique({ where: { email: cleanEmail } });
+            if (emailTaken) {
+                return res.status(400).json({ message: 'Cette adresse email est déjà utilisée.' });
+            }
+            updateData.email = cleanEmail;
+        }
+
+        if (password && typeof password === 'string' && password.length >= 6) {
+            updateData.passwordHash = await bcrypt.hash(password, 10);
+        }
+
+        const updated = await prisma.profile.update({
+            where: { id },
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true,
+                lastAccessed: true,
+                avatar: true
+            }
+        });
+
+        res.json({
+            message: 'Utilisateur mis à jour avec succès',
+            user: { ...updated, isAdmin: isUserAdmin(updated.email) }
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+/**
  * Admin only: Delete user profile
  */
 export const deleteUserByAdmin = async (req: AuthRequest, res: Response) => {
@@ -218,4 +276,6 @@ export const deleteUserByAdmin = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
+
 

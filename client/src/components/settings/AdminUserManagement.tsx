@@ -1,7 +1,7 @@
  import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useLanguage } from '@/components/language-provider';
-import { Users, UserPlus, Trash2, ShieldCheck, Mail, Key, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Users, UserPlus, Trash2, ShieldCheck, Mail, Key, Loader2, AlertCircle, CheckCircle2, Edit3, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ManagedUser {
@@ -18,7 +18,7 @@ interface ManagedUser {
 }
 
 export function AdminUserManagement() {
-    const { fetchUsers, register, deleteUser, user: currentUser } = useAuthStore();
+    const { fetchUsers, register, deleteUser, updateUser, user: currentUser } = useAuthStore();
     const { language } = useLanguage();
 
     const [users, setUsers] = useState<ManagedUser[]>([]);
@@ -26,12 +26,20 @@ export function AdminUserManagement() {
     const [isCreating, setIsCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    // Form state
+    // Create Form state
     const [newName, setNewName] = useState('');
     const [newEmail, setNewEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
     const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+    // Edit Modal state
+    const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
+    const [editPassword, setEditPassword] = useState('');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
 
     const loadUsers = async () => {
         setIsLoading(true);
@@ -76,6 +84,46 @@ export function AdminUserManagement() {
         }
     };
 
+    const handleOpenEdit = (user: ManagedUser) => {
+        setEditingUser(user);
+        setEditName(user.name);
+        setEditEmail(user.email);
+        setEditPassword('');
+        setEditError(null);
+    };
+
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUser) return;
+
+        setIsSavingEdit(true);
+        setEditError(null);
+
+        try {
+            const payload: { name?: string; email?: string; password?: string } = {
+                name: editName.trim(),
+                email: editEmail.trim().toLowerCase()
+            };
+
+            if (editPassword.trim()) {
+                payload.password = editPassword.trim();
+            }
+
+            await updateUser(editingUser.id, payload);
+            toast.success(
+                language === 'fr'
+                    ? `Utilisateur "${editName}" mis à jour avec succès`
+                    : `User "${editName}" updated successfully`
+            );
+            setEditingUser(null);
+            await loadUsers();
+        } catch (err: any) {
+            setEditError(err.response?.data?.message || err.message || "Erreur de mise à jour");
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
     const handleDeleteUser = async (targetUser: ManagedUser) => {
         if (targetUser.isAdmin) {
             toast.error(language === 'fr' ? "Action interdite" : "Action not allowed", {
@@ -115,8 +163,8 @@ export function AdminUserManagement() {
                     </p>
                     <p className="text-muted-foreground text-xs">
                         {language === 'fr'
-                            ? "L'inscription publique est désactivée. Vous seul avez la permission de créer de nouveaux comptes pour vos utilisateurs."
-                            : "Public registration is disabled. Only you have permission to create new accounts for your users."}
+                            ? "L'inscription publique est désactivée. Vous seul pouvez créer, éditer, modifier les mots de passe et supprimer des comptes."
+                            : "Public registration is disabled. Only you can create, edit, change passwords and delete accounts."}
                     </p>
                 </div>
             </div>
@@ -251,26 +299,37 @@ export function AdminUserManagement() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between sm:justify-end gap-6 text-xs text-muted-foreground">
+                                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 text-xs text-muted-foreground">
                                         <div>
                                             <span>{u._count?.courses || 0} {language === 'fr' ? "cours" : "courses"}</span>
                                         </div>
-                                        <div>
+                                        <div className="hidden md:block">
                                             <span>
                                                 {language === 'fr' ? "Créé le " : "Created "}
                                                 {new Date(u.createdAt).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                                             </span>
                                         </div>
-                                        {!u.isAdmin && (
+
+                                        <div className="flex items-center gap-1">
                                             <button
-                                                onClick={() => handleDeleteUser(u)}
-                                                disabled={deletingId === u.id}
-                                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
-                                                title={language === 'fr' ? "Supprimer cet utilisateur" : "Delete user"}
+                                                onClick={() => handleOpenEdit(u)}
+                                                className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                                title={language === 'fr' ? "Modifier le compte / mot de passe" : "Edit user / change password"}
                                             >
-                                                {deletingId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                <Edit3 className="h-4 w-4" />
                                             </button>
-                                        )}
+
+                                            {!u.isAdmin && (
+                                                <button
+                                                    onClick={() => handleDeleteUser(u)}
+                                                    disabled={deletingId === u.id}
+                                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+                                                    title={language === 'fr' ? "Supprimer cet utilisateur" : "Delete user"}
+                                                >
+                                                    {deletingId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -278,6 +337,100 @@ export function AdminUserManagement() {
                     </div>
                 )}
             </div>
+
+            {/* Edit User Modal */}
+            {editingUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border p-6 space-y-5 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between border-b pb-3">
+                            <div className="flex items-center gap-2">
+                                <Edit3 className="h-5 w-5 text-primary" />
+                                <h3 className="font-semibold text-base">
+                                    {language === 'fr' ? "Modifier l'utilisateur" : "Edit User"}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setEditingUser(null)}
+                                className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        {editError && (
+                            <div className="p-3 rounded-lg text-xs bg-destructive/10 text-destructive flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                <span>{editError}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveEdit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium mb-1">
+                                    {language === 'fr' ? "Nom complet" : "Full Name"}
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    className="w-full bg-background border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium mb-1">
+                                    {language === 'fr' ? "Adresse email" : "Email Address"}
+                                </label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={editEmail}
+                                    onChange={e => setEditEmail(e.target.value)}
+                                    className="w-full bg-background border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                />
+                            </div>
+
+                            <div className="pt-2 border-t">
+                                <label className="block text-xs font-medium mb-1">
+                                    {language === 'fr' ? "Nouveau mot de passe (optionnel)" : "New Password (optional)"}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editPassword}
+                                    onChange={e => setEditPassword(e.target.value)}
+                                    placeholder={language === 'fr' ? "Laisser vide pour ne pas changer" : "Leave empty to keep current"}
+                                    className="w-full bg-background border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none font-mono placeholder:font-sans"
+                                />
+                                <p className="text-[11px] text-muted-foreground mt-1">
+                                    {language === 'fr'
+                                        ? "Permet de réinitialiser instantanément le mot de passe de l'utilisateur."
+                                        : "Instantly resets the user's password."}
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingUser(null)}
+                                    className="px-4 py-2 text-sm text-muted-foreground hover:bg-muted rounded-lg"
+                                >
+                                    {language === 'fr' ? "Annuler" : "Cancel"}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingEdit}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50"
+                                >
+                                    {isSavingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {language === 'fr' ? "Enregistrer les modifications" : "Save Changes"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
