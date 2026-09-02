@@ -606,46 +606,6 @@ export function ItemView() {
                         "w-full transition-all",
                         isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-0 md:space-y-6 max-w-5xl mx-auto"
                     )}>
-
-                        {/* Focus Header for Desktop and Mobile */}
-                        {isFocusMode && (
-                            <div className="flex items-center justify-between border-b bg-card shrink-0 px-4 py-2.5 z-50">
-                                {/* Mobile Tabs */}
-                                <div className="md:hidden flex items-center flex-1">
-                                    <button
-                                        onClick={() => setMobileTab('pdf')}
-                                        className={cn("flex-1 py-1.5 text-xs font-medium border-b-2 transition-colors", mobileTab === 'pdf' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
-                                    >
-                                        Document
-                                    </button>
-                                    <button
-                                        onClick={() => setMobileTab('summary')}
-                                        className={cn("flex-1 py-1.5 text-xs font-medium border-b-2 transition-colors", mobileTab === 'summary' ? "border-primary text-primary" : "border-transparent text-muted-foreground")}
-                                    >
-                                        Résumé
-                                    </button>
-                                </div>
-
-                                {/* Desktop Title & Info */}
-                                <div className="hidden md:flex items-center gap-3 min-w-0">
-                                    <span className="font-semibold text-sm truncate max-w-md">{item.title}</span>
-                                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                                        {t('action.fullscreen') || "Plein écran"} (Échap pour quitter)
-                                    </span>
-                                </div>
-
-                                {/* Universal Exit Fullscreen Button */}
-                                <button
-                                    onClick={() => { setIsFocusMode(false); setMobileTab('pdf'); }}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/80 hover:bg-muted text-foreground text-xs font-medium transition-colors border shadow-2xs"
-                                    title={t('focus.exit') || "Quitter le plein écran"}
-                                >
-                                    <Minimize className="h-4 w-4 text-primary" />
-                                    <span className="hidden sm:inline">{t('focus.exit') || "Quitter le plein écran"}</span>
-                                </button>
-                            </div>
-                        )}
-
                         <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden" : "block")}>
 
                             {/* ===== ORIGINAL CONTENT VIEW ===== */}
@@ -682,6 +642,7 @@ export function ItemView() {
                                                         className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
                                                         engine={officeEngine}
                                                         onEngineChange={setOfficeEngine}
+                                                        onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
                                                     />
                                                 );
                                             }
@@ -707,7 +668,17 @@ export function ItemView() {
                                                 return (
                                                     <>
                                                         {/* Desktop: Native Iframe for best performance */}
-                                                        <div className={cn("hidden lg:block", isFocusMode ? "h-full" : "h-[80vh]")}>
+                                                        <div className={cn("hidden lg:block relative", isFocusMode ? "h-full" : "h-[80vh]")}>
+                                                            {isFocusMode && (
+                                                                <button
+                                                                    onClick={() => setIsFocusMode(false)}
+                                                                    className="absolute top-3 right-5 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-white rounded-lg text-xs font-medium backdrop-blur shadow-md transition-all border border-slate-700"
+                                                                    title={t('focus.exit') || "Quitter le plein écran"}
+                                                                >
+                                                                    <Minimize className="h-3.5 w-3.5 text-primary" />
+                                                                    <span>{t('focus.exit') || "Quitter plein écran"}</span>
+                                                                </button>
+                                                            )}
                                                             <iframe
                                                                 src={/^\s*(javascript|vbscript):/i.test(pdfUrl) ? 'about:blank' : `${pdfUrl}#view=FitH`}
                                                                 title="PDF Document"
@@ -718,7 +689,13 @@ export function ItemView() {
 
                                                         {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
                                                         <div className="block lg:hidden">
-                                                            {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : <PDFViewer url={pdfUrl} className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"} />}
+                                                            {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : (
+                                                                <PDFViewer
+                                                                    url={pdfUrl}
+                                                                    className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
+                                                                    onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
+                                                                />
+                                                            )}
                                                         </div>
                                                     </>
                                                 );

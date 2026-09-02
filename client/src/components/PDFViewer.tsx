@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { Document, Page } from 'react-pdf'
-import { ZoomIn, ZoomOut, ExternalLink, RotateCw, AlertCircle } from 'lucide-react'
+import { ZoomIn, ZoomOut, ExternalLink, RotateCw, AlertCircle, Minimize } from 'lucide-react'
 import { useLanguage } from './language-provider'
 
 interface PDFViewerProps {
     url: string
     className?: string
+    onExitFocusMode?: () => void
 }
 
-export function PDFViewer({ url, className = "" }: PDFViewerProps) {
+export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerProps) {
     const { t } = useLanguage()
     const [numPages, setNumPages] = useState<number | null>(null)
     const [scale, setScale] = useState(1.0)
@@ -115,6 +116,17 @@ export function PDFViewer({ url, className = "" }: PDFViewerProps) {
                     >
                         <ZoomIn className="h-4 w-4" />
                     </button>
+
+                    {onExitFocusMode && (
+                        <button
+                            onClick={onExitFocusMode}
+                            className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors text-foreground flex items-center gap-1 text-xs font-medium"
+                            title={t('focus.exit') || "Quitter le plein écran"}
+                        >
+                            <Minimize className="h-4 w-4 text-primary" />
+                            <span className="hidden sm:inline">{t('focus.exit') || "Quitter plein écran"}</span>
+                        </button>
+                    )}
 
                     <div className="h-4 w-px bg-border mx-0.5" />
 

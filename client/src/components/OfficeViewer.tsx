@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Download, RefreshCw, Laptop } from 'lucide-react';
+import { FileText, Download, RefreshCw, Laptop, Minimize } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
 import { useLanguage } from './language-provider';
 import { API_URL } from '@/config';
@@ -10,9 +10,10 @@ interface OfficeViewerProps {
     className?: string;
     engine?: 'google' | 'microsoft' | 'local';
     onEngineChange?: (engine: 'google' | 'microsoft' | 'local') => void;
+    onExitFocusMode?: () => void;
 }
 
-export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange }: OfficeViewerProps) {
+export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange, onExitFocusMode }: OfficeViewerProps) {
     const { t } = useLanguage()
 
     // Determine file type
@@ -83,6 +84,16 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                             <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 transition-opacity">
                                 <Download className="h-3 w-3" /> Télécharger
                             </a>
+                            {onExitFocusMode && (
+                                <button
+                                    onClick={onExitFocusMode}
+                                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600 text-foreground rounded text-xs transition-colors"
+                                    title={t('focus.exit') || "Quitter le plein écran"}
+                                >
+                                    <Minimize className="h-3 w-3 text-primary" />
+                                    <span className="hidden sm:inline">{t('focus.exit') || "Quitter plein écran"}</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div className="flex-1 overflow-hidden relative bg-slate-50 dark:bg-slate-950">
@@ -184,6 +195,16 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                         <RefreshCw className="h-3 w-3" />
                         <span className="hidden sm:inline">Changer moteur</span>
                     </button>
+                    {onExitFocusMode && (
+                        <button
+                            onClick={onExitFocusMode}
+                            className="flex items-center gap-1.5 px-2 py-1 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600 text-foreground rounded text-xs transition-colors"
+                            title={t('focus.exit') || "Quitter le plein écran"}
+                        >
+                            <Minimize className="h-3.5 w-3.5 text-primary" />
+                            <span className="hidden sm:inline">{t('focus.exit') || "Quitter plein écran"}</span>
+                        </button>
+                    )}
                     <a
                         href={viewerUrl}
                         download
