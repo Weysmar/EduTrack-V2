@@ -71,10 +71,10 @@ export const aiService = {
         }
 
         try {
-            // Validate API key
-            const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
+            // Validate API key with fallbacks
+            const effectiveKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY;
             if (!effectiveKey) {
-                throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
+                throw new Error('Aucune clé API Google Gemini trouvée. Veuillez renseigner votre clé API dans les Paramètres de profil ou configurer GEMINI_API_KEY.');
             }
 
             // Combine system prompt if model doesn't support it directly (Gemini 1.5 supports systemInstruction)
@@ -145,9 +145,9 @@ export const aiService = {
         }
 
         try {
-            const effectiveKey = apiKey || process.env.GEMINI_API_KEY;
+            const effectiveKey = apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GOOGLE_API_KEY;
             if (!effectiveKey) {
-                throw new Error('No API key provided. Please configure your Google Gemini API key in Settings.');
+                throw new Error('Aucune clé API Google Gemini trouvée. Veuillez renseigner votre clé API dans les Paramètres de profil ou configurer GEMINI_API_KEY.');
             }
 
             // Map model name

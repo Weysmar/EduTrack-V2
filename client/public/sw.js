@@ -35,6 +35,10 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests and exclude API / upload endpoints
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+
+  // Ignore non-http/https schemes (e.g. chrome-extension://, blob:, data:)
+  if (!url.protocol.startsWith('http')) return;
+
   if (url.pathname.startsWith('/api') || url.pathname.startsWith('/uploads') || url.pathname.startsWith('/storage')) {
     return;
   }
