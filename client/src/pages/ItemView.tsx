@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -35,6 +35,7 @@ import { toast } from 'sonner'
 export function ItemView() {
     const { courseId, itemId } = useParams()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { t } = useLanguage()
 
     // Support String IDs (UUIDs)
@@ -69,17 +70,21 @@ export function ItemView() {
 
 
     // Inline Edit Mode
-    const [isEditMode, setIsEditMode] = useState(false)
+    const [isEditMode, setIsEditMode] = useState(searchParams.get('edit') === 'true')
     const [editedContent, setEditedContent] = useState('')
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
     const queryClient = useQueryClient()
 
-    // Sync content when item loads
+    // Sync content when item loads or if opened in edit mode
     useEffect(() => {
-        if (item?.content && !isEditMode) {
-            setEditedContent(item.content)
+        if (item) {
+            if (!isEditMode) {
+                setEditedContent(item.content || '')
+            } else if (searchParams.get('edit') === 'true') {
+                setEditedContent(item.content || '')
+            }
         }
-    }, [item, isEditMode])
+    }, [item, isEditMode, searchParams])
 
     const updateMutation = useMutation({
         mutationFn: (content: string) => {

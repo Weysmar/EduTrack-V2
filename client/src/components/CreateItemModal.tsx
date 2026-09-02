@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Dumbbell, FileText, FolderOpen, Loader2 } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
@@ -20,16 +21,17 @@ interface CreateItemModalProps {
 }
 
 export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: CreateItemModalProps) {
+    const navigate = useNavigate()
     const { activeProfile } = useProfileStore()
     const [type, setType] = useState<ItemType>(initialFile ? 'resource' : 'note')
     const [title, setTitle] = useState(initialFile ? initialFile.name : '')
-    const [content, setContent] = useState('') // For note
+    const [content, setContent] = useState('') // For note/exercise
     const [status, setStatus] = useState('todo') // For exercise
     const [difficulty, setDifficulty] = useState('medium') // For exercise
     const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []) // For resource/exercise
     const [uploadProgress, setUploadProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false)
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const queryClient = useQueryClient()
 
     const createItemMutation = useMutation({
@@ -39,13 +41,19 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                 setUploadProgress(percentCompleted);
             }
         }),
-        onSuccess: () => {
+        onSuccess: (createdItem: any) => {
             queryClient.invalidateQueries({ queryKey: ['items'] })
             onClose()
+            const itemType = type
+            const newId = createdItem?.id
             setTitle('')
             setContent('')
             setFiles([])
             setUploadProgress(0)
+
+            if (itemType === 'note' && newId) {
+                navigate(`/edu/course/${courseId}/item/${newId}?edit=true`)
+            }
         }
     })
 
@@ -203,6 +211,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                 onChange={e => setTitle(e.target.value)}
                                 className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                                 placeholder={t(`item.form.title.placeholder.${type}`)}
+                                autoFocus
                                 required
                             />
                         </div>
@@ -221,9 +230,13 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                     )}
 
                     {type === 'note' && (
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">{t('item.form.content')}</label>
-                            <Editor content={content} onChange={setContent} />
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-primary shrink-0" />
+                            <span>
+                                {language === 'fr'
+                                    ? "Donnez un titre à votre note puis cliquez ci-dessous pour ouvrir directement la page de rédaction grand format."
+                                    : "Give your note a title and click below to open the full-screen writing page."}
+                            </span>
                         </div>
                     )}
 
@@ -356,8 +369,16 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                             disabled={createItemMutation.isPending || isUploading}
                             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 min-w-[120px] flex items-center justify-center gap-2"
                         >
-                            {(createItemMutation.isPending || isUploading) && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {isUploading ? (t('common.uploading') || "Upload...") : t(`item.form.submit.${type}`)}
+                            {(createItemMutation.isPending || isUploading) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : type === 'note' ? (
+                                <>
+                                    <span>{language === 'fr' ? "Créer et rédiger" : "Create & Write"}</span>
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
+                            ) : (
+                                <span>{isUploading ? (t('common.uploading') || "Upload...") : t(`item.form.submit.${type}`)}</span>
+                            )}
                         </button>
                     </div>
                 </form>
