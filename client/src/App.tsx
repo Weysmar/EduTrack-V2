@@ -61,6 +61,7 @@ const FinanceCategoriesPage = lazyWithRetry(() => import('@/pages/finance/Financ
 const RecurringPage = lazyWithRetry(() => import('@/pages/finance/RecurringPage').then(m => ({ default: m.default })))
 const SavingsPage = lazyWithRetry(() => import('@/pages/finance/SavingsPage').then(m => ({ default: m.default })))
 const RulesPage = lazyWithRetry(() => import('@/pages/finance/RulesPage').then(m => ({ default: m.default })))
+const MonthlyReportPage = lazyWithRetry(() => import('@/pages/finance/MonthlyReportPage').then(m => ({ default: m.default })))
 const PrivacyPolicyPage = lazyWithRetry(() => import('@/pages/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })))
 const TermsOfServicePage = lazyWithRetry(() => import('@/pages/TermsOfServicePage').then(m => ({ default: m.TermsOfServicePage })))
 

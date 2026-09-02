@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { motion, useAnimation } from 'framer-motion';
 import { Sparkles, ArrowRight, ShieldCheck, Wallet, BrainCircuit } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
