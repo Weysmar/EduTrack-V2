@@ -1,4 +1,4 @@
-FROM node:20-alpine as build
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 # Force Rebuild: 2026-01-06-18-49
