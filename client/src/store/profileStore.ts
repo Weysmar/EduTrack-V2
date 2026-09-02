@@ -18,6 +18,8 @@ interface ApiKeyMap {
     google_calendar: string | null;
     google_gemini_summaries: string | null;
     google_gemini_exercises: string | null;
+    google_client_id?: string | null;
+    google_drive_api_key?: string | null;
     finance_audit_provider: 'google' | 'perplexity' | null;
     finance_audit_model: string | null;
 }
@@ -51,6 +53,8 @@ export const useProfileStore = create<ProfileState>()(
                 google_calendar: null,
                 google_gemini_summaries: null,
                 google_gemini_exercises: null,
+                google_client_id: null,
+                google_drive_api_key: null,
                 finance_audit_provider: 'google',
                 finance_audit_model: 'gemini-3.7-flash'
             },
@@ -102,6 +106,8 @@ export const useProfileStore = create<ProfileState>()(
                         google_calendar: null,
                         google_gemini_summaries: null,
                         google_gemini_exercises: null,
+                        google_client_id: null,
+                        google_drive_api_key: null,
                         finance_audit_provider: 'google',
                         finance_audit_model: 'gemini-3.7-flash'
                     }

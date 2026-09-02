@@ -14,6 +14,8 @@ export function ApiKeySettings() {
         google_calendar: string;
         google_gemini_summaries: string;
         google_gemini_exercises: string;
+        google_client_id: string;
+        google_drive_api_key: string;
         finance_audit_provider: 'google' | 'perplexity';
         finance_audit_model: string;
     }>({
@@ -22,6 +24,8 @@ export function ApiKeySettings() {
         google_calendar: '',
         google_gemini_summaries: '',
         google_gemini_exercises: '',
+        google_client_id: '',
+        google_drive_api_key: '',
         finance_audit_provider: 'google',
         finance_audit_model: 'gemini-1.5-flash'
     })
@@ -38,6 +42,8 @@ export function ApiKeySettings() {
                 google_calendar: getApiKey('google_calendar') || '',
                 google_gemini_summaries: getApiKey('google_gemini_summaries') || '',
                 google_gemini_exercises: getApiKey('google_gemini_exercises') || '',
+                google_client_id: getApiKey('google_client_id') || '',
+                google_drive_api_key: getApiKey('google_drive_api_key') || '',
                 finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
                 finance_audit_model: getApiKey('finance_audit_model') || 'gemini-1.5-flash'
             })
@@ -130,7 +136,7 @@ export function ApiKeySettings() {
                     />
                 </div>
 
-                {/* Google Calendar Section */}
+                {/* Integrations Section */}
                 <div className="space-y-4">
                     <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">{t('settings.api.integrations')}</h3>
 
@@ -142,6 +148,26 @@ export function ApiKeySettings() {
                         show={showKey['google_calendar']}
                         onToggle={() => toggleShow('google_calendar')}
                         placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                    />
+
+                    <ApiKeyInput
+                        id="google_client_id"
+                        label="Google Drive - OAuth Client ID"
+                        value={keys.google_client_id}
+                        onChange={v => setKeys(prev => ({ ...prev, google_client_id: v }))}
+                        show={showKey['google_client_id']}
+                        onToggle={() => toggleShow('google_client_id')}
+                        placeholder="ex: 123456789-abc.apps.googleusercontent.com"
+                    />
+
+                    <ApiKeyInput
+                        id="google_drive_api_key"
+                        label="Google Drive - API Key (Picker)"
+                        value={keys.google_drive_api_key}
+                        onChange={v => setKeys(prev => ({ ...prev, google_drive_api_key: v }))}
+                        show={showKey['google_drive_api_key']}
+                        onToggle={() => toggleShow('google_drive_api_key')}
+                        placeholder="ex: AIzaSy..."
                     />
                 </div>
             </div>

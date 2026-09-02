@@ -8,6 +8,7 @@ import { useLanguage } from '@/components/language-provider'
 import { useProfileStore } from '@/store/profileStore'
 import { itemQueries } from '@/lib/api/queries'
 import imageCompression from 'browser-image-compression';
+import { GoogleDrivePickerButton } from '@/components/drive/GoogleDrivePickerButton';
 
 type ItemType = 'note' | 'exercise' | 'resource';
 
@@ -264,7 +265,17 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">{t('item.form.file')}</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">{t('item.form.file')}</label>
+                                    <GoogleDrivePickerButton
+                                        onFilesSelected={picked => {
+                                            if (picked.length > 0) {
+                                                setFiles([picked[0]]);
+                                                if (!title.trim()) setTitle(picked[0].name.replace(/\.[^/.]+$/, ""));
+                                            }
+                                        }}
+                                    />
+                                </div>
                                 <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/5 transition-colors cursor-pointer relative">
                                     <input
                                         type="file"
@@ -282,6 +293,20 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
 
                     {type === 'resource' && (
                         <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Sélectionnez vos fichiers locaux ou Google Drive</span>
+                                <GoogleDrivePickerButton
+                                    onFilesSelected={picked => {
+                                        if (picked.length > 0) {
+                                            setFiles(prev => [...prev, ...picked]);
+                                            if (files.length === 0 && picked.length === 1 && !title.trim()) {
+                                                setTitle(picked[0].name.replace(/\.[^/.]+$/, ""));
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
+
                             <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/5 transition-colors cursor-pointer relative">
                                 <input
                                     type="file"
