@@ -44,10 +44,41 @@ export async function loadGooglePickerApi(): Promise<void> {
     });
 }
 
+const DRIVE_TOKEN_STORAGE_KEY = 'edutrack_gdrive_token';
+const DRIVE_TOKEN_EXPIRY_KEY = 'edutrack_gdrive_token_expiry';
+
+/**
+ * Retrieves cached active Google Drive token from memory or sessionStorage
+ */
+function getCachedAccessToken(): string | null {
+    if (currentAccessToken) return currentAccessToken;
+    const stored = sessionStorage.getItem(DRIVE_TOKEN_STORAGE_KEY);
+    const expiry = sessionStorage.getItem(DRIVE_TOKEN_EXPIRY_KEY);
+    if (stored && expiry && Date.now() < parseInt(expiry, 10)) {
+        currentAccessToken = stored;
+        return stored;
+    }
+    return null;
+}
+
+/**
+ * Saves Google Drive token to cache & sessionStorage (with safety buffer)
+ */
+function setCachedAccessToken(token: string, expiresInSeconds: number = 3500) {
+    currentAccessToken = token;
+    sessionStorage.setItem(DRIVE_TOKEN_STORAGE_KEY, token);
+    sessionStorage.setItem(DRIVE_TOKEN_EXPIRY_KEY, (Date.now() + expiresInSeconds * 1000).toString());
+}
+
 /**
  * Requests an OAuth 2.0 access token using Google Identity Services (GIS)
  */
-export async function requestDriveAccessToken(): Promise<string> {
+export async function requestDriveAccessToken(forcePrompt = false): Promise<string> {
+    const cached = getCachedAccessToken();
+    if (cached && !forcePrompt) {
+        return cached;
+    }
+
     const { clientId } = getGoogleDriveCredentials();
 
     if (!clientId) {
@@ -68,7 +99,8 @@ export async function requestDriveAccessToken(): Promise<string> {
                         reject(new Error(tokenResponse.error_description || tokenResponse.error));
                         return;
                     }
-                    currentAccessToken = tokenResponse.access_token;
+                    const expiresIn = tokenResponse.expires_in ? parseInt(tokenResponse.expires_in, 10) : 3500;
+                    setCachedAccessToken(tokenResponse.access_token, expiresIn);
                     resolve(tokenResponse.access_token);
                 },
                 error_callback: (err: any) => {
@@ -76,8 +108,8 @@ export async function requestDriveAccessToken(): Promise<string> {
                 }
             });
 
-            // Prompt user if no token, or prompt with consent if needed
-            tokenClient.requestAccessToken({ prompt: currentAccessToken ? '' : 'consent' });
+            // If we have had a session or not forcing prompt, request without asking consent again
+            tokenClient.requestAccessToken({ prompt: '' });
         } catch (err) {
             reject(err);
         }
