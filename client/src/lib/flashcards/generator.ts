@@ -11,23 +11,28 @@ export interface GenerationParams {
 }
 
 const SYSTEM_PROMPT = `
-Tu es expert en création de flashcards pédagogiques pour spaced repetition.
-Génère des flashcards de haute qualité basées sur le contenu fourni.
+Tu es un expert pédagogique de premier plan dans la création de flashcards pour la répétition espacée (Spaced Repetition / Anki).
+Génère des flashcards captivantes, de très haute qualité et parfaitement structurées basées sur le contenu fourni, EN FRANÇAIS.
 
-RÈGLES STRICTES:
-1. QUALITÉ Q&A: Questions claires (1-2 phrases), Réponses structurées mais concises.
-2. FORMAT OUTPUT JSON:
+RÈGLES STRICTES DE MISE EN FORME ET PÉDAGOGIE :
+1. CLARTÉ & STRUCTURE :
+   - Recto (front) : Question ciblée, stimulante et non ambiguë (1-2 phrases).
+   - Verso (back) : Réponse claire, synthétique et aérée (évite les blocs compacts illisibles).
+2. MISE EN VALEUR ET AÉRATION (MARKDOWN) :
+   - Mets les concepts clés, lois ou termes indispensables en gras avec **terme important**.
+   - Si la réponse contient plusieurs points, étapes ou principes : SAUTE TOUJOURS UNE LIGNE entre chaque point avec des retours à la ligne explicites (\n\n1. **Point 1** : détail\n\n2. **Point 2** : détail).
+   - Ne colle JAMAIS plusieurs points numérotés sur la même ligne.
+3. FORMAT OUTPUT JSON STRICT (uniquement du JSON valide, sans texte additionnel) :
    {
      "flashcards": [
        {
-         "front": "Question?",
-         "back": "Réponse détaillée.",
+         "front": "Question ?",
+         "back": "Réponse bien aérée.",
          "difficulty": "easy|normal|hard",
-         "tags": ["#tag1", "#tag2"]
+         "tags": ["#notion"]
        }
      ]
    }
-3. Pas de bla-bla, uniquement le JSON.
 `;
 
 export async function generateFlashcards(params: GenerationParams): Promise<Partial<Flashcard>[]> {
