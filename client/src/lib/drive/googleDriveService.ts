@@ -195,5 +195,39 @@ export async function downloadDriveFileAsLocalFile(
     }
 
     const blob = await response.blob();
-    return new File([blob], fileName, { type: targetMimeType });
+    const resultFile = new File([blob], fileName, { type: targetMimeType });
+    (resultFile as any).driveFileId = file.id;
+    return resultFile;
+}
+
+/**
+ * Downloads latest version of a Drive file by its driveFileId
+ */
+export async function downloadDriveFileById(
+    driveFileId: string,
+    fallbackName?: string,
+    accessToken?: string
+): Promise<File> {
+    const token = accessToken || currentAccessToken || (await requestDriveAccessToken());
+
+    // 1. Fetch file metadata
+    const metaRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${driveFileId}?fields=id,name,mimeType,size`,
+        {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        }
+    );
+
+    if (!metaRes.ok) {
+        throw new Error(`Impossible de récupérer les métadonnées Drive (${metaRes.statusText})`);
+    }
+
+    const metadata = await metaRes.json();
+    return downloadDriveFileAsLocalFile({
+        id: metadata.id,
+        name: metadata.name || fallbackName || 'document',
+        mimeType: metadata.mimeType
+    }, token);
 }

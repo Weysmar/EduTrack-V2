@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2 } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -12,6 +12,8 @@ interface ItemDesktopToolbarProps {
     officeEngine: 'google' | 'microsoft' | 'local';
     pdfUrl: string | null;
     handleDownload?: () => void;
+    handleSyncDrive?: () => void;
+    isSyncingDrive?: boolean;
     setMobileTab: (tab: 'pdf' | 'summary') => void;
     setIsFocusMode: (val: boolean) => void;
     isEditMode: boolean;
@@ -33,6 +35,7 @@ interface ItemDesktopToolbarProps {
 
 export function ItemDesktopToolbar({
     item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl, handleDownload,
+    handleSyncDrive, isSyncingDrive,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
     hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
@@ -74,6 +77,17 @@ export function ItemDesktopToolbar({
 
                     return (
                         <div className="flex items-center gap-1">
+                            {handleSyncDrive && (
+                                <button
+                                    onClick={handleSyncDrive}
+                                    disabled={isSyncingDrive}
+                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
+                                    title="Resynchroniser depuis Google Drive"
+                                >
+                                    <RefreshCw className={cn("h-4 w-4 text-emerald-500", isSyncingDrive && "animate-spin")} />
+                                    <span className="hidden xl:inline">Drive Sync</span>
+                                </button>
+                            )}
                             {targetUrl && (
                                 <a
                                     href={targetUrl}

@@ -101,6 +101,12 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                         }
                     }
 
+                    // Attach Google Drive file ID tag if present
+                    const driveFileId = (currentFile as any).driveFileId;
+                    if (driveFileId) {
+                        formData.append('tags', JSON.stringify([`gdrive:${driveFileId}`]));
+                    }
+
                     formData.append('file', fileToUpload);
                     formData.append('fileName', fileToUpload.name);
                     formData.append('fileType', fileToUpload.type);
@@ -156,6 +162,12 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                         console.error("Image compression failed", error);
                     }
                 }
+
+                const driveFileId = (files[0] as any).driveFileId;
+                if (driveFileId) {
+                    formData.append('tags', JSON.stringify([`gdrive:${driveFileId}`]));
+                }
+
                 formData.append('file', fileToUpload);
                 formData.append('fileName', fileToUpload.name);
                 formData.append('fileType', fileToUpload.type);

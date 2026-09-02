@@ -9,6 +9,7 @@ import { useSummary } from '@/hooks/useSummary'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
+import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers } from 'lucide-react'
 import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
@@ -36,7 +37,7 @@ export function ItemView() {
     const { courseId, itemId } = useParams()
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
 
     // Support String IDs (UUIDs)
     const id = itemId || ''
@@ -73,7 +74,12 @@ export function ItemView() {
     const [isEditMode, setIsEditMode] = useState(searchParams.get('edit') === 'true')
     const [editedContent, setEditedContent] = useState('')
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+    const [isSyncingDrive, setIsSyncingDrive] = useState(false)
     const queryClient = useQueryClient()
+
+    // Extract driveFileId from tags if item came from Google Drive
+    const driveTag = item?.tags?.find((t: string) => t.startsWith('gdrive:'));
+    const driveFileId = driveTag ? driveTag.replace('gdrive:', '') : null;
 
     // Sync content when item loads or if opened in edit mode
     useEffect(() => {
@@ -117,6 +123,51 @@ export function ItemView() {
 
         return () => clearTimeout(timer)
     }, [editedContent, isEditMode, item?.content])
+
+    // Handle Google Drive Re-sync
+    const handleSyncDrive = async () => {
+        if (!driveFileId || !item?.id) return;
+        setIsSyncingDrive(true);
+        const toastId = toast.loading(
+            language === 'fr' 
+                ? "Synchronisation depuis Google Drive..." 
+                : "Syncing from Google Drive..."
+        );
+
+        try {
+            const freshFile = await downloadDriveFileById(driveFileId, item.fileName);
+            const formData = new FormData();
+            formData.append('file', freshFile);
+            formData.append('fileName', freshFile.name);
+            formData.append('fileType', freshFile.type);
+            formData.append('fileSize', freshFile.size.toString());
+            // Reset extractedContent so fresh content will be re-extracted
+            formData.append('extractedContent', '');
+
+            await itemQueries.update(String(item.id), formData);
+            await queryClient.invalidateQueries({ queryKey: ['items', id] });
+
+            toast.success(
+                language === 'fr'
+                    ? "Document mis à jour depuis Google Drive !"
+                    : "Document updated from Google Drive!",
+                { id: toastId }
+            );
+        } catch (syncErr: any) {
+            console.error("Drive sync error:", syncErr);
+            toast.error(
+                language === 'fr'
+                    ? "Échec de la synchronisation Drive"
+                    : "Drive sync failed",
+                {
+                    id: toastId,
+                    description: syncErr.message || "Vérifiez vos autorisations Google Drive."
+                }
+            );
+        } finally {
+            setIsSyncingDrive(false);
+        }
+    };
 
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
@@ -536,6 +587,8 @@ export function ItemView() {
                     officeEngine={officeEngine}
                     pdfUrl={pdfUrl}
                     handleDownload={handleDownload}
+                    handleSyncDrive={driveFileId ? handleSyncDrive : undefined}
+                    isSyncingDrive={isSyncingDrive}
                     setMobileTab={setMobileTab}
                     setIsFocusMode={setIsFocusMode}
                     isEditMode={!!isEditMode}
