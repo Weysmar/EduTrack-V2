@@ -36,6 +36,12 @@ import App from './App.tsx'
 import './index.css'
 
 
+// Auto-reload on Vite chunk updates/deployments
+window.addEventListener('vite:preloadError', (event) => {
+    console.warn('New deployment detected (preload error), reloading to fetch latest assets...', event);
+    window.location.reload();
+});
+
 console.log('🔌 EduTrack Client Initialized (v2.0.0 - Major Overhaul) 🚀');
 
 // Basic Error Boundary

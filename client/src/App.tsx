@@ -10,28 +10,30 @@ import { LanguageProvider } from "@/components/language-provider"
 import { Toaster } from "sonner"
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 
-// Custom lazy loader that retries once on error (useful for deployment updates causing chunk 404s)
+// Custom lazy loader that auto-reloads once on error (crucial for Dokploy deployment asset updates)
 const lazyWithRetry = (factory: () => Promise<any>) => {
     return lazy(async () => {
+        const hasReloaded = sessionStorage.getItem('chunk_retry_attempt');
         try {
-            return await factory();
+            const module = await factory();
+            // Clear flag on successful load
+            sessionStorage.removeItem('chunk_retry_attempt');
+            return module;
         } catch (error: any) {
-            // Check if it's a chunk load error
-            if (error.message && (error.message.includes('Failed to fetch dynamically imported module') || error.message.includes('Importing a module script failed'))) {
-                // If we haven't already reloaded the page, do it now
-                const storageKey = `chunk_load_error_${window.location.pathname}`;
-                const hasReloaded = sessionStorage.getItem(storageKey);
+            const msg = error?.message || String(error);
+            const isChunkError =
+                msg.includes('Failed to fetch dynamically imported module') ||
+                msg.includes('Importing a module script failed') ||
+                msg.includes('error loading dynamically imported module') ||
+                msg.includes('Unable to preload CSS');
 
-                if (!hasReloaded) {
-                    sessionStorage.setItem(storageKey, 'true');
-                    window.location.reload();
-                    // Return a never-resolving promise to wait for reload
-                    return new Promise(() => { });
-                } else {
-                    // Clean up key after a successful load or failure
-                    sessionStorage.removeItem(storageKey);
-                }
+            if (isChunkError && !hasReloaded) {
+                console.warn('[ChunkLoader] Deployment update detected. Refreshing page for latest bundle...');
+                sessionStorage.setItem('chunk_retry_attempt', 'true');
+                window.location.reload();
+                return new Promise(() => { });
             }
+            sessionStorage.removeItem('chunk_retry_attempt');
             throw error;
         }
     });
