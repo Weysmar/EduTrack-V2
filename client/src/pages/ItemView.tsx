@@ -750,7 +750,9 @@ export function ItemView() {
                                                                 <PDFViewer
                                                                     url={pdfUrl}
                                                                     className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
-                                                                    onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
+                                                                    isFocusMode={isFocusMode}
+                                                                    onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+                                                                    onExitFocusMode={() => setIsFocusMode(false)}
                                                                 />
                                                             )}
                                                         </div>

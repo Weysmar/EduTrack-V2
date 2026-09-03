@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
-import { ZoomIn, ZoomOut, ExternalLink, RotateCw, AlertCircle, Minimize } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize } from 'lucide-react'
 import { useLanguage } from './language-provider'
+import { cn } from '@/lib/utils'
 
 // Ensure workerSrc is always explicitly pointing to the same-origin worker
 if (typeof window !== 'undefined') {
@@ -12,10 +13,18 @@ if (typeof window !== 'undefined') {
 interface PDFViewerProps {
     url: string
     className?: string
+    isFocusMode?: boolean
+    onToggleFocusMode?: () => void
     onExitFocusMode?: () => void
 }
 
-export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerProps) {
+export function PDFViewer({
+    url,
+    className = "",
+    isFocusMode,
+    onToggleFocusMode,
+    onExitFocusMode
+}: PDFViewerProps) {
     const { t } = useLanguage()
     const [numPages, setNumPages] = useState<number | null>(null)
     const [scale, setScale] = useState(1.0)
@@ -23,8 +32,33 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
     const [pageWidth, setPageWidth] = useState<number | null>(null)
     const [pdfData, setPdfData] = useState<any>(null)
     const [useNativeEmbed, setUseNativeEmbed] = useState(false)
+    const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    const activeFocus = isFocusMode !== undefined ? isFocusMode : internalFocus
+
+    const handleToggleFocus = () => {
+        if (onToggleFocusMode) {
+            onToggleFocusMode()
+        } else if (onExitFocusMode && activeFocus) {
+            onExitFocusMode()
+        } else {
+            setInternalFocus(prev => !prev)
+        }
+    }
+
+    // Handle Escape key to exit focus mode
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && activeFocus) {
+                if (onExitFocusMode) onExitFocusMode()
+                else setInternalFocus(false)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [activeFocus, onExitFocusMode])
 
     // Load PDF as raw ArrayBuffer / Uint8Array to transfer cleanly to Web Worker without blob restrictions
     useEffect(() => {
@@ -62,14 +96,15 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
         const observer = new ResizeObserver((entries) => {
             const entry = entries[0]
             if (entry) {
-                // Subtracting a small buffer to avoid horizontal scrollbar appearing due to rounding issues
-                setPageWidth(entry.contentRect.width - 2)
+                // Adaptive width calculation: use full width with minimal margin on smartphones
+                const paddingBuffer = activeFocus ? 8 : 4
+                setPageWidth(Math.floor(entry.contentRect.width - paddingBuffer))
             }
         })
 
         observer.observe(containerRef.current)
         return () => observer.disconnect()
-    }, [])
+    }, [activeFocus])
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages)
@@ -90,12 +125,41 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
     const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5))
 
     return (
-        <div className={`w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative flex flex-col ${className}`}>
+        <div className={cn(
+            "w-full bg-slate-100 dark:bg-slate-900 overflow-hidden relative flex flex-col transition-all",
+            activeFocus
+                ? "fixed inset-0 z-50 h-[100dvh] w-screen rounded-none bg-background shadow-2xl"
+                : `rounded-lg border shadow-sm ${className}`
+        )}>
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-2 md:p-3 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10 gap-2">
-                <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                    <div className="text-xs md:text-sm font-medium px-1 md:px-2 truncate">
-                        {loading ? 'Chargement...' : `${numPages} pages`}
+            <div className="flex items-center justify-between p-2 md:p-3 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10 gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    {/* Focus / Plein écran Toggle Button */}
+                    <button
+                        onClick={handleToggleFocus}
+                        className={cn(
+                            "px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm shrink-0",
+                            activeFocus
+                                ? "bg-primary text-primary-foreground hover:opacity-90"
+                                : "bg-card hover:bg-muted text-foreground border"
+                        )}
+                        title={activeFocus ? "Quitter le mode focus (Échap)" : "Mode Focus (Plein écran)"}
+                    >
+                        {activeFocus ? (
+                            <>
+                                <Minimize className="h-3.5 w-3.5" />
+                                <span>Quitter</span>
+                            </>
+                        ) : (
+                            <>
+                                <Maximize className="h-3.5 w-3.5 text-primary" />
+                                <span>Focus</span>
+                            </>
+                        )}
+                    </button>
+
+                    <div className="text-xs md:text-sm font-medium px-1 truncate text-muted-foreground">
+                        {loading ? 'Chargement...' : `${numPages} p.`}
                     </div>
                 </div>
 
@@ -107,7 +171,7 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
                     >
                         <ZoomOut className="h-4 w-4" />
                     </button>
-                    <span className="text-xs md:text-sm font-medium px-1 md:px-2 min-w-[3ch]">{Math.round(scale * 100)}%</span>
+                    <span className="text-xs md:text-sm font-medium px-1 min-w-[3ch] text-center">{Math.round(scale * 100)}%</span>
                     <button
                         onClick={zoomIn}
                         className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
@@ -116,48 +180,30 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
                         <ZoomIn className="h-4 w-4" />
                     </button>
 
-                    {onExitFocusMode && (
-                        <button
-                            onClick={onExitFocusMode}
-                            className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors text-foreground flex items-center gap-1 text-xs font-medium"
-                            title={t('focus.exit') || "Quitter le plein écran"}
-                        >
-                            <Minimize className="h-4 w-4 text-primary" />
-                            <span className="hidden sm:inline">{t('focus.exit') || "Quitter plein écran"}</span>
-                        </button>
-                    )}
-
                     <div className="h-4 w-px bg-border mx-0.5" />
 
                     <button
                         onClick={() => setUseNativeEmbed(prev => !prev)}
-                        className="px-2 py-1 text-xs font-medium rounded hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                        className="px-2 py-1 text-xs font-medium rounded hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors border bg-background/50"
                         title={useNativeEmbed ? "Passer au visualiseur interactif" : "Passer au visualiseur intégré"}
                     >
                         {useNativeEmbed ? "Interactif" : "Natif"}
                     </button>
-
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors text-foreground flex items-center gap-1 text-xs font-medium"
-                        title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
-                    >
-                        <ExternalLink className="h-4 w-4" />
-                        <span className="hidden sm:inline">Ouvrir</span>
-                    </a>
                 </div>
             </div>
 
             {/* PDF Document - Scrollable Area */}
-            <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-4">
-                <div ref={containerRef} className="flex flex-col items-center gap-4 min-h-full w-full">
+            <div className={cn(
+                "flex-1 overflow-auto bg-slate-50 dark:bg-slate-950",
+                activeFocus ? "p-1 sm:p-2 md:p-4" : "p-2 md:p-4"
+            )}>
+                <div ref={containerRef} className="flex flex-col items-center gap-3 min-h-full w-full">
                     {useNativeEmbed ? (
                         <iframe
                             src={/^\s*(javascript|vbscript):/i.test(url) ? 'about:blank' : `${url}#view=FitH`}
                             title="PDF Document"
-                            className="w-full h-full min-h-[70vh] border-0 rounded-lg bg-white shadow-sm"
+                            className="w-full h-full border-0 rounded-none bg-white shadow-sm"
+                            style={{ height: activeFocus ? 'calc(100dvh - 56px)' : '70vh' }}
                             allowFullScreen
                         />
                     ) : pdfData && (
