@@ -36,7 +36,7 @@ import App from './App.tsx'
 import './index.css'
 
 
-console.log('🔌 EduTrack Client Initialized (v0.5.21 - UI Refinements) 🚀');
+console.log('🔌 EduTrack Client Initialized (v2.0.0 - Major Overhaul) 🚀');
 
 // Basic Error Boundary
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
