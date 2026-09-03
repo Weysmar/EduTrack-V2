@@ -6,14 +6,15 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini 3.8 & 3.7 models exclusively
+        // Google Gemini 3 series official API model IDs
         'gemini-3.8-flash': 'gemini-3.8-flash',
-        'gemini-3.8-pro': 'gemini-3.8-pro',
         'gemini-3.8': 'gemini-3.8-flash',
         'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7-thinking': 'gemini-3.7-thinking',
-        'gemini-3.7-pro': 'gemini-3.7-pro',
         'gemini-3.7': 'gemini-3.7-flash',
+        'gemini-3.7-thinking': 'gemini-3.7-flash',
+        'gemini-3.1-pro': 'gemini-3.1-pro',
+        'gemini-3.8-pro': 'gemini-3.1-pro', // Safe alias to premier reasoning model
+        'gemini-3.7-pro': 'gemini-3.1-pro', // Safe alias to premier reasoning model
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
@@ -25,7 +26,7 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model || 'gemini-3.8-flash';
+    return modelMap[model] || model || 'gemini-3.7-flash';
 };
 
 export const aiService = {
@@ -84,8 +85,8 @@ export const aiService = {
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models: prioritize stable 3.7-flash if 3.8 encounters demand spikes
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.7-pro', 'gemini-3.8-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            // Cascading candidate models: prioritize requested model, then stable 3.7-flash, 3.8-flash, 3.1-pro
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.1-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -165,7 +166,7 @@ export const aiService = {
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.7-pro', 'gemini-3.8-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.1-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
