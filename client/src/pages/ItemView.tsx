@@ -691,7 +691,7 @@ export function ItemView() {
                                 "w-full transition-all",
                                 // Logic: Show if (Standard Mode AND !ShowSummary) OR (FocusMode AND Tab == 'pdf')
                                 ((!showSummary && !isFocusMode) || (isFocusMode && mobileTab === 'pdf')) ? "block" : "hidden",
-                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm overflow-hidden"
+                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm"
                             )}>
 
                                 {/* PDF VIEWER Integration */}
