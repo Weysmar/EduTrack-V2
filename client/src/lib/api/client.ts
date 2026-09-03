@@ -26,15 +26,17 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
         // Suppress duplicate logs if session is already known to be expired
-        if (isSessionExpired && (error.response?.status === 401 || error.response?.status === 403)) {
+        if (isSessionExpired && error.response?.status === 401) {
             return Promise.reject(error);
         }
 
         console.error(`[API Client] Error ${error.response?.status} on ${error.config?.url}:`, error.response?.data || error.message);
 
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        // Only 401 (Unauthorized: invalid or expired JWT) should terminate the session
+        // 403 (Forbidden: permission error) should NEVER log the user out
+        if (error.response?.status === 401) {
             isSessionExpired = true;
-            console.warn('[API Client] Unauthorized. Redirecting to login...');
+            console.warn('[API Client] Unauthorized (401). Session expired, redirecting to login...');
 
             // Clean up
             localStorage.removeItem('jwt_token');

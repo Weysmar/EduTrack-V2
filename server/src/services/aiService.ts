@@ -6,17 +6,19 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini 3.8 & 3.7 models
-        'gemini-3.8-flash': 'gemini-3.8-flash',
-        'gemini-3.8-pro': 'gemini-3.8-pro',
-        'gemini-3.8': 'gemini-3.8-flash',
-        'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7-thinking': 'gemini-3.7-thinking',
-        'gemini-3.7-pro': 'gemini-3.7-pro',
-        'gemini-3.7': 'gemini-3.7-flash',
-        'gemini-3.6-flash': 'gemini-3.6-flash',
-        'gemini-3.6-pro': 'gemini-3.6-pro',
-        'gemini-3.6': 'gemini-3.6-flash',
+        // Map friendly/custom aliases to actual Google Gemini API versions
+        'gemini-3.8-flash': 'gemini-2.0-flash',
+        'gemini-3.8-pro': 'gemini-2.0-flash',
+        'gemini-3.8': 'gemini-2.0-flash',
+        'gemini-3.7-flash': 'gemini-2.0-flash',
+        'gemini-3.7-thinking': 'gemini-2.0-flash',
+        'gemini-3.7-pro': 'gemini-2.0-flash',
+        'gemini-3.7': 'gemini-2.0-flash',
+        'gemini-3.6-flash': 'gemini-2.0-flash',
+        'gemini-3.6-pro': 'gemini-2.0-flash',
+        'gemini-3.6': 'gemini-2.0-flash',
+        'gemini-2.0-flash': 'gemini-2.0-flash',
+        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
         'gemini-1.5-flash': 'gemini-1.5-flash',
         'gemini-1.5-pro': 'gemini-1.5-pro',
 
@@ -30,13 +32,14 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model || 'gemini-3.8-flash';
+    return modelMap[model] || model || 'gemini-2.0-flash';
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+        const effectiveKey = apiKey ? apiKey.trim() : undefined;
+
         if (provider === 'perplexity') {
-            const effectiveKey = apiKey;
             if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
 
             const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -65,7 +68,6 @@ export const aiService = {
 
         try {
             // Validate per-user API key (BYOK architecture)
-            const effectiveKey = apiKey;
             if (!effectiveKey) {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
@@ -90,7 +92,7 @@ export const aiService = {
             const client = new GoogleGenerativeAI(effectiveKey);
 
             // Cascading candidate models to gracefully handle endpoint availability
-            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-1.5-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -128,13 +130,12 @@ export const aiService = {
             return response.text();
         } catch (error: any) {
             console.error('AI Generation Error Service:', error);
-            // Return more helpful error message
             let message = error.message || 'Failed to generate content from AI';
             if (message.includes('404') && message.includes('find')) {
                 message = `Modèle IA introuvable ou indisponible (${model}). Vérifiez votre clé API ou changez de modèle.`;
             }
-            if (message.includes('401') || message.includes('API key')) {
-                message = `Clé API Gemini invalide.`;
+            if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
+                message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('429') || message.includes('Quota')) {
                 message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de modèle.`;
@@ -143,68 +144,73 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+        const effectiveKey = apiKey ? apiKey.trim() : undefined;
+
         if (provider === 'perplexity') {
-            const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, apiKey, 'perplexity');
-            // Clean markdown json blocks if present
+            const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, effectiveKey, 'perplexity');
             const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
             return JSON.parse(cleanText);
         }
 
         try {
-            const effectiveKey = apiKey;
             if (!effectiveKey) {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
-            // Map model name
             const apiModel = mapModelName(model);
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const modelInstance = client.getGenerativeModel({
-                model: apiModel,
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            });
+            const candidateModels = [apiModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
 
-            // Retry logic for 503 Service Unavailable (Overloaded)
-            const maxRetries = 3;
-            let attempt = 0;
+            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
+
+            const MAX_PROMPT_LENGTH = 50000;
+            if (fullPrompt.length > MAX_PROMPT_LENGTH) {
+                throw new Error(
+                    `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
+                    `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
+                    `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
+                );
+            }
+
             let text = "";
-            let lastError;
+            let lastError: any;
 
-            while (attempt < maxRetries) {
-                try {
-                    // For JSON mode, we don't strictly need system prompt in the way text mode does, 
-                    // but Gemini 1.5 supports systemInstruction. 
-                    // We'll combine it for compatibility.
-                    const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
-
-                    // Validate prompt length (security: prevent excessive costs)
-                    const MAX_PROMPT_LENGTH = 50000;
-                    if (fullPrompt.length > MAX_PROMPT_LENGTH) {
-                        throw new Error(
-                            `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
-                            `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
-                            `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
-                        );
+            for (const tryModel of candidateModels) {
+                const modelInstance = client.getGenerativeModel({
+                    model: tryModel,
+                    generationConfig: {
+                        responseMimeType: "application/json"
                     }
-                    const result = await modelInstance.generateContent(fullPrompt);
-                    const response = await result.response;
-                    text = response.text();
-                    break; // Success
-                } catch (error: any) {
-                    lastError = error;
-                    if (error.message?.includes('503') || error.message?.includes('overloaded')) {
-                        console.warn(`[AI Service] 503 Overloaded (Attempt ${attempt + 1}/${maxRetries}). Retrying...`);
-                        attempt++;
-                        await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
-                    } else {
-                        throw error; // Fatal error
+                });
+
+                const maxRetries = 2;
+                let attempt = 0;
+                let success = false;
+
+                while (attempt < maxRetries) {
+                    try {
+                        const result = await modelInstance.generateContent(fullPrompt);
+                        const response = await result.response;
+                        text = response.text();
+                        success = true;
+                        break;
+                    } catch (error: any) {
+                        lastError = error;
+                        if (error.message?.includes('503') || error.message?.includes('overloaded')) {
+                            attempt++;
+                            await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
+                        } else if (error.message?.includes('404') || error.message?.includes('not found')) {
+                            break; // Try next candidate model
+                        } else {
+                            throw error;
+                        }
                     }
                 }
+
+                if (success && text) break;
             }
 
             if (!text && lastError) throw lastError;
@@ -213,17 +219,17 @@ export const aiService = {
                 return JSON.parse(text);
             } catch (jsonError) {
                 console.error("JSON Parse Error on raw text:", text);
-                // Fallback: try to extract JSON markdown block
                 const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
                 return JSON.parse(cleanText);
             }
         } catch (error: any) {
             console.error('AI JSON Generation Error Stack:', error);
 
-            // Try to extract a useful message
             let message = error.message || 'Failed to generate JSON from AI';
             if (message.includes('404')) message = `Modèle IA indisponible (${model})`;
-            if (message.includes('401')) message = `Clé API Gemini invalide`;
+            if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
+                message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
+            }
             if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
             if (message.includes('429') || message.includes('Quota')) message = `Quota d'IA dépassé. Veuillez patienter une minute.`;
 

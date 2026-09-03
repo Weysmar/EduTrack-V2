@@ -12,7 +12,8 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('=== AI Generate Request ===');
         console.log('Body:', JSON.stringify(req.body, null, 2));
 
-        const { systemPrompt, provider, model, apiKey } = req.body;
+        const { systemPrompt, provider, model } = req.body;
+        const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : req.body.apiKey;
         // Type validation: ensure prompt is a non-empty string
         const prompt = typeof req.body.prompt === 'string' ? req.body.prompt : undefined;
 
@@ -73,7 +74,8 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
 
 export const generateJSON = async (req: AuthRequest, res: Response) => {
     try {
-        const { prompt, systemPrompt, provider, model, apiKey } = req.body;
+        const { prompt, systemPrompt, provider, model } = req.body;
+        const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : req.body.apiKey;
         if (!apiKey) {
             return res.status(400).json({
                 message: 'Clé API manquante',

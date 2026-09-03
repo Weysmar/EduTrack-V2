@@ -54,7 +54,12 @@ export function ApiKeySettings() {
         setIsSaving(true)
         setMessage(null)
         try {
-            await updateApiKeys(keys as any)
+            const trimmedKeys: any = {}
+            for (const [k, v] of Object.entries(keys)) {
+                trimmedKeys[k] = typeof v === 'string' ? v.trim() : v
+            }
+            setKeys(trimmedKeys)
+            await updateApiKeys(trimmedKeys)
 
             setMessage({ type: 'success', text: t('settings.save.success') })
 

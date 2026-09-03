@@ -66,11 +66,19 @@ export const useProfileStore = create<ProfileState>()(
                     const response = await apiClient.get('/auth/me');
                     const profile = response.data;
 
-                    // Load settings/keys from profile if available
-                    let keys = get().apiKeys;
-                    if (profile.settings) {
-                        keys = { ...keys, ...profile.settings };
-                    }
+                    const defaultKeys: ApiKeyMap = {
+                        perplexity_summaries: null,
+                        perplexity_exercises: null,
+                        google_calendar: null,
+                        google_gemini_summaries: null,
+                        google_gemini_exercises: null,
+                        google_client_id: null,
+                        google_drive_api_key: null,
+                        finance_audit_provider: 'google',
+                        finance_audit_model: 'gemini-3.7-flash'
+                    };
+
+                    const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;
 
                     set({ activeProfile: profile, apiKeys: keys, isLoading: false });
                 } catch (e) {
@@ -81,11 +89,10 @@ export const useProfileStore = create<ProfileState>()(
 
             updateProfile: async (data: Partial<Profile>) => {
                 const { activeProfile } = get();
-                if (!activeProfile) return;
+                const targetId = activeProfile?.id || 'me';
 
-                await apiClient.put(`/profiles/${activeProfile.id}`, data);
-                // Optimistic update
-                set({ activeProfile: { ...activeProfile, ...data } });
+                const response = await apiClient.put(`/profiles/${targetId}`, data);
+                set({ activeProfile: { ...(activeProfile || {}), ...response.data } });
             },
 
             deleteProfile: async (id: string) => {
@@ -116,43 +123,49 @@ export const useProfileStore = create<ProfileState>()(
 
             setApiKey: async (service: keyof ApiKeyMap, key: string) => {
                 const { activeProfile, apiKeys } = get();
-                const newKeys = { ...apiKeys, [service]: key };
+                const trimmedKey = typeof key === 'string' ? key.trim() : key;
+                const newKeys = { ...apiKeys, [service]: trimmedKey };
                 set({ apiKeys: newKeys });
 
-                if (activeProfile) {
-                    try {
-                        await apiClient.put(`/profiles/${activeProfile.id}`, {
-                            settings: newKeys
-                        });
-                        set({ activeProfile: { ...activeProfile, settings: newKeys } as any });
-                    } catch (e) {
-                        console.error("Failed to sync API key to server", e);
-                    }
+                const targetId = activeProfile?.id || 'me';
+                try {
+                    const response = await apiClient.put(`/profiles/${targetId}`, {
+                        settings: newKeys
+                    });
+                    set({ activeProfile: response.data, apiKeys: newKeys });
+                } catch (e) {
+                    console.error("Failed to sync API key to server", e);
                 }
             },
 
             updateApiKeys: async (newKeys: ApiKeyMap) => {
                 const { activeProfile } = get();
-                // 1. Update local state
-                set({ apiKeys: newKeys });
+                const targetId = activeProfile?.id || 'me';
 
-                // 2. Sync to backend if logged in
-                if (activeProfile) {
-                    try {
-                        await apiClient.put(`/profiles/${activeProfile.id}`, {
-                            settings: newKeys
-                        });
-                        // Update active profile settings reference too
-                        set({ activeProfile: { ...activeProfile, settings: newKeys } as any });
-                    } catch (e) {
-                        console.error("Failed to sync API keys to server", e);
-                        throw e;
-                    }
+                const trimmedKeys: any = {};
+                for (const [k, v] of Object.entries(newKeys)) {
+                    trimmedKeys[k] = typeof v === 'string' ? v.trim() : v;
+                }
+
+                // 1. Update local state
+                set({ apiKeys: trimmedKeys });
+
+                // 2. Sync to backend
+                try {
+                    const response = await apiClient.put(`/profiles/${targetId}`, {
+                        settings: trimmedKeys
+                    });
+                    set({ activeProfile: response.data, apiKeys: trimmedKeys });
+                } catch (e) {
+                    console.error("Failed to sync API keys to server", e);
+                    throw e;
                 }
             },
 
             getApiKey: (service: keyof ApiKeyMap) => {
-                return get().apiKeys[service];
+                const { activeProfile, apiKeys } = get();
+                const key = apiKeys?.[service] || (activeProfile?.settings as any)?.[service];
+                return typeof key === 'string' ? key.trim() : (key || null);
             },
 
             createProfile: async (data: Partial<Profile>) => {
@@ -161,16 +174,28 @@ export const useProfileStore = create<ProfileState>()(
             },
 
             switchProfile: async (id: string) => {
-                const response = await apiClient.get(`/profiles/${id}`);
-                const profile = response.data;
+                try {
+                    const response = await apiClient.get(`/profiles/${id}`);
+                    const profile = response.data;
 
-                // Sync API keys from the switched profile
-                let keys = get().apiKeys;
-                if (profile.settings) {
-                    keys = { ...keys, ...profile.settings };
+                    const defaultKeys: ApiKeyMap = {
+                        perplexity_summaries: null,
+                        perplexity_exercises: null,
+                        google_calendar: null,
+                        google_gemini_summaries: null,
+                        google_gemini_exercises: null,
+                        google_client_id: null,
+                        google_drive_api_key: null,
+                        finance_audit_provider: 'google',
+                        finance_audit_model: 'gemini-3.7-flash'
+                    };
+
+                    const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;
+
+                    set({ activeProfile: profile, apiKeys: keys });
+                } catch (e) {
+                    console.error("Failed to switch profile", e);
                 }
-
-                set({ activeProfile: profile, apiKeys: keys });
             }
         }),
         {

@@ -38,6 +38,14 @@ export const useAuthStore = create<AuthState>()(
 
                     localStorage.setItem('jwt_token', token);
                     set({ user, token, isAuthenticated: true });
+
+                    // Synchronize the profile store immediately with the logged-in user
+                    try {
+                        const { useProfileStore } = await import('@/store/profileStore');
+                        await useProfileStore.getState().loadProfile();
+                    } catch (err) {
+                        console.error('Failed to load profile on login:', err);
+                    }
                 } catch (error) {
                     console.error('Login error:', error);
                     throw error;
@@ -53,6 +61,10 @@ export const useAuthStore = create<AuthState>()(
                     if (!currentToken) {
                         localStorage.setItem('jwt_token', token);
                         set({ user, token, isAuthenticated: true });
+                        try {
+                            const { useProfileStore } = await import('@/store/profileStore');
+                            await useProfileStore.getState().loadProfile();
+                        } catch (err) {}
                     }
                     return response.data;
                 } catch (error) {
@@ -63,6 +75,9 @@ export const useAuthStore = create<AuthState>()(
             logout: () => {
                 localStorage.removeItem('jwt_token');
                 set({ user: null, token: null, isAuthenticated: false });
+                import('@/store/profileStore').then(({ useProfileStore }) => {
+                    useProfileStore.getState().logout();
+                }).catch(() => {});
             },
             deleteAccount: async () => {
                 try {

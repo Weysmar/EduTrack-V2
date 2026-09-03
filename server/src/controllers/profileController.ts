@@ -6,15 +6,14 @@ import { prisma } from '../lib/prisma';
 export const getProfile = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
+        const targetId = (id === 'me' || !id) ? req.user?.id : id;
 
-        // Ensure user can only access their own profile (or public profiles if that's a feature, but here strict)
-        // In the current model, User = Profile, so id must match req.user.id
-        if (id !== req.user?.id) {
+        if (!targetId || targetId !== req.user?.id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
         const profile = await prisma.profile.findUnique({
-            where: { id }
+            where: { id: targetId }
         });
 
         if (!profile) {
@@ -31,14 +30,16 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 export const updateProfile = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        if (id !== req.user?.id) {
+        const targetId = (id === 'me' || !id) ? req.user?.id : id;
+
+        if (!targetId || targetId !== req.user?.id) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
         const { name, theme, language, settings } = req.body;
 
         const updatedProfile = await prisma.profile.update({
-            where: { id },
+            where: { id: targetId },
             data: {
                 name,
                 theme,

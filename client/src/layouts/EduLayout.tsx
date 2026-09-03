@@ -40,10 +40,10 @@ export function EduLayout() {
     }, [])
 
     useEffect(() => {
-        if (isAuthenticated && user?.id && !activeProfile) {
+        if (isAuthenticated && user?.id && (!activeProfile || activeProfile.id !== user.id)) {
             switchProfile(user.id).catch(console.error)
         }
-    }, [isAuthenticated, user, activeProfile, switchProfile])
+    }, [isAuthenticated, user?.id, activeProfile?.id, switchProfile])
 
     const { setUrl, disconnect } = useCalendarStore()
 
