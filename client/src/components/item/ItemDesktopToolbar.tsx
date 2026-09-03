@@ -133,27 +133,19 @@ export function ItemDesktopToolbar({
             {/* Edit Button Logic */}
             {item.type === 'note' ? (
                 isEditMode ? (
-                    <>
-                        <button
-                            onClick={() => {
-                                setIsEditMode(false)
-                                setEditedContent(item.content || '')
-                            }}
-                            className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                            title="Annuler"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                        </button>
-                        <button
-                            onClick={() => updateMutation.mutate(editedContent)}
-                            disabled={updateMutation.isPending}
-                            className="px-2.5 py-1 bg-primary text-primary-foreground hover:opacity-90 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium flex-shrink-0"
-                            title="Sauver"
-                        >
-                            <Check className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">{updateMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}</span>
-                        </button>
-                    </>
+                    <button
+                        onClick={() => {
+                            if (editedContent !== item.content && !updateMutation.isPending) {
+                                updateMutation.mutate(editedContent)
+                            }
+                            setIsEditMode(false)
+                        }}
+                        className="px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold flex-shrink-0 shadow-xs"
+                        title="Terminer l'édition (les modifications sont enregistrées en temps réel)"
+                    >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>{t('common.done') || "Terminer"}</span>
+                    </button>
                 ) : (
                     <button
                         onClick={() => {

@@ -116,9 +116,9 @@ export function Editor({ content, onChange, editable = true, className }: Editor
         }
     })
 
-    // Keep editor content in sync with external content prop updates
+    // Keep editor content in sync with external content prop updates without disrupting active typing
     useEffect(() => {
-        if (editor && content !== editor.getHTML()) {
+        if (editor && !editor.isFocused && content !== editor.getHTML()) {
             editor.commands.setContent(content || '', false)
         }
     }, [content, editor])

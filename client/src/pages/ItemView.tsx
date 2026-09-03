@@ -96,6 +96,9 @@ export function ItemView() {
         }
     }, [item, isEditMode, searchParams])
 
+    const pendingContentRef = useRef<string>(editedContent)
+    pendingContentRef.current = editedContent
+
     const updateMutation = useMutation({
         mutationFn: (content: string) => {
             if (!item?.id) throw new Error('No item ID')
@@ -106,27 +109,44 @@ export function ItemView() {
         onMutate: () => {
             setSaveStatus('saving')
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['items', id] })
+        onSuccess: (_data, savedContent) => {
+            // Update React Query cache directly so UI stays smooth without jarring full-page refetches
+            queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, content: savedContent } : old)
             setSaveStatus('saved')
-            setTimeout(() => setSaveStatus('idle'), 2000)
         },
         onError: () => {
             setSaveStatus('error')
-            toast.error('Failed to update note')
+            toast.error(t('common.error') || 'Erreur de synchronisation')
         }
     })
 
-    // Auto-save effect
+    // Real-time dynamic auto-save (Google Docs style, 800ms debounce)
     useEffect(() => {
-        if (!isEditMode || editedContent === item?.content) return
+        if (!isEditMode) return
+        if (editedContent === item?.content) return
+
+        // Immediately signal saving as soon as typing happens
+        setSaveStatus('saving')
 
         const timer = setTimeout(() => {
             updateMutation.mutate(editedContent)
-        }, 3000) // 3s debounce
+        }, 800) // 800ms debounce
 
         return () => clearTimeout(timer)
     }, [editedContent, isEditMode, item?.content])
+
+    // Immediate flush on page leave
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (isEditMode && pendingContentRef.current && pendingContentRef.current !== item?.content) {
+                const formData = new FormData()
+                formData.append('content', pendingContentRef.current)
+                itemQueries.update(String(item.id), formData)
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [isEditMode, item?.content, item?.id])
 
     // Handle Google Drive Re-sync
     const handleSyncDrive = async () => {
@@ -490,20 +510,21 @@ export function ItemView() {
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                             <h1 className="text-sm md:text-base font-bold truncate leading-tight">{item.title}</h1>
-                            {isEditMode && saveStatus !== 'idle' && (
+                            {isEditMode && (
                                 <div className={cn(
-                                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-in fade-in",
-                                    saveStatus === 'saving' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30",
-                                    saveStatus === 'saved' && "bg-green-100 text-green-700 dark:bg-green-900/30",
-                                    saveStatus === 'error' && "bg-red-100 text-red-700 dark:bg-red-900/30"
+                                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium transition-all shadow-xs border animate-in fade-in",
+                                    saveStatus === 'saving' && "bg-blue-50/80 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+                                    saveStatus === 'saved' && "bg-emerald-50/80 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+                                    saveStatus === 'error' && "bg-red-50/80 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
+                                    saveStatus === 'idle' && "bg-emerald-50/80 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
                                 )}>
-                                    {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin" />}
-                                    {saveStatus === 'saved' && <Check className="h-3 w-3" />}
-                                    {saveStatus === 'error' && <AlertCircle className="h-3 w-3" />}
+                                    {saveStatus === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-600 dark:text-blue-400" />}
+                                    {(saveStatus === 'saved' || saveStatus === 'idle') && <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
+                                    {saveStatus === 'error' && <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />}
                                     <span>
                                         {saveStatus === 'saving' ? (t('common.saving') || "Enregistrement...") :
-                                         saveStatus === 'saved' ? (t('common.saved') || "Enregistré") :
-                                         (t('common.error') || "Erreur")}
+                                         saveStatus === 'error' ? (t('common.error') || "Erreur de synchronisation") :
+                                         (t('common.saved') || "Enregistré")}
                                     </span>
                                 </div>
                             )}

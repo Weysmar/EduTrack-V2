@@ -43,8 +43,8 @@ export function ItemMobileToolbar({
                             onClick={() => isEditMode ? setIsEditMode(false) : setIsEditMode(true)}
                             className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
                         >
-                            {isEditMode ? <Check className="h-6 w-6" /> : <Pencil className="h-6 w-6" />}
-                            <span className="text-[10px] font-medium">{isEditMode ? 'Sauver' : 'Éditer'}</span>
+                            {isEditMode ? <Check className="h-6 w-6 text-emerald-500" /> : <Pencil className="h-6 w-6" />}
+                            <span className="text-[10px] font-medium">{isEditMode ? (t('common.done') || 'Terminer') : (t('item.edit') || 'Éditer')}</span>
                         </button>
                     ) : (
                         <button
