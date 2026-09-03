@@ -377,6 +377,10 @@ const translations: Translations = {
         "stt.error.blocked": "Please allow microphone access in your browser settings.",
         "stt.error.generic": "Speech recognition failed.",
 
+        // Editor
+        "editor.insertImage": "Insert Image",
+        "editor.insertImage.tooltip": "Insert Image (or paste / drag-and-drop with Ctrl+V)",
+
         "changelog.type.new": "NEW",
         "changelog.type.improvement": "IMPROVED",
         "changelog.type.fix": "FIX",
@@ -1134,6 +1138,10 @@ const translations: Translations = {
         "stt.error.blocked": "Veuillez autoriser l'accès au micro dans les paramètres du navigateur.",
         "stt.error.generic": "Échec de la reconnaissance vocale.",
 
+        // Editor
+        "editor.insertImage": "Insérer une image",
+        "editor.insertImage.tooltip": "Insérer une image (ou coller / glisser-déposer avec Ctrl+V)",
+
         "changelog.type.new": "NOUVEAU",
         "changelog.type.improvement": "AMÉLIORÉ",
         "changelog.type.fix": "CORRECTIF",
@@ -1830,6 +1838,10 @@ const translations: Translations = {
         "stt.stop": "Silence Spell",
         "stt.listening": "Spirits are listening...",
         "stt.unsupported": "No magic detected",
+
+        // Editor
+        "editor.insertImage": "Place Painting",
+        "editor.insertImage.tooltip": "Place Painting (or paste / drop with Ctrl+V)",
 
         // Item Edit
         "item.edit": "Enchant Item",
