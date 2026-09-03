@@ -93,6 +93,13 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg',
                     '[&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold',
                     '[&_h1]:mt-4 [&_h2]:mt-3 [&_h3]:mt-2',
+                    // List styling: explicit bullets and numbers with proper indentation
+                    '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 [&_ul]:space-y-1',
+                    '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 [&_ol]:space-y-1',
+                    '[&_li]:my-1 [&_li]:leading-relaxed',
+                    '[&_li>p]:my-0 [&_li>p]:inline-block',
+                    '[&_ul_ul]:list-circle [&_ul_ul]:pl-5 [&_ul_ul]:my-1',
+                    '[&_ul_ul_ul]:list-square [&_ul_ul_ul]:pl-5 [&_ul_ul_ul]:my-1',
                     // Minecraft "Voxel Texture Pack" Styles
                     isMinecraft && [
                         "font-['Minecraftia'] text-lg", // Pixel font, slightly larger to be readable
@@ -147,14 +154,14 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     return (
         <div className={cn(
-            editable ? "border rounded-md overflow-hidden bg-background" : "bg-card rounded-xl border shadow-sm overflow-hidden",
+            editable ? "border rounded-md bg-background relative" : "bg-card rounded-xl border shadow-sm",
             isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>
             {editable && (
                 <div className={cn(
-                    "border-b bg-muted/40 p-1 flex flex-wrap gap-1",
-                    isMinecraft && "bg-[#eee3ce] border-b-2 border-[#c8b393] text-[#4a3520] dark:bg-stone-800 dark:border-stone-600 dark:text-stone-300"
+                    "sticky top-0 z-20 border-b bg-background/95 backdrop-blur-md p-1.5 flex flex-wrap items-center gap-1 rounded-t-md shadow-xs",
+                    isMinecraft && "bg-[#eee3ce]/95 border-b-2 border-[#c8b393] text-[#4a3520] dark:bg-stone-800/95 dark:border-stone-600 dark:text-stone-300"
                 )}>
                     {/* Headings */}
                     <button
