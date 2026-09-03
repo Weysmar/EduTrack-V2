@@ -27,7 +27,7 @@ export function ApiKeySettings() {
         google_client_id: '',
         google_drive_api_key: '',
         finance_audit_provider: 'google',
-        finance_audit_model: 'gemini-3.8-flash'
+        finance_audit_model: 'gemini-3.7-flash'
     })
 
     const [showKey, setShowKey] = useState<Record<string, boolean>>({})
@@ -45,7 +45,7 @@ export function ApiKeySettings() {
                 google_client_id: getApiKey('google_client_id') || '',
                 google_drive_api_key: getApiKey('google_drive_api_key') || '',
                 finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
-                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-3.8-flash'
+                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-3.7-flash'
             })
         }
     }, [activeProfile?.id]) // Only update if profile changes, not on every refresh
@@ -214,9 +214,9 @@ export function ApiKeySettings() {
                             >
                                 {keys.finance_audit_provider === 'google' ? (
                                     <>
-                                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommandé)</option>
+                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash (Recommandé - Stable)</option>
+                                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (Ultra-rapide)</option>
                                         <option value="gemini-3.8-pro">Gemini 3.8 Pro (Expert)</option>
-                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
                                         <option value="gemini-3.7-thinking">Gemini 3.7 Thinking (Raisonnement)</option>
                                         <option value="gemini-3.7-pro">Gemini 3.7 Pro (Avancé)</option>
                                     </>

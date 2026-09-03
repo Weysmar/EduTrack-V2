@@ -84,8 +84,8 @@ export const aiService = {
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models to gracefully handle endpoint availability (3.8 & 3.7 suite)
-            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.8-pro', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            // Cascading candidate models: prioritize stable 3.7-flash if 3.8 encounters demand spikes
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.7-pro', 'gemini-3.8-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -100,7 +100,7 @@ export const aiService = {
                             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
                         ]
                     }, {
-                        timeout: 120000 // 2 minutes timeout for large documents
+                        timeout: 25000 // 25 seconds timeout to prevent reverse-proxy 504 Gateway Timeouts
                     });
 
                     const result = await modelInstance.generateContent(fullPrompt);
@@ -111,8 +111,15 @@ export const aiService = {
                     break;
                 } catch (modelErr: any) {
                     lastErr = modelErr;
-                    if (modelErr.message?.includes('404') || modelErr.message?.includes('not found') || modelErr.message?.includes('no longer available')) {
-                        console.warn(`[AI Service] Model ${tryModel} unavailable (404), checking next candidate...`);
+                    const msg = modelErr.message || '';
+                    const isTransientOrUnavailable = 
+                        msg.includes('404') || msg.includes('not found') || msg.includes('no longer available') ||
+                        msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
+                        msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                        msg.includes('429') || msg.includes('Resource has been exhausted');
+
+                    if (isTransientOrUnavailable) {
+                        console.warn(`[AI Service] Model ${tryModel} unavailable or overloaded (${msg.substring(0, 120)}), switching immediately to next candidate...`);
                         continue;
                     }
                     throw modelErr;
@@ -130,6 +137,9 @@ export const aiService = {
             if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
                 message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
+            if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
+                message = `Modèle IA temporairement surchargé chez Google. Veuillez réessayer avec Gemini 3.7 Flash.`;
+            }
             if (message.includes('429') || message.includes('Quota')) {
                 message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de modèle.`;
             }
@@ -137,7 +147,7 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
         if (provider === 'perplexity') {
@@ -155,7 +165,7 @@ export const aiService = {
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.8-pro', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.7-pro', 'gemini-3.8-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
@@ -177,33 +187,33 @@ export const aiService = {
                     generationConfig: {
                         responseMimeType: "application/json"
                     }
+                }, {
+                    timeout: 25000 // 25s per model to prevent 504 gateway timeout
                 });
 
-                const maxRetries = 2;
-                let attempt = 0;
-                let success = false;
-
-                while (attempt < maxRetries) {
-                    try {
-                        const result = await modelInstance.generateContent(fullPrompt);
-                        const response = await result.response;
-                        text = response.text();
-                        success = true;
-                        break;
-                    } catch (error: any) {
-                        lastError = error;
-                        if (error.message?.includes('503') || error.message?.includes('overloaded')) {
-                            attempt++;
-                            await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
-                        } else if (error.message?.includes('404') || error.message?.includes('not found')) {
-                            break; // Try next candidate model
-                        } else {
-                            throw error;
-                        }
+                try {
+                    const result = await modelInstance.generateContent(fullPrompt);
+                    const response = await result.response;
+                    text = response.text();
+                    if (tryModel !== apiModel) {
+                        console.log(`[AI JSON] Fallback succeeded with model: ${tryModel}`);
                     }
-                }
+                    break;
+                } catch (error: any) {
+                    lastError = error;
+                    const msg = error.message || '';
+                    const isTransientOrUnavailable = 
+                        msg.includes('404') || msg.includes('not found') || 
+                        msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
+                        msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                        msg.includes('429') || msg.includes('Resource has been exhausted');
 
-                if (success && text) break;
+                    if (isTransientOrUnavailable) {
+                        console.warn(`[AI JSON] Model ${tryModel} error (${msg.substring(0, 120)}), switching immediately to next candidate...`);
+                        continue; // Immediately try next model in candidateModels
+                    }
+                    throw error;
+                }
             }
 
             if (!text && lastError) throw lastError;
