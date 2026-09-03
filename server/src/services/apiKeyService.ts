@@ -14,8 +14,8 @@ export interface ApiKeyConfig {
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
         // Google Gemini 3 models
-        'gemini-3.8-flash': 'gemini-3.8-flash',
-        'gemini-3.8': 'gemini-3.8-flash',
+        'gemini-3.8-flash': 'gemini-3.7-flash',
+        'gemini-3.8': 'gemini-3.7-flash',
         'gemini-3.7-flash': 'gemini-3.7-flash',
         'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
