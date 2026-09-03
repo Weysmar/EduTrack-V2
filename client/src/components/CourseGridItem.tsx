@@ -34,7 +34,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
     return (
         <div
             className={cn(
-                "group flex flex-col p-0 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer relative overflow-hidden",
+                "group flex flex-col h-full p-0 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer relative overflow-hidden",
                 isSelected ? "ring-2 ring-primary ring-inset border-transparent z-10" : "border-border"
             )}
             onClick={(e) => {
@@ -72,11 +72,11 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                 </button>
             </div>
 
-            {/* TOP: File Preview / Header Area */}
-            <div className="w-full aspect-video bg-muted border-b relative group-hover:opacity-95 transition-opacity">
-                {(item.thumbnailUrl || item.fileName) ? (
-                    item.thumbnailUrl ? (
-                        <div className="w-full h-full relative overflow-hidden">
+            {/* TOP: File Preview / Header Area - Strictly uniform 16:9 box */}
+            <div className="w-full aspect-video bg-muted/40 border-b relative overflow-hidden flex-shrink-0 group-hover:opacity-95 transition-opacity">
+                <div className="absolute inset-0 w-full h-full overflow-hidden flex items-center justify-center">
+                    {(item.thumbnailUrl || item.fileName) ? (
+                        item.thumbnailUrl ? (
                             <img
                                 src={`${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`}
                                 alt={item.fileName}
@@ -84,38 +84,36 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                                 loading="lazy"
                                 decoding="async"
                             />
-                            {/* Overlay for file type if needed, or just let FilePreview handle it if we passed it there. 
-                                  Let's check if FilePreview handles arbitrary images. 
-                                  FilePreview seems complex. For thumbnail, simple img is best.
-                              */}
-                        </div>
+                        ) : (
+                            <FilePreview
+                                url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
+                                fileName={item.fileName}
+                                fileType={item.fileType}
+                                showThumbnails={showThumbnails}
+                                className="w-full h-full"
+                            />
+                        )
                     ) : (
-                        <FilePreview
-                            url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
-                            fileName={item.fileName}
-                            fileType={item.fileType}
-                            showThumbnails={showThumbnails}
-                        />
-                    )
-                ) : (
-                    <div className={cn(
-                        "w-full h-full flex items-center justify-center",
-                        item.type === 'note' && "bg-yellow-50 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
-                        item.type === 'exercise' && "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-500",
-                        item.type === 'quiz' && "bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-500",
-                        item.type === 'flashcards' && "bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500",
-                        item.type === 'summary' && "bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500"
-                    )}>
-                        {item.type === 'note' && <FileText className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                        {item.type === 'exercise' && <Dumbbell className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                        {item.type === 'quiz' && <CheckSquare className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                        {item.type === 'flashcards' && <Layers className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                        {item.type === 'summary' && <FileCheck className="h-8 w-8 sm:h-12 sm:w-12 opacity-50 transition-all" />}
-                    </div>
-                )}
+                        <div className={cn(
+                            "w-full h-full flex flex-col items-center justify-center relative",
+                            item.type === 'note' && "bg-yellow-50/70 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
+                            item.type === 'exercise' && "bg-green-50/70 dark:bg-green-950/20 text-green-600 dark:text-green-500",
+                            item.type === 'quiz' && "bg-purple-50/70 dark:bg-purple-950/20 text-purple-600 dark:text-purple-500",
+                            item.type === 'flashcards' && "bg-orange-50/70 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500",
+                            item.type === 'summary' && "bg-cyan-50/70 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500"
+                        )}>
+                            {item.type === 'note' && <FileText className="h-10 w-10 opacity-70" />}
+                            {item.type === 'exercise' && <Dumbbell className="h-10 w-10 opacity-70" />}
+                            {item.type === 'quiz' && <CheckSquare className="h-10 w-10 opacity-70" />}
+                            {item.type === 'flashcards' && <Layers className="h-10 w-10 opacity-70" />}
+                            {item.type === 'summary' && <FileCheck className="h-10 w-10 opacity-70" />}
+                            <div className="absolute top-0 right-0 w-8 h-8 bg-black/5 dark:bg-white/5 rounded-bl-xl" />
+                        </div>
+                    )}
+                </div>
 
                 {/* Type Badge Overlay */}
-                <div className="absolute bottom-2 left-2 z-10">
+                <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
                     <span className={cn(
                         "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md border border-white/10",
                         item.type === 'resource' && "bg-blue-500/90 text-white",
@@ -141,26 +139,31 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                 </div>
             </div>
 
-            {/* CONTENT: Text Info */}
-            <div className="p-3 sm:p-4 flex flex-col gap-1 sm:gap-2">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-xs sm:text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2" title={item.title}>
+            {/* CONTENT: Text Info - Uniform height and bottom-pinned metadata */}
+            <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 gap-2">
+                <div className="min-w-0">
+                    <h3 className="font-semibold text-xs sm:text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5em] flex items-center" title={item.title}>
                         {item.title}
                     </h3>
                 </div>
 
-                <div className="text-[10px] sm:text-xs text-muted-foreground/70 sm:mt-2 flex items-center gap-2 overflow-hidden">
+                <div className="text-[10px] sm:text-xs text-muted-foreground/70 flex items-center gap-1.5 overflow-hidden mt-auto pt-1.5 border-t border-border/40">
                     <Calendar className="h-3 w-3 flex-shrink-0" />
                     <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    {item.fileName && (
+                    {item.fileName ? (
                         <>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="hidden sm:inline truncate max-w-[150px] italic opacity-80" title={item.fileName}>{item.fileName}</span>
+                            <span className="opacity-40">•</span>
+                            <span className="truncate italic opacity-80" title={item.fileName}>{item.fileName}</span>
+                        </>
+                    ) : (
+                        <>
+                            <span className="opacity-40">•</span>
+                            <span className="truncate italic opacity-60">{t(typeKey)}</span>
                         </>
                     )}
                 </div>
             </div>
-        </div >
+        </div>
     );
 });
 

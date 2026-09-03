@@ -166,7 +166,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
                             <PDFCardFallback className={className} fileName={fileName} />
                         }
                         onLoadError={() => setPdfError(true)}
-                        className="w-full flex items-start justify-center"
+                        className="w-full h-full flex items-start justify-center overflow-hidden"
                     >
                         <Page
                             pageNumber={1}
