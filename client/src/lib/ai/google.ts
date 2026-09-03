@@ -85,6 +85,8 @@ INSTRUCTIONS DE CONTENU :
                 provider: 'google',
                 model: model,
                 apiKey: API_KEY
+            }, {
+                timeout: 120000
             });
 
             return data.text;

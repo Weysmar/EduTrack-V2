@@ -101,7 +101,7 @@ export const aiService = {
                             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
                         ]
                     }, {
-                        timeout: 25000 // 25 seconds timeout to prevent reverse-proxy 504 Gateway Timeouts
+                        timeout: 90000 // 90 seconds timeout for comprehensive summaries
                     });
 
                     const result = await modelInstance.generateContent(fullPrompt);
@@ -117,6 +117,7 @@ export const aiService = {
                         msg.includes('404') || msg.includes('not found') || msg.includes('no longer available') ||
                         msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
                         msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                        msg.includes('aborted') || msg.includes('Abort') ||
                         msg.includes('429') || msg.includes('Resource has been exhausted');
 
                     if (isTransientOrUnavailable) {
@@ -132,6 +133,9 @@ export const aiService = {
         } catch (error: any) {
             console.error('AI Generation Error Service:', error);
             let message = error.message || 'Failed to generate content from AI';
+            if (message.includes('aborted') || message.includes('Abort') || message.includes('timeout') || message.includes('TIMEDOUT')) {
+                message = `Le modèle IA a mis trop de temps à répondre (délai dépassé). Veuillez réessayer avec Gemini 3.7 Flash ou réduire la sélection.`;
+            }
             if (message.includes('404') && message.includes('find')) {
                 message = `Modèle IA introuvable ou indisponible (${model}). Vérifiez votre clé API ou changez de modèle.`;
             }
@@ -189,7 +193,7 @@ export const aiService = {
                         responseMimeType: "application/json"
                     }
                 }, {
-                    timeout: 25000 // 25s per model to prevent 504 gateway timeout
+                    timeout: 90000 // 90s per model for large inputs
                 });
 
                 try {
@@ -207,6 +211,7 @@ export const aiService = {
                         msg.includes('404') || msg.includes('not found') || 
                         msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
                         msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                        msg.includes('aborted') || msg.includes('Abort') ||
                         msg.includes('429') || msg.includes('Resource has been exhausted');
 
                     if (isTransientOrUnavailable) {
