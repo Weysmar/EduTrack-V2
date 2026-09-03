@@ -63,6 +63,7 @@ const FolderView = lazyWithRetry(() => import('@/pages/FolderView').then(m => ({
 const Flashcards = lazyWithRetry(() => import('@/pages/Flashcards').then(m => ({ default: m.Flashcards })))
 const StudySession = lazyWithRetry(() => import('@/pages/StudySession').then(m => ({ default: m.StudySession })))
 const QuizStudy = lazyWithRetry(() => import('@/pages/QuizStudy').then(m => ({ default: m.QuizStudy })))
+const MindMapsPage = lazyWithRetry(() => import('@/pages/MindMapsPage').then(m => ({ default: m.MindMapsPage })))
 const CalendarPage = lazyWithRetry(() => import('@/pages/CalendarPage').then(m => ({ default: m.CalendarPage })))
 const ProfileManager = lazyWithRetry(() => import('@/pages/ProfileManager').then(m => ({ default: m.ProfileManager })))
 const SettingsPage = lazyWithRetry(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -188,6 +189,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'quiz/study/:id',
                                 element: <LazyPage><QuizStudy /></LazyPage>,
+                            },
+                            {
+                                path: 'mindmaps',
+                                element: <LazyPage><MindMapsPage /></LazyPage>,
                             },
                             {
                                 path: 'calendar',

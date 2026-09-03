@@ -40,9 +40,28 @@ export function CalendarWidget() {
             setEvents(fetchedEvents)
             setLastSynced(new Date())
         } catch (err: any) {
-            console.error(err)
-            const detail = err.response?.data?.error || err.message;
-            setError(detail || (language === 'fr' ? "Impossible de charger le flux iCal" : "Failed to load iCal feed"))
+            console.error('[CalendarWidget] iCal fetch error:', err)
+            // Extract the most informative error message available
+            const serverMsg = err.response?.data?.error || err.response?.data?.message;
+            const status = err.response?.status;
+
+            let friendlyError: string;
+            if (serverMsg) {
+                friendlyError = serverMsg;
+            } else if (status === 400) {
+                friendlyError = language === 'fr'
+                    ? "URL iCal invalide ou inaccessible. Vérifiez l'adresse dans vos paramètres."
+                    : "Invalid or unreachable iCal URL. Check the address in your settings.";
+            } else if (status === 502 || status === 504) {
+                friendlyError = language === 'fr'
+                    ? "Impossible de joindre le serveur de calendrier. Réessayez dans quelques instants."
+                    : "Could not reach the calendar server. Please retry in a moment.";
+            } else {
+                friendlyError = language === 'fr'
+                    ? "Impossible de charger le flux iCal."
+                    : "Failed to load iCal feed.";
+            }
+            setError(friendlyError)
         } finally {
             setIsLoading(false)
         }
@@ -113,7 +132,7 @@ export function CalendarWidget() {
                         <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
-                        Today
+                        {t('calendar.today') || 'Auj.'}
                     </button>
                     <button
                         onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 3) : addWeeks(currentDate, 1))}
@@ -126,8 +145,11 @@ export function CalendarWidget() {
             </div>
 
             {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 text-xs p-2 text-center">
-                    {error} <button onClick={loadEvents} className="underline">Retry</button>
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs p-2 text-center flex items-center justify-center gap-2 flex-wrap">
+                    <span className="shrink">{error}</span>
+                    <button onClick={loadEvents} className="underline font-medium whitespace-nowrap hover:opacity-80">
+                        {t('action.retry') || 'Réessayer'}
+                    </button>
                 </div>
             )}
 

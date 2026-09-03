@@ -52,8 +52,14 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
                 console.warn(`Blocked SSRF attempt to ${url} (resolved to ${address})`);
                 return res.status(403).json({ error: 'Access to internal resources is forbidden' });
             }
-        } catch (e) {
-            return res.status(400).json({ error: 'Invalid hostname' });
+        } catch (e: any) {
+            const code = e?.code || '';
+            // DNS truly can't find the host (permanent)
+            if (code === 'ENOTFOUND' || code === 'ENOENT') {
+                return res.status(400).json({ error: `Nom d'hôte introuvable : « ${parsedUrl.hostname} ». Vérifiez l'URL iCal dans vos paramètres.` });
+            }
+            // Transient DNS issue (server overload, timeout, etc.) — treat as upstream error
+            return res.status(502).json({ error: `Échec DNS temporaire pour « ${parsedUrl.hostname} ». Veuillez réessayer dans quelques secondes.` });
         }
 
         const controller = new AbortController();

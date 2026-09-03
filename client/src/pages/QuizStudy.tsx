@@ -67,19 +67,28 @@ export function QuizStudy() {
             setSelectedOption(null)
             setIsSubmitted(false)
         } else {
-            finishQuiz()
+            // Pass current answer explicitly to avoid stale state closure in finishQuiz
+            const timeSpent = (Date.now() - startTime) / 1000
+            const finalAnswers = {
+                ...answers,
+                [currentIndex]: { selected: selectedOption!, time: timeSpent }
+            }
+            finishQuiz(finalAnswers)
         }
     }
 
-    const finishQuiz = async () => {
+    const finishQuiz = async (finalAnswers?: Record<number, { selected: number; time: number }>) => {
         if (!quiz || !questions || !id) return
+
+        // Use finalAnswers if provided (avoids stale state on last question)
+        const allAnswers = finalAnswers ?? answers
 
         setIsFinished(true)
 
         // Calculate stats
         let correctCount = 0
         const detailedAnswers = questions.map((q: any, idx: number) => {
-            const ans = answers[idx]
+            const ans = allAnswers[idx]
             if (!ans) return null
             const isCorrect = ans.selected === q.correctAnswer
             if (isCorrect) correctCount++
