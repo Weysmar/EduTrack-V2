@@ -4,6 +4,7 @@ import { Copy, RefreshCw, Settings, Check, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { useLanguage } from '@/components/language-provider'
 import ReactMarkdown from 'react-markdown'
+import { formatSummaryMarkdown } from '@/lib/summary/formatSummary'
 
 interface SummaryPanelProps {
     summary: SummaryResult | null
@@ -146,10 +147,9 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
             {/* Content */}
             <div className="p-4 font-sans text-sm leading-relaxed">
                 {typeof summary.content === 'string' ? (
-                    // We can simple use a less styled version here, or just whitespace-pre-line if we want to keep it simple or use ReactMarkdown but with smaller headers
-                    <div className="prose dark:prose-invert prose-sm max-w-none prose-headings:font-bold prose-headins:text-sm prose-p:my-1">
+                    <div className="prose dark:prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-sm prose-p:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ul_ul]:list-[circle] [&_ul_ul]:pl-5 [&_li]:my-1">
                         <ReactMarkdown>
-                            {summary.content}
+                            {formatSummaryMarkdown(summary.content)}
                         </ReactMarkdown>
                     </div>
                 ) : "Complex format visualization not yet supported"}

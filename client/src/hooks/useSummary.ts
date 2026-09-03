@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { summaryQueries } from '@/lib/api/queries'
 import { SummaryOptions, SummaryResult, SummaryType, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
+import { formatSummaryMarkdown } from '@/lib/summary/formatSummary'
 import { toast } from "sonner"
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -43,17 +44,18 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
             const { AIServiceFactory } = await import('@/lib/ai/factory');
 
             const generatedText = await AIServiceFactory.generateSummary(textToProcess, options);
+            const cleanedContent = formatSummaryMarkdown(generatedText);
 
             const result: SummaryResult = {
                 id: uuidv4(),
                 itemId: String(itemId),
                 itemType: itemType,
                 courseId: courseId, // Include courseId
-                content: generatedText,
+                content: cleanedContent,
                 stats: {
                     originalWordCount: textToProcess.split(' ').length,
-                    summaryWordCount: generatedText.split(' ').length,
-                    compressionRatio: generatedText.length / textToProcess.length,
+                    summaryWordCount: cleanedContent.split(' ').length,
+                    compressionRatio: cleanedContent.length / textToProcess.length,
                     processingTimeMs: 0
                 },
                 options: options,

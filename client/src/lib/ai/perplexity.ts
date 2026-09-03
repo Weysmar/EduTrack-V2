@@ -48,11 +48,17 @@ RÈGLES DE FORMATAGE STRICTES (Respecter scrupuleusement pur Export Word/PDF) :
     -   Ne jamais dépasser 3 niveaux de profondeur.
     -   Ajoute des sauts de ligne clairs entre les sections.
 
-2.  **STRUCTURE PAR BULLET POINTS** :
-    -   Privilégie les listes à puces (•) pour la lisibilité.
-    -   Chaque point doit être concis (1-2 lignes max).
-    -   Évite les blocs de texte denses (> 3 lignes).
-    -   Utilise l'indentation pour les sous-détails (◦).
+2.  **STRUCTURE PAR LISTES À PUCES MULTI-NIVEAUX (SAUT DE LIGNE OBLIGATOIRE)** :
+    -   Chaque puce principale DOIT obligatoirement être sur sa propre ligne et commencer par "- ".
+    -   Chaque sous-puce (détail, sous-point, exemple, citation) DOIT OBLIGATOIREMENT être sur une NOUVELLE LIGNE avec une indentation de 2 espaces ("  - ").
+    -   Exemple de structure stricte attendue :
+        - Concept ou Auteur :
+          - Idée clé ou principe fondamental
+          - Conséquence ou application concrète
+          - Exemple concret (Dates, chiffres)
+    -   INTERDICTION ABSOLUE d'écrire des puces ou des sous-puces les unes à la suite des autres sur la même ligne.
+    -   N'utilise JAMAIS de symboles Unicode bruts dans le texte comme ▫, ◦, ▪, • : utilise UNIQUEMENT la syntaxe Markdown standard ("- " et "  - ").
+    -   Chaque idée ou sous-point commence sur une NOUVELLE LIGNE.
 
 3.  **FORMULES & DONNÉES (CRITIQUE)** :
     -   Les formules mathématiques DOIVENT être **encadrées** par des doubles dollars : $$ E = mc^2 $$ (pour un affichage centré).
