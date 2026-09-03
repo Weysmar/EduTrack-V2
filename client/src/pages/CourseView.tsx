@@ -163,7 +163,7 @@ export function CourseView() {
     }
 
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
-        const content = await getAggregatedContent()
+        const content = aggregatedContent || await getAggregatedContent()
         setShowSummary(true)
         generateSummary(options, content)
     }
@@ -174,8 +174,7 @@ export function CourseView() {
         const content = await getAggregatedContent(selectedItemIds)
         setAggregatedContent(content)
         if (mode === 'summary') {
-            setShowSummary(true)
-            generateSummary(DEFAULT_SUMMARY_OPTIONS, content)
+            setIsSummaryOptionsOpen(true)
         } else {
             setGenerationMode(mode)
             setIsGenerateModalOpen(true)
@@ -332,7 +331,7 @@ export function CourseView() {
                     onClose={() => setShowSummary(false)}
                     isLoading={isSummaryGenerating}
                     onConfigure={() => setIsSummaryOptionsOpen(true)}
-                    onRegenerate={() => handleGenerateSummary()}
+                    onRegenerate={() => setIsSummaryOptionsOpen(true)}
                 />
             )}
 

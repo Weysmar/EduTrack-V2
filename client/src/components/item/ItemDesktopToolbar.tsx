@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -230,6 +230,19 @@ export function ItemDesktopToolbar({
                                     <FileText className="h-3.5 w-3.5 text-blue-500" />
                                     {hasSummary ? "Voir le résumé" : "Générer un résumé"}
                                 </button>
+
+                                {hasSummary && (
+                                    <button
+                                        onClick={() => {
+                                            setIsAIMenuOpen(false)
+                                            setIsSummaryOptionsOpen(true)
+                                        }}
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-colors"
+                                    >
+                                        <Sliders className="h-3.5 w-3.5 text-purple-500" />
+                                        Changer de modèle / Régénérer
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </>

@@ -21,7 +21,8 @@ export interface SummaryOptions {
 }
 
 export const DEFAULT_SUMMARY_OPTIONS: SummaryOptions = {
-    provider: 'perplexity', // Defaulting to Perplexity as requested
+    provider: 'google',
+    model: 'gemini-3.7-flash',
     compression: 0.4,
     format: 'bullets',
     preserveHeadings: true,

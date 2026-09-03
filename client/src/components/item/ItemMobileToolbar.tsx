@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Check, Pencil, Edit, Loader2, Sparkles, Trash2, Layers, CheckSquare, BrainCircuit, FileText } from 'lucide-react';
+import { Check, Pencil, Edit, Loader2, Sparkles, Trash2, Layers, CheckSquare, BrainCircuit, FileText, Sliders } from 'lucide-react';
 
 interface ItemMobileToolbarProps {
     itemType: string;
@@ -145,9 +145,27 @@ export function ItemMobileToolbar({
                                 </div>
                                 <div className="text-left">
                                     <div className="font-semibold">Résumé</div>
-                                    <div className="text-xs text-muted-foreground">Synthèse du document</div>
+                                    <div className="text-xs text-muted-foreground">{hasSummary ? "Voir le résumé existant" : "Synthèse du document"}</div>
                                 </div>
                             </button>
+
+                            {hasSummary && (
+                                <button
+                                    onClick={() => {
+                                        setIsAIMenuOpen(false)
+                                        setIsSummaryOptionsOpen(true)
+                                    }}
+                                    className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                >
+                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                        <Sliders className="h-5 w-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-semibold">Changer de modèle</div>
+                                        <div className="text-xs text-muted-foreground">Régénérer avec d'autres options</div>
+                                    </div>
+                                </button>
+                            )}
                         </div>
 
                         <button

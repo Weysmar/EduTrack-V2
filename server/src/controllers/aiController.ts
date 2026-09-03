@@ -34,13 +34,9 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('Has API Key:', !!apiKey);
         console.log('Prompt length:', prompt.length);
 
-        // Simplify: forcing Gemini for now as installed SDK is Gemini
-        if (provider === 'perplexity') {
-            console.warn('Perplexity provider not yet implemented on backend, using Gemini fallback');
-        }
-
-        console.log('Calling aiService.generateText...');
-        const response = await aiService.generateText(prompt, systemPrompt, model, apiKey);
+        const selectedProvider = provider === 'perplexity' ? 'perplexity' : 'google';
+        console.log('Calling aiService.generateText with provider:', selectedProvider, 'and model:', model);
+        const response = await aiService.generateText(prompt, systemPrompt, model, apiKey, selectedProvider);
         console.log('Generation successful, response length:', response?.length);
 
         // Increment AI generation counter if user is authenticated
