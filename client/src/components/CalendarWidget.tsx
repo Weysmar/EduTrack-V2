@@ -41,8 +41,16 @@ export function CalendarWidget() {
             setLastSynced(new Date())
         } catch (err: any) {
             console.error('[CalendarWidget] iCal fetch error:', err)
-            // Extract the most informative error message available
-            const serverMsg = err.response?.data?.error || err.response?.data?.message;
+            // Extract the most informative error message available (parse JSON string if responseType was text)
+            let serverMsg = err.response?.data?.error || err.response?.data?.message;
+            if (!serverMsg && typeof err.response?.data === 'string') {
+                try {
+                    const parsed = JSON.parse(err.response.data);
+                    serverMsg = parsed.error || parsed.message;
+                } catch {
+                    // Not JSON, ignore
+                }
+            }
             const status = err.response?.status;
 
             let friendlyError: string;
