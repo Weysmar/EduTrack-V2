@@ -21,45 +21,38 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
     const [pageWidth, setPageWidth] = useState<number | null>(null)
-    const [blobUrl, setBlobUrl] = useState<string | null>(null)
-    const [fetchError, setFetchError] = useState<string | null>(null)
+    const [pdfData, setPdfData] = useState<any>(null)
+    const [useNativeEmbed, setUseNativeEmbed] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    // Pre-fetch PDF as a local blob URL so web workers don't encounter cross-origin, authorization, or range request issues on mobile
+    // Load PDF as raw ArrayBuffer / Uint8Array to transfer cleanly to Web Worker without blob restrictions
     useEffect(() => {
         let isMounted = true
-        let objectUrl: string | null = null
 
-        const loadPdfBlob = async () => {
+        const loadPdf = async () => {
             setLoading(true)
-            setFetchError(null)
             try {
                 const response = await fetch(url)
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`)
                 }
-                const blob = await response.blob()
+                const buffer = await response.arrayBuffer()
                 if (isMounted) {
-                    objectUrl = URL.createObjectURL(blob)
-                    setBlobUrl(objectUrl)
+                    setPdfData({ data: new Uint8Array(buffer) })
                 }
             } catch (err: any) {
-                console.error("PDF Blob fetch error:", err)
+                console.error("PDF arrayBuffer fetch error, falling back to URL:", err)
                 if (isMounted) {
-                    // Fallback directly to original URL if blob fetch fails
-                    setBlobUrl(url)
+                    setPdfData(url)
                 }
             }
         }
 
-        loadPdfBlob()
+        loadPdf()
 
         return () => {
             isMounted = false
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl)
-            }
         }
     }, [url, key])
 
@@ -136,6 +129,14 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
 
                     <div className="h-4 w-px bg-border mx-0.5" />
 
+                    <button
+                        onClick={() => setUseNativeEmbed(prev => !prev)}
+                        className="px-2 py-1 text-xs font-medium rounded hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                        title={useNativeEmbed ? "Passer au visualiseur interactif" : "Passer au visualiseur intégré"}
+                    >
+                        {useNativeEmbed ? "Interactif" : "Natif"}
+                    </button>
+
                     <a
                         href={url}
                         target="_blank"
@@ -152,10 +153,17 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
             {/* PDF Document - Scrollable Area */}
             <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 p-4">
                 <div ref={containerRef} className="flex flex-col items-center gap-4 min-h-full w-full">
-                    {blobUrl && (
+                    {useNativeEmbed ? (
+                        <iframe
+                            src={/^\s*(javascript|vbscript):/i.test(url) ? 'about:blank' : `${url}#view=FitH`}
+                            title="PDF Document"
+                            className="w-full h-full min-h-[70vh] border-0 rounded-lg bg-white shadow-sm"
+                            allowFullScreen
+                        />
+                    ) : pdfData && (
                         <Document
-                            key={`${key}-${blobUrl}`}
-                            file={blobUrl}
+                            key={key}
+                            file={pdfData}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={onDocumentLoadError}
                             loading={
@@ -168,11 +176,17 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
                                     <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
                                         <AlertCircle className="h-6 w-6" />
                                     </div>
-                                    <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du PDF</p>
+                                    <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du visualiseur</p>
                                     <p className="text-sm text-muted-foreground mb-6">
-                                        Impossible de charger le visualiseur sur cet appareil. Vous pouvez réessayer ou ouvrir le fichier directement.
+                                        Le visualiseur interactif n'a pas pu démarrer. Vous pouvez basculer en affichage natif ou ouvrir le fichier directement.
                                     </p>
                                     <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                                        <button
+                                            onClick={() => setUseNativeEmbed(true)}
+                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                        >
+                                            <span>Mode natif</span>
+                                        </button>
                                         <button
                                             onClick={handleRetry}
                                             className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
@@ -184,10 +198,10 @@ export function PDFViewer({ url, className = "", onExitFocusMode }: PDFViewerPro
                                             href={url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                            className="px-4 py-2 border hover:bg-muted rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
                                         >
                                             <ExternalLink className="h-4 w-4" />
-                                            <span>Ouvrir le PDF</span>
+                                            <span>Ouvrir</span>
                                         </a>
                                     </div>
                                 </div>

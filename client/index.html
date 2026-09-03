@@ -16,6 +16,16 @@
   <title>HubTrack - Hub central pour votre vie</title>
   <meta name="description"
     content="HubTrack - Hub central pour gérer vos études (EduTrack) et vos finances (FinanceTrack) en un seul endroit." />
+
+  <!-- Import Map for PDF.js Worker Resolution (fixes fake worker fallback on mobile) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "pdf.worker.mjs": "/pdf.worker.min.mjs"
+      }
+    }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 

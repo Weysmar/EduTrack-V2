@@ -1,5 +1,5 @@
 // Minimal Service Worker for PWA installation and caching
-const CACHE_NAME = 'hubtrack-v1';
+const CACHE_NAME = 'hubtrack-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -39,7 +39,13 @@ self.addEventListener('fetch', (event) => {
   // Ignore non-http/https schemes (e.g. chrome-extension://, blob:, data:)
   if (!url.protocol.startsWith('http')) return;
 
-  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/uploads') || url.pathname.startsWith('/storage')) {
+  if (
+    url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/uploads') ||
+    url.pathname.startsWith('/storage') ||
+    url.pathname.endsWith('.mjs') ||
+    url.pathname.includes('worker')
+  ) {
     return;
   }
 
