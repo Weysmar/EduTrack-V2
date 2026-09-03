@@ -92,41 +92,54 @@ export const aiService = {
             let lastErr: any;
 
             for (const tryModel of candidateModels) {
-                try {
-                    const modelInstance = client.getGenerativeModel({
-                        model: tryModel,
-                        safetySettings: [
-                            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-                            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
-                        ]
-                    }, {
-                        timeout: 90000 // 90 seconds timeout for comprehensive summaries
-                    });
+                const modelInstance = client.getGenerativeModel({
+                    model: tryModel,
+                    safetySettings: [
+                        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
+                    ]
+                }, {
+                    timeout: 90000 // 90 seconds timeout for comprehensive summaries
+                });
 
-                    const result = await modelInstance.generateContent(fullPrompt);
-                    response = await result.response;
-                    if (tryModel !== apiModel) {
-                        console.log(`[AI Service] Fallback succeeded with model: ${tryModel}`);
-                    }
-                    break;
-                } catch (modelErr: any) {
-                    lastErr = modelErr;
-                    const msg = modelErr.message || '';
-                    const isTransientOrUnavailable = 
-                        msg.includes('404') || msg.includes('not found') || msg.includes('no longer available') ||
-                        msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
-                        msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
-                        msg.includes('aborted') || msg.includes('Abort') ||
-                        msg.includes('429') || msg.includes('Resource has been exhausted');
+                const MAX_ATTEMPTS = 3;
+                for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                    try {
+                        const result = await modelInstance.generateContent(fullPrompt);
+                        response = await result.response;
+                        if (tryModel !== apiModel) {
+                            console.log(`[AI Service] Fallback succeeded with model: ${tryModel}`);
+                        }
+                        break;
+                    } catch (modelErr: any) {
+                        lastErr = modelErr;
+                        const msg = modelErr.message || '';
+                        const isOverloaded = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded');
 
-                    if (isTransientOrUnavailable) {
-                        console.warn(`[AI Service] Model ${tryModel} unavailable or overloaded (${msg.substring(0, 120)}), switching immediately to next candidate...`);
-                        continue;
+                        if (isOverloaded && attempt < MAX_ATTEMPTS) {
+                            const delayMs = attempt * 2000;
+                            console.warn(`[AI Service] Model ${tryModel} overloaded (503). Retrying in ${delayMs}ms (attempt ${attempt}/${MAX_ATTEMPTS})...`);
+                            await new Promise(res => setTimeout(res, delayMs));
+                            continue;
+                        }
+
+                        const isTransientOrUnavailable = 
+                            msg.includes('404') || msg.includes('not found') || msg.includes('no longer available') ||
+                            isOverloaded ||
+                            msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                            msg.includes('aborted') || msg.includes('Abort') ||
+                            msg.includes('429') || msg.includes('Resource has been exhausted');
+
+                        if (isTransientOrUnavailable) {
+                            console.warn(`[AI Service] Model ${tryModel} unavailable or overloaded (${msg.substring(0, 120)}), switching immediately to next candidate...`);
+                            break;
+                        }
+                        throw modelErr;
                     }
-                    throw modelErr;
                 }
+                if (response) break;
             }
 
             if (!response) throw lastErr;
@@ -197,30 +210,43 @@ export const aiService = {
                     timeout: 90000 // 90s per model for large inputs
                 });
 
-                try {
-                    const result = await modelInstance.generateContent(fullPrompt);
-                    const response = await result.response;
-                    text = response.text();
-                    if (tryModel !== apiModel) {
-                        console.log(`[AI JSON] Fallback succeeded with model: ${tryModel}`);
-                    }
-                    break;
-                } catch (error: any) {
-                    lastError = error;
-                    const msg = error.message || '';
-                    const isTransientOrUnavailable = 
-                        msg.includes('404') || msg.includes('not found') || 
-                        msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded') ||
-                        msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
-                        msg.includes('aborted') || msg.includes('Abort') ||
-                        msg.includes('429') || msg.includes('Resource has been exhausted');
+                const MAX_ATTEMPTS = 3;
+                for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                    try {
+                        const result = await modelInstance.generateContent(fullPrompt);
+                        const response = await result.response;
+                        text = response.text();
+                        if (tryModel !== apiModel) {
+                            console.log(`[AI JSON] Fallback succeeded with model: ${tryModel}`);
+                        }
+                        break;
+                    } catch (error: any) {
+                        lastError = error;
+                        const msg = error.message || '';
+                        const isOverloaded = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded');
 
-                    if (isTransientOrUnavailable) {
-                        console.warn(`[AI JSON] Model ${tryModel} error (${msg.substring(0, 120)}), switching immediately to next candidate...`);
-                        continue; // Immediately try next model in candidateModels
+                        if (isOverloaded && attempt < MAX_ATTEMPTS) {
+                            const delayMs = attempt * 2000;
+                            console.warn(`[AI JSON] Model ${tryModel} overloaded (503). Retrying in ${delayMs}ms (attempt ${attempt}/${MAX_ATTEMPTS})...`);
+                            await new Promise(res => setTimeout(res, delayMs));
+                            continue;
+                        }
+
+                        const isTransientOrUnavailable = 
+                            msg.includes('404') || msg.includes('not found') || 
+                            isOverloaded ||
+                            msg.includes('504') || msg.includes('timeout') || msg.includes('TIMEDOUT') ||
+                            msg.includes('aborted') || msg.includes('Abort') ||
+                            msg.includes('429') || msg.includes('Resource has been exhausted');
+
+                        if (isTransientOrUnavailable) {
+                            console.warn(`[AI JSON] Model ${tryModel} error (${msg.substring(0, 120)}), switching immediately to next candidate...`);
+                            break;
+                        }
+                        throw error;
                     }
-                    throw error;
                 }
+                if (text) break;
             }
 
             if (!text && lastError) throw lastError;
