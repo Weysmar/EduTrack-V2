@@ -356,7 +356,21 @@ export function ItemView() {
                         try {
                             const res = await fetch(pdfUrl);
                             const blob = await res.blob();
-                            const safeName = item.fileName || (item.fileType?.includes('pdf') ? 'doc.pdf' : 'doc.docx');
+                            let safeName = item.fileName || '';
+                            if (!safeName && item.storageKey) {
+                                safeName = item.storageKey.split('-').slice(1).join('-');
+                            }
+                            if (!safeName) {
+                                if (item.fileType?.includes('presentation') || item.fileType?.includes('powerpoint')) {
+                                    safeName = 'presentation.pptx';
+                                } else if (item.fileType?.includes('word') || item.fileType?.includes('officedocument')) {
+                                    safeName = 'document.docx';
+                                } else if (item.fileType?.includes('pdf')) {
+                                    safeName = 'document.pdf';
+                                } else {
+                                    safeName = 'file.bin';
+                                }
+                            }
                             const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
                             const extractionResult = await extractText(file)
                             textContent = extractionResult.text
@@ -368,11 +382,20 @@ export function ItemView() {
                         } catch (extractionErr: any) {
                             console.error("Extraction error:", extractionErr)
                             setIsExtracting(false)
+                            toast.error("Impossible d'extraire le texte du document", {
+                                description: extractionErr.message || "Vérifiez que le fichier contient du texte exploitable."
+                            });
                             return
                         }
                         setIsExtracting(false)
                     }
                 }
+            }
+            if (!textContent || textContent.trim().length === 0) {
+                toast.error("Aucun texte à résumer", {
+                    description: "Le document ne contient pas de texte exploitable."
+                });
+                return;
             }
             setShowSummary(true)
             await generateSummary(options, textContent)
@@ -394,8 +417,21 @@ export function ItemView() {
                 if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 
                 const blob = await res.blob();
-                // Ensure we pass a filename with extension for type detection fallback
-                const safeName = item.fileName || (item.fileType?.includes('pdf') ? 'doc.pdf' : 'doc.docx');
+                let safeName = item.fileName || '';
+                if (!safeName && item.storageKey) {
+                    safeName = item.storageKey.split('-').slice(1).join('-');
+                }
+                if (!safeName) {
+                    if (item.fileType?.includes('presentation') || item.fileType?.includes('powerpoint')) {
+                        safeName = 'presentation.pptx';
+                    } else if (item.fileType?.includes('word') || item.fileType?.includes('officedocument')) {
+                        safeName = 'document.docx';
+                    } else if (item.fileType?.includes('pdf')) {
+                        safeName = 'document.pdf';
+                    } else {
+                        safeName = 'file.bin';
+                    }
+                }
                 const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
 
                 const extractionResult = await extractText(file)
