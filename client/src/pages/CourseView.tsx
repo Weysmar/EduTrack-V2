@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { CreateItemModal } from '@/components/CreateItemModal'
@@ -7,13 +7,13 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon } from 'lucide-react'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { useSummary } from '@/hooks/useSummary'
 import { DEFAULT_SUMMARY_OPTIONS, SummaryOptions } from '@/lib/summary/types'
-import { courseQueries } from '@/lib/api/queries'
+import { courseQueries, studyPlanQueries } from '@/lib/api/queries'
 
 // New Hooks & Components
 import { useCourseContent } from '@/hooks/useCourseContent'
@@ -21,6 +21,7 @@ import { useCourseFilters } from '@/hooks/useCourseFilters'
 import { CourseFilters } from '@/components/course/CourseFilters'
 import { CourseToolbar } from '@/components/course/CourseToolbar'
 import { CourseContent } from '@/components/course/CourseContent'
+import { CourseTasksModal } from '@/components/course/CourseTasksModal'
 
 export function CourseView() {
     const { courseId } = useParams()
@@ -77,6 +78,18 @@ export function CourseView() {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false)
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false)
+    const [isTasksModalOpen, setIsTasksModalOpen] = useState(false)
+
+    // Course Tasks Query
+    const { data: courseTasks = [] } = useQuery({
+        queryKey: ['studyTasks', id],
+        queryFn: () => studyPlanQueries.getTasks(id),
+        enabled: !!id
+    })
+    const coursePendingTasksCount = courseTasks.filter((t: any) => {
+        const cId = t.course?.id || t.courseId || t.plan?.course?.id || t.plan?.courseId
+        return cId === id && !t.isCompleted
+    }).length
 
     // View Options preserved in local state/storage 
     const [showThumbnails, setShowThumbnails] = useState(() => {
@@ -236,7 +249,20 @@ export function CourseView() {
                         </h1>
                         <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-1">{course.description}</p>
                     </div>
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                        <button
+                            onClick={() => setIsTasksModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md text-xs sm:text-sm font-medium transition-all active:scale-95 shadow-xs border border-border"
+                            title={language === 'fr' ? "Voir les examens et rendus de ce cours" : "View deadlines and exams for this course"}
+                        >
+                            <CalendarIcon className="h-4 w-4 text-primary" />
+                            <span className="whitespace-nowrap">{language === 'fr' ? 'Échéances' : 'Deadlines'}</span>
+                            {coursePendingTasksCount > 0 && (
+                                <span className="ml-0.5 px-1.5 py-0.5 bg-primary text-primary-foreground rounded-full text-[10px] font-bold">
+                                    {coursePendingTasksCount}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
                             className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:bg-primary/90 transition-all active:scale-95 shadow-sm"
@@ -339,6 +365,14 @@ export function CourseView() {
                 isOpen={isSummaryOptionsOpen}
                 onClose={() => setIsSummaryOptionsOpen(false)}
                 onGenerate={handleGenerateSummary}
+            />
+
+            <CourseTasksModal
+                isOpen={isTasksModalOpen}
+                onClose={() => setIsTasksModalOpen(false)}
+                courseId={id}
+                courseTitle={course?.title || ''}
+                courseColor={course?.color || '#3b82f6'}
             />
         </div>
     )

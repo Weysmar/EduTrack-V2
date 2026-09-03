@@ -189,8 +189,8 @@ export const studyPlanQueries = {
         const { data } = await apiClient.get(courseId ? `/plans?courseId=${courseId}` : '/plans');
         return data;
     },
-    getTasks: async () => {
-        const { data } = await apiClient.get('/plans/tasks');
+    getTasks: async (courseId?: string) => {
+        const { data } = await apiClient.get('/plans/tasks', { params: courseId ? { courseId } : {} });
         return data;
     },
     create: async (data: any) => {

@@ -15,8 +15,16 @@ import { fetchICalFeed, ICalEvent } from '@/lib/ical-parser'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { studyPlanQueries } from '@/lib/api/queries'
+import { studyPlanQueries, courseQueries } from '@/lib/api/queries'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
+
+export const TASK_TYPES = [
+    { id: 'exam', label: 'Examen / Partiel', labelEn: 'Exam', icon: '🎓', color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30' },
+    { id: 'assignment', label: 'Rendu / Devoir', labelEn: 'Assignment', icon: '📝', color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30' },
+    { id: 'revision', label: 'Révision', labelEn: 'Revision', icon: '📖', color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/30' },
+    { id: 'project', label: 'Projet', labelEn: 'Project', icon: '👥', color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30' },
+    { id: 'task', label: 'Tâche', labelEn: 'Task', icon: '📌', color: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/30' },
+];
 
 export function CalendarWidget() {
     const { apiKeys, activeProfile } = useProfileStore()
@@ -31,14 +39,26 @@ export function CalendarWidget() {
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
+    // Filter by course
+    const [filterCourseId, setFilterCourseId] = useState<string>('all')
+
     // Quick Task Creation state
     const [addingTaskForDate, setAddingTaskForDate] = useState<string | null>(null)
     const [newTaskTitle, setNewTaskTitle] = useState('')
+    const [newTaskCourseId, setNewTaskCourseId] = useState('')
+    const [newTaskType, setNewTaskType] = useState('task')
     const [showGoogleTip, setShowGoogleTip] = useState(true)
 
     const icalUrl = apiKeys.google_calendar || storeUrl;
     const isConnected = !!icalUrl;
     const locale = language === 'fr' ? fr : enUS
+
+    // Fetch user courses
+    const { data: courses = [] } = useQuery({
+        queryKey: ['courses', activeProfile?.id],
+        queryFn: () => courseQueries.getAll(),
+        enabled: !!activeProfile
+    });
 
     // Fetch EduTrack study tasks
     const { data: studyTasks = [], isLoading: isLoadingTasks, refetch: refetchTasks } = useQuery({
@@ -58,12 +78,14 @@ export function CalendarWidget() {
 
     // Mutation to create task directly from calendar
     const createTaskMutation = useMutation({
-        mutationFn: (data: { description: string; date: string }) =>
+        mutationFn: (data: { description: string; date: string; courseId?: string; type?: string }) =>
             studyPlanQueries.createTask(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyTasks'] });
             setAddingTaskForDate(null);
             setNewTaskTitle('');
+            setNewTaskCourseId('');
+            setNewTaskType('task');
         }
     });
 
@@ -158,28 +180,47 @@ export function CalendarWidget() {
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
 
-                <div className="flex items-center gap-1">
-                    <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
-                        <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                    </button>
-                    <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-                    <button
-                        onClick={() => setCurrentDate(isMobile ? subDays(currentDate, 3) : subWeeks(currentDate, 1))}
-                        className="p-1.5 hover:bg-muted rounded"
-                        aria-label={isMobile ? "3 jours précédents" : "Semaine précédente"}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
-                        {t('calendar.today') || 'Auj.'}
-                    </button>
-                    <button
-                        onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 3) : addWeeks(currentDate, 1))}
-                        className="p-1.5 hover:bg-muted rounded"
-                        aria-label={isMobile ? "3 jours suivants" : "Semaine suivante"}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Course Filter Dropdown */}
+                    {courses.length > 0 && (
+                        <select
+                            value={filterCourseId}
+                            onChange={(e) => setFilterCourseId(e.target.value)}
+                            className="text-xs font-semibold px-2 py-1 rounded-md border border-border bg-background hover:bg-muted text-foreground transition-colors max-w-[160px] truncate focus:ring-1 focus:ring-primary shadow-xs"
+                            title={language === 'fr' ? "Filtrer par cours" : "Filter by course"}
+                        >
+                            <option value="all">📚 {language === 'fr' ? 'Tous les cours' : 'All courses'}</option>
+                            {courses.map((c: any) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.icon ? `${c.icon} ` : ''}{c.title}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
+                    <div className="flex items-center gap-1">
+                        <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
+                            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                        </button>
+                        <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+                        <button
+                            onClick={() => setCurrentDate(isMobile ? subDays(currentDate, 3) : subWeeks(currentDate, 1))}
+                            className="p-1.5 hover:bg-muted rounded"
+                            aria-label={isMobile ? "3 jours précédents" : "Semaine précédente"}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
+                            {t('calendar.today') || 'Auj.'}
+                        </button>
+                        <button
+                            onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 3) : addWeeks(currentDate, 1))}
+                            className="p-1.5 hover:bg-muted rounded"
+                            aria-label={isMobile ? "3 jours suivants" : "Semaine suivante"}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -198,11 +239,11 @@ export function CalendarWidget() {
                 </div>
             )}
 
-            {/* Google Tasks Tip Banner */}
+            {/* Hint about Google Tasks vs Events */}
             {isConnected && showGoogleTip && (
-                <div className="bg-amber-500/10 border-b border-amber-500/20 px-3 py-2 text-xs flex items-center justify-between gap-2 text-amber-900 dark:text-amber-200">
+                <div className="bg-muted/20 border-b px-4 py-2 text-xs flex items-center justify-between gap-2 text-muted-foreground">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                        <span className="text-primary font-bold">💡</span>
                         <span>
                             {language === 'fr' ? (
                                 <>
@@ -210,31 +251,38 @@ export function CalendarWidget() {
                                 </>
                             ) : (
                                 <>
-                                    <strong>Google Tip:</strong> Google does not export "Tasks" via iCal (only <strong>"Events"</strong> are synced). To view tasks here, save them as <strong>Events</strong> in Google Calendar, or add them directly below using the <strong>+</strong> button.
+                                    <strong>Google Calendar Tip:</strong> Google does not export "Tasks" through iCal feeds (only <strong>Events</strong> are synced). To view tasks here, save them as <strong>Events</strong> in Google Calendar, or add them directly below using <strong>+</strong>.
                                 </>
                             )}
                         </span>
                     </div>
                     <button
                         onClick={() => setShowGoogleTip(false)}
-                        className="p-1 hover:bg-amber-500/20 rounded text-amber-800 dark:text-amber-300 shrink-0"
-                        title="Fermer"
+                        className="text-muted-foreground hover:text-foreground p-0.5 rounded"
+                        title={language === 'fr' ? "Masquer cette astuce" : "Dismiss tip"}
                     >
                         <X className="h-3.5 w-3.5" />
                     </button>
                 </div>
             )}
 
+            {/* Error Banner */}
             {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs p-2 text-center flex items-center justify-center gap-2 flex-wrap border-b">
-                    <span className="shrink">{error}</span>
-                    <button onClick={loadEvents} className="underline font-medium whitespace-nowrap hover:opacity-80">
-                        {t('action.retry') || 'Réessayer'}
+                <div className="bg-destructive/10 border-b border-destructive/20 text-destructive text-xs p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                    <button
+                        onClick={loadEvents}
+                        className="underline hover:no-underline text-xs font-semibold shrink-0"
+                    >
+                        {t('action.retry') || "Réessayer"}
                     </button>
                 </div>
             )}
 
-            {/* Week Grid */}
+            {/* Calendar Grid Container */}
             <div className="flex-1 p-2 md:p-4 overflow-x-auto">
                 <div className="grid grid-cols-3 md:grid-cols-7 gap-1 md:gap-3 w-full h-full min-h-[350px]">
                     {days.map((day) => {
@@ -248,15 +296,20 @@ export function CalendarWidget() {
                         const iCalTasks = dayEvents.filter(e => e.isTask)
                         const pureEvents = dayEvents.filter(e => !e.isTask)
 
-                        // 3. EduTrack Study Tasks
+                        // 3. EduTrack Study Tasks (with course filter)
                         const dayStudyTasks = studyTasks.filter((task: any) => {
                             if (!task.week?.startDate) return false;
                             const taskDate = addDays(new Date(task.week.startDate), (task.dayNumber || 1) - 1);
-                            return isSameDay(taskDate, day);
+                            const matchesDay = isSameDay(taskDate, day);
+                            if (!matchesDay) return false;
+
+                            if (filterCourseId !== 'all') {
+                                const cId = task.course?.id || task.courseId || task.plan?.course?.id || task.plan?.courseId;
+                                return cId === filterCourseId;
+                            }
+                            return true;
                         });
 
-                        const totalTasksCount = dayStudyTasks.length + iCalTasks.length;
-                        const totalEventsCount = pureEvents.length;
                         const isAddingForThisDay = addingTaskForDate === day.toISOString();
 
                         return (
@@ -289,16 +342,18 @@ export function CalendarWidget() {
                                         onClick={() => {
                                             setAddingTaskForDate(isAddingForThisDay ? null : day.toISOString());
                                             setNewTaskTitle('');
+                                            setNewTaskCourseId(filterCourseId !== 'all' ? filterCourseId : '');
+                                            setNewTaskType('task');
                                         }}
                                         className="p-1 hover:bg-primary/10 hover:text-primary rounded text-muted-foreground transition-colors shrink-0"
-                                        title={language === 'fr' ? "Ajouter une tâche" : "Add task"}
+                                        title={language === 'fr' ? "Ajouter une tâche / examen / rendu" : "Add task / exam / deadline"}
                                     >
                                         <Plus className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
 
                                 {/* Items Container */}
-                                <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto max-h-[300px] pr-0.5">
+                                <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto max-h-[340px] pr-0.5">
                                     {/* Inline Add Task Form */}
                                     {isAddingForThisDay && (
                                         <form
@@ -307,32 +362,81 @@ export function CalendarWidget() {
                                                 if (newTaskTitle.trim()) {
                                                     createTaskMutation.mutate({
                                                         description: newTaskTitle.trim(),
-                                                        date: day.toISOString()
+                                                        date: day.toISOString(),
+                                                        courseId: newTaskCourseId || undefined,
+                                                        type: newTaskType
                                                     });
                                                 }
                                             }}
-                                            className="p-2 rounded-lg border border-primary bg-background shadow-md space-y-1.5"
+                                            className="p-2.5 rounded-xl border-2 border-primary/70 bg-card shadow-xl space-y-2 z-10"
                                         >
                                             <input
                                                 type="text"
-                                                placeholder={language === 'fr' ? "Nom de la tâche..." : "Task description..."}
+                                                placeholder={language === 'fr' ? "Examen, Rendu, Révision..." : "Exam, Assignment, Task..."}
                                                 value={newTaskTitle}
                                                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                                                className="w-full text-xs px-2 py-1 rounded bg-muted/40 border focus:outline-none focus:ring-1 focus:ring-primary"
+                                                className="w-full text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                                                 autoFocus
                                             />
-                                            <div className="flex items-center justify-end gap-1">
+
+                                            {/* Course selection */}
+                                            {courses.length > 0 && (
+                                                <div>
+                                                    <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">
+                                                        {language === 'fr' ? 'Cours lié' : 'Linked course'}
+                                                    </label>
+                                                    <select
+                                                        value={newTaskCourseId}
+                                                        onChange={(e) => setNewTaskCourseId(e.target.value)}
+                                                        className="w-full text-xs px-2 py-1 rounded bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    >
+                                                        <option value="">{language === 'fr' ? '— Général (aucun cours) —' : '— General (no course) —'}</option>
+                                                        {courses.map((c: any) => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.icon ? `${c.icon} ` : ''}{c.title}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {/* Type selection */}
+                                            <div>
+                                                <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
+                                                    {language === 'fr' ? 'Type d\'échéance' : 'Type'}
+                                                </label>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {TASK_TYPES.map((t) => (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => setNewTaskType(t.id)}
+                                                            className={cn(
+                                                                "px-1.5 py-0.5 rounded text-[10px] font-medium border transition-all flex items-center gap-1",
+                                                                newTaskType === t.id
+                                                                    ? cn(t.color, "border-current shadow-xs font-bold ring-1 ring-primary/40")
+                                                                    : "border-border/60 text-muted-foreground hover:bg-muted/40"
+                                                            )}
+                                                        >
+                                                            <span>{t.icon}</span>
+                                                            <span>{language === 'fr' ? t.label : t.labelEn}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-border/40">
                                                 <button
                                                     type="button"
                                                     onClick={() => setAddingTaskForDate(null)}
-                                                    className="px-2 py-0.5 text-[10px] hover:bg-muted rounded text-muted-foreground"
+                                                    className="px-2 py-1 text-[10px] hover:bg-muted rounded text-muted-foreground"
                                                 >
                                                     {language === 'fr' ? 'Annuler' : 'Cancel'}
                                                 </button>
                                                 <button
                                                     type="submit"
                                                     disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
-                                                    className="px-2 py-0.5 text-[10px] bg-primary text-primary-foreground rounded font-medium disabled:opacity-50"
+                                                    className="px-2.5 py-1 text-[10px] bg-primary text-primary-foreground rounded font-semibold disabled:opacity-50 hover:bg-primary/90 transition-all shadow-xs"
                                                 >
                                                     {createTaskMutation.isPending ? '...' : (language === 'fr' ? 'Ajouter' : 'Add')}
                                                 </button>
@@ -341,56 +445,91 @@ export function CalendarWidget() {
                                     )}
 
                                     {/* EduTrack Tasks Section */}
-                                    {dayStudyTasks.map((task: any) => (
-                                        <div
-                                            key={`task-${task.id}`}
-                                            className={cn(
-                                                "p-2 rounded-lg border text-xs space-y-1 transition-all group",
-                                                task.isCompleted
-                                                    ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
-                                                    : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
-                                            )}
-                                        >
-                                            <div className="flex items-start justify-between gap-1.5">
-                                                <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                                                    <button
-                                                        onClick={() => toggleTaskMutation.mutate({
-                                                            taskId: task.id,
-                                                            isCompleted: !task.isCompleted
-                                                        })}
-                                                        className="mt-0.5 text-purple-600 dark:text-purple-400 hover:scale-110 transition-transform shrink-0"
-                                                        title={task.isCompleted ? "Marquer non terminée" : "Marquer terminée"}
-                                                    >
-                                                        {task.isCompleted ? (
-                                                            <CheckSquare className="h-3.5 w-3.5" />
-                                                        ) : (
-                                                            <Square className="h-3.5 w-3.5" />
-                                                        )}
-                                                    </button>
-                                                    <div className="font-semibold leading-tight line-clamp-2 select-none break-words">
-                                                        {task.description}
+                                    {dayStudyTasks.map((task: any) => {
+                                        const course = task.course;
+                                        const taskTypeInfo = TASK_TYPES.find(t => t.id === task.type) || TASK_TYPES[4];
+                                        const isSpecialType = task.type && task.type !== 'task';
+
+                                        return (
+                                            <div
+                                                key={`task-${task.id}`}
+                                                className={cn(
+                                                    "p-2 rounded-xl border text-xs space-y-1.5 transition-all group relative overflow-hidden",
+                                                    task.isCompleted
+                                                        ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
+                                                        : task.type === 'exam'
+                                                            ? "bg-rose-500/5 border-rose-500/40 hover:border-rose-500/70 shadow-xs"
+                                                            : task.type === 'assignment'
+                                                                ? "bg-amber-500/5 border-amber-500/40 hover:border-amber-500/70 shadow-xs"
+                                                                : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
+                                                )}
+                                                style={{
+                                                    borderLeftColor: course?.color || undefined,
+                                                    borderLeftWidth: course?.color ? '3px' : undefined
+                                                }}
+                                            >
+                                                <div className="flex items-start justify-between gap-1.5">
+                                                    <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                                                        <button
+                                                            onClick={() => toggleTaskMutation.mutate({
+                                                                taskId: task.id,
+                                                                isCompleted: !task.isCompleted
+                                                            })}
+                                                            className="mt-0.5 text-purple-600 dark:text-purple-400 hover:scale-110 transition-transform shrink-0"
+                                                            title={task.isCompleted ? "Marquer non terminée" : "Marquer terminée"}
+                                                        >
+                                                            {task.isCompleted ? (
+                                                                <CheckSquare className="h-3.5 w-3.5 text-emerald-500" />
+                                                            ) : (
+                                                                <Square className="h-3.5 w-3.5" />
+                                                            )}
+                                                        </button>
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <div className="font-semibold leading-tight line-clamp-2 select-none break-words">
+                                                                {task.description}
+                                                            </div>
+                                                        </div>
                                                     </div>
+
+                                                    <button
+                                                        onClick={() => deleteTaskMutation.mutate(task.id)}
+                                                        className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-red-500 transition-opacity shrink-0"
+                                                        title={language === 'fr' ? "Supprimer la tâche" : "Delete task"}
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </button>
                                                 </div>
 
-                                                <button
-                                                    onClick={() => deleteTaskMutation.mutate(task.id)}
-                                                    className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-red-500 transition-opacity shrink-0"
-                                                    title={language === 'fr' ? "Supprimer la tâche" : "Delete task"}
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </button>
+                                                {/* Badges: Course and Type */}
+                                                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                                                    {course && (
+                                                        <span
+                                                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 truncate max-w-[120px]"
+                                                            style={{
+                                                                backgroundColor: `${course.color || '#8b5cf6'}20`,
+                                                                color: course.color || '#8b5cf6',
+                                                                borderColor: `${course.color || '#8b5cf6'}40`
+                                                            }}
+                                                        >
+                                                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: course.color || '#8b5cf6' }} />
+                                                            <span className="truncate">{course.title}</span>
+                                                        </span>
+                                                    )}
+                                                    {isSpecialType && (
+                                                        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5", taskTypeInfo.color)}>
+                                                            <span>{taskTypeInfo.icon}</span>
+                                                            <span>{language === 'fr' ? taskTypeInfo.label : taskTypeInfo.labelEn}</span>
+                                                        </span>
+                                                    )}
+                                                    {task.durationMinutes && task.durationMinutes !== 30 && (
+                                                        <span className="text-[9px] text-muted-foreground ml-auto shrink-0 font-mono">
+                                                            {task.durationMinutes}m
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
-
-                                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                                                <span className="truncate max-w-[80px] font-medium text-purple-600 dark:text-purple-400">
-                                                    {task.plan?.course?.title || task.type || 'Tâche'}
-                                                </span>
-                                                {task.durationMinutes && (
-                                                    <span className="shrink-0">{task.durationMinutes}m</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
 
                                     {/* iCal VTODO Tasks */}
                                     {iCalTasks.map(task => (

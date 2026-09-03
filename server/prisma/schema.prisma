@@ -81,6 +81,7 @@ model Course {
   studySessions StudySession[]
   summaries Summary[]
   mindmaps  MindMap[]
+  tasks     StudyTask[]
 
   @@index([profileId])
   @@index([folderId])
@@ -272,17 +273,20 @@ model StudyTask {
   id              String  @id @default(uuid())
   weekId          String
   planId          String
+  courseId        String?
   dayNumber       Int
   description     String
   durationMinutes Int
-  type            String
+  type            String  @default("task")
   isCompleted     Boolean @default(false)
   
-  week StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  week   StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  plan   StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  course Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@index([weekId])
   @@index([planId])
+  @@index([courseId])
 }
 
 model MindMap {

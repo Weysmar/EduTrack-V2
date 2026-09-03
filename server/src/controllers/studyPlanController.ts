@@ -84,16 +84,35 @@ export const getStudyTasks = async (req: AuthRequest, res: Response) => {
         const profileId = req.user?.id;
         if (!profileId) return res.status(401).json({ error: "Unauthorized" });
 
-        const tasks = await prisma.studyTask.findMany({
-            where: {
-                plan: { profileId }
-            },
+        const { courseId } = req.query;
+
+        const whereCondition: any = {
+            plan: { profileId }
+        };
+
+        if (courseId && typeof courseId === 'string' && courseId.trim()) {
+            whereCondition.OR = [
+                { courseId: courseId.trim() },
+                { plan: { courseId: courseId.trim() } }
+            ];
+        }
+
+        const tasks = await (prisma.studyTask as any).findMany({
+            where: whereCondition,
             include: {
                 week: {
                     select: {
                         startDate: true,
                         endDate: true,
                         weekNumber: true
+                    }
+                },
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        color: true,
+                        icon: true
                     }
                 },
                 plan: {
@@ -104,7 +123,8 @@ export const getStudyTasks = async (req: AuthRequest, res: Response) => {
                             select: {
                                 id: true,
                                 title: true,
-                                color: true
+                                color: true,
+                                icon: true
                             }
                         }
                     }
@@ -116,7 +136,12 @@ export const getStudyTasks = async (req: AuthRequest, res: Response) => {
             ]
         });
 
-        res.json(tasks);
+        const normalizedTasks = tasks.map((task: any) => ({
+            ...task,
+            course: task.course || task.plan?.course || null
+        }));
+
+        res.json(normalizedTasks);
     } catch (error) {
         console.error("Get Tasks Error:", error);
         res.status(500).json({ error: "Failed to fetch tasks" });
@@ -127,7 +152,7 @@ export const updateStudyTask = async (req: AuthRequest, res: Response) => {
     try {
         const { taskId } = req.params;
         const profileId = req.user?.id;
-        const { isCompleted, description, durationMinutes } = req.body;
+        const { isCompleted, description, durationMinutes, type, courseId } = req.body;
 
         const existingTask = await prisma.studyTask.findFirst({
             where: {
@@ -140,16 +165,62 @@ export const updateStudyTask = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: "Task not found or unauthorized" });
         }
 
-        const task = await prisma.studyTask.update({
+        const updateData: any = {};
+        if (isCompleted !== undefined) updateData.isCompleted = isCompleted;
+        if (description !== undefined) updateData.description = description;
+        if (durationMinutes !== undefined) updateData.durationMinutes = durationMinutes;
+        if (type !== undefined) updateData.type = type;
+        if (courseId !== undefined) {
+            if (courseId) {
+                const c = await prisma.course.findFirst({ where: { id: courseId, profileId } });
+                updateData.courseId = c ? c.id : null;
+            } else {
+                updateData.courseId = null;
+            }
+        }
+
+        const task = await (prisma.studyTask as any).update({
             where: { id: taskId },
-            data: {
-                isCompleted: isCompleted !== undefined ? isCompleted : undefined,
-                description: description !== undefined ? description : undefined,
-                durationMinutes: durationMinutes !== undefined ? durationMinutes : undefined
+            data: updateData,
+            include: {
+                week: {
+                    select: {
+                        startDate: true,
+                        endDate: true,
+                        weekNumber: true
+                    }
+                },
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        color: true,
+                        icon: true
+                    }
+                },
+                plan: {
+                    select: {
+                        id: true,
+                        title: true,
+                        course: {
+                            select: {
+                                id: true,
+                                title: true,
+                                color: true,
+                                icon: true
+                            }
+                        }
+                    }
+                }
             }
         });
 
-        res.json(task);
+        const normalizedTask = {
+            ...task,
+            course: task.course || task.plan?.course || null
+        };
+
+        res.json(normalizedTask);
     } catch (error) {
         console.error("Update Task Error:", error);
         res.status(500).json({ error: "Failed to update task" });
@@ -168,6 +239,17 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
 
         const targetDate = date ? new Date(date) : new Date();
 
+        // Check course if provided
+        let validCourseId: string | null = null;
+        if (courseId && typeof courseId === 'string' && courseId.trim()) {
+            const courseExists = await prisma.course.findFirst({
+                where: { id: courseId.trim(), profileId }
+            });
+            if (courseExists) {
+                validCourseId = courseExists.id;
+            }
+        }
+
         // Find or create default "Agenda" plan for standalone tasks
         let defaultPlan = await prisma.studyPlan.findFirst({
             where: { profileId, title: "Mon Planning" },
@@ -175,8 +257,8 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
         });
 
         if (!defaultPlan) {
-            let targetCourseId = courseId;
-            if (!targetCourseId) {
+            let initialCourseId = validCourseId;
+            if (!initialCourseId) {
                 let course = await prisma.course.findFirst({ where: { profileId } });
                 if (!course) {
                     course = await prisma.course.create({
@@ -187,13 +269,13 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
                         }
                     });
                 }
-                targetCourseId = course.id;
+                initialCourseId = course.id;
             }
 
             defaultPlan = await prisma.studyPlan.create({
                 data: {
                     profileId,
-                    courseId: targetCourseId,
+                    courseId: initialCourseId,
                     title: "Mon Planning",
                     goal: "Tâches et révisions personnelles",
                     deadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
@@ -233,22 +315,36 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
         const dayOfWeek = targetDate.getDay();
         const dayNumber = dayOfWeek === 0 ? 7 : dayOfWeek;
 
-        const task = await prisma.studyTask.create({
-            data: {
-                weekId: week.id,
-                planId: defaultPlan.id,
-                dayNumber,
-                description: description.trim(),
-                durationMinutes: Number(durationMinutes) || 30,
-                type: type || "task",
-                isCompleted: false
-            },
+        const taskData: any = {
+            weekId: week.id,
+            planId: defaultPlan.id,
+            dayNumber,
+            description: description.trim(),
+            durationMinutes: Number(durationMinutes) || 30,
+            type: type || "task",
+            isCompleted: false
+        };
+
+        if (validCourseId) {
+            taskData.courseId = validCourseId;
+        }
+
+        const task = await (prisma.studyTask as any).create({
+            data: taskData,
             include: {
                 week: {
                     select: {
                         startDate: true,
                         endDate: true,
                         weekNumber: true
+                    }
+                },
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        color: true,
+                        icon: true
                     }
                 },
                 plan: {
@@ -259,7 +355,8 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
                             select: {
                                 id: true,
                                 title: true,
-                                color: true
+                                color: true,
+                                icon: true
                             }
                         }
                     }
@@ -267,7 +364,12 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        res.json(task);
+        const normalizedTask = {
+            ...task,
+            course: task.course || task.plan?.course || null
+        };
+
+        res.json(normalizedTask);
     } catch (error) {
         console.error("Create Task Error:", error);
         res.status(500).json({ error: "Failed to create task" });
