@@ -17,11 +17,18 @@ export function CalendarWidget() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
     const icalUrl = apiKeys.google_calendar || storeUrl;
     const isConnected = !!icalUrl;
 
     const locale = language === 'fr' ? fr : enUS
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768)
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
     const loadEvents = async () => {
         if (!icalUrl || !isConnected) return
@@ -70,16 +77,6 @@ export function CalendarWidget() {
     const weekEnd = endOfWeek(currentDate, { locale })
 
     const allDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
-
-    // Mobile: Show only 3 days (today + 2 next days)
-    // Desktop: Show full week (7 days)
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768)
-        window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
 
     const days = isMobile
         ? (() => {
