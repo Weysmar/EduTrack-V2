@@ -13,15 +13,16 @@ export interface ApiKeyConfig {
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini 3 models
+        // Google Gemini models - mapped to verified stable GA model
+        'gemini-3.7-flash': 'gemini-3.7-flash',
         'gemini-3.8-flash': 'gemini-3.7-flash',
         'gemini-3.8': 'gemini-3.7-flash',
-        'gemini-3.7-flash': 'gemini-3.7-flash',
         'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
-        'gemini-3.1-pro': 'gemini-3.1-pro',
-        'gemini-3.8-pro': 'gemini-3.1-pro',
-        'gemini-3.7-pro': 'gemini-3.1-pro',
+        'gemini-3.1-pro': 'gemini-3.7-flash',
+        'gemini-3.1-pro-preview': 'gemini-3.7-flash',
+        'gemini-3.8-pro': 'gemini-3.7-flash',
+        'gemini-3.7-pro': 'gemini-3.7-flash',
         
         // Perplexity models
         'sonar-pro': 'sonar-pro',
