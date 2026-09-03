@@ -35,7 +35,6 @@ export function StudySession() {
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isFlipped, setIsFlipped] = useState(false)
     const [sessionStats, setSessionStats] = useState({ correct: 0, studied: 0 })
-    const [updatesQueue, setUpdatesQueue] = useState<any[]>([])
 
     // Initialize session cards when setInfo loaded
     useEffect(() => {
@@ -56,23 +55,9 @@ export function StudySession() {
     const updateProgressMutation = useMutation({
         mutationFn: (updates: any[]) => flashcardQueries.updateProgress(setId!, updates),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['flashcards', setId] })
+            queryClient.invalidateQueries({ queryKey: ['flashcards'] })
         }
     })
-
-    // Batch update on finish or every X queries?
-    // Let's do batch on finish for simplicity or if queue gets large.
-    // Actually, handling async updates per card is safer against crashes.
-    // Let's queue updates and send them.
-    useEffect(() => {
-        if (updatesQueue.length > 0) {
-            // Debounce or immediate?
-            // For safety let's send immediately for now until optimization
-            const batch = [...updatesQueue];
-            setUpdatesQueue([]);
-            updateProgressMutation.mutate(batch);
-        }
-    }, [updatesQueue])
 
     const handleRate = async (grade: ReviewGrade) => {
         if (!currentCard) return;
@@ -90,7 +75,8 @@ export function StudySession() {
             nextReview
         };
 
-        setUpdatesQueue(prev => [...prev, updatePayload]);
+        // Immediately persist review progress to server
+        updateProgressMutation.mutate([updatePayload]);
 
         // Move to next
         setSessionStats(prev => ({

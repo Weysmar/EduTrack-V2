@@ -23,10 +23,25 @@ export function Flashcards() {
         }
     })
 
-    // Helper to calculate progress percentage
-    const getProgress = (mastered: number, total: number) => {
-        if (total === 0) return 0;
-        return Math.round((mastered / total) * 100);
+    // Helper to calculate progressive mastery percentage
+    const calculateCardMastery = (card: any) => {
+        if (!card.lastReviewed) return 0;
+        const interval = card.interval || 0;
+        if (interval <= 0) return 0;
+        if (interval >= 14) return 100;
+        if (interval >= 7) return 80;
+        if (interval >= 3) return 55;
+        if (interval >= 1) return 35;
+        return 20;
+    }
+
+    const getProgress = (set: any) => {
+        if (set.flashcards && set.flashcards.length > 0) {
+            const total = set.flashcards.reduce((acc: number, c: any) => acc + calculateCardMastery(c), 0);
+            return Math.round(total / set.flashcards.length);
+        }
+        if (!set.count || set.count === 0) return 0;
+        return Math.min(100, Math.round(((set.mastered || 0) / set.count) * 100));
     }
 
     if (isLoading) return <div className="p-10 text-center text-muted-foreground">Chargement des paquets de flashcards...</div>
@@ -47,39 +62,41 @@ export function Flashcards() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sets.map((set: any) => (
-                        <div key={set.id} className="bg-card border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="font-bold text-xl line-clamp-1">{set.name}</h3>
-                                    <p className="text-sm text-muted-foreground">{set.count} carte{set.count > 1 ? 's' : ''}</p>
+                    {sets.map((set: any) => {
+                        const mastery = getProgress(set);
+                        return (
+                            <div key={set.id} className="bg-card border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="font-bold text-xl line-clamp-1">{set.name}</h3>
+                                        <p className="text-sm text-muted-foreground">{set.count} carte{set.count > 1 ? 's' : ''}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                if (confirm('Voulez-vous vraiment supprimer ce paquet de flashcards ?')) deleteSetMutation.mutate(set.id)
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                                            title="Supprimer le paquet"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Voulez-vous vraiment supprimer ce paquet de flashcards ?')) deleteSetMutation.mutate(set.id)
-                                        }}
-                                        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                                        title="Supprimer le paquet"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
 
-                            {/* Progress Bar */}
-                            <div className="space-y-2 mb-6">
-                                <div className="flex justify-between text-xs font-medium">
-                                    <span>Maîtrise</span>
-                                    <span>{getProgress(set.mastered, set.count)}%</span>
+                                {/* Progress Bar */}
+                                <div className="space-y-2 mb-6">
+                                    <div className="flex justify-between text-xs font-medium">
+                                        <span>Maîtrise</span>
+                                        <span className={mastery > 0 ? "text-primary font-bold" : ""}>{mastery}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary transition-all duration-500"
+                                            style={{ width: `${mastery}%` }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary transition-all duration-500"
-                                        style={{ width: `${getProgress(set.mastered, set.count)}%` }}
-                                    />
-                                </div>
-                            </div>
 
                             <div className="flex gap-3">
                                 <Link

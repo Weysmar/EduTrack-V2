@@ -128,10 +128,12 @@ export const updateStudyProgress = async (req: AuthRequest, res: Response) => {
         await prisma.$transaction(operations);
 
         // Update set statistics (mastered count)
-        // Simple logic: If interval > 21 days (mature), count as mastered? Or based on user logic.
-        // Let's just recount "mastered" based on interval > 21
         const masteredCount = await prisma.flashcard.count({
-            where: { setId, interval: { gt: 21 } }
+            where: {
+                setId,
+                lastReviewed: { not: null },
+                interval: { gte: 3 }
+            }
         });
 
         await prisma.flashcardSet.update({
