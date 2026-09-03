@@ -17,6 +17,7 @@ import { useLanguage } from '@/components/language-provider'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { studyPlanQueries, courseQueries } from '@/lib/api/queries'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
+import { CreateTaskModal } from '@/components/CreateTaskModal'
 
 export const TASK_TYPES = [
     { id: 'exam', label: 'Examen / Partiel', labelEn: 'Exam', icon: '🎓', color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30' },
@@ -42,11 +43,9 @@ export function CalendarWidget() {
     // Filter by course
     const [filterCourseId, setFilterCourseId] = useState<string>('all')
 
-    // Quick Task Creation state
-    const [addingTaskForDate, setAddingTaskForDate] = useState<string | null>(null)
-    const [newTaskTitle, setNewTaskTitle] = useState('')
-    const [newTaskCourseId, setNewTaskCourseId] = useState('')
-    const [newTaskType, setNewTaskType] = useState('task')
+    // Pop-up Task Creation Modal state
+    const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
+    const [selectedModalDate, setSelectedModalDate] = useState<Date | null>(null)
     const [showGoogleTip, setShowGoogleTip] = useState(true)
 
     const icalUrl = apiKeys.google_calendar || storeUrl;
@@ -73,19 +72,6 @@ export function CalendarWidget() {
             studyPlanQueries.updateTask(taskId, { isCompleted }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
-        }
-    });
-
-    // Mutation to create task directly from calendar
-    const createTaskMutation = useMutation({
-        mutationFn: (data: { description: string; date: string; courseId?: string; type?: string }) =>
-            studyPlanQueries.createTask(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['studyTasks'] });
-            setAddingTaskForDate(null);
-            setNewTaskTitle('');
-            setNewTaskCourseId('');
-            setNewTaskType('task');
         }
     });
 
@@ -312,7 +298,6 @@ export function CalendarWidget() {
 
                         const totalTasksCount = dayStudyTasks.length + iCalTasks.length;
                         const totalEventsCount = pureEvents.length;
-                        const isAddingForThisDay = addingTaskForDate === day.toISOString();
 
                         return (
                             <div
@@ -342,13 +327,11 @@ export function CalendarWidget() {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            setAddingTaskForDate(isAddingForThisDay ? null : day.toISOString());
-                                            setNewTaskTitle('');
-                                            setNewTaskCourseId(filterCourseId !== 'all' ? filterCourseId : '');
-                                            setNewTaskType('task');
+                                            setSelectedModalDate(day);
+                                            setIsCreateTaskModalOpen(true);
                                         }}
-                                        className="p-1 hover:bg-primary/10 hover:text-primary rounded text-muted-foreground transition-colors shrink-0"
-                                        title={language === 'fr' ? "Ajouter une tâche / examen / rendu" : "Add task / exam / deadline"}
+                                        className="p-1 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-all shrink-0 active:scale-95"
+                                        title={language === 'fr' ? "Ajouter une échéance / tâche" : "Add deadline / task"}
                                     >
                                         <Plus className="h-3.5 w-3.5" />
                                     </button>
@@ -356,96 +339,6 @@ export function CalendarWidget() {
 
                                 {/* Items Container */}
                                 <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto max-h-[340px] pr-0.5">
-                                    {/* Inline Add Task Form */}
-                                    {isAddingForThisDay && (
-                                        <form
-                                            onSubmit={(e) => {
-                                                e.preventDefault();
-                                                if (newTaskTitle.trim()) {
-                                                    createTaskMutation.mutate({
-                                                        description: newTaskTitle.trim(),
-                                                        date: day.toISOString(),
-                                                        courseId: newTaskCourseId || undefined,
-                                                        type: newTaskType
-                                                    });
-                                                }
-                                            }}
-                                            className="p-2.5 rounded-xl border-2 border-primary/70 bg-card shadow-xl space-y-2 z-10"
-                                        >
-                                            <input
-                                                type="text"
-                                                placeholder={language === 'fr' ? "Examen, Rendu, Révision..." : "Exam, Assignment, Task..."}
-                                                value={newTaskTitle}
-                                                onChange={(e) => setNewTaskTitle(e.target.value)}
-                                                className="w-full text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                                                autoFocus
-                                            />
-
-                                            {/* Course selection */}
-                                            {courses.length > 0 && (
-                                                <div>
-                                                    <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">
-                                                        {language === 'fr' ? 'Cours lié' : 'Linked course'}
-                                                    </label>
-                                                    <select
-                                                        value={newTaskCourseId}
-                                                        onChange={(e) => setNewTaskCourseId(e.target.value)}
-                                                        className="w-full text-xs px-2 py-1 rounded bg-muted/40 border border-input focus:outline-none focus:ring-1 focus:ring-primary"
-                                                    >
-                                                        <option value="">{language === 'fr' ? '— Général (aucun cours) —' : '— General (no course) —'}</option>
-                                                        {courses.map((c: any) => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.icon ? `${c.icon} ` : ''}{c.title}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-
-                                            {/* Type selection */}
-                                            <div>
-                                                <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
-                                                    {language === 'fr' ? 'Type d\'échéance' : 'Type'}
-                                                </label>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {TASK_TYPES.map((t) => (
-                                                        <button
-                                                            key={t.id}
-                                                            type="button"
-                                                            onClick={() => setNewTaskType(t.id)}
-                                                            className={cn(
-                                                                "px-1.5 py-0.5 rounded text-[10px] font-medium border transition-all flex items-center gap-1",
-                                                                newTaskType === t.id
-                                                                    ? cn(t.color, "border-current shadow-xs font-bold ring-1 ring-primary/40")
-                                                                    : "border-border/60 text-muted-foreground hover:bg-muted/40"
-                                                            )}
-                                                        >
-                                                            <span>{t.icon}</span>
-                                                            <span>{language === 'fr' ? t.label : t.labelEn}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-border/40">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setAddingTaskForDate(null)}
-                                                    className="px-2 py-1 text-[10px] hover:bg-muted rounded text-muted-foreground"
-                                                >
-                                                    {language === 'fr' ? 'Annuler' : 'Cancel'}
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
-                                                    className="px-2.5 py-1 text-[10px] bg-primary text-primary-foreground rounded font-semibold disabled:opacity-50 hover:bg-primary/90 transition-all shadow-xs"
-                                                >
-                                                    {createTaskMutation.isPending ? '...' : (language === 'fr' ? 'Ajouter' : 'Add')}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
                                     {/* EduTrack Tasks Section */}
                                     {dayStudyTasks.map((task: any) => {
                                         const course = task.course;
@@ -572,7 +465,7 @@ export function CalendarWidget() {
                                         </div>
                                     ))}
 
-                                    {totalTasksCount === 0 && totalEventsCount === 0 && !isAddingForThisDay && (
+                                    {totalTasksCount === 0 && totalEventsCount === 0 && (
                                         <div className="flex-1 flex items-center justify-center py-6">
                                             <span className="text-[10px] text-muted-foreground/40 italic hidden md:block">
                                                 {t('calendar.noEvents') || 'Libre'}
@@ -591,6 +484,18 @@ export function CalendarWidget() {
                     {t('calendar.synced')}: {format(lastSynced, 'HH:mm')}
                 </div>
             )}
+
+            {/* Create Task / Deadline Modal */}
+            <CreateTaskModal
+                isOpen={isCreateTaskModalOpen}
+                onClose={() => {
+                    setIsCreateTaskModalOpen(false)
+                    setSelectedModalDate(null)
+                }}
+                initialDate={selectedModalDate}
+                initialCourseId={filterCourseId !== 'all' ? filterCourseId : ''}
+                courses={courses}
+            />
         </div>
     )
 }
