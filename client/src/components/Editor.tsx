@@ -93,10 +93,18 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     // Minecraft "Voxel Texture Pack" Styles
                     isMinecraft && [
                         "font-['Minecraftia'] text-lg", // Pixel font, slightly larger to be readable
+                        // Text colors for maximum readability in both light & dark
+                        "text-[#2c1d11] dark:text-stone-100",
+                        "[&_p]:text-[#2c1d11] dark:[&_p]:text-stone-100",
+                        "[&_h1]:text-[#1e140a] dark:[&_h1]:text-stone-100",
+                        "[&_h2]:text-[#1e140a] dark:[&_h2]:text-stone-100",
+                        "[&_h3]:text-[#1e140a] dark:[&_h3]:text-stone-100",
+                        "[&_li]:text-[#2c1d11] dark:[&_li]:text-stone-100",
+                        "[&_strong]:text-[#1e140a] dark:[&_strong]:text-white",
                         // Redstone Block (Code)
                         "[&_pre]:bg-red-900 [&_pre]:border-2 [&_pre]:border-red-500 [&_pre]:text-red-100 [&_pre]:shadow-[0_0_15px_rgba(239,68,68,0.4)] [&_code]:bg-transparent",
                         // Oak Sign (Blockquote)
-                        "[&_blockquote]:bg-amber-800 [&_blockquote]:border-l-[6px] [&_blockquote]:border-amber-600 [&_blockquote]:text-black [&_blockquote]:not-italic [&_blockquote]:font-bold [&_blockquote]:px-4 [&_blockquote]:py-2",
+                        "[&_blockquote]:bg-amber-100 dark:[&_blockquote]:bg-amber-900/60 [&_blockquote]:border-l-[6px] [&_blockquote]:border-amber-600 [&_blockquote]:text-[#2c1d11] dark:[&_blockquote]:text-amber-100 [&_blockquote]:not-italic [&_blockquote]:font-bold [&_blockquote]:px-4 [&_blockquote]:py-2",
                         // General Text adjustments for better contrast in pixel mode
                         "[&_p]:my-2"
                     ]
@@ -110,24 +118,34 @@ export function Editor({ content, onChange, editable = true, className }: Editor
     const textColors = ['#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
     const highlightColors = ['#FEF3C7', '#FEE2E2', '#DBEAFE', '#D1FAE5', '#E9D5FF', '#FCE7F3']
 
+    const mcBtn = isMinecraft
+        ? "rounded-none text-[#4a3520] dark:text-stone-300 hover:bg-[#dfd0b5] hover:text-[#2c1d11] dark:hover:bg-stone-700 dark:hover:text-stone-100"
+        : ""
+    const mcActive = (isActive: boolean) => {
+        if (!isActive) return ""
+        return isMinecraft
+            ? "bg-[#c8b393] text-[#1e140a] dark:bg-stone-700 dark:text-stone-100 font-bold"
+            : "bg-muted text-foreground"
+    }
+
     return (
         <div className={cn(
             "border rounded-md overflow-hidden bg-background",
-            isMinecraft && "border-4 border-stone-600 rounded-none bg-stone-900", // Cobblestone-ish container
+            isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>
             {editable && (
                 <div className={cn(
                     "border-b bg-muted/40 p-1 flex flex-wrap gap-1",
-                    isMinecraft && "bg-stone-800 border-stone-600"
+                    isMinecraft && "bg-[#eee3ce] border-b-2 border-[#c8b393] text-[#4a3520] dark:bg-stone-800 dark:border-stone-600 dark:text-stone-300"
                 )}>
                     {/* Headings */}
                     <button
                         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('heading', { level: 1 }) && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('heading', { level: 1 })),
+                            mcBtn
                         )}
                         type="button"
                         title="Heading 1"
@@ -138,8 +156,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('heading', { level: 2 }) && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('heading', { level: 2 })),
+                            mcBtn
                         )}
                         type="button"
                         title="Heading 2"
@@ -150,8 +168,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('heading', { level: 3 }) && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('heading', { level: 3 })),
+                            mcBtn
                         )}
                         type="button"
                         title="Heading 3"
@@ -159,15 +177,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         <Heading3 className="h-4 w-4" />
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
                     {/* Text Styling */}
                     <button
                         onClick={() => editor.chain().focus().toggleBold().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('bold') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('bold')),
+                            mcBtn
                         )}
                         type="button"
                         title="Bold"
@@ -178,8 +196,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleItalic().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('italic') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('italic')),
+                            mcBtn
                         )}
                         type="button"
                         title="Italic"
@@ -190,8 +208,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleUnderline().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('underline') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('underline')),
+                            mcBtn
                         )}
                         type="button"
                         title="Underline"
@@ -202,8 +220,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleStrike().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('strike') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('strike')),
+                            mcBtn
                         )}
                         type="button"
                         title="Strikethrough"
@@ -211,7 +229,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         <Strikethrough className="h-4 w-4" />
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
                     {/* Color & Highlight */}
                     <div className="relative">
@@ -219,7 +237,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                             onClick={() => setShowColorPicker(!showColorPicker)}
                             className={cn(
                                 "p-2 rounded hover:bg-muted transition-colors relative",
-                                isMinecraft && "rounded-none hover:bg-stone-700"
+                                mcBtn
                             )}
                             type="button"
                             title="Text Color"
@@ -248,8 +266,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
                             className={cn(
                                 "p-2 rounded hover:bg-muted transition-colors",
-                                editor.isActive('highlight') && "bg-muted text-foreground",
-                                isMinecraft && "rounded-none hover:bg-stone-700"
+                                mcActive(editor.isActive('highlight')),
+                                mcBtn
                             )}
                             type="button"
                             title="Highlight"
@@ -274,15 +292,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         )}
                     </div>
 
-                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
                     {/* Lists */}
                     <button
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('bulletList') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('bulletList')),
+                            mcBtn
                         )}
                         type="button"
                         title="Bullet List"
@@ -293,8 +311,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleOrderedList().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('orderedList') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('orderedList')),
+                            mcBtn
                         )}
                         type="button"
                         title="Ordered List"
@@ -302,15 +320,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         <ListOrdered className="h-4 w-4" />
                     </button>
 
-                    <div className="w-px h-6 bg-border mx-1 my-auto" />
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
                     {/* Quote, Code, Separator */}
                     <button
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('blockquote') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('blockquote')),
+                            mcBtn
                         )}
                         type="button"
                         title="Quote"
@@ -321,8 +339,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().toggleCode().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            editor.isActive('code') && "bg-muted text-foreground",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcActive(editor.isActive('code')),
+                            mcBtn
                         )}
                         type="button"
                         title="Inline Code"
@@ -333,7 +351,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         onClick={() => editor.chain().focus().setHorizontalRule().run()}
                         className={cn(
                             "p-2 rounded hover:bg-muted transition-colors",
-                            isMinecraft && "rounded-none hover:bg-stone-700"
+                            mcBtn
                         )}
                         type="button"
                         title="Horizontal Line"
@@ -344,13 +362,13 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     {/* Speech to Text Button */}
                     {isSupported && (
                         <>
-                            <div className="w-px h-6 bg-border mx-1 my-auto" />
+                            <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
                             <button
                                 onClick={handleDictationToggle}
                                 className={cn(
                                     "p-2 rounded hover:bg-muted transition-colors relative",
                                     isListening && "bg-red-100 text-red-600 animate-pulse",
-                                    isMinecraft && "rounded-none hover:bg-stone-700"
+                                    mcBtn
                                 )}
                                 type="button"
                                 title={isListening ? t('stt.stop') : t('stt.start')}
