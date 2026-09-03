@@ -350,9 +350,11 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                             className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                         >
                                             <optgroup label="Google Gemini">
-                                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash-Exp (Fast)</option>
-                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
-                                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (New)</option>
+                                                <option value="gemini-3.8-flash">⚡ Gemini 3.8 Flash (Recommandé)</option>
+                                                <option value="gemini-3.8-pro">🧠 Gemini 3.8 Pro (Expert)</option>
+                                                <option value="gemini-3.7-flash">🚀 Gemini 3.7 Flash</option>
+                                                <option value="gemini-3.7-thinking">💡 Gemini 3.7 Thinking (Raisonnement)</option>
+                                                <option value="gemini-3.7-pro">🔬 Gemini 3.7 Pro (Avancé)</option>
                                             </optgroup>
                                             <optgroup label="Perplexity AI">
                                                 <option value="sonar">Sonar (Standard)</option>

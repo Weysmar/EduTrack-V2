@@ -27,7 +27,7 @@ export function ApiKeySettings() {
         google_client_id: '',
         google_drive_api_key: '',
         finance_audit_provider: 'google',
-        finance_audit_model: 'gemini-1.5-flash'
+        finance_audit_model: 'gemini-3.8-flash'
     })
 
     const [showKey, setShowKey] = useState<Record<string, boolean>>({})
@@ -45,7 +45,7 @@ export function ApiKeySettings() {
                 google_client_id: getApiKey('google_client_id') || '',
                 google_drive_api_key: getApiKey('google_drive_api_key') || '',
                 finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
-                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-1.5-flash'
+                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-3.8-flash'
             })
         }
     }, [activeProfile?.id]) // Only update if profile changes, not on every refresh
