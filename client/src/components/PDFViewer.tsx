@@ -30,7 +30,6 @@ export function PDFViewer({
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
     const [pageWidth, setPageWidth] = useState<number | null>(null)
-    const [pdfData, setPdfData] = useState<any>(null)
     const [useNativeEmbed, setUseNativeEmbed] = useState(true)
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
@@ -64,36 +63,6 @@ export function PDFViewer({
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [activeFocus, onExitFocusMode])
-
-    // Load PDF as raw ArrayBuffer / Uint8Array to transfer cleanly to Web Worker without blob restrictions
-    useEffect(() => {
-        let isMounted = true
-
-        const loadPdf = async () => {
-            setLoading(true)
-            try {
-                const response = await fetch(url)
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-                }
-                const buffer = await response.arrayBuffer()
-                if (isMounted) {
-                    setPdfData({ data: new Uint8Array(buffer) })
-                }
-            } catch (err: any) {
-                console.error("PDF arrayBuffer fetch error, falling back to URL:", err)
-                if (isMounted) {
-                    setPdfData(url)
-                }
-            }
-        }
-
-        loadPdf()
-
-        return () => {
-            isMounted = false
-        }
-    }, [url, key])
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -219,10 +188,10 @@ export function PDFViewer({
                             }}
                             allowFullScreen
                         />
-                    ) : pdfData && (
+                    ) : (
                         <Document
-                            key={key}
-                            file={pdfData}
+                            key={`${key}-${url}`}
+                            file={url}
                             options={documentOptions}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={onDocumentLoadError}
