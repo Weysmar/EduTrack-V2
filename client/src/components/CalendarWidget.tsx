@@ -310,6 +310,8 @@ export function CalendarWidget() {
                             return true;
                         });
 
+                        const totalTasksCount = dayStudyTasks.length + iCalTasks.length;
+                        const totalEventsCount = pureEvents.length;
                         const isAddingForThisDay = addingTaskForDate === day.toISOString();
 
                         return (
