@@ -21,11 +21,6 @@ const mapModelName = (model: string): string => {
         'gemini-3.7-flash': 'gemini-3.7-flash',
         'gemini-3.7-pro': 'gemini-3.7-pro',
         'gemini-3.7': 'gemini-3.7-flash',
-        'gemini-3.6-flash': 'gemini-3.6-flash',
-        'gemini-3.6-pro': 'gemini-3.6-pro',
-        'gemini-3.6': 'gemini-3.6-flash',
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
         
         // Perplexity models
         'sonar-pro': 'sonar-pro',

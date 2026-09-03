@@ -6,21 +6,14 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Map friendly/custom aliases to actual Google Gemini API versions
-        'gemini-3.8-flash': 'gemini-2.0-flash',
-        'gemini-3.8-pro': 'gemini-2.0-flash',
-        'gemini-3.8': 'gemini-2.0-flash',
-        'gemini-3.7-flash': 'gemini-2.0-flash',
-        'gemini-3.7-thinking': 'gemini-2.0-flash',
-        'gemini-3.7-pro': 'gemini-2.0-flash',
-        'gemini-3.7': 'gemini-2.0-flash',
-        'gemini-3.6-flash': 'gemini-2.0-flash',
-        'gemini-3.6-pro': 'gemini-2.0-flash',
-        'gemini-3.6': 'gemini-2.0-flash',
-        'gemini-2.0-flash': 'gemini-2.0-flash',
-        'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
+        // Google Gemini 3.8 & 3.7 models exclusively
+        'gemini-3.8-flash': 'gemini-3.8-flash',
+        'gemini-3.8-pro': 'gemini-3.8-pro',
+        'gemini-3.8': 'gemini-3.8-flash',
+        'gemini-3.7-flash': 'gemini-3.7-flash',
+        'gemini-3.7-thinking': 'gemini-3.7-thinking',
+        'gemini-3.7-pro': 'gemini-3.7-pro',
+        'gemini-3.7': 'gemini-3.7-flash',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
@@ -32,11 +25,11 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model || 'gemini-2.0-flash';
+    return modelMap[model] || model || 'gemini-3.8-flash';
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
         if (provider === 'perplexity') {
@@ -91,8 +84,8 @@ export const aiService = {
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models to gracefully handle endpoint availability
-            const candidateModels = [apiModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            // Cascading candidate models to gracefully handle endpoint availability (3.8 & 3.7 suite)
+            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.8-pro', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -144,7 +137,7 @@ export const aiService = {
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-2.0-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
         if (provider === 'perplexity') {
@@ -162,7 +155,7 @@ export const aiService = {
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.8-pro', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
