@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
+import { Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
@@ -7,13 +8,66 @@ import Color from '@tiptap/extension-color'
 import Highlight from '@tiptap/extension-highlight'
 import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
-    Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette
+    Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
+    Image as ImageIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import imageCompression from 'browser-image-compression'
+
+// Custom TipTap Image Node
+export const CustomImage = Node.create({
+    name: 'image',
+    group: 'block',
+    selectable: true,
+    draggable: true,
+    atom: true,
+
+    addAttributes() {
+        return {
+            src: { default: null },
+            alt: { default: null },
+            title: { default: null },
+        }
+    },
+
+    parseHTML() {
+        return [{ tag: 'img[src]' }]
+    },
+
+    renderHTML({ HTMLAttributes }) {
+        return ['img', mergeAttributes(HTMLAttributes, { class: 'rounded-xl max-w-full h-auto my-4 shadow-sm border mx-auto block' })]
+    },
+})
+
+// Compress and convert image to lightweight Data URL
+export const processImageFile = async (file: File | Blob): Promise<string> => {
+    try {
+        const options = {
+            maxSizeMB: 0.8,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true,
+            initialQuality: 0.85
+        }
+        const compressed = await imageCompression(file as File, options)
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = (e) => resolve(e.target?.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(compressed)
+        })
+    } catch {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = (e) => resolve(e.target?.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+        })
+    }
+}
 
 interface EditorProps {
     content: string
@@ -27,6 +81,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
     const isMinecraft = language === 'mc'
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Determine dictation language based on app language
     const dictationLang = language === 'fr' ? 'fr-FR' : 'en-US';
@@ -60,6 +115,19 @@ export function Editor({ content, onChange, editable = true, className }: Editor
         }
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !editor) return
+        try {
+            const base64 = await processImageFile(file)
+            editor.chain().focus().insertContent({ type: 'image', attrs: { src: base64, alt: file.name } }).run()
+            toast.success('Image insérée avec succès !')
+        } catch {
+            toast.error("Erreur lors de l'insertion de l'image")
+        }
+        if (e.target) e.target.value = ''
+    }
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -68,14 +136,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                 }
             }),
             Placeholder.configure({
-                placeholder: 'Write your notes here...',
+                placeholder: 'Écrivez vos notes ici... (Collez vos images avec Ctrl+V)',
             }),
             Underline,
             TextStyle,
             Color,
             Highlight.configure({
                 multicolor: true
-            })
+            }),
+            CustomImage
         ],
         content,
         editable,
@@ -83,6 +152,47 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             onChange?.(editor.getHTML())
         },
         editorProps: {
+            handlePaste: (view, event) => {
+                const items = Array.from(event.clipboardData?.items || [])
+                const imageItem = items.find(item => item.type.startsWith('image/'))
+                if (imageItem) {
+                    const file = imageItem.getAsFile()
+                    if (file) {
+                        event.preventDefault()
+                        processImageFile(file).then((base64) => {
+                            const { schema } = view.state
+                            const node = schema.nodes.image.create({ src: base64, alt: file.name || 'image' })
+                            const transaction = view.state.tr.replaceSelectionWith(node)
+                            view.dispatch(transaction)
+                            toast.success('Image collée avec succès !')
+                        }).catch(() => {
+                            toast.error("Erreur lors du collage de l'image")
+                        })
+                        return true
+                    }
+                }
+                return false
+            },
+            handleDrop: (view, event, _slice, moved) => {
+                if (!moved && event.dataTransfer?.files?.length) {
+                    const file = event.dataTransfer.files[0]
+                    if (file.type.startsWith('image/')) {
+                        event.preventDefault()
+                        const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY })
+                        processImageFile(file).then((base64) => {
+                            const { schema } = view.state
+                            const node = schema.nodes.image.create({ src: base64, alt: file.name || 'image' })
+                            const transaction = view.state.tr.insert(coordinates?.pos ?? view.state.selection.from, node)
+                            view.dispatch(transaction)
+                            toast.success('Image ajoutée !')
+                        }).catch(() => {
+                            toast.error("Erreur lors de l'ajout de l'image")
+                        })
+                        return true
+                    }
+                }
+                return false
+            },
             attributes: {
                 class: cn(
                     'prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px]',
@@ -381,6 +491,26 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         title="Horizontal Line"
                     >
                         <Minus className="h-4 w-4" />
+                    </button>
+
+                    {/* Insert Image Button */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            mcBtn
+                        )}
+                        type="button"
+                        title={t('editor.insertImage') || "Insérer une image (ou glisser-déposer / Ctrl+V)"}
+                    >
+                        <ImageIcon className="h-4 w-4" />
                     </button>
 
                     {/* Speech to Text Button */}

@@ -37,21 +37,21 @@ export function ItemMarkdownDisplay({ content, isSummary = false, className }: I
         h3: ({ children }: any) => <h3 className="text-xl font-semibold text-blue-400 dark:text-blue-200 mt-8 mb-3">{children}</h3>,
         ul: ({ children }: any) => <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>,
         ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
-        li: ({ children }: any) => <li className="marker:text-primary leading-relaxed">{children}</li>,
+        img: ({ src, alt }: any) => <img src={src} alt={alt || ''} className="rounded-xl max-w-full h-auto my-4 shadow-sm border mx-auto block" loading="lazy" />,
     };
 
     const rawContent = typeof content === 'string' ? content : '';
     const formattedContent = isSummary ? rawContent.replace(/•\s?/g, '\n- ') : rawContent;
 
     // Check if content contains HTML markup (typical from Tiptap editor: <p>, <h1>, <ul>, etc.)
-    const isHtml = /<\/?(?:p|h[1-6]|ul|ol|li|div|span|strong|em|b|i|u|table|tr|td|th|pre|code|br|blockquote|mark)\b/i.test(formattedContent);
+    const isHtml = /<\/?(?:p|h[1-6]|ul|ol|li|div|span|strong|em|b|i|u|table|tr|td|th|pre|code|br|blockquote|mark|img)\b/i.test(formattedContent);
 
     if (isHtml) {
         // Replace empty paragraphs <p></p> with <p><br></p> so browsers do not collapse them
         const contentWithBreaks = formattedContent.replace(/<p>\s*<\/p>/gi, '<p><br></p>');
         const sanitizedHtml = DOMPurify.sanitize(contentWithBreaks, {
-            ADD_TAGS: ['mark'],
-            ADD_ATTR: ['target']
+            ADD_TAGS: ['mark', 'img'],
+            ADD_ATTR: ['target', 'src', 'alt', 'title', 'class', 'style', 'width', 'height']
         });
 
         return (
