@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BrainCircuit, Search, Plus, Trash2, Calendar, FileText, LayoutGrid, List as ListIcon, Loader2, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { mindmapQueries } from '@/lib/api/queries/mindmapQueries';
+import { mindmapQueries } from '@/lib/api/queries';
 import { useLanguage } from '@/components/language-provider';
+import { useProfileStore } from '@/store/profileStore';
 import { MindMapViewer } from '@/components/MindMapViewer';
 import { GenerateMindMapModal } from '@/components/GenerateMindMapModal';
 import { Dialog, Transition } from '@headlessui/react';
@@ -12,6 +13,7 @@ import { Fragment } from 'react';
 
 export function MindMapsPage() {
     const { t } = useLanguage();
+    const { activeProfile } = useProfileStore();
     const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +22,8 @@ export function MindMapsPage() {
 
     const { data: mindMaps, isLoading } = useQuery({
         queryKey: ['mindmaps'],
-        queryFn: () => mindmapQueries.getAll()
+        queryFn: () => mindmapQueries.getAll(),
+        enabled: !!activeProfile
     });
 
     const deleteMutation = useMutation({

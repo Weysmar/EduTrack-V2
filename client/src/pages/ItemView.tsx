@@ -193,26 +193,22 @@ export function ItemView() {
         }
     };
 
+    const token = useAuthStore(state => state.token);
+
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
-        // Warning: item.fileData might need to be fetched separately or converted from Base64 if API sends it specifically?
-        // Usually API sends URLs. If item has fileUrl, use it.
-        // Assuming item structure from API matches mostly.
-
         // Use Backend Proxy if storageKey is available (Bypasses CORS/IP blocking)
         if (item?.storageKey) {
-            const token = useAuthStore.getState().token; // Assuming authStore has token accessible
             return `${API_URL}/storage/proxy/${item.storageKey}?token=${token}`;
         }
 
-        // Legacy: Direct blob if available (unlikely in API unless specialized)
         // Check if fileUrl is valid
         if (item?.fileUrl) {
             return item.fileUrl;
         }
 
         return null
-    }, [item?.fileUrl, item?.storageKey])
+    }, [item?.fileUrl, item?.storageKey, token])
 
 
     // Handle Escape key to exit focus mode and image fullscreen

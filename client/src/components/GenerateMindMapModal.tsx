@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { itemQueries } from '@/lib/api/queries';
-import { mindmapQueries } from '@/lib/api/queries/mindmapQueries';
+import { mindmapQueries } from '@/lib/api/queries';
 import { useLanguage } from '@/components/language-provider';
 
 interface GenerateMindMapModalProps {

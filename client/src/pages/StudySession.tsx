@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { flashcardQueries } from '@/lib/api/queries'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { calculateNextReview, ReviewGrade } from '@/lib/flashcards/spaced-repetition'
 import { ArrowLeft, CheckCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -59,7 +59,7 @@ export function StudySession() {
         }
     })
 
-    const handleRate = async (grade: ReviewGrade) => {
+    const handleRate = useCallback(async (grade: ReviewGrade) => {
         if (!currentCard) return;
         const now = new Date();
         const { interval, easeFactor, nextReview } = calculateNextReview(
@@ -85,7 +85,7 @@ export function StudySession() {
         }));
         setIsFlipped(false);
         setCurrentIndex(prev => prev + 1);
-    }
+    }, [currentCard, updateProgressMutation]);
 
     // Keyboard navigation (Space to flip, 1-4 to rate)
     useEffect(() => {
@@ -119,7 +119,7 @@ export function StudySession() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFlipped, currentCard, isFinished, isSetLoading]);
+    }, [isFlipped, currentCard, isFinished, isSetLoading, handleRate]);
 
     if (isSetLoading) return <div className="p-10 text-center text-muted-foreground">Chargement de la session d'étude...</div>
 

@@ -7,6 +7,8 @@ import { INITIAL_CARD_STATE } from '@/lib/flashcards/spaced-repetition'
 import { useNavigate } from 'react-router-dom'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
+import { useLanguage } from '@/components/language-provider'
+
 interface GenerateFlashcardsModalProps {
     isOpen: boolean
     onClose: () => void
@@ -17,6 +19,7 @@ interface GenerateFlashcardsModalProps {
 }
 
 export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle }: GenerateFlashcardsModalProps) {
+    const { t, language } = useLanguage()
     const navigate = useNavigate()
     const [isLoading, setIsLoading] = useState(false)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
@@ -109,90 +112,97 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
                             <Dialog.Panel className="w-full max-w-md md:max-w-lg transform rounded-xl bg-card border shadow-xl transition-all max-h-[85vh] flex flex-col">
                                 <Dialog.Title className="text-2xl font-bold flex items-center gap-2 p-6 pb-4 border-b shrink-0">
                                     <Brain className="h-6 w-6 text-primary" />
-                                    Generate AI Flashcards
+                                    {language === 'fr' ? 'Générer des Flashcards IA' : 'Generate AI Flashcards'}
                                 </Dialog.Title>
 
                                 <div className="overflow-y-auto flex-1 p-6 space-y-6">
                                     {!isOnline && (
                                         <div className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-600 p-3 rounded-md mb-4 flex items-center gap-2 text-sm">
                                             <AlertCircle className="h-4 w-4 shrink-0" />
-                                            <span>Vous êtes hors ligne. La génération nécessite une connexion.</span>
+                                            <span>{language === 'fr' ? 'Vous êtes hors ligne. La génération nécessite une connexion.' : 'You are offline. Generation requires an internet connection.'}</span>
                                         </div>
                                     )}
                                     {/* Count */}
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">Number of Cards</label>
+                                        <label className="block text-sm font-medium mb-1">{language === 'fr' ? 'Nombre de cartes' : 'Number of Cards'}</label>
                                         <div className="flex gap-2">
-                                            {[5, 10, 20].map(n => (
-                                                <button
-                                                    key={n}
-                                                    onClick={() => setCount(n)}
-                                                    className={`px-4 py-3 rounded-md border text-sm transition-colors min-h-[44px] min-w-[44px] touch-manipulation ${count === n ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
-                                                >
-                                                    {n}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                             {[5, 10, 20].map(n => (
+                                                 <button
+                                                     key={n}
+                                                     onClick={() => setCount(n)}
+                                                     className={`px-4 py-3 rounded-md border text-sm transition-colors min-h-[44px] min-w-[44px] touch-manipulation ${count === n ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
+                                                 >
+                                                     {n}
+                                                 </button>
+                                             ))}
+                                         </div>
+                                     </div>
 
-                                    {/* Difficulty */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Target Difficulty</label>
-                                        <select
-                                            value={difficulty}
-                                            onChange={(e: any) => setDifficulty(e.target.value)}
-                                            className="w-full bg-muted/50 border rounded-md p-2 text-sm"
-                                        >
-                                            <option value="easy">Easy (Definitions & Facts)</option>
-                                            <option value="normal">Normal (Concepts & Relations)</option>
-                                            <option value="hard">Hard (Applications & Analysis)</option>
-                                            <option value="mixed">Mixed (Adaptive)</option>
-                                        </select>
-                                    </div>
+                                     {/* Difficulty */}
+                                     <div>
+                                         <label className="block text-sm font-medium mb-1">{language === 'fr' ? 'Difficulté ciblée' : 'Target Difficulty'}</label>
+                                         <select
+                                             value={difficulty}
+                                             onChange={(e: any) => setDifficulty(e.target.value)}
+                                             className="w-full bg-muted/50 border rounded-md p-2 text-sm"
+                                         >
+                                             <option value="easy">{language === 'fr' ? 'Facile (Définitions & Faits)' : 'Easy (Definitions & Facts)'}</option>
+                                             <option value="normal">{language === 'fr' ? 'Normal (Concepts & Relations)' : 'Normal (Concepts & Relations)'}</option>
+                                             <option value="hard">{language === 'fr' ? 'Difficile (Applications & Analyse)' : 'Hard (Applications & Analysis)'}</option>
+                                             <option value="mixed">{language === 'fr' ? 'Mixte (Adaptatif)' : 'Mixed (Adaptive)'}</option>
+                                         </select>
+                                     </div>
 
-                                    {/* Types */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Focus Areas</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {['facts', 'concepts', 'calculations', 'applications'].map(type => (
-                                                <label key={type} className="flex items-center gap-2 text-sm p-3 border rounded hover:bg-muted/50 cursor-pointer min-h-[44px]">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedTypes.includes(type)}
-                                                        onChange={() => handleTypeToggle(type)}
-                                                        className="rounded border-gray-300 h-5 w-5"
-                                                    />
-                                                    <span className="capitalize">{type}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
+                                     {/* Types */}
+                                     <div>
+                                         <label className="block text-sm font-medium mb-2">{language === 'fr' ? 'Domaines de focalisation' : 'Focus Areas'}</label>
+                                         <div className="grid grid-cols-2 gap-2">
+                                             {[
+                                                 { key: 'facts', label: language === 'fr' ? 'Faits & Définitions' : 'Facts' },
+                                                 { key: 'concepts', label: language === 'fr' ? 'Concepts' : 'Concepts' },
+                                                 { key: 'calculations', label: language === 'fr' ? 'Calculs / Formules' : 'Calculations' },
+                                                 { key: 'applications', label: language === 'fr' ? 'Applications' : 'Applications' }
+                                             ].map(({ key, label }) => (
+                                                 <label key={key} className="flex items-center gap-2 text-sm p-3 border rounded hover:bg-muted/50 cursor-pointer min-h-[44px]">
+                                                     <input
+                                                         type="checkbox"
+                                                         checked={selectedTypes.includes(key)}
+                                                         onChange={() => handleTypeToggle(key)}
+                                                         className="rounded border-gray-300 h-5 w-5"
+                                                     />
+                                                     <span>{label}</span>
+                                                 </label>
+                                             ))}
+                                         </div>
+                                     </div>
 
-                                    {error && (
-                                        <div className="p-3 bg-red-500/10 text-red-500 rounded-md text-sm flex items-center gap-2">
-                                            <AlertCircle className="h-4 w-4" />
-                                            {error}
-                                        </div>
-                                    )}
-                                </div>
+                                     {error && (
+                                         <div className="p-3 bg-red-500/10 text-red-500 rounded-md text-sm flex items-center gap-2">
+                                             <AlertCircle className="h-4 w-4" />
+                                             {error}
+                                         </div>
+                                     )}
+                                 </div>
 
-                                <div className="flex justify-end gap-2 p-6 pt-4 border-t shrink-0 pb-safe">
-                                    <button
-                                        onClick={onClose}
-                                        disabled={isLoading}
-                                        className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleGenerate}
-                                        disabled={isLoading || !isOnline}
-                                        className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2"
-                                    >
-                                        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                        {isLoading ? 'Generating...' : 'Start Generation'}
-                                    </button>
-                                </div>
+                                 <div className="flex justify-end gap-2 p-6 pt-4 border-t shrink-0 pb-safe">
+                                     <button
+                                         onClick={onClose}
+                                         disabled={isLoading}
+                                         className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-md transition-colors"
+                                     >
+                                         {t('common.cancel') || 'Annuler'}
+                                     </button>
+                                     <button
+                                         onClick={handleGenerate}
+                                         disabled={isLoading || !isOnline}
+                                         className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2"
+                                     >
+                                         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                         {isLoading 
+                                             ? (language === 'fr' ? 'Génération...' : 'Generating...') 
+                                             : (language === 'fr' ? 'Lancer la génération' : 'Start Generation')}
+                                     </button>
+                                 </div>
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
