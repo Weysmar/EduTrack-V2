@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
-import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink } from 'lucide-react'
 import { useLanguage } from './language-provider'
 import { cn } from '@/lib/utils'
 
