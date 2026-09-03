@@ -12,6 +12,7 @@ import { courseQueries, itemQueries, analyticsQueries } from '@/lib/api/queries'
 import { cn } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { StatCardVariant } from '@/components/ui/StatCard';
+import { apiClient } from '@/lib/api/client'
 
 export function Dashboard() {
     const { t } = useLanguage()
@@ -20,6 +21,19 @@ export function Dashboard() {
     const { activeProfile } = useProfileStore()
     const queryClient = useQueryClient()
     const isLoggingVisit = useRef(false)
+
+    // Synchronize latest profile data (including real-time AI Generation count)
+    const { data: currentProfile } = useQuery({
+        queryKey: ['profile', 'me'],
+        queryFn: async () => {
+            const res = await apiClient.get('/auth/me');
+            if (res.data) {
+                useProfileStore.setState({ activeProfile: res.data });
+            }
+            return res.data;
+        },
+        enabled: !!activeProfile
+    })
 
     // Queries
     const { data: coursesData } = useQuery({
@@ -320,7 +334,9 @@ export function Dashboard() {
                             />
                             <StatCardVariant
                                 title={t('dashboard.stats.aiGeneration')}
-                                value={(activeProfile?.settings as any)?.aiGenerationCount || 0}
+                                value={(currentProfile?.aiGenerationsCount ?? (currentProfile?.settings as any)?.aiGenerationCount)
+                                    ?? (activeProfile?.aiGenerationsCount ?? (activeProfile?.settings as any)?.aiGenerationCount)
+                                    ?? 0}
                                 icon={<Sparkles className="h-6 w-6" />}
                                 variant="purple"
                                 className="bg-card/50 backdrop-blur-sm"

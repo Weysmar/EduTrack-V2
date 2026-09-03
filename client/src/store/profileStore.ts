@@ -10,6 +10,7 @@ interface Profile {
     theme: 'light' | 'dark' | 'system';
     language: 'fr' | 'en';
     settings?: any;
+    aiGenerationsCount?: number;
 }
 
 interface ApiKeyMap {
@@ -129,8 +130,12 @@ export const useProfileStore = create<ProfileState>()(
 
                 const targetId = activeProfile?.id || 'me';
                 try {
+                    const mergedSettings = {
+                        ...(activeProfile?.settings || {}),
+                        ...newKeys
+                    };
                     const response = await apiClient.put(`/profiles/${targetId}`, {
-                        settings: newKeys
+                        settings: mergedSettings
                     });
                     set({ activeProfile: response.data, apiKeys: newKeys });
                 } catch (e) {
@@ -150,10 +155,14 @@ export const useProfileStore = create<ProfileState>()(
                 // 1. Update local state
                 set({ apiKeys: trimmedKeys });
 
-                // 2. Sync to backend
+                // 2. Sync to backend with merged settings to preserve aiGenerationCount
                 try {
+                    const mergedSettings = {
+                        ...(activeProfile?.settings || {}),
+                        ...trimmedKeys
+                    };
                     const response = await apiClient.put(`/profiles/${targetId}`, {
-                        settings: trimmedKeys
+                        settings: mergedSettings
                     });
                     set({ activeProfile: response.data, apiKeys: trimmedKeys });
                 } catch (e) {

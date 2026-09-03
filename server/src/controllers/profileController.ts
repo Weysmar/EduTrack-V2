@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-
 import { prisma } from '../lib/prisma';
+import { socketService } from '../services/socketService';
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
     try {
@@ -18,6 +18,34 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
         if (!profile) {
             return res.status(404).json({ message: 'Profile not found' });
+        }
+
+        // Auto-heal/sync if count is 0 but user has actual AI records from the past
+        let count = profile.aiGenerationsCount || (profile.settings as any)?.aiGenerationCount || 0;
+        if (count === 0) {
+            const [summaries, flashcards, quizzes, mindmaps] = await Promise.all([
+                prisma.summary.count({ where: { profileId: targetId } }),
+                prisma.flashcardSet.count({ where: { profileId: targetId } }),
+                prisma.quiz.count({ where: { profileId: targetId } }),
+                prisma.mindMap.count({ where: { profileId: targetId } })
+            ]);
+            const actualTotal = summaries + flashcards + quizzes + mindmaps;
+            if (actualTotal > 0) {
+                count = actualTotal;
+                const currentSettings = (profile.settings as any) || {};
+                await prisma.profile.update({
+                    where: { id: targetId },
+                    data: {
+                        aiGenerationsCount: count,
+                        settings: {
+                            ...currentSettings,
+                            aiGenerationCount: count
+                        }
+                    }
+                });
+                profile.aiGenerationsCount = count;
+                (profile.settings as any) = { ...currentSettings, aiGenerationCount: count };
+            }
         }
 
         const { passwordHash, ...profileData } = profile;
@@ -38,13 +66,31 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 
         const { name, theme, language, settings } = req.body;
 
+        // Fetch existing profile to merge settings safely without wiping aiGenerationCount
+        const existingProfile = await prisma.profile.findUnique({
+            where: { id: targetId },
+            select: { settings: true, aiGenerationsCount: true }
+        });
+
+        const existingSettings = (existingProfile?.settings as any) || {};
+        const count = existingProfile?.aiGenerationsCount ?? existingSettings.aiGenerationCount ?? 0;
+
+        let mergedSettings = existingSettings;
+        if (settings) {
+            mergedSettings = {
+                ...existingSettings,
+                ...settings,
+                aiGenerationCount: count
+            };
+        }
+
         const updatedProfile = await prisma.profile.update({
             where: { id: targetId },
             data: {
                 name,
                 theme,
                 language,
-                settings: settings ? settings : undefined
+                settings: mergedSettings
             }
         });
 
@@ -63,27 +109,35 @@ export const incrementAIGeneration = async (profileId: string): Promise<number> 
     try {
         const profile = await prisma.profile.findUnique({
             where: { id: profileId },
-            select: { settings: true }
+            select: { settings: true, aiGenerationsCount: true }
         });
 
         if (!profile) {
             throw new Error('Profile not found');
         }
 
-        // Get current count from settings
+        // Get current count from column or settings
         const currentSettings = (profile.settings as any) || {};
-        const currentCount = currentSettings.aiGenerationCount || 0;
+        const countFromCol = profile.aiGenerationsCount || 0;
+        const countFromSettings = currentSettings.aiGenerationCount || 0;
+        const currentCount = Math.max(countFromCol, countFromSettings);
         const newCount = currentCount + 1;
 
-        // Update settings with new count
+        // Update BOTH column and settings JSON
         await prisma.profile.update({
             where: { id: profileId },
             data: {
+                aiGenerationsCount: newCount,
                 settings: {
                     ...currentSettings,
                     aiGenerationCount: newCount
                 }
             }
+        });
+
+        // Broadcast to client in real-time via socket
+        socketService.emitToProfile(profileId, 'profile:aiCountUpdated', {
+            aiGenerationsCount: newCount
         });
 
         return newCount;

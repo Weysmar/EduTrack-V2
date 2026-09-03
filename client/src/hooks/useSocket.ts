@@ -43,6 +43,23 @@ export const useSocket = () => {
             socketRef.current.on('item:updated', () => queryClient.invalidateQueries({ queryKey: ['items'] }));
             socketRef.current.on('item:deleted', () => queryClient.invalidateQueries({ queryKey: ['items'] }));
 
+            socketRef.current.on('profile:aiCountUpdated', (data: { aiGenerationsCount: number }) => {
+                queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+                const current = useProfileStore.getState().activeProfile;
+                if (current) {
+                    useProfileStore.setState({
+                        activeProfile: {
+                            ...current,
+                            aiGenerationsCount: data.aiGenerationsCount,
+                            settings: {
+                                ...(current.settings || {}),
+                                aiGenerationCount: data.aiGenerationsCount
+                            }
+                        }
+                    });
+                }
+            });
+
             socketRef.current.on('disconnect', () => {
                 console.log('Socket disconnected');
             });

@@ -145,6 +145,34 @@ export const getMe = async (req: any, res: Response) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
+        // Auto-heal/sync if count is 0 but user has actual AI records from the past
+        let count = user.aiGenerationsCount || (user.settings as any)?.aiGenerationCount || 0;
+        if (count === 0) {
+            const [summaries, flashcards, quizzes, mindmaps] = await Promise.all([
+                prisma.summary.count({ where: { profileId: req.user.id } }),
+                prisma.flashcardSet.count({ where: { profileId: req.user.id } }),
+                prisma.quiz.count({ where: { profileId: req.user.id } }),
+                prisma.mindMap.count({ where: { profileId: req.user.id } })
+            ]);
+            const actualTotal = summaries + flashcards + quizzes + mindmaps;
+            if (actualTotal > 0) {
+                count = actualTotal;
+                const currentSettings = (user.settings as any) || {};
+                await prisma.profile.update({
+                    where: { id: req.user.id },
+                    data: {
+                        aiGenerationsCount: count,
+                        settings: {
+                            ...currentSettings,
+                            aiGenerationCount: count
+                        }
+                    }
+                });
+                user.aiGenerationsCount = count;
+                (user.settings as any) = { ...currentSettings, aiGenerationCount: count };
+            }
+        }
+
         const { passwordHash, ...userWithoutPassword } = user;
         const isAdmin = isUserAdmin(user.email);
 
