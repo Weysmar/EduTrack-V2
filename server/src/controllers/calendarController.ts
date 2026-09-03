@@ -71,7 +71,13 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            return res.status(response.status).json({ error: `Failed to fetch iCal feed from provider (status ${response.status})` });
+            let errorMsg = `Impossible de récupérer le flux iCal (code distant ${response.status})`;
+            if (response.status === 401 || response.status === 403) {
+                errorMsg = `Accès refusé par Google/fournisseur (${response.status}). Assurez-vous d'utiliser l'« Adresse secrète au format iCal » et non l'adresse publique.`;
+            } else if (response.status === 404) {
+                errorMsg = `Calendrier introuvable (${response.status}). Vérifiez l'URL iCal.`;
+            }
+            return res.status(502).json({ error: errorMsg, upstreamStatus: response.status });
         }
 
         let rawIcsData = await response.text();
@@ -83,7 +89,7 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
 
         // 3. Validation: Verify iCal format
         if (!rawIcsData.toUpperCase().includes('BEGIN:VCALENDAR')) {
-            return res.status(400).json({ error: 'Invalid iCal feed format: missing BEGIN:VCALENDAR' });
+            return res.status(422).json({ error: 'Format iCal invalide : BEGIN:VCALENDAR manquant (vérifiez que le lien pointe bien vers un fichier .ics)' });
         }
 
         // Strip HTML tags just in case of injection

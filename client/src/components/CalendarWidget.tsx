@@ -32,9 +32,10 @@ export function CalendarWidget() {
             const fetchedEvents = await fetchICalFeed(icalUrl)
             setEvents(fetchedEvents)
             setLastSynced(new Date())
-        } catch (err) {
+        } catch (err: any) {
             console.error(err)
-            setError("Failed to load iCal feed")
+            const detail = err.response?.data?.error || err.message;
+            setError(detail || (language === 'fr' ? "Impossible de charger le flux iCal" : "Failed to load iCal feed"))
         } finally {
             setIsLoading(false)
         }

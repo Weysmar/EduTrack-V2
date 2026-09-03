@@ -32,9 +32,11 @@ apiClient.interceptors.response.use(
 
         console.error(`[API Client] Error ${error.response?.status} on ${error.config?.url}:`, error.response?.data || error.message);
 
-        // Only 401 (Unauthorized: invalid or expired JWT) should terminate the session
-        // 403 (Forbidden: permission error) should NEVER log the user out
-        if (error.response?.status === 401) {
+        // Only 401 (Unauthorized: invalid or expired JWT) on core EduTrack endpoints should terminate the session
+        // Proxy endpoints (like /calendar/proxy) or 403 (Forbidden) must NEVER log the user out
+        const isCoreAuthError = error.response?.status === 401 && !error.config?.url?.includes('/calendar/proxy');
+
+        if (isCoreAuthError) {
             isSessionExpired = true;
             console.warn('[API Client] Unauthorized (401). Session expired, redirecting to login...');
 
