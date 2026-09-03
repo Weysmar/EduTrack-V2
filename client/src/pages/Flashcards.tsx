@@ -98,20 +98,21 @@ export function Flashcards() {
                                     </div>
                                 </div>
 
-                            <div className="flex gap-3">
-                                <Link
-                                    to={`/edu/flashcards/study/${set.id}`}
-                                    className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                                >
-                                    <Play className="h-4 w-4 fill-current" />
-                                    Réviser
-                                </Link>
-                                <button className="p-2 border rounded-lg hover:bg-muted transition-colors" title="Exporter vers Anki">
-                                    <Download className="h-4 w-4" />
-                                </button>
+                                <div className="flex gap-3">
+                                    <Link
+                                        to={`/edu/flashcards/study/${set.id}`}
+                                        className="flex-1 bg-primary text-primary-foreground py-2 rounded-lg font-medium text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                    >
+                                        <Play className="h-4 w-4 fill-current" />
+                                        Réviser
+                                    </Link>
+                                    <button className="p-2 border rounded-lg hover:bg-muted transition-colors" title="Exporter vers Anki">
+                                        <Download className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
