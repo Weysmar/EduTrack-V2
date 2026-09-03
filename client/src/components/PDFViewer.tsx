@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
 import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink } from 'lucide-react'
 import { useLanguage } from './language-provider'
@@ -35,6 +35,11 @@ export function PDFViewer({
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    // PDF.js options to suppress benign font sanitization warnings in console (verbosity: 0 = ERRORS only)
+    const documentOptions = useMemo(() => ({
+        verbosity: 0,
+    }), [])
 
     const activeFocus = isFocusMode !== undefined ? isFocusMode : internalFocus
 
@@ -218,6 +223,7 @@ export function PDFViewer({
                         <Document
                             key={key}
                             file={pdfData}
+                            options={documentOptions}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={onDocumentLoadError}
                             loading={
