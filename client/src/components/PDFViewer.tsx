@@ -31,7 +31,7 @@ export function PDFViewer({
     const [loading, setLoading] = useState(true)
     const [pageWidth, setPageWidth] = useState<number | null>(null)
     const [pdfData, setPdfData] = useState<any>(null)
-    const [useNativeEmbed, setUseNativeEmbed] = useState(false)
+    const [useNativeEmbed, setUseNativeEmbed] = useState(true)
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -153,39 +153,42 @@ export function PDFViewer({
                         ) : (
                             <>
                                 <Maximize className="h-3.5 w-3.5 text-primary" />
-                                <span>Focus</span>
+                                <span>Plein écran</span>
                             </>
                         )}
                     </button>
 
-                    <div className="text-xs md:text-sm font-medium px-1 truncate text-muted-foreground">
-                        {loading ? 'Chargement...' : `${numPages} p.`}
-                    </div>
+                    <span className="text-xs font-medium px-1 text-muted-foreground truncate hidden sm:inline">
+                        Visionneuse PDF
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                    <button
-                        onClick={zoomOut}
-                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
-                        title={t('action.zoomOut')}
-                    >
-                        <ZoomOut className="h-4 w-4" />
-                    </button>
-                    <span className="text-xs md:text-sm font-medium px-1 min-w-[3ch] text-center">{Math.round(scale * 100)}%</span>
-                    <button
-                        onClick={zoomIn}
-                        className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
-                        title={t('action.zoomIn')}
-                    >
-                        <ZoomIn className="h-4 w-4" />
-                    </button>
-
-                    <div className="h-4 w-px bg-border mx-0.5" />
+                    {!useNativeEmbed && (
+                        <>
+                            <button
+                                onClick={zoomOut}
+                                className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                                title={t('action.zoomOut')}
+                            >
+                                <ZoomOut className="h-4 w-4" />
+                            </button>
+                            <span className="text-xs md:text-sm font-medium px-1 min-w-[3ch] text-center">{Math.round(scale * 100)}%</span>
+                            <button
+                                onClick={zoomIn}
+                                className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                                title={t('action.zoomIn')}
+                            >
+                                <ZoomIn className="h-4 w-4" />
+                            </button>
+                            <div className="h-4 w-px bg-border mx-0.5" />
+                        </>
+                    )}
 
                     <button
                         onClick={() => setUseNativeEmbed(prev => !prev)}
                         className="px-2 py-1 text-xs font-medium rounded hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors border bg-background/50"
-                        title={useNativeEmbed ? "Passer au visualiseur interactif" : "Passer au visualiseur intégré"}
+                        title={useNativeEmbed ? "Passer au visualiseur interactif (React-PDF)" : "Passer au visualiseur natif intégré"}
                     >
                         {useNativeEmbed ? "Interactif" : "Natif"}
                     </button>
@@ -195,15 +198,20 @@ export function PDFViewer({
             {/* PDF Document - Scrollable Area */}
             <div className={cn(
                 "flex-1 overflow-auto bg-slate-50 dark:bg-slate-950",
-                activeFocus ? "p-1 sm:p-2 md:p-4" : "p-2 md:p-4"
+                activeFocus ? "p-0" : (useNativeEmbed ? "p-0" : "p-2 md:p-4")
             )}>
-                <div ref={containerRef} className="flex flex-col items-center gap-3 min-h-full w-full">
+                <div ref={containerRef} className="flex flex-col items-center gap-3 min-h-full w-full h-full">
                     {useNativeEmbed ? (
                         <iframe
                             src={/^\s*(javascript|vbscript):/i.test(url) ? 'about:blank' : `${url}#view=FitH`}
-                            title="PDF Document"
-                            className="w-full h-full border-0 rounded-none bg-white shadow-sm"
-                            style={{ height: activeFocus ? 'calc(100dvh - 56px)' : '70vh' }}
+                            title="Visionneuse PDF"
+                            className="w-full h-full border-0 bg-white dark:bg-slate-900"
+                            style={{
+                                border: 'none',
+                                width: '100%',
+                                height: '100%',
+                                minHeight: activeFocus ? 'calc(100dvh - 48px)' : '75vh'
+                            }}
                             allowFullScreen
                         />
                     ) : pdfData && (

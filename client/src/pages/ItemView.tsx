@@ -724,38 +724,16 @@ export function ItemView() {
                                             if (isPdf) {
                                                 return (
                                                     <>
-                                                        {/* Desktop: Native Iframe for best performance */}
-                                                        <div className={cn("hidden lg:block relative", isFocusMode ? "h-full" : "h-[80vh]")}>
-                                                            {isFocusMode && (
-                                                                <button
-                                                                    onClick={() => setIsFocusMode(false)}
-                                                                    className="absolute top-3 right-5 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/90 hover:bg-slate-700 text-white rounded-lg text-xs font-medium backdrop-blur shadow-md transition-all border border-slate-700"
-                                                                    title={t('focus.exit') || "Quitter le plein écran"}
-                                                                >
-                                                                    <Minimize className="h-3.5 w-3.5 text-primary" />
-                                                                    <span>{t('focus.exit') || "Quitter plein écran"}</span>
-                                                                </button>
-                                                            )}
-                                                            <iframe
-                                                                src={/^\s*(javascript|vbscript):/i.test(pdfUrl) ? 'about:blank' : `${pdfUrl}#view=FitH`}
-                                                                title="PDF Document"
-                                                                className="w-full h-full border-0 rounded-lg bg-slate-100 dark:bg-slate-900"
-                                                                allowFullScreen
+                                                        {/* Unified PDF Viewer with Native Iframe and Focus Mode */}
+                                                        {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : (
+                                                            <PDFViewer
+                                                                url={pdfUrl}
+                                                                className={isFocusMode ? "h-full" : "h-[75vh] md:h-[80vh]"}
+                                                                isFocusMode={isFocusMode}
+                                                                onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+                                                                onExitFocusMode={() => setIsFocusMode(false)}
                                                             />
-                                                        </div>
-
-                                                        {/* Mobile & Tablet: React-PDF Viewer (No more fallback card) */}
-                                                        <div className="block lg:hidden">
-                                                            {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : (
-                                                                <PDFViewer
-                                                                    url={pdfUrl}
-                                                                    className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
-                                                                    isFocusMode={isFocusMode}
-                                                                    onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
-                                                                    onExitFocusMode={() => setIsFocusMode(false)}
-                                                                />
-                                                            )}
-                                                        </div>
+                                                        )}
                                                     </>
                                                 );
                                             }
