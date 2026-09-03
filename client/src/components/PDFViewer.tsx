@@ -1,7 +1,13 @@
-import { useState, useRef, useEffect } from 'react'
-import { Document, Page } from 'react-pdf'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { pdfjs, Document, Page } from 'react-pdf'
 import { ZoomIn, ZoomOut, ExternalLink, RotateCw, AlertCircle, Minimize } from 'lucide-react'
 import { useLanguage } from './language-provider'
+
+// Ensure workerSrc is always explicitly pointing to the same-origin worker
+if (typeof window !== 'undefined') {
+    const origin = window.location.origin || '';
+    pdfjs.GlobalWorkerOptions.workerSrc = `${origin}/pdf.worker.min.mjs`;
+}
 
 interface PDFViewerProps {
     url: string

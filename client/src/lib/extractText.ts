@@ -3,9 +3,10 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { apiClient } from '@/lib/api/client';
 
-// PDF.js worker configured with absolute CDN to avoid relative /edu/course/pdf.worker.mjs 404
+// PDF.js worker configured with same-origin worker to avoid mobile CORS and relative path 404
 if (typeof window !== 'undefined' && pdfjsLib?.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+    const workerUrl = window.location?.origin ? `${window.location.origin}/pdf.worker.min.mjs` : '/pdf.worker.min.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 }
 
 // Note: Verbosity control not available in this pdfjs-dist version

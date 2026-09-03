@@ -12,8 +12,14 @@ if (typeof URL.parse === 'undefined') {
 import { pdfjs } from 'react-pdf';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Use standard CDN-backed worker URL matched with exact pdfjs-dist version 5.4.296
-const workerUrl = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+// Use same-origin local worker to prevent mobile CORS restrictions and fake worker failures
+const getWorkerUrl = () => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return `${window.location.origin}/pdf.worker.min.mjs`;
+    }
+    return '/pdf.worker.min.mjs';
+};
+const workerUrl = getWorkerUrl();
 
 try {
     pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
