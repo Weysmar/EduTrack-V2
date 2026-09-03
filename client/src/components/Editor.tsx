@@ -264,13 +264,13 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     return (
         <div className={cn(
-            editable ? "border rounded-md bg-background relative" : "bg-card rounded-xl border shadow-sm",
+            editable ? "border border-t-0 rounded-b-xl bg-card relative shadow-xs" : "bg-card rounded-xl border shadow-sm",
             isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>
             {editable && (
                 <div className={cn(
-                    "sticky top-0 z-20 border-b bg-background/95 backdrop-blur-md p-1.5 flex flex-wrap items-center gap-1 rounded-t-md shadow-xs",
+                    "sticky top-0 z-20 border-b bg-card/95 backdrop-blur-md p-1.5 flex flex-wrap items-center gap-1 shadow-xs",
                     isMinecraft && "bg-[#eee3ce]/95 border-b-2 border-[#c8b393] text-[#4a3520] dark:bg-stone-800/95 dark:border-stone-600 dark:text-stone-300"
                 )}>
                     {/* Headings */}

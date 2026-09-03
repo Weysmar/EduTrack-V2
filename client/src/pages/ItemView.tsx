@@ -652,16 +652,18 @@ export function ItemView() {
             {/* Main Content Area */}
             <div className={cn(
                 "flex-1 overflow-auto bg-muted/5 flex flex-col",
-                item.type === 'resource' ? "p-0 md:p-3 pb-20 md:pb-3" : "p-0 md:p-8 pb-24 md:pb-8"
+                item.type === 'resource' 
+                    ? "p-0 md:p-3 pb-20 md:pb-3" 
+                    : "px-0 md:px-8 pt-0 pb-24 md:pb-8"
             )}>
                 <div className={cn(
                     "w-full h-full",
-                    showSummary ? "" : (item.type === 'resource' ? "max-w-none" : "max-w-5xl mx-auto space-y-0 md:space-y-6")
+                    showSummary ? "" : (item.type === 'resource' ? "max-w-none" : "max-w-5xl mx-auto")
                 )}>
 
                     {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
                     {item.type === 'exercise' && item.status && item.difficulty && (
-                        <div className="flex gap-2 p-4 md:p-0">
+                        <div className="flex gap-2 p-4 md:p-0 mb-4">
                             <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
                                 item.difficulty === 'easy' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
                                     item.difficulty === 'medium' ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30" :
@@ -682,7 +684,7 @@ export function ItemView() {
                     {/* Content Logic: Summary VS Original Content */}
                     <div className={cn(
                         "w-full transition-all",
-                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "space-y-0 md:space-y-6 max-w-5xl mx-auto"
+                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "max-w-5xl mx-auto"
                     )}>
                         <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden" : "block")}>
 
@@ -691,7 +693,11 @@ export function ItemView() {
                                 "w-full transition-all",
                                 // Logic: Show if (Standard Mode AND !ShowSummary) OR (FocusMode AND Tab == 'pdf')
                                 ((!showSummary && !isFocusMode) || (isFocusMode && mobileTab === 'pdf')) ? "block" : "hidden",
-                                isFocusMode ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm"
+                                isFocusMode 
+                                    ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" 
+                                    : (item.type === 'note'
+                                        ? "p-0 min-h-[50vh]"
+                                        : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm")
                             )}>
 
                                 {/* PDF VIEWER Integration */}
