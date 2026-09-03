@@ -230,16 +230,18 @@ export function SettingsPage() {
 
                                             <ul className="space-y-2.5">
                                                 {log.changes.map((change, i) => (
-                                                    <li key={i} className="text-sm flex gap-3">
+                                                    <li key={i} className="text-sm flex items-start gap-3">
                                                         <span className={cn(
-                                                            "uppercase text-[10px] font-bold px-1.5 py-0.5 rounded h-fit mt-0.5 min-w-[3rem] text-center",
-                                                            change.type === 'new' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-                                                            change.type === 'fix' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                                                            change.type === 'improvement' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                                                            "uppercase text-[10px] font-bold px-2 py-0.5 rounded shrink-0 whitespace-nowrap mt-0.5 text-center min-w-[5.5rem] tracking-wider",
+                                                            change.type === 'new' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-500/20",
+                                                            change.type === 'fix' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-500/20",
+                                                            change.type === 'improvement' && "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-500/20",
                                                         )}>
-                                                            {change.type}
+                                                            {change.type === 'new' ? (t('changelog.type.new') || 'NOUVEAU') :
+                                                             change.type === 'improvement' ? (t('changelog.type.improvement') || 'AMÉLIORÉ') :
+                                                             (t('changelog.type.fix') || 'CORRECTIF')}
                                                         </span>
-                                                        <span className="text-muted-foreground leading-relaxed">{t(change.description)}</span>
+                                                        <span className="text-muted-foreground leading-relaxed flex-1 min-w-0">{t(change.description)}</span>
                                                     </li>
                                                 ))}
                                             </ul>
