@@ -114,23 +114,8 @@ export function EduSidebar() {
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-4 overflow-x-hidden">
+            <div className="flex-1 overflow-y-auto py-3 overflow-x-hidden">
                 <nav className="space-y-1 px-2">
-                    <Link
-                        to="/finance"
-                        className={cn(
-                            "flex items-center gap-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground mt-4",
-                            isCollapsed ? "justify-center p-2" : "px-2 py-1.5"
-                        )}
-                        title={t('finance.title') || "Finance"}
-                    >
-                        <Settings className="h-4 w-4 shrink-0" />
-                        {!isCollapsed && <span className="text-sm font-medium">Finance</span>}
-                    </Link>
-
-                    {/* Divider */}
-                    {activeProfile?.settings?.disableExplorer !== true && <div className="my-4 border-t" />}
-
                     {!isCollapsed && (
                         <h2 className="px-2 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                             {t('nav.myCourses')}
