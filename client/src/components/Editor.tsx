@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 interface EditorProps {
     content: string
-    onChange: (content: string) => void
+    onChange?: (content: string) => void
     editable?: boolean
     className?: string
 }
@@ -80,12 +80,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
         content,
         editable,
         onUpdate: ({ editor }) => {
-            onChange(editor.getHTML())
+            onChange?.(editor.getHTML())
         },
         editorProps: {
             attributes: {
                 class: cn(
-                    'prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px] px-3 py-2',
+                    'prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px]',
+                    editable ? 'px-3 py-2' : 'px-4 md:px-8 py-6',
+                    // Preserve empty paragraph line breaks
+                    '[&_p:empty]:min-h-[1.5em] [&_p:empty]:before:content-["\\00a0"]',
                     // Default styling adjustments
                     '[&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg',
                     '[&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold',
@@ -113,6 +116,20 @@ export function Editor({ content, onChange, editable = true, className }: Editor
         }
     })
 
+    // Keep editor content in sync with external content prop updates
+    useEffect(() => {
+        if (editor && content !== editor.getHTML()) {
+            editor.commands.setContent(content || '', false)
+        }
+    }, [content, editor])
+
+    // Keep editor editable state in sync
+    useEffect(() => {
+        if (editor) {
+            editor.setEditable(editable)
+        }
+    }, [editable, editor])
+
     if (!editor) return null
 
     const textColors = ['#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
@@ -130,7 +147,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     return (
         <div className={cn(
-            "border rounded-md overflow-hidden bg-background",
+            editable ? "border rounded-md overflow-hidden bg-background" : "bg-card rounded-xl border shadow-sm overflow-hidden",
             isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>

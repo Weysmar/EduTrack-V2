@@ -746,15 +746,13 @@ export function ItemView() {
 
                                 ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">
-                                        {item.type === 'note' && isEditMode ? (
+                                        {item.type === 'note' ? (
                                             <Editor
-                                                content={editedContent}
-                                                onChange={setEditedContent}
-                                                editable={true}
+                                                content={isEditMode ? editedContent : (item.content || '')}
+                                                onChange={isEditMode ? setEditedContent : undefined}
+                                                editable={isEditMode}
                                                 className={isFocusMode ? "h-full" : "min-h-[50vh]"}
                                             />
-                                        ) : item.type === 'note' ? (
-                                            <ItemMarkdownDisplay content={item.content || ''} isSummary={false} />
                                         ) : (
                                             <ItemMarkdownDisplay content={item.content || ''} isSummary={false} className="whitespace-pre-wrap" />
                                         )}

@@ -45,14 +45,16 @@ export function ItemMarkdownDisplay({ content, isSummary = false, className }: I
     const isHtml = /<\/?(?:p|h[1-6]|ul|ol|li|div|span|strong|em|b|i|u|table|tr|td|th|pre|code|br|blockquote|mark)\b/i.test(formattedContent);
 
     if (isHtml) {
-        const sanitizedHtml = DOMPurify.sanitize(formattedContent, {
+        // Replace empty paragraphs <p></p> with <p><br></p> so browsers do not collapse them
+        const contentWithBreaks = formattedContent.replace(/<p>\s*<\/p>/gi, '<p><br></p>');
+        const sanitizedHtml = DOMPurify.sanitize(contentWithBreaks, {
             ADD_TAGS: ['mark'],
             ADD_ATTR: ['target']
         });
 
         return (
             <div
-                className={cn(defaultClasses, className)}
+                className={cn(defaultClasses, "[&_p:empty]:min-h-[1.5em] [&_p:empty]:before:content-['\\00a0']", className)}
                 dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
             />
         );
