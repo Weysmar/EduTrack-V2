@@ -77,4 +77,81 @@ export const getStudyPlans = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch plans" });
     }
-}
+};
+
+export const getStudyTasks = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user?.id;
+        if (!profileId) return res.status(401).json({ error: "Unauthorized" });
+
+        const tasks = await prisma.studyTask.findMany({
+            where: {
+                plan: { profileId }
+            },
+            include: {
+                week: {
+                    select: {
+                        startDate: true,
+                        endDate: true,
+                        weekNumber: true
+                    }
+                },
+                plan: {
+                    select: {
+                        id: true,
+                        title: true,
+                        course: {
+                            select: {
+                                id: true,
+                                title: true,
+                                color: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: [
+                { week: { startDate: 'asc' } },
+                { dayNumber: 'asc' }
+            ]
+        });
+
+        res.json(tasks);
+    } catch (error) {
+        console.error("Get Tasks Error:", error);
+        res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+};
+
+export const updateStudyTask = async (req: AuthRequest, res: Response) => {
+    try {
+        const { taskId } = req.params;
+        const profileId = req.user?.id;
+        const { isCompleted, description, durationMinutes } = req.body;
+
+        const existingTask = await prisma.studyTask.findFirst({
+            where: {
+                id: taskId,
+                plan: { profileId }
+            }
+        });
+
+        if (!existingTask) {
+            return res.status(404).json({ error: "Task not found or unauthorized" });
+        }
+
+        const task = await prisma.studyTask.update({
+            where: { id: taskId },
+            data: {
+                isCompleted: isCompleted !== undefined ? isCompleted : undefined,
+                description: description !== undefined ? description : undefined,
+                durationMinutes: durationMinutes !== undefined ? durationMinutes : undefined
+            }
+        });
+
+        res.json(task);
+    } catch (error) {
+        console.error("Update Task Error:", error);
+        res.status(500).json({ error: "Failed to update task" });
+    }
+};

@@ -1,28 +1,54 @@
 import React, { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon, ExternalLink, Loader2 } from 'lucide-react'
-import { format, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns'
+import {
+    ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon,
+    Loader2, CheckSquare, Square, CheckCircle2, Clock, BookOpen, AlertCircle
+} from 'lucide-react'
+import {
+    format, addWeeks, subWeeks, addDays, subDays,
+    startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday
+} from 'date-fns'
 import { fr, enUS } from 'date-fns/locale'
 import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
 import { fetchICalFeed, ICalEvent } from '@/lib/ical-parser'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { studyPlanQueries } from '@/lib/api/queries'
+import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 
 export function CalendarWidget() {
-    const { apiKeys } = useProfileStore()
+    const { apiKeys, activeProfile } = useProfileStore()
     const { icalUrl: storeUrl } = useCalendarStore()
     const { language, t } = useLanguage()
+    const queryClient = useQueryClient()
+
     const [currentDate, setCurrentDate] = useState(new Date())
     const [events, setEvents] = useState<ICalEvent[]>([])
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingEvents, setIsLoadingEvents] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
     const icalUrl = apiKeys.google_calendar || storeUrl;
     const isConnected = !!icalUrl;
-
     const locale = language === 'fr' ? fr : enUS
+
+    // Fetch EduTrack study tasks
+    const { data: studyTasks = [], isLoading: isLoadingTasks, refetch: refetchTasks } = useQuery({
+        queryKey: ['studyTasks', activeProfile?.id],
+        queryFn: () => studyPlanQueries.getTasks(),
+        enabled: !!activeProfile
+    });
+
+    // Mutation to toggle task completion directly from calendar
+    const toggleTaskMutation = useMutation({
+        mutationFn: ({ taskId, isCompleted }: { taskId: string, isCompleted: boolean }) =>
+            studyPlanQueries.updateTask(taskId, { isCompleted }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
+        }
+    });
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -31,9 +57,10 @@ export function CalendarWidget() {
     }, [])
 
     const loadEvents = async () => {
+        refetchTasks();
         if (!icalUrl || !isConnected) return
 
-        setIsLoading(true)
+        setIsLoadingEvents(true)
         setError(null)
         try {
             const fetchedEvents = await fetchICalFeed(icalUrl)
@@ -41,15 +68,12 @@ export function CalendarWidget() {
             setLastSynced(new Date())
         } catch (err: any) {
             console.error('[CalendarWidget] iCal fetch error:', err)
-            // Extract the most informative error message available (parse JSON string if responseType was text)
             let serverMsg = err.response?.data?.error || err.response?.data?.message;
             if (!serverMsg && typeof err.response?.data === 'string') {
                 try {
                     const parsed = JSON.parse(err.response.data);
                     serverMsg = parsed.error || parsed.message;
-                } catch {
-                    // Not JSON, ignore
-                }
+                } catch {}
             }
             const status = err.response?.status;
 
@@ -71,7 +95,7 @@ export function CalendarWidget() {
             }
             setError(friendlyError)
         } finally {
-            setIsLoading(false)
+            setIsLoadingEvents(false)
         }
     }
 
@@ -79,30 +103,12 @@ export function CalendarWidget() {
         if (isConnected) {
             loadEvents()
         } else {
-            setEvents([]); // Clear events if disconnected or switched profile
+            setEvents([]);
         }
-    }, [currentDate, isConnected, icalUrl]) // Re-run if URL changes (profile switch)
-
-    const nextWeek = () => setCurrentDate(addWeeks(currentDate, 1))
-    const prevWeek = () => setCurrentDate(subWeeks(currentDate, 1))
-
-    if (!isConnected) {
-        return (
-            <div className="bg-card border rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-4 h-[300px]">
-                <div className="p-4 bg-muted rounded-full">
-                    <CalendarIcon className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Calendar</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs">Connect your calendar using the button in the header.</p>
-                </div>
-            </div>
-        )
-    }
+    }, [currentDate, isConnected, icalUrl])
 
     const weekStart = startOfWeek(currentDate, { locale })
     const weekEnd = endOfWeek(currentDate, { locale })
-
     const allDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
     const days = isMobile
@@ -113,10 +119,10 @@ export function CalendarWidget() {
         })()
         : allDays
 
-    const weekDays = days.map(d => format(d, 'EEEE', { locale }))
+    const isLoading = isLoadingEvents || isLoadingTasks;
 
     return (
-        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[300px]">
+        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[450px]">
             {/* Header */}
             <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/30">
                 <div className="flex items-center gap-2">
@@ -152,8 +158,23 @@ export function CalendarWidget() {
                 </div>
             </div>
 
+            {/* Notification if Google Calendar is not linked */}
+            {!isConnected && (
+                <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 text-xs flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <CalendarIcon className="h-4 w-4 text-primary shrink-0" />
+                        <span>
+                            {language === 'fr'
+                                ? "Google Agenda non connecté : seules vos tâches EduTrack sont affichées."
+                                : "Google Calendar not connected: only your EduTrack tasks are shown."}
+                        </span>
+                    </div>
+                    <GoogleConnectButton />
+                </div>
+            )}
+
             {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs p-2 text-center flex items-center justify-center gap-2 flex-wrap">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs p-2 text-center flex items-center justify-center gap-2 flex-wrap border-b">
                     <span className="shrink">{error}</span>
                     <button onClick={loadEvents} className="underline font-medium whitespace-nowrap hover:opacity-80">
                         {t('action.retry') || 'Réessayer'}
@@ -161,53 +182,145 @@ export function CalendarWidget() {
                 </div>
             )}
 
-            {/* Week Grid - 3 days on mobile, 7 days on desktop */}
+            {/* Week Grid */}
             <div className="flex-1 p-2 md:p-4 overflow-x-auto">
-                <div className="grid grid-cols-3 md:grid-cols-7 gap-1 md:gap-4 w-full h-full">
-                    {days.map((day, idx) => {
+                <div className="grid grid-cols-3 md:grid-cols-7 gap-1 md:gap-3 w-full h-full min-h-[350px]">
+                    {days.map((day) => {
+                        // 1. External Events
                         const dayEvents = events.filter(e => {
                             if (!e.start) return false
-                            return isSameDay(e.start, day)
-                        }).sort((a, b) => a.start.getTime() - b.start.getTime())
+                            return isSameDay(new Date(e.start), day)
+                        }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+
+                        // 2. Separate VTODO tasks from events in iCal
+                        const iCalTasks = dayEvents.filter(e => e.isTask)
+                        const pureEvents = dayEvents.filter(e => !e.isTask)
+
+                        // 3. EduTrack Study Tasks
+                        const dayStudyTasks = studyTasks.filter((task: any) => {
+                            if (!task.week?.startDate) return false;
+                            const taskDate = addDays(new Date(task.week.startDate), (task.dayNumber || 1) - 1);
+                            return isSameDay(taskDate, day);
+                        });
+
+                        const totalTasksCount = dayStudyTasks.length + iCalTasks.length;
+                        const totalEventsCount = pureEvents.length;
+                        const hasItems = totalTasksCount > 0 || totalEventsCount > 0;
 
                         return (
                             <div
                                 key={day.toISOString()}
                                 className={cn(
-                                    "flex flex-col gap-2 rounded-lg p-2 transition-colors",
-                                    isToday(day) ? "bg-primary/5 border border-primary/20" : "bg-muted/10 border border-transparent"
+                                    "flex flex-col rounded-xl p-2 transition-colors min-h-[160px]",
+                                    isToday(day)
+                                        ? "bg-primary/5 border-2 border-primary/30 shadow-sm"
+                                        : "bg-muted/10 border border-border/50 hover:border-border transition-colors"
                                 )}
                             >
-                                <div className="text-center mb-1 md:mb-2">
-                                    <div className="text-xs font-medium text-muted-foreground uppercase hidden md:block">{format(day, 'EEE', { locale })}</div>
-                                    <div className="text-xs font-medium text-muted-foreground uppercase md:hidden">{format(day, 'EEEEE', { locale })}</div>
+                                {/* Day Header */}
+                                <div className="text-center mb-2 pb-1 border-b border-border/30">
+                                    <div className="text-[11px] font-semibold text-muted-foreground uppercase hidden md:block">
+                                        {format(day, 'EEE', { locale })}
+                                    </div>
+                                    <div className="text-[11px] font-semibold text-muted-foreground uppercase md:hidden">
+                                        {format(day, 'EEEEE', { locale })}
+                                    </div>
                                     <div className={cn(
-                                        "text-lg md:text-lg font-bold w-8 h-8 md:w-8 md:h-8 mx-auto flex items-center justify-center rounded-full mt-1",
-                                        isToday(day) && "bg-primary text-primary-foreground"
+                                        "text-sm md:text-base font-bold w-7 h-7 mx-auto flex items-center justify-center rounded-full mt-0.5",
+                                        isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground"
                                     )}>
                                         {format(day, 'd')}
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-2 flex-1">
-                                    {dayEvents.map(event => (
+                                {/* Items Container */}
+                                <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto max-h-[300px] pr-0.5">
+                                    {/* EduTrack Tasks Section */}
+                                    {dayStudyTasks.map((task: any) => (
                                         <div
-                                            key={event.id}
-                                            className="p-2 rounded bg-card border shadow-sm text-xs space-y-1 hover:border-primary/50 transition-colors cursor-default"
+                                            key={`task-${task.id}`}
+                                            className={cn(
+                                                "p-2 rounded-lg border text-xs space-y-1 transition-all group",
+                                                task.isCompleted
+                                                    ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
+                                                    : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
+                                            )}
+                                        >
+                                            <div className="flex items-start gap-1.5">
+                                                <button
+                                                    onClick={() => toggleTaskMutation.mutate({
+                                                        taskId: task.id,
+                                                        isCompleted: !task.isCompleted
+                                                    })}
+                                                    className="mt-0.5 text-purple-600 dark:text-purple-400 hover:scale-110 transition-transform shrink-0"
+                                                    title={task.isCompleted ? "Marquer non terminée" : "Marquer terminée"}
+                                                >
+                                                    {task.isCompleted ? (
+                                                        <CheckSquare className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                        <Square className="h-3.5 w-3.5" />
+                                                    )}
+                                                </button>
+                                                <div className="font-semibold leading-tight line-clamp-2 select-none">
+                                                    {task.description}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                                                <span className="truncate max-w-[80px] font-medium text-purple-600 dark:text-purple-400">
+                                                    {task.plan?.course?.title || task.type || 'Tâche'}
+                                                </span>
+                                                {task.durationMinutes && (
+                                                    <span className="shrink-0">{task.durationMinutes}m</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* iCal VTODO Tasks */}
+                                    {iCalTasks.map(task => (
+                                        <div
+                                            key={`ical-task-${task.id}`}
+                                            className={cn(
+                                                "p-2 rounded-lg border text-xs space-y-1 transition-all",
+                                                task.isCompleted
+                                                    ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
+                                                    : "bg-card border-blue-500/30 hover:border-blue-500/60 shadow-xs"
+                                            )}
+                                        >
+                                            <div className="flex items-start gap-1.5">
+                                                <div className="mt-0.5 text-blue-600 dark:text-blue-400 shrink-0">
+                                                    {task.isCompleted ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+                                                </div>
+                                                <div className="font-semibold leading-tight line-clamp-2">
+                                                    {task.summary}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Calendar Events */}
+                                    {pureEvents.map(event => (
+                                        <div
+                                            key={`event-${event.id}`}
+                                            className="p-2 rounded-lg bg-card border border-border/80 shadow-xs text-xs space-y-1 hover:border-primary/50 transition-colors cursor-default"
                                             title={event.summary}
                                         >
                                             <div className="font-semibold truncate leading-tight">
                                                 {event.summary}
                                             </div>
                                             <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                                <ClockIcon className="h-3 w-3" />
-                                                {formatEventTime(event, t)}
+                                                <Clock className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                                <span className="truncate">{formatEventTime(event, t)}</span>
                                             </div>
                                         </div>
                                     ))}
-                                    {dayEvents.length === 0 && (
-                                        <div className="flex-1 flex items-center justify-center">
-                                            <span className="text-[10px] text-muted-foreground/30 italic hidden md:block">{t('calendar.noEvents')}</span>
+
+                                    {!hasItems && (
+                                        <div className="flex-1 flex items-center justify-center py-6">
+                                            <span className="text-[10px] text-muted-foreground/40 italic hidden md:block">
+                                                {t('calendar.noEvents') || 'Libre'}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -216,6 +329,7 @@ export function CalendarWidget() {
                     })}
                 </div>
             </div>
+
             {lastSynced && (
                 <div className="p-2 border-t text-[10px] text-center text-muted-foreground bg-muted/10">
                     {t('calendar.synced')}: {format(lastSynced, 'HH:mm')}
@@ -226,24 +340,11 @@ export function CalendarWidget() {
 }
 
 function formatEventTime(event: ICalEvent, t: (key: string) => string) {
-    if (event.allDay) return t('calendar.allDay')
-
-    const startTime = format(event.start, 'HH:mm')
-
-    // Show end time if available
+    if (event.allDay) return t('calendar.allDay') || 'Toute la journée'
+    const startTime = format(new Date(event.start), 'HH:mm')
     if (event.end) {
-        const endTime = format(event.end, 'HH:mm')
+        const endTime = format(new Date(event.end), 'HH:mm')
         return `${startTime} - ${endTime}`
     }
-
     return startTime
-}
-
-function ClockIcon({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-        </svg>
-    )
 }

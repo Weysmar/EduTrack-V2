@@ -6,6 +6,8 @@ export interface ICalEvent {
     end?: Date;
     location?: string;
     allDay: boolean;
+    isTask?: boolean;
+    isCompleted?: boolean;
 }
 
 export class ICalParser {
@@ -29,14 +31,30 @@ export class ICalParser {
                 inEvent = true;
                 currentEvent = {
                     id: Math.random().toString(36).substring(2, 9),
-                    allDay: false
+                    allDay: false,
+                    isTask: false,
+                    isCompleted: false
                 };
                 continue;
             }
 
-            if (line.startsWith('END:VEVENT')) {
+            if (line.startsWith('BEGIN:VTODO')) {
+                inEvent = true;
+                currentEvent = {
+                    id: Math.random().toString(36).substring(2, 9),
+                    allDay: true,
+                    isTask: true,
+                    isCompleted: false
+                };
+                continue;
+            }
+
+            if (line.startsWith('END:VEVENT') || line.startsWith('END:VTODO')) {
                 inEvent = false;
-                if (currentEvent && currentEvent.summary && currentEvent.start) {
+                if (currentEvent && currentEvent.summary) {
+                    if (!currentEvent.start) {
+                        currentEvent.start = currentEvent.end || new Date();
+                    }
                     events.push(currentEvent as ICalEvent);
                 }
                 currentEvent = null;
@@ -59,6 +77,18 @@ export class ICalParser {
                 } else if (nameAndParams === 'DTEND' || nameAndParams.startsWith('DTEND;') || nameAndParams.startsWith('DTEND:')) {
                     const { date } = this.parseDate(line);
                     currentEvent.end = date;
+                } else if (nameAndParams === 'DUE' || nameAndParams.startsWith('DUE;') || nameAndParams.startsWith('DUE:')) {
+                    const { date, allDay } = this.parseDate(line);
+                    if (!currentEvent.start) {
+                        currentEvent.start = date;
+                    }
+                    currentEvent.end = date;
+                    currentEvent.allDay = allDay;
+                } else if (nameAndParams === 'STATUS' || nameAndParams.startsWith('STATUS;')) {
+                    const statusVal = value.trim().toUpperCase();
+                    if (statusVal === 'COMPLETED') {
+                        currentEvent.isCompleted = true;
+                    }
                 } else if (nameAndParams === 'DESCRIPTION' || nameAndParams.startsWith('DESCRIPTION;')) {
                     currentEvent.description = this.unescapeText(value);
                 } else if (nameAndParams === 'LOCATION' || nameAndParams.startsWith('LOCATION;')) {

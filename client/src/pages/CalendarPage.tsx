@@ -13,27 +13,6 @@ export function CalendarPage() {
 
     const isConnected = !!(apiKeys.google_calendar || storeConnected || storeUrl)
 
-    if (!isConnected) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full space-y-6 p-8">
-                <div className="bg-muted rounded-full p-8">
-                    <Calendar className="h-16 w-16 text-muted-foreground" />
-                </div>
-                <div className="text-center max-w-md space-y-2">
-                    <h1 className="text-2xl font-bold">
-                        {language === 'fr' ? 'Connecter Google Agenda' : 'Connect your Calendar'}
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        {language === 'fr'
-                            ? 'Intégrez votre Google Agenda via le flux secret iCal pour visualiser votre planning aux côtés de vos cours et révisions.'
-                            : 'Integrate your Google Calendar (iCal) to view your schedule alongside your learning materials.'}
-                    </p>
-                </div>
-                <GoogleConnectButton />
-            </div>
-        )
-    }
-
     return (
         <div className="h-full flex flex-col space-y-6">
             <header className="flex items-center justify-between">
