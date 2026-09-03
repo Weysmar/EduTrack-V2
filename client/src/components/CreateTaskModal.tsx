@@ -97,7 +97,8 @@ export function CreateTaskModal({
 
     if (!isOpen) return null
 
-    const selectedCourse = courses.find((c: any) => c.id === courseId)
+    const coursesList: any[] = Array.isArray(courses) ? courses : ((courses as any)?.courses || [])
+    const selectedCourse = coursesList.find((c: any) => c.id === courseId)
     const activeType = TASK_TYPES.find(t => t.id === type) || TASK_TYPES[4]
 
     return createPortal(
@@ -193,7 +194,7 @@ export function CreateTaskModal({
                             className="w-full text-sm px-3.5 py-2.5 rounded-xl bg-muted/40 border border-input focus:outline-none focus:ring-2 focus:ring-primary font-medium transition-all"
                         >
                             <option value="">{language === 'fr' ? '— Aucun cours (Général) —' : '— No course (General) —'}</option>
-                            {courses.map((c: any) => (
+                            {coursesList.map((c: any) => (
                                 <option key={c.id} value={c.id}>
                                     {c.icon ? `${c.icon} ` : '📚 '}{c.title}
                                 </option>

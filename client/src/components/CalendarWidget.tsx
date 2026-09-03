@@ -53,11 +53,12 @@ export function CalendarWidget() {
     const locale = language === 'fr' ? fr : enUS
 
     // Fetch user courses
-    const { data: courses = [] } = useQuery({
+    const { data: coursesData } = useQuery({
         queryKey: ['courses', activeProfile?.id],
-        queryFn: () => courseQueries.getAll(),
+        queryFn: () => courseQueries.getAll(1, 1000),
         enabled: !!activeProfile
     });
+    const courses = coursesData?.courses || [];
 
     // Fetch EduTrack study tasks
     const { data: studyTasks = [], isLoading: isLoadingTasks, refetch: refetchTasks } = useQuery({
