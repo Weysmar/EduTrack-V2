@@ -6,10 +6,13 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini models - Strictly 3.7 and 3.8 variants (all routed to the official Google API endpoint)
+        // Google Gemini models (officiels Google)
         'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+
+        // Redirections de compatibilité pour anciens réglages sauvegardés
+        'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-pro': 'gemini-3.7-flash',
         'gemini-3.8-flash': 'gemini-3.7-flash',
         'gemini-3.8-pro': 'gemini-3.7-flash',

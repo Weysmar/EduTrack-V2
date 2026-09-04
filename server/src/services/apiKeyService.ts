@@ -13,10 +13,13 @@ export interface ApiKeyConfig {
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini models - Strictly 3.7 and 3.8 variants mapped to stable working model
+        // Google Gemini models (officiers Google)
         'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+        
+        // Redirections de compatibilité pour anciens réglages sauvegardés
+        'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-pro': 'gemini-3.7-flash',
         'gemini-3.8-flash': 'gemini-3.7-flash',
         'gemini-3.8-pro': 'gemini-3.7-flash',
