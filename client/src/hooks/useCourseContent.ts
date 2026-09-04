@@ -61,15 +61,21 @@ export function useCourseContent(courseId: string, itemPage = 1, itemLimit = 20)
         ...(mindMaps?.map((m: any) => ({ ...m, type: 'mindmap', title: m.name })) || []),
         ...(flashcardSets?.map((f: any) => ({ ...f, type: 'flashcards', title: f.name })) || []),
         ...(quizzes?.map((q: any) => ({ ...q, type: 'quiz', title: q.name })) || []),
-        ...(summaries?.map((s: any) => ({
-            ...s,
-            id: s.id,           // summary's own id (used for deletion)
-            itemId: s.itemId,   // source document id (used for navigation by CourseListItem/CourseGridItem)
-            type: 'summary',
-            title: items?.find((i: any) => i.id === s.itemId)?.title
-                ? `Résumé: ${items.find((i: any) => i.id === s.itemId)?.title}`
-                : 'Résumé (Sans titre)'
-        })) || [])
+        ...(summaries?.map((s: any) => {
+            const sourceDoc = items?.find((i: any) => i.id === s.itemId);
+            const displayTitle = sourceDoc?.title
+                ? `Résumé: ${sourceDoc.title}`
+                : (s.itemType === 'course' ? 'Résumé du cours' : (s.title || 'Résumé'));
+            return {
+                ...s,
+                id: s.generatedItemId || s.id,
+                summaryId: s.id,
+                itemId: s.itemId,
+                generatedItemId: s.generatedItemId,
+                type: 'summary',
+                title: displayTitle
+            };
+        }) || [])
     ], [items, mindMaps, flashcardSets, quizzes, summaries]);
 
     const queryClient = useQueryClient()

@@ -48,9 +48,62 @@ export const getItems = async (req: AuthRequest, res: Response) => {
 // GET /api/items/:id
 export const getItem = async (req: AuthRequest, res: Response) => {
     try {
-        const item = await prisma.item.findFirst({
+        let item = await prisma.item.findFirst({
             where: { id: req.params.id, profileId: req.user!.id }
         });
+
+        // Fallback: If not found directly, check if the ID corresponds to a Summary or Course summary
+        if (!item) {
+            const summary = await prisma.summary.findFirst({
+                where: {
+                    profileId: req.user!.id,
+                    OR: [
+                        { id: req.params.id },
+                        { generatedItemId: req.params.id },
+                        { itemId: req.params.id }
+                    ]
+                }
+            });
+
+            if (summary) {
+                // If summary has a generatedItemId, try finding it
+                if (summary.generatedItemId) {
+                    item = await prisma.item.findFirst({
+                        where: { id: summary.generatedItemId, profileId: req.user!.id }
+                    });
+                }
+
+                // If still no item, recreate the standalone summary item
+                if (!item) {
+                    let courseTitle = "Cours";
+                    if (summary.courseId) {
+                        const course = await prisma.course.findUnique({
+                            where: { id: summary.courseId },
+                            select: { title: true }
+                        });
+                        if (course?.title) courseTitle = course.title;
+                    }
+
+                    item = await prisma.item.create({
+                        data: {
+                            id: summary.generatedItemId || undefined,
+                            profileId: req.user!.id,
+                            courseId: summary.courseId || "",
+                            type: 'summary',
+                            title: `Résumé : ${courseTitle}`,
+                            content: summary.content,
+                            status: 'generated'
+                        }
+                    });
+
+                    // Update summary with generatedItemId
+                    await prisma.summary.update({
+                        where: { id: summary.id },
+                        data: { generatedItemId: item.id }
+                    });
+                }
+            }
+        }
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
 

@@ -16,7 +16,11 @@ export const getSummary = async (req: AuthRequest, res: Response) => {
         const summary = await prisma.summary.findFirst({
             where: {
                 profileId: userId, // Use userId
-                itemId: String(itemId)
+                OR: [
+                    { itemId: String(itemId) },
+                    { generatedItemId: String(itemId) },
+                    { id: String(itemId) }
+                ]
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -58,7 +62,16 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
                 where: { id: itemId },
                 select: { title: true, fileName: true }
             });
-            if (sourceItem) sourceTitle = sourceItem.title || sourceItem.fileName || "Document";
+            if (sourceItem) {
+                sourceTitle = sourceItem.title || sourceItem.fileName || "Document";
+            } else if (itemType === 'course' || (courseId && itemId === courseId)) {
+                const targetCourseId = courseId || itemId;
+                const course = await prisma.course.findUnique({
+                    where: { id: targetCourseId },
+                    select: { title: true }
+                });
+                if (course?.title) sourceTitle = course.title;
+            }
         }
 
         const summaryTitle = `Résumé : ${sourceTitle}`;

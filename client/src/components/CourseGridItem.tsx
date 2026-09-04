@@ -44,8 +44,9 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                     navigate(`/edu/flashcards/study/${item.id}`);
                 } else if (item.type === 'mindmap') {
                     navigate('/edu/mindmaps');
-                } else if (item.type === 'summary' && item.itemId) {
-                    navigate(`/edu/course/${courseId}/item/${item.itemId}`);
+                } else if (item.type === 'summary') {
+                    const targetId = (item.itemId && item.itemId !== courseId) ? item.itemId : (item.generatedItemId || item.id);
+                    navigate(`/edu/course/${courseId}/item/${targetId}`);
                 } else {
                     navigate(`/edu/course/${courseId}/item/${item.id}`)
                 }

@@ -13,7 +13,9 @@ import { useAuthStore } from '@/store/authStore'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { useSummary } from '@/hooks/useSummary'
 import { DEFAULT_SUMMARY_OPTIONS, SummaryOptions } from '@/lib/summary/types'
-import { courseQueries, studyPlanQueries } from '@/lib/api/queries'
+import { courseQueries, studyPlanQueries, itemQueries } from '@/lib/api/queries'
+import { API_URL } from '@/config'
+import { extractText } from '@/lib/extractText'
 
 // New Hooks & Components
 import { useCourseContent } from '@/hooks/useCourseContent'
@@ -162,6 +164,8 @@ export function CourseView() {
         }
     }
 
+    const token = useAuthStore(state => state.token)
+
     const getAggregatedContent = async (itemIds?: string[]) => {
         if (!activeCourseItems || activeCourseItems.length === 0) return ''
         const itemsToProcess = itemIds ? activeCourseItems.filter(i => itemIds.includes(i.id)) : activeCourseItems
@@ -170,6 +174,31 @@ export function CourseView() {
             let itemText = i.content || i.extractedContent || ''
             const relatedSummary = activeCourseItems.find(s => s.type === 'summary' && s.itemId === i.id)
             if (!itemText && relatedSummary?.content) itemText = relatedSummary.content
+
+            // If resource has no extracted text yet, extract it on the fly
+            if (!itemText && i.type === 'resource') {
+                const fileUrl = i.storageKey 
+                    ? `${API_URL}/storage/proxy/${i.storageKey}?token=${token}`
+                    : i.fileUrl;
+                if (fileUrl) {
+                    try {
+                        const res = await fetch(fileUrl);
+                        if (res.ok) {
+                            const blob = await res.blob();
+                            const fileName = i.fileName || (i.storageKey ? i.storageKey.split('-').slice(1).join('-') : 'document.pdf');
+                            const file = new File([blob], fileName, { type: blob.type || i.fileType || 'application/octet-stream' });
+                            const result = await extractText(file);
+                            if (result.text && result.text.trim()) {
+                                itemText = result.text.trim();
+                                itemQueries.update(i.id, { extractedContent: itemText }).catch(err => console.warn('Failed to cache extracted text', err));
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Extraction error for item ${i.id}:`, err);
+                    }
+                }
+            }
+
             if (itemText) content.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
         }
         return content.join(' ')
@@ -177,6 +206,12 @@ export function CourseView() {
 
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
         const content = aggregatedContent || await getAggregatedContent()
+        if (!content || content.trim().length === 0) {
+            toast.error("Aucun contenu à résumer", {
+                description: "Les documents sélectionnés ne contiennent aucun texte exploitable."
+            })
+            return
+        }
         setShowSummary(true)
         generateSummary(options, content)
     }

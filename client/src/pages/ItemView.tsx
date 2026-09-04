@@ -54,6 +54,13 @@ export function ItemView() {
         enabled: !!courseId
     })
 
+    // Safety redirect: If itemId accidentally equals courseId, redirect to course
+    useEffect(() => {
+        if (courseId && itemId && courseId === itemId) {
+            navigate(`/edu/course/${courseId}`, { replace: true });
+        }
+    }, [courseId, itemId, navigate]);
+
     // Derived States
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
