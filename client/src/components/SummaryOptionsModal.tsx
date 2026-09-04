@@ -132,7 +132,9 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                                         onChange={(e) => setOptions({ ...options, model: e.target.value })}
                                         className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background"
                                     >
-                                        <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Stable & Haute performance)</option>
+                                        <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Raisonnement approfondi)</option>
+                                        <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (Haute vitesse & Disponibilité)</option>
+                                        <option value="gemini-2.5-flash">⚡ Gemini 2.5 Flash (Secours éprouvé)</option>
                                     </select>
                                 </div>
                             )}

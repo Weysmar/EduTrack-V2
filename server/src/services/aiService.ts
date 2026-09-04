@@ -6,16 +6,22 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini models - all routed to the verified stable GA model
+        // Google Gemini models
         'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.8-flash': 'gemini-3.7-flash',
-        'gemini-3.8': 'gemini-3.7-flash',
         'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
-        'gemini-3.1-pro': 'gemini-3.7-flash',
-        'gemini-3.1-pro-preview': 'gemini-3.7-flash',
-        'gemini-3.8-pro': 'gemini-3.7-flash',
-        'gemini-3.7-pro': 'gemini-3.7-flash',
+        'gemini-3.7-pro': 'gemini-3.7-pro',
+        'gemini-3.6-flash': 'gemini-3.6-flash',
+        'gemini-3.6': 'gemini-3.6-flash',
+        'gemini-3.5-flash': 'gemini-3.5-flash',
+        'gemini-3.5-flash-lite': 'gemini-3.5-flash-lite',
+        'gemini-3.1-pro': 'gemini-3.1-pro',
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+        'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',
+        'gemini-2.5-pro': 'gemini-2.5-pro',
+        'gemini-3.8-flash': 'gemini-3.7-flash',
+        'gemini-3.8-pro': 'gemini-3.7-pro',
+        'gemini-3.8': 'gemini-3.7-flash',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
@@ -31,7 +37,7 @@ const mapModelName = (model: string): string => {
 };
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.8-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
         if (provider === 'perplexity') {
@@ -86,8 +92,8 @@ export const aiService = {
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models: prioritize requested model, then stable 3.7-flash
-            const candidateModels = [apiModel, 'gemini-3.7-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
+            // Cascading candidate models: prioritize requested model, then 3.6-flash, then 2.5-flash
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -104,7 +110,7 @@ export const aiService = {
                     timeout: 90000 // 90 seconds timeout for comprehensive summaries
                 });
 
-                const MAX_ATTEMPTS = 3;
+                const MAX_ATTEMPTS = 2;
                 for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                     try {
                         const result = await modelInstance.generateContent(fullPrompt);
@@ -119,7 +125,7 @@ export const aiService = {
                         const isOverloaded = msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded');
 
                         if (isOverloaded && attempt < MAX_ATTEMPTS) {
-                            const delayMs = attempt * 2000;
+                            const delayMs = attempt * 1500;
                             console.warn(`[AI Service] Model ${tryModel} overloaded (503). Retrying in ${delayMs}ms (attempt ${attempt}/${MAX_ATTEMPTS})...`);
                             await new Promise(res => setTimeout(res, delayMs));
                             continue;
@@ -148,7 +154,7 @@ export const aiService = {
             console.error('AI Generation Error Service:', error);
             let message = error.message || 'Failed to generate content from AI';
             if (message.includes('aborted') || message.includes('Abort') || message.includes('timeout') || message.includes('TIMEDOUT')) {
-                message = `Le modèle IA a mis trop de temps à répondre (délai dépassé). Veuillez réessayer avec Gemini 3.7 Flash ou réduire la sélection.`;
+                message = `Le modèle IA a mis trop de temps à répondre (délai dépassé). Veuillez réessayer ou réduire la sélection.`;
             }
             if (message.includes('404') && message.includes('find')) {
                 message = `Modèle IA introuvable ou indisponible (${model}). Vérifiez votre clé API ou changez de modèle.`;
@@ -157,7 +163,7 @@ export const aiService = {
                 message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
-                message = `Modèle IA temporairement surchargé chez Google. Veuillez réessayer avec Gemini 3.7 Flash.`;
+                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.6 Flash / Perplexity.`;
             }
             if (message.includes('429') || message.includes('Quota')) {
                 message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de modèle.`;
@@ -184,7 +190,7 @@ export const aiService = {
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-3.7-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
@@ -267,6 +273,9 @@ export const aiService = {
                 message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
+            if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
+                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.6 Flash / Perplexity.`;
+            }
             if (message.includes('429') || message.includes('Quota')) message = `Quota d'IA dépassé. Veuillez patienter une minute.`;
 
             throw new Error(`AI JSON Error: ${message}`);

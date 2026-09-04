@@ -288,7 +288,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     🤖 Perplexity Pro (Sonar)
                                                 </button>
                                                 <button
-                                                    onClick={() => { setProvider('google'); setModel('gemini-2.5-flash') }}
+                                                    onClick={() => { setProvider('google'); setModel('gemini-3.7-flash') }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
                                                         provider === 'google'
@@ -328,7 +328,9 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     onChange={(e) => setModel(e.target.value)}
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
-                                                    <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Stable & Haute performance)</option>
+                                                    <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Raisonnement approfondi)</option>
+                                                    <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (Haute vitesse & Disponibilité)</option>
+                                                    <option value="gemini-2.5-flash">⚡ Gemini 2.5 Flash (Secours éprouvé)</option>
                                                 </select>
                                             </div>
                                         )}
