@@ -273,6 +273,12 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                 <span>Vous êtes hors ligne. La génération nécessite une connexion internet.</span>
                                             </div>
                                         )}
+                                        {(!sourceContent || !sourceContent.trim()) && (
+                                            <div className="bg-orange-500/10 text-orange-600 dark:text-orange-400 p-3 rounded-md mb-2 flex items-start gap-2 text-sm">
+                                                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                                <span>Aucun contenu textuel détecté. La génération risque d'échouer. Assurez-vous que le fichier contient du texte (PDF, DOCX, TXT, SQL…).</span>
+                                            </div>
+                                        )}
                                         <div>
                                             <label className="block text-sm font-medium mb-2">Moteur IA</label>
                                             <div className="grid grid-cols-2 gap-2">
