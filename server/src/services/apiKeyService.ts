@@ -32,7 +32,7 @@ const mapModelName = (model: string): string => {
         'llama-3.1-sonar-large-128k-online': 'sonar-pro',
         'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
     };
-    return modelMap[model] || model || 'gemini-3.8-flash';
+    return modelMap[model] || model || 'gemini-3.7-flash';
 };
 
 // Detect provider from model name
