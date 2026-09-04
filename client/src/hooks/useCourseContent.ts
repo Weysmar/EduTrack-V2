@@ -63,6 +63,8 @@ export function useCourseContent(courseId: string, itemPage = 1, itemLimit = 20)
         ...(quizzes?.map((q: any) => ({ ...q, type: 'quiz', title: q.name })) || []),
         ...(summaries?.map((s: any) => ({
             ...s,
+            id: s.id,           // summary's own id (used for deletion)
+            itemId: s.itemId,   // source document id (used for navigation by CourseListItem/CourseGridItem)
             type: 'summary',
             title: items?.find((i: any) => i.id === s.itemId)?.title
                 ? `Résumé: ${items.find((i: any) => i.id === s.itemId)?.title}`

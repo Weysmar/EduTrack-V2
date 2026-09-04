@@ -269,7 +269,21 @@ export function ItemView() {
         )
     }
 
-    if (!item) return <div className="p-8">Item not found...</div>
+    if (!item) return (
+        <div className="flex flex-col items-center justify-center h-full p-8 gap-4 text-center">
+            <div className="text-5xl">🔍</div>
+            <h2 className="text-xl font-semibold">Document introuvable</h2>
+            <p className="text-muted-foreground text-sm max-w-sm">
+                Ce document n'existe pas ou a été supprimé. Vous allez être redirigé vers le cours.
+            </p>
+            <button
+                onClick={() => navigate(`/edu/course/${courseId}`)}
+                className="mt-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-all"
+            >
+                Retour au cours
+            </button>
+        </div>
+    )
 
     // ... Handlers ...
     const handleDownload = async () => {
