@@ -19,7 +19,7 @@ export interface ExtractionResult {
         pages?: number;
         timeMs: number;
         warnings?: string[];
-        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image';
+        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text';
     };
 }
 
@@ -80,6 +80,20 @@ export async function extractText(file: File): Promise<ExtractionResult> {
             return {
                 ...result,
                 stats: { ...result.stats, timeMs: Date.now() - startTime }
+            };
+        } else if (
+            fileType.startsWith('text/') ||
+            /\.(txt|sql|md|csv|json|py|js|ts|tsx|jsx|html|css|yaml|yml|log|sh|bat|ini|xml)$/i.test(fileName)
+        ) {
+            console.log('Detected plain text / code / SQL document');
+            const text = await file.text();
+            return {
+                text,
+                stats: {
+                    words: countWords(text),
+                    timeMs: Date.now() - startTime,
+                    method: 'text'
+                }
             };
         }
     } catch (e) {
