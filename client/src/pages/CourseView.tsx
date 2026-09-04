@@ -28,7 +28,7 @@ export function CourseView() {
     const navigate = useNavigate()
     const id = courseId || ''
     const queryClient = useQueryClient()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
 
     // --- Pagination State ---
     const [itemPage, setItemPage] = useState(1)
