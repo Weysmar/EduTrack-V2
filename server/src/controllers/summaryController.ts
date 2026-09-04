@@ -47,6 +47,9 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
 
         // 2. Resolve or Create the Standalone Item
         let generatedItemId = existingSummary?.generatedItemId;
+        if (generatedItemId === itemId) {
+            generatedItemId = undefined;
+        }
 
         // Fetch source item title for naming
         let sourceTitle = "Document";
@@ -91,11 +94,6 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
         }
 
         // 3. Upsert Summary Record with link to Item
-        // Delete existing to handle upsert cleanly or just update
-        // Logic from before was deleteMany, but we want to preserve ID if possible? 
-        // Actually the previous logic was deleteMany then create. Let's stick to that but keeping the link maybe?
-        // No, let's use upsert or just deleteMany as before but pass generatedItemId.
-
         await prisma.summary.deleteMany({
             where: {
                 profileId,
@@ -149,7 +147,6 @@ export const getSummaries = async (req: AuthRequest, res: Response) => {
         console.error("Get Summaries Error:", error);
         res.status(500).json({ error: "Failed to fetch summaries" });
     }
-
 };
 
 export const deleteSummary = async (req: AuthRequest, res: Response) => {
@@ -159,22 +156,43 @@ export const deleteSummary = async (req: AuthRequest, res: Response) => {
 
         if (!profileId) return res.status(401).json({ error: "Unauthorized" });
 
-        const summary = await prisma.summary.findUnique({
+        // Lookup summary by primary key id, or fallback to itemId / generatedItemId
+        let summary = await prisma.summary.findUnique({
             where: { id }
         });
+
+        if (!summary) {
+            summary = await prisma.summary.findFirst({
+                where: {
+                    profileId,
+                    OR: [
+                        { itemId: id },
+                        { generatedItemId: id }
+                    ]
+                }
+            });
+        }
 
         if (!summary) return res.status(404).json({ error: "Summary not found" });
         if (summary.profileId !== profileId) return res.status(403).json({ error: "Forbidden" });
 
-        // Optionally delete the generated item linked to this summary
-        if (summary.generatedItemId) {
+        // CRITICAL SAFETY CHECK: NEVER delete the source item (summary.itemId)!
+        // Only delete the standalone item if generatedItemId is defined and DIFFERENT from itemId
+        if (summary.generatedItemId && summary.generatedItemId !== summary.itemId && summary.generatedItemId !== id) {
             await prisma.item.delete({
                 where: { id: summary.generatedItemId }
-            }).catch(e => console.error("Failed to delete generated item linked to summary", e));
+            }).catch(e => console.warn("Generated item already deleted or missing", e));
+        }
+
+        // If the 'id' parameter was the standalone item itself, delete it
+        if (id === summary.generatedItemId) {
+            await prisma.item.delete({
+                where: { id }
+            }).catch(e => console.warn("Generated item already deleted", e));
         }
 
         await prisma.summary.delete({
-            where: { id }
+            where: { id: summary.id }
         });
 
         res.json({ message: "Summary deleted successfully" });

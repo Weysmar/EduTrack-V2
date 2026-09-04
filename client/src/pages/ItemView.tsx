@@ -328,22 +328,42 @@ export function ItemView() {
 
 
 
+    const handleDeleteSummary = async () => {
+        if (confirm("Voulez-vous vraiment supprimer ce résumé ?\n(Le document original sera conservé intact)")) {
+            await remove();
+            setShowSummary(false);
+        }
+    };
+
     const handleDelete = async () => {
+        // If user is currently viewing the summary, ask if they want to delete only the summary
+        if (showSummary) {
+            const confirmChoice = confirm(
+                "Vous consultez actuellement le résumé du document.\n\n" +
+                "• Cliquez sur [OK] pour supprimer UNIQUEMENT le résumé (le document original sera conservé).\n" +
+                "• Cliquez sur [Annuler] pour fermer sans supprimer le document."
+            );
+            if (confirmChoice) {
+                await handleDeleteSummary();
+            }
+            return;
+        }
+
         if (confirm(t('item.delete.confirm'))) {
-            setIsDeleting(true)
+            setIsDeleting(true);
             if (item && item.id) {
                 try {
-                    await itemQueries.delete(item.id)
+                    await itemQueries.delete(item.id);
                     // Prefetch/Wait slightly to ensure backend consistency if needed, but navigate should handle it
-                    navigate(`/edu/course/${courseId}`)
+                    navigate(`/edu/course/${courseId}`);
                 } catch (error) {
-                    console.error("Deletion failed", error)
-                    setIsDeleting(false)
-                    alert("Erreur lors de la suppression")
+                    console.error("Deletion failed", error);
+                    setIsDeleting(false);
+                    alert("Erreur lors de la suppression");
                 }
             }
         }
-    }
+    };
 
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
         try {
@@ -929,6 +949,15 @@ export function ItemView() {
                                                 >
                                                     <FileText className="h-4 w-4" />
                                                     <span>Voir le contenu</span>
+                                                </button>
+                                                <div className="w-px h-6 bg-border mx-1" />
+                                                <button
+                                                    onClick={handleDeleteSummary}
+                                                    className="text-xs hover:bg-destructive/10 text-destructive border border-transparent hover:border-destructive/20 px-3 py-1.5 rounded-md transition-all flex items-center gap-2"
+                                                    title="Supprimer uniquement ce résumé (le document reste intact)"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    <span className="hidden sm:inline">Supprimer le résumé</span>
                                                 </button>
                                             </div>
                                         </div>

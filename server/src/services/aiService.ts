@@ -6,33 +6,23 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Map friendly model names to their actual API versions
 const mapModelName = (model: string): string => {
     const modelMap: Record<string, string> = {
-        // Google Gemini models
+        // Google Gemini models - Strictly 3.7 and 3.8 variants only
         'gemini-3.7-flash': 'gemini-3.7-flash',
         'gemini-3.7': 'gemini-3.7-flash',
         'gemini-3.7-thinking': 'gemini-3.7-flash',
         'gemini-3.7-pro': 'gemini-3.7-pro',
-        'gemini-3.6-flash': 'gemini-3.6-flash',
-        'gemini-3.6': 'gemini-3.6-flash',
-        'gemini-3.5-flash': 'gemini-3.5-flash',
-        'gemini-3.5-flash-lite': 'gemini-3.5-flash-lite',
-        'gemini-3.1-pro': 'gemini-3.1-pro',
-        'gemini-2.5-flash': 'gemini-2.5-flash',
-        'gemini-2.5-flash-lite': 'gemini-2.5-flash-lite',
-        'gemini-2.5-pro': 'gemini-2.5-pro',
         'gemini-3.8-flash': 'gemini-3.7-flash',
         'gemini-3.8-pro': 'gemini-3.7-pro',
         'gemini-3.8': 'gemini-3.7-flash',
 
         // Perplexity mappings
         'sonar-pro': 'sonar-pro',
-        'sonar': 'sonar',
-        'sonar-reasoning': 'sonar-reasoning',
         'sonar-reasoning-pro': 'sonar-reasoning-pro',
+        'sonar-reasoning': 'sonar-reasoning',
         'sonar-deep-research': 'sonar-deep-research',
-        'llama-3.1-sonar-small-128k-online': 'sonar',
-        'llama-3.1-sonar-large-128k-online': 'sonar-pro',
-        'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
+        'sonar': 'sonar'
     };
+
     return modelMap[model] || model || 'gemini-3.7-flash';
 };
 
@@ -92,8 +82,8 @@ export const aiService = {
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models: prioritize requested model, then 3.6-flash, then 2.5-flash
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+            // Cascading candidate models: strictly 3.7 and 3.8 variants
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
             let response;
             let lastErr: any;
 
@@ -163,7 +153,7 @@ export const aiService = {
                 message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
-                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.6 Flash / Perplexity.`;
+                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.7 Pro / Perplexity.`;
             }
             if (message.includes('429') || message.includes('Quota')) {
                 message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de modèle.`;
@@ -190,7 +180,7 @@ export const aiService = {
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-3.7-pro'].filter((m, i, arr) => arr.indexOf(m) === i);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
@@ -274,7 +264,7 @@ export const aiService = {
             }
             if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
-                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.6 Flash / Perplexity.`;
+                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou basculer sur Gemini 3.7 Pro / Perplexity.`;
             }
             if (message.includes('429') || message.includes('Quota')) message = `Quota d'IA dépassé. Veuillez patienter une minute.`;
 

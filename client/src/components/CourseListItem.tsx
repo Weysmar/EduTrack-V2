@@ -58,7 +58,19 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
 
     return (
         <div
-            onClick={() => navigate(`/edu/course/${courseId}/item/${item.id}`)}
+            onClick={() => {
+                if (item.type === 'quiz') {
+                    navigate(`/edu/quiz/study/${item.id}`);
+                } else if (item.type === 'flashcards') {
+                    navigate(`/edu/flashcards/study/${item.id}`);
+                } else if (item.type === 'mindmap') {
+                    navigate('/edu/mindmaps');
+                } else if (item.type === 'summary' && item.itemId) {
+                    navigate(`/edu/course/${courseId}/item/${item.itemId}`);
+                } else {
+                    navigate(`/edu/course/${courseId}/item/${item.id}`);
+                }
+            }}
             className={cn(
                 "group flex items-center justify-between p-4 bg-card border rounded-xl hover:shadow-lg transition-all cursor-pointer",
                 isSelected ? "ring-2 ring-primary border-primary bg-primary/5 shadow-md" : "border-border shadow-sm"

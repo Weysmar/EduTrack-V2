@@ -329,8 +329,10 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                     className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
                                                 >
                                                     <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Raisonnement approfondi)</option>
-                                                    <option value="gemini-3.6-flash">⚡ Gemini 3.6 Flash (Haute vitesse & Disponibilité)</option>
-                                                    <option value="gemini-2.5-flash">⚡ Gemini 2.5 Flash (Secours éprouvé)</option>
+                                                    <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Thinking (Raisonnement étape par étape)</option>
+                                                    <option value="gemini-3.7-pro">🎯 Gemini 3.7 Pro (Haute précision académique)</option>
+                                                    <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash (Nouvelle génération)</option>
+                                                    <option value="gemini-3.8-pro">🏛️ Gemini 3.8 Pro (Puissance maximale)</option>
                                                 </select>
                                             </div>
                                         )}

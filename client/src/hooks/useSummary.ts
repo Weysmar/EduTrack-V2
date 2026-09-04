@@ -62,8 +62,8 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
                 createdAt: Date.now()
             };
 
-            await saveSummary(result);
-            setSummary(result);
+            const saved = await saveSummary(result);
+            setSummary(saved || result);
 
         } catch (e: any) {
             console.error("AI Error", e)
@@ -82,41 +82,40 @@ export function useSummary(itemId: string | number, itemType: SummaryType, initi
                 courseId: result.courseId || courseId || null
             };
 
-            console.log('🔍 DEBUG: About to save summary with result:', dataToSave);
-            console.log('🔍 DEBUG: courseId in payload:', dataToSave.courseId);
-            console.log('🔍 DEBUG: courseId hook param:', courseId);
-
-            await summaryQueries.save(dataToSave);
+            const savedRecord = await summaryQueries.save(dataToSave);
 
             // Invalidate queries to refresh lists
             queryClient.invalidateQueries({ queryKey: ['summaries'] });
             if (courseId) {
                 queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
             }
-            toast.success("Résumé sauvegardé avec succès")
+            toast.success("Résumé sauvegardé avec succès");
+            return savedRecord;
         } catch (dbErr) {
             console.error("Failed to save summary", dbErr)
             toast.error("Erreur lors de la sauvegarde du résumé")
+            return null;
         }
     }
 
-    const remove = useCallback(async () => {
-        if (!summary?.id) return;
-        if (!confirm("Voulez-vous vraiment supprimer ce résumé ?")) return;
+    const remove = useCallback(async (customId?: string) => {
+        const targetId = customId || summary?.id || (itemId ? String(itemId) : undefined);
+        if (!targetId) return;
 
         try {
-            await summaryQueries.delete(summary.id);
+            await summaryQueries.delete(targetId);
             setSummary(null);
             toast.success("Résumé supprimé");
             queryClient.invalidateQueries({ queryKey: ['summaries'] });
             if (courseId) {
                 queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
             }
+            queryClient.invalidateQueries({ queryKey: ['items'] });
         } catch (e) {
             console.error("Failed to delete summary", e);
             toast.error("Erreur lors de la suppression du résumé");
         }
-    }, [summary, courseId, queryClient]);
+    }, [summary, itemId, courseId, queryClient]);
 
     return {
         summary,

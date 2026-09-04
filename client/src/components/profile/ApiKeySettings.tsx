@@ -215,6 +215,8 @@ export function ApiKeySettings() {
                                 {keys.finance_audit_provider === 'google' ? (
                                     <>
                                         <option value="gemini-3.7-flash">Gemini 3.7 Flash (Recommandé - Stable & Performant)</option>
+                                        <option value="gemini-3.7-pro">Gemini 3.7 Pro (Haute précision)</option>
+                                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (Nouvelle génération)</option>
                                     </>
                                 ) : (
                                     <>

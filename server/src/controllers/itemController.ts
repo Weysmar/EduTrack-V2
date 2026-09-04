@@ -208,10 +208,40 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
             await storageService.deleteFile(item.storageKey);
         }
 
-        // Cascade delete: Remove any Summary linked to this item as generatedItemId
-        await prisma.summary.deleteMany({
-            where: { generatedItemId: item.id }
+        // Cascade delete summaries linked to this item (both as source itemId and as generatedItemId)
+        const linkedSummaries = await prisma.summary.findMany({
+            where: {
+                OR: [
+                    { itemId: item.id },
+                    { generatedItemId: item.id }
+                ]
+            }
         });
+
+        // Also delete any standalone items that were generated for these summaries
+        const generatedItemIdsToDelete = linkedSummaries
+            .map(s => s.generatedItemId)
+            .filter((gid): gid is string => !!gid && gid !== item.id);
+
+        if (generatedItemIdsToDelete.length > 0) {
+            await prisma.item.deleteMany({
+                where: { id: { in: generatedItemIdsToDelete } }
+            }).catch(e => console.warn("Failed to delete generated items linked to summary", e));
+        }
+
+        await prisma.summary.deleteMany({
+            where: {
+                OR: [
+                    { itemId: item.id },
+                    { generatedItemId: item.id }
+                ]
+            }
+        });
+
+        // Also clean up FlashcardSets linked to this item
+        await prisma.flashcardSet.deleteMany({
+            where: { itemId: item.id }
+        }).catch(() => {});
 
         await prisma.item.delete({ where: { id: item.id } });
 
