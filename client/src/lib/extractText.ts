@@ -19,7 +19,7 @@ export interface ExtractionResult {
         pages?: number;
         timeMs: number;
         warnings?: string[];
-        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text';
+        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text' | 'bpmn';
     };
 }
 
@@ -81,6 +81,18 @@ export async function extractText(file: File): Promise<ExtractionResult> {
                 ...result,
                 stats: { ...result.stats, timeMs: Date.now() - startTime }
             };
+        } else if (/\.(bpmn|bpmn2)$/i.test(fileName)) {
+            console.log('Detected BPMN 2.0 diagram - extracting semantic workflow structure');
+            const xmlContent = await file.text();
+            const text = extractBpmnTextFromXml(xmlContent);
+            return {
+                text,
+                stats: {
+                    words: countWords(text),
+                    timeMs: Date.now() - startTime,
+                    method: 'bpmn'
+                }
+            };
         } else if (
             fileType.startsWith('text/') ||
             /\.(txt|sql|md|csv|json|py|js|ts|tsx|jsx|html|css|yaml|yml|log|sh|bat|ini|xml)$/i.test(fileName)
@@ -106,6 +118,128 @@ export async function extractText(file: File): Promise<ExtractionResult> {
 
 function countWords(text: string): number {
     return text.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+/**
+ * Extracts a clean, structured Markdown outline from a BPMN 2.0 XML diagram
+ * to allow Gemini / AI to generate accurate summaries, flashcards, and quizzes.
+ */
+function extractBpmnTextFromXml(xmlString: string): string {
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
+
+        // Check for parse errors
+        const parseError = xmlDoc.querySelector('parsererror');
+        if (parseError) {
+            return xmlString.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        const lines: string[] = [];
+        const allElements = Array.from(xmlDoc.getElementsByTagName('*'));
+
+        // Processes
+        const processes = allElements.filter(el => el.localName === 'process');
+        processes.forEach(proc => {
+            const name = proc.getAttribute('name') || proc.getAttribute('id');
+            if (name) lines.push(`# Processus : ${name}`);
+            const doc = Array.from(proc.children).find(c => c.localName === 'documentation');
+            if (doc?.textContent?.trim()) {
+                lines.push(`Description : ${doc.textContent.trim()}`);
+            }
+        });
+
+        // Participants / Pools
+        const participants = allElements.filter(el => el.localName === 'participant');
+        if (participants.length > 0) {
+            lines.push(`\n## Acteurs & Rôles (Pools)`);
+            participants.forEach(p => {
+                const name = p.getAttribute('name');
+                if (name) lines.push(`- Acteur / Système : ${name}`);
+            });
+        }
+
+        // Lanes
+        const lanes = allElements.filter(el => el.localName === 'lane');
+        if (lanes.length > 0) {
+            lines.push(`\n## Couloirs (Lanes)`);
+            lanes.forEach(l => {
+                const name = l.getAttribute('name');
+                if (name) lines.push(`- Couloir : ${name}`);
+            });
+        }
+
+        // Tasks & Activities
+        const taskTypes = new Set([
+            'task', 'userTask', 'serviceTask', 'sendTask', 'receiveTask',
+            'manualTask', 'businessRuleTask', 'scriptTask', 'subProcess', 'callActivity'
+        ]);
+        const tasks = allElements.filter(el => taskTypes.has(el.localName));
+        if (tasks.length > 0) {
+            lines.push(`\n## Tâches et Activités du Workflow`);
+            tasks.forEach(t => {
+                const name = t.getAttribute('name') || t.getAttribute('id');
+                const type = t.localName.replace(/task$/i, ' Task').replace(/^./, str => str.toUpperCase());
+                const doc = Array.from(t.children).find(c => c.localName === 'documentation');
+                if (name) {
+                    let taskLine = `- [${type}] ${name}`;
+                    if (doc?.textContent?.trim()) {
+                        taskLine += ` : ${doc.textContent.trim()}`;
+                    }
+                    lines.push(taskLine);
+                }
+            });
+        }
+
+        // Gateways
+        const gatewayTypes = new Set([
+            'exclusiveGateway', 'parallelGateway', 'inclusiveGateway', 'eventBasedGateway', 'complexGateway'
+        ]);
+        const gateways = allElements.filter(el => gatewayTypes.has(el.localName));
+        if (gateways.length > 0) {
+            lines.push(`\n## Points de Décision & Passerelles`);
+            gateways.forEach(g => {
+                const name = g.getAttribute('name');
+                const type = g.localName.replace(/Gateway$/, ' Gateway');
+                if (name) {
+                    lines.push(`- [${type}] ${name}`);
+                }
+            });
+        }
+
+        // Events
+        const eventTypes = new Set([
+            'startEvent', 'endEvent', 'intermediateCatchEvent', 'intermediateThrowEvent', 'boundaryEvent'
+        ]);
+        const events = allElements.filter(el => eventTypes.has(el.localName));
+        if (events.length > 0) {
+            lines.push(`\n## Événements (Déclencheurs & Fins)`);
+            events.forEach(e => {
+                const name = e.getAttribute('name');
+                const type = e.localName.replace(/Event$/, ' Event');
+                if (name) {
+                    lines.push(`- [${type}] ${name}`);
+                }
+            });
+        }
+
+        // Annotations
+        const annotations = allElements.filter(el => el.localName === 'textAnnotation');
+        if (annotations.length > 0) {
+            lines.push(`\n## Annotations et Notes`);
+            annotations.forEach(a => {
+                const textNode = Array.from(a.children).find(c => c.localName === 'text');
+                if (textNode?.textContent?.trim()) {
+                    lines.push(`- Note : ${textNode.textContent.trim()}`);
+                }
+            });
+        }
+
+        const result = lines.join('\n').trim();
+        return result.length > 0 ? result : xmlString.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    } catch {
+        return xmlString.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
 }
 
 async function extractDocxText(file: File): Promise<string> {

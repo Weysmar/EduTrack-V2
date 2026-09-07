@@ -11,7 +11,7 @@ import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow } from 'lucide-react'
 import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
 import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
@@ -24,6 +24,7 @@ import { OfficeViewer } from '@/components/OfficeViewer'
 import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
+import { BPMNViewer } from '@/components/BPMNViewer'
 import { EditItemModal } from '@/components/EditItemModal'
 import { TTSControls } from '@/components/TTSControls'
 
@@ -264,6 +265,7 @@ export function ItemView() {
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
+    const isBpmn = ['bpmn', 'bpmn2'].includes(ext);
 
     if (isItemLoading) return <div className="p-8">Loading...</div>
     // If deleting, show loading to prevent "File not found" glitches
@@ -574,11 +576,11 @@ export function ItemView() {
                     <div className={cn("p-1.5 rounded-lg flex-shrink-0",
                         item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
-                        item.type === 'resource' && (isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
+                        item.type === 'resource' && (isBpmn ? "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20" : isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
                     )}>
                         {item.type === 'exercise' && <Dumbbell className="h-4 w-4" />}
                         {item.type === 'note' && <FileText className="h-4 w-4" />}
-                        {item.type === 'resource' && (isImage ? <ImageIcon className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />)}
+                        {item.type === 'resource' && (isBpmn ? <Workflow className="h-4 w-4" /> : isImage ? <ImageIcon className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />)}
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -835,6 +837,21 @@ export function ItemView() {
                                                             />
                                                         )}
                                                     </>
+                                                );
+                                            }
+
+                                            // BPMN 2.0 Diagrams
+                                            if (isBpmn) {
+                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
+                                                return (
+                                                    <BPMNViewer
+                                                        url={pdfUrl}
+                                                        fileName={item.fileName || item.title || "process.bpmn"}
+                                                        className={isFocusMode ? "h-full" : "h-[75vh] md:h-[80vh]"}
+                                                        isFocusMode={isFocusMode}
+                                                        onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+                                                        onExitFocusMode={() => setIsFocusMode(false)}
+                                                    />
                                                 );
                                             }
 

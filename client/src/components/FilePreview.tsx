@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, memo } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
-import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon } from 'lucide-react';
+import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 
@@ -37,6 +37,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
+    const isBpmn = ['bpmn', 'bpmn2'].includes(ext);
 
     useEffect(() => {
         let isMounted = true;
@@ -254,6 +255,11 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         textColor = "text-yellow-600 dark:text-yellow-400";
         Icon = ImageIcon;
         label = ext.toUpperCase();
+    } else if (isBpmn) {
+        bgColor = "bg-cyan-50 dark:bg-cyan-950/30";
+        textColor = "text-cyan-600 dark:text-cyan-400";
+        Icon = Workflow;
+        label = "BPMN";
     }
 
     return (
