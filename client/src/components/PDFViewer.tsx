@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
 import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink } from 'lucide-react'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useLanguage } from './language-provider'
 import { cn } from '@/lib/utils'
 
@@ -37,8 +38,9 @@ export function PDFViewer({
     const { t } = useLanguage()
     const isMobile = useMemo(() => isMobileDevice(), [])
     const [numPages, setNumPages] = useState<number | null>(null)
-    const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
+    const [zoomScale, setZoomScale] = useState(100)
+    const transformRef = useRef<any>(null)
     // Initialize pageWidth to mobile width immediately so first render fits screen
     const [pageWidth, setPageWidth] = useState<number | null>(() => {
         if (typeof window !== 'undefined') {
@@ -113,9 +115,6 @@ export function PDFViewer({
         setKey(prev => prev + 1)
     }
 
-    const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3))
-    const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5))
-
     return (
         <div className={cn(
             "w-full bg-slate-100 dark:bg-slate-900 overflow-hidden relative flex flex-col transition-all",
@@ -157,24 +156,32 @@ export function PDFViewer({
 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                     {!useNativeEmbed && (
-                        <>
+                        <div className="flex items-center gap-0.5 sm:gap-1 bg-background/80 border rounded-lg p-0.5 shadow-xs">
                             <button
-                                onClick={zoomOut}
-                                className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                                type="button"
+                                onClick={() => transformRef.current?.zoomOut(0.25)}
+                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors"
                                 title={t('action.zoomOut')}
                             >
-                                <ZoomOut className="h-4 w-4" />
+                                <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
-                            <span className="text-xs md:text-sm font-medium px-1 min-w-[3ch] text-center">{Math.round(scale * 100)}%</span>
                             <button
-                                onClick={zoomIn}
-                                className="p-1.5 md:p-2 hover:bg-slate-300 dark:hover:bg-slate-700 rounded transition-colors"
+                                type="button"
+                                onClick={() => transformRef.current?.resetTransform()}
+                                className="text-[11px] sm:text-xs font-semibold px-1 py-0.5 rounded hover:bg-muted min-w-[3.5ch] text-center text-foreground transition-colors"
+                                title="Réinitialiser le zoom (100%)"
+                            >
+                                {zoomScale}%
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => transformRef.current?.zoomIn(0.25)}
+                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors"
                                 title={t('action.zoomIn')}
                             >
-                                <ZoomIn className="h-4 w-4" />
+                                <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
-                            <div className="h-4 w-px bg-border mx-0.5" />
-                        </>
+                        </div>
                     )}
 
                     {/* Mode Selector Segmented Pill */}
@@ -259,69 +266,88 @@ export function PDFViewer({
                             allowFullScreen
                         />
                     ) : (
-                        <Document
-                            key={`${key}-${url}`}
-                            file={url}
-                            options={documentOptions}
-                            onLoadSuccess={onDocumentLoadSuccess}
-                            onLoadError={onDocumentLoadError}
-                            loading={
-                                <div className="flex items-center justify-center p-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                                </div>
-                            }
-                            error={
-                                <div className="text-center p-8 md:p-12 max-w-md mx-auto my-auto flex flex-col items-center justify-center">
-                                    <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
-                                        <AlertCircle className="h-6 w-6" />
-                                    </div>
-                                    <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du visualiseur</p>
-                                    <p className="text-sm text-muted-foreground mb-6">
-                                        Le visualiseur interactif n'a pas pu démarrer. Vous pouvez basculer en affichage natif ou ouvrir le fichier directement.
-                                    </p>
-                                    <div className="flex flex-wrap items-center justify-center gap-3 w-full">
-                                        <button
-                                            onClick={() => setUseNativeEmbed(true)}
-                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
-                                        >
-                                            <span>Mode natif</span>
-                                        </button>
-                                        <button
-                                            onClick={handleRetry}
-                                            className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-                                        >
-                                            <RotateCw className="h-4 w-4" />
-                                            <span>Réessayer</span>
-                                        </button>
-                                        <a
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 border hover:bg-muted rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-                                        >
-                                            <ExternalLink className="h-4 w-4" />
-                                            <span>Ouvrir</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            }
-                            className="flex flex-col gap-4"
+                        <TransformWrapper
+                            ref={transformRef}
+                            initialScale={1}
+                            minScale={0.7}
+                            maxScale={4}
+                            centerOnInit={false}
+                            limitToBounds={false}
+                            wheel={{ disabled: true }}
+                            pinch={{ disabled: false, step: 5 }}
+                            panning={{ disabled: false, velocityDisabled: false }}
+                            doubleClick={{ mode: 'toggle', step: 1.5 }}
+                            onTransformed={(_, state) => setZoomScale(Math.round(state.scale * 100))}
                         >
-                            {numPages && Array.from(new Array(numPages), (el, index) => (
-                                <Page
-                                    key={`page_${index + 1}`}
-                                    pageNumber={index + 1}
-                                    scale={scale}
-                                    width={pageWidth || undefined}
-                                    renderTextLayer={false}
-                                    renderAnnotationLayer={false}
-                                    className="shadow-lg bg-white"
+                            <TransformComponent
+                                wrapperClass="!w-full !h-full"
+                                contentClass="flex flex-col items-center gap-4 py-2 min-w-full"
+                            >
+                                <Document
+                                    key={`${key}-${url}`}
+                                    file={url}
+                                    options={documentOptions}
+                                    onLoadSuccess={onDocumentLoadSuccess}
+                                    onLoadError={onDocumentLoadError}
                                     loading={
-                                        <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
+                                        <div className="flex items-center justify-center p-12">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                                        </div>
                                     }
-                                />
-                            ))}
-                        </Document>
+                                    error={
+                                        <div className="text-center p-8 md:p-12 max-w-md mx-auto my-auto flex flex-col items-center justify-center">
+                                            <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full mb-3">
+                                                <AlertCircle className="h-6 w-6" />
+                                            </div>
+                                            <p className="font-semibold text-base mb-1 text-foreground">Erreur de chargement du visualiseur</p>
+                                            <p className="text-sm text-muted-foreground mb-6">
+                                                Le visualiseur interactif n'a pas pu démarrer. Vous pouvez basculer en affichage natif ou ouvrir le fichier directement.
+                                            </p>
+                                            <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+                                                <button
+                                                    onClick={() => setUseNativeEmbed(true)}
+                                                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                                >
+                                                    <span>Mode natif</span>
+                                                </button>
+                                                <button
+                                                    onClick={handleRetry}
+                                                    className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                                >
+                                                    <RotateCw className="h-4 w-4" />
+                                                    <span>Réessayer</span>
+                                                </button>
+                                                <a
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-4 py-2 border hover:bg-muted rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                    <span>Ouvrir</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    }
+                                    className="flex flex-col gap-4"
+                                >
+                                    {numPages && Array.from(new Array(numPages), (el, index) => (
+                                        <Page
+                                            key={`page_${index + 1}`}
+                                            pageNumber={index + 1}
+                                            width={pageWidth || undefined}
+                                            renderTextLayer={false}
+                                            renderAnnotationLayer={false}
+                                            className="shadow-lg bg-white"
+                                            devicePixelRatio={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)}
+                                            loading={
+                                                <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
+                                            }
+                                        />
+                                    ))}
+                                </Document>
+                            </TransformComponent>
+                        </TransformWrapper>
                     )}
                 </div>
             </div>
