@@ -55,8 +55,8 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                 const xml = await fetchPromise;
                 if (!isMounted) return;
 
-                if (!xml.trim().startsWith('<') && !xml.includes('definitions')) {
-                    throw new Error("Contenu non reconnu comme un schéma BPMN 2.0 XML");
+                if (!xml.trim().startsWith('<')) {
+                    throw new Error("Contenu non reconnu comme un schéma XML / BPMN valide");
                 }
 
                 if (!containerRef.current) return;
@@ -160,9 +160,9 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
             )}
             title={fileName}
         >
-            {/* BPMN Badge */}
+            {/* BPMN / BPM Badge */}
             <div className="absolute top-2 left-2 bg-cyan-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-sm z-20 tracking-wider">
-                BPMN
+                {fileName?.toLowerCase().endsWith('.bpm') ? 'BPM' : 'BPMN'}
             </div>
 
             {/* Loading Indicator */}

@@ -81,8 +81,8 @@ export async function extractText(file: File): Promise<ExtractionResult> {
                 ...result,
                 stats: { ...result.stats, timeMs: Date.now() - startTime }
             };
-        } else if (/\.(bpmn|bpmn2)$/i.test(fileName)) {
-            console.log('Detected BPMN 2.0 diagram - extracting semantic workflow structure');
+        } else if (/\.(bpmn|bpmn2|bpm)$/i.test(fileName)) {
+            console.log('Detected BPM / BPMN diagram - extracting semantic workflow structure');
             const xmlContent = await file.text();
             const text = extractBpmnTextFromXml(xmlContent);
             return {
@@ -139,48 +139,52 @@ function extractBpmnTextFromXml(xmlString: string): string {
         const allElements = Array.from(xmlDoc.getElementsByTagName('*'));
 
         // Processes
-        const processes = allElements.filter(el => el.localName === 'process');
+        const processTypes = new Set(['process', 'businessprocess', 'workflow', 'model']);
+        const processes = allElements.filter(el => processTypes.has(el.localName.toLowerCase()));
         processes.forEach(proc => {
-            const name = proc.getAttribute('name') || proc.getAttribute('id');
+            const name = proc.getAttribute('name') || proc.getAttribute('title') || proc.getAttribute('id');
             if (name) lines.push(`# Processus : ${name}`);
-            const doc = Array.from(proc.children).find(c => c.localName === 'documentation');
+            const doc = Array.from(proc.children).find(c => ['documentation', 'description', 'comment'].includes(c.localName.toLowerCase()));
             if (doc?.textContent?.trim()) {
                 lines.push(`Description : ${doc.textContent.trim()}`);
             }
         });
 
-        // Participants / Pools
-        const participants = allElements.filter(el => el.localName === 'participant');
+        // Participants / Pools / Roles
+        const participantTypes = new Set(['participant', 'pool', 'role', 'actor', 'performer', 'organization']);
+        const participants = allElements.filter(el => participantTypes.has(el.localName.toLowerCase()));
         if (participants.length > 0) {
             lines.push(`\n## Acteurs & Rôles (Pools)`);
             participants.forEach(p => {
-                const name = p.getAttribute('name');
+                const name = p.getAttribute('name') || p.getAttribute('title');
                 if (name) lines.push(`- Acteur / Système : ${name}`);
             });
         }
 
         // Lanes
-        const lanes = allElements.filter(el => el.localName === 'lane');
+        const laneTypes = new Set(['lane', 'swimlane']);
+        const lanes = allElements.filter(el => laneTypes.has(el.localName.toLowerCase()));
         if (lanes.length > 0) {
             lines.push(`\n## Couloirs (Lanes)`);
             lanes.forEach(l => {
-                const name = l.getAttribute('name');
+                const name = l.getAttribute('name') || l.getAttribute('title');
                 if (name) lines.push(`- Couloir : ${name}`);
             });
         }
 
         // Tasks & Activities
         const taskTypes = new Set([
-            'task', 'userTask', 'serviceTask', 'sendTask', 'receiveTask',
-            'manualTask', 'businessRuleTask', 'scriptTask', 'subProcess', 'callActivity'
+            'task', 'usertask', 'servicetask', 'sendtask', 'receivetask',
+            'manualtask', 'businessruletask', 'scripttask', 'subprocess', 'callactivity',
+            'activity', 'step', 'operation', 'action'
         ]);
-        const tasks = allElements.filter(el => taskTypes.has(el.localName));
+        const tasks = allElements.filter(el => taskTypes.has(el.localName.toLowerCase()));
         if (tasks.length > 0) {
             lines.push(`\n## Tâches et Activités du Workflow`);
             tasks.forEach(t => {
-                const name = t.getAttribute('name') || t.getAttribute('id');
+                const name = t.getAttribute('name') || t.getAttribute('title') || t.getAttribute('id');
                 const type = t.localName.replace(/task$/i, ' Task').replace(/^./, str => str.toUpperCase());
-                const doc = Array.from(t.children).find(c => c.localName === 'documentation');
+                const doc = Array.from(t.children).find(c => ['documentation', 'description', 'comment'].includes(c.localName.toLowerCase()));
                 if (name) {
                     let taskLine = `- [${type}] ${name}`;
                     if (doc?.textContent?.trim()) {
@@ -191,16 +195,17 @@ function extractBpmnTextFromXml(xmlString: string): string {
             });
         }
 
-        // Gateways
+        // Gateways / Decisions
         const gatewayTypes = new Set([
-            'exclusiveGateway', 'parallelGateway', 'inclusiveGateway', 'eventBasedGateway', 'complexGateway'
+            'exclusivegateway', 'parallelgateway', 'inclusivegateway', 'eventbasedgateway', 'complexgateway',
+            'gateway', 'decision', 'condition', 'router', 'choice'
         ]);
-        const gateways = allElements.filter(el => gatewayTypes.has(el.localName));
+        const gateways = allElements.filter(el => gatewayTypes.has(el.localName.toLowerCase()));
         if (gateways.length > 0) {
             lines.push(`\n## Points de Décision & Passerelles`);
             gateways.forEach(g => {
-                const name = g.getAttribute('name');
-                const type = g.localName.replace(/Gateway$/, ' Gateway');
+                const name = g.getAttribute('name') || g.getAttribute('title');
+                const type = g.localName.replace(/Gateway$/i, ' Gateway');
                 if (name) {
                     lines.push(`- [${type}] ${name}`);
                 }
@@ -209,14 +214,15 @@ function extractBpmnTextFromXml(xmlString: string): string {
 
         // Events
         const eventTypes = new Set([
-            'startEvent', 'endEvent', 'intermediateCatchEvent', 'intermediateThrowEvent', 'boundaryEvent'
+            'startevent', 'endevent', 'intermediatecatchevent', 'intermediatethrowevent', 'boundaryevent',
+            'event', 'milestone', 'trigger'
         ]);
-        const events = allElements.filter(el => eventTypes.has(el.localName));
+        const events = allElements.filter(el => eventTypes.has(el.localName.toLowerCase()));
         if (events.length > 0) {
             lines.push(`\n## Événements (Déclencheurs & Fins)`);
             events.forEach(e => {
-                const name = e.getAttribute('name');
-                const type = e.localName.replace(/Event$/, ' Event');
+                const name = e.getAttribute('name') || e.getAttribute('title');
+                const type = e.localName.replace(/Event$/i, ' Event');
                 if (name) {
                     lines.push(`- [${type}] ${name}`);
                 }

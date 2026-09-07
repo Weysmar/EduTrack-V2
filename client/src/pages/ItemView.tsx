@@ -265,7 +265,7 @@ export function ItemView() {
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
-    const isBpmn = ['bpmn', 'bpmn2'].includes(ext);
+    const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext);
 
     if (isItemLoading) return <div className="p-8">Loading...</div>
     // If deleting, show loading to prevent "File not found" glitches
@@ -634,6 +634,9 @@ export function ItemView() {
                                         } else if (isImage) {
                                             badgeClass = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
                                             Icon = ImageIcon;
+                                        } else if (['BPMN', 'BPMN2', 'BPM'].includes(ext)) {
+                                            badgeClass = "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400";
+                                            Icon = Workflow;
                                         }
 
                                         return (

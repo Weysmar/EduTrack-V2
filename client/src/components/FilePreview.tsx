@@ -37,7 +37,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
-    const isBpmn = ['bpmn', 'bpmn2'].includes(ext);
+    const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext);
 
     useEffect(() => {
         let isMounted = true;
@@ -327,7 +327,7 @@ function BPMNCardFallback({ className, fileName }: { className?: string; fileNam
         >
             {/* BPMN Badge */}
             <div className="absolute top-2.5 left-2.5 bg-cyan-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm z-10 tracking-wider">
-                BPMN
+                {fileName?.toLowerCase().endsWith('.bpm') ? 'BPM' : 'BPMN'}
             </div>
 
             {/* Decorative Document Center */}
@@ -339,7 +339,7 @@ function BPMNCardFallback({ className, fileName }: { className?: string; fileNam
                 </div>
                 {fileName && (
                     <span className="text-[11px] font-medium text-muted-foreground line-clamp-1 max-w-[140px] px-2 text-center">
-                        {fileName.replace(/\.(bpmn|bpmn2)$/i, '')}
+                        {fileName.replace(/\.(bpmn|bpmn2|bpm)$/i, '')}
                     </span>
                 )}
             </div>

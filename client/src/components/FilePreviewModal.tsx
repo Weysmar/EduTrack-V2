@@ -32,7 +32,7 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
     const isPdf = fileType === 'application/pdf' || ext === 'pdf'
     const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext)
     const isOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes(ext)
-    const isBpmn = ['bpmn', 'bpmn2'].includes(ext)
+    const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext)
 
     // Rely on standard browser capabilities, OfficeViewer, or BPMNViewer
     const canPreview = isPdf || isImage || isBpmn || (isOffice && fileUrl)

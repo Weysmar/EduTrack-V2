@@ -107,8 +107,8 @@ export function BPMNViewer({
                 const xmlData = await response.text()
                 if (!isMounted) return
 
-                if (!xmlData.trim().startsWith('<') && !xmlData.includes('definitions')) {
-                    throw new Error("Le contenu téléchargé ne correspond pas à un format XML / BPMN 2.0 valide.")
+                if (!xmlData.trim().startsWith('<')) {
+                    throw new Error("Le contenu téléchargé ne correspond pas à un format XML / BPMN valide.")
                 }
 
                 await viewer.importXML(xmlData)
@@ -304,7 +304,7 @@ export function BPMNViewer({
                         href={url}
                         download={fileName}
                         className="p-1.5 sm:p-2 rounded-lg border bg-background/80 hover:bg-muted text-foreground transition-colors shadow-xs"
-                        title="Télécharger le fichier .bpmn original"
+                        title="Télécharger le fichier original"
                     >
                         <ExternalLink className="h-3.5 w-3.5" />
                     </a>
@@ -350,7 +350,7 @@ export function BPMNViewer({
                     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/80 backdrop-blur-xs gap-3">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                         <p className="text-xs font-medium text-muted-foreground animate-pulse">
-                            Chargement du diagramme BPMN 2.0...
+                            Chargement du processus métier (BPMN / BPM)...
                         </p>
                     </div>
                 )}
@@ -361,7 +361,7 @@ export function BPMNViewer({
                         <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full">
                             <AlertCircle className="h-6 w-6" />
                         </div>
-                        <h3 className="font-semibold text-base text-foreground">Erreur de lecture du BPMN</h3>
+                        <h3 className="font-semibold text-base text-foreground">Erreur de lecture du processus métier (BPMN / BPM)</h3>
                         <p className="text-sm text-muted-foreground max-w-md">{error}</p>
                         <div className="flex items-center gap-2 mt-2">
                             <button
