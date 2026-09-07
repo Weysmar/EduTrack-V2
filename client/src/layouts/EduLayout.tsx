@@ -1,14 +1,13 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 import { EduSidebar } from '@/components/layout/EduSidebar'
-import { Menu } from 'lucide-react'
+import { Menu, ArrowLeft, Search } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageToggle } from '@/components/language-toggle'
 import { useState, useEffect } from 'react'
 import { CommandPalette } from '@/components/CommandPalette'
 import { useCommandStore } from '@/store/commandStore'
-import { Search } from 'lucide-react'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
@@ -23,6 +22,7 @@ export function EduLayout() {
     const { t } = useLanguage()
     useSocket()
     const location = useLocation()
+    const navigate = useNavigate()
 
     const { user, isAuthenticated } = useAuthStore()
     const { activeProfile, switchProfile } = useProfileStore()
@@ -101,15 +101,38 @@ export function EduLayout() {
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300">
-                <header className="flex h-14 items-center gap-2 md:gap-4 border-b bg-card px-3 md:px-4 lg:px-6 justify-between">
-                    <div className="flex items-center gap-2 md:gap-4">
+                <header className="flex h-14 items-center gap-2 md:gap-4 border-b bg-card px-3 md:px-4 lg:px-6 justify-between shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2">
                         <button
                             onClick={toggleSidebar}
                             className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
                             aria-label="Toggle Sidebar"
+                            title="Menu / Sidebar"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
+
+                        {/* Back Arrow when navigated inside a subpage (folder, course, item, etc.) */}
+                        {location.pathname !== '/edu/dashboard' && location.pathname !== '/edu' && (
+                            <button
+                                onClick={() => {
+                                    if (location.pathname.startsWith('/edu/course/') && location.pathname.includes('/item/')) {
+                                        const parts = location.pathname.split('/')
+                                        navigate(`/edu/course/${parts[3]}`)
+                                    } else if (window.history.length > 2) {
+                                        navigate(-1)
+                                    } else {
+                                        navigate('/edu/dashboard')
+                                    }
+                                }}
+                                className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs font-medium"
+                                aria-label="Retour au menu"
+                                title="Retour au menu"
+                            >
+                                <ArrowLeft className="h-5 w-5" />
+                                <span className="hidden sm:inline">Retour</span>
+                            </button>
+                        )}
                     </div>
 
                     <button

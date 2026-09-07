@@ -4,15 +4,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderQueries, courseQueries, itemQueries } from '@/lib/api/queries'
 import { useState } from 'react'
 import { useLanguage } from '@/components/language-provider'
-import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2, Pencil } from 'lucide-react'
+import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2, Pencil, Menu } from 'lucide-react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { EditFolderModal } from '@/components/EditFolderModal'
 import { useProfileStore } from '@/store/profileStore'
+import { useUIStore } from '@/store/uiStore'
 
 export function FolderView() {
     const { folderId } = useParams()
     const navigate = useNavigate()
+    const { toggleSidebar } = useUIStore()
     const { activeProfile } = useProfileStore()
     const { t } = useLanguage()
     const queryClient = useQueryClient()
@@ -133,14 +135,29 @@ export function FolderView() {
         <div className="flex-1 h-full flex flex-col overflow-hidden bg-background/50">
             {/* Header */}
             <div className="p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 hover:bg-muted rounded-full transition-colors"
-                        title={t('common.back')}
+                        onClick={() => {
+                            if (folder?.parentId) {
+                                navigate(`/edu/folder/${folder.parentId}`)
+                            } else {
+                                navigate('/edu/dashboard')
+                            }
+                        }}
+                        className="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-1.5"
+                        title={folder?.parentId ? "Dossier parent" : "Tableau de bord / Menu"}
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </button>
+
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground lg:hidden"
+                        title="Afficher la sidebar"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </button>
+
                     <div className="p-2.5 md:p-3 bg-primary/10 rounded-lg shrink-0">
                         <FolderIcon className="h-6 w-6 md:h-8 md:w-8 text-primary" />
                     </div>

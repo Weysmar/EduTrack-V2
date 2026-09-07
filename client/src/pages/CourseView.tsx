@@ -7,9 +7,10 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu } from 'lucide-react'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { useSummary } from '@/hooks/useSummary'
 import { DEFAULT_SUMMARY_OPTIONS, SummaryOptions } from '@/lib/summary/types'
@@ -28,6 +29,7 @@ import { CourseTasksModal } from '@/components/course/CourseTasksModal'
 export function CourseView() {
     const { courseId } = useParams()
     const navigate = useNavigate()
+    const { toggleSidebar } = useUIStore()
     const id = courseId || ''
     const queryClient = useQueryClient()
     const { t, language } = useLanguage()
@@ -271,7 +273,34 @@ export function CourseView() {
             )}
 
             {/* Header */}
-            <div className="flex flex-col gap-4 border-b pb-4 mt-2 sm:mt-0 px-2 sm:px-0">
+            <div className="flex flex-col gap-3 border-b pb-4 mt-2 sm:mt-0 px-2 sm:px-0">
+                {/* Navigation Bar / Breadcrumb on mobile & desktop */}
+                <div className="flex items-center justify-between gap-2">
+                    <button
+                        onClick={() => {
+                            if (course?.folderId) {
+                                navigate(`/edu/folder/${course.folderId}`)
+                            } else {
+                                navigate('/edu/dashboard')
+                            }
+                        }}
+                        className="p-1.5 -ml-1 hover:bg-muted rounded-lg transition-colors flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-xs sm:text-sm font-medium"
+                        title={course?.folderId ? "Retour au dossier parent" : "Retour au tableau de bord"}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>{course?.folderId ? "Dossier parent" : (t('nav.dashboard') || "Menu")}</span>
+                    </button>
+
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground text-xs font-medium flex items-center gap-1 lg:hidden"
+                        title="Afficher la sidebar"
+                    >
+                        <Menu className="h-4 w-4" />
+                        <span>Sidebar</span>
+                    </button>
+                </div>
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 truncate">
