@@ -1,12 +1,15 @@
 // Minimal Service Worker for PWA installation and caching
-const CACHE_NAME = 'hubtrack-v2';
+const CACHE_NAME = 'hubtrack-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
   '/logo.svg',
-  '/logo.png'
+  '/logo.png',
+  '/app-icon.svg',
+  '/app-icon.png',
+  '/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
