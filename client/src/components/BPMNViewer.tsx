@@ -13,10 +13,13 @@ import {
     Moon, 
     AlertCircle, 
     ExternalLink,
-    Workflow
+    Workflow,
+    FileQuestion,
+    HelpCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { parseProcessModelData, ProcessModelParseResult } from '@/lib/processModelParser'
 
 interface BPMNViewerProps {
     url: string
@@ -40,6 +43,11 @@ export function BPMNViewer({
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [unsupportedInfo, setUnsupportedInfo] = useState<{
+        reason?: string;
+        fileNames?: string[];
+    } | null>(null)
+    const [extractedImageUrl, setExtractedImageUrl] = useState<string | null>(null)
     const [zoomLevel, setZoomLevel] = useState<number>(100)
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
@@ -74,13 +82,15 @@ export function BPMNViewer({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [activeFocus, onExitFocusMode])
 
-    // Load and render BPMN XML
+    // Load and render BPMN XML or extract process model
     useEffect(() => {
-        if (!containerRef.current || !url) return
+        if (!url) return
 
         let isMounted = true
         setLoading(true)
         setError(null)
+        setUnsupportedInfo(null)
+        setExtractedImageUrl(null)
 
         // Clean up previous viewer instance if exists
         if (viewerRef.current) {
@@ -92,26 +102,45 @@ export function BPMNViewer({
             viewerRef.current = null
         }
 
-        const viewer = new BpmnNavigatedViewer({
-            container: containerRef.current,
-            keyboard: { bindTo: document }
-        })
-        viewerRef.current = viewer
-
         const fetchAndRender = async () => {
             try {
                 const response = await fetch(url)
                 if (!response.ok) {
-                    throw new Error(`Erreur réseau (${response.status}) lors du chargement du fichier BPMN.`)
+                    throw new Error(`Erreur réseau (${response.status}) lors du chargement du fichier.`)
                 }
-                const xmlData = await response.text()
+                const arrayBuffer = await response.arrayBuffer()
                 if (!isMounted) return
 
-                if (!xmlData.trim().startsWith('<')) {
-                    throw new Error("Le contenu téléchargé ne correspond pas à un format XML / BPMN valide.")
+                const parsed = await parseProcessModelData(arrayBuffer)
+                if (!isMounted) return
+
+                if (parsed.type === 'image' && parsed.imageUrl) {
+                    setExtractedImageUrl(parsed.imageUrl)
+                    setLoading(false)
+                    return
                 }
 
-                await viewer.importXML(xmlData)
+                if (parsed.type === 'unsupported_bpm') {
+                    setUnsupportedInfo({
+                        reason: parsed.reason,
+                        fileNames: parsed.fileNames
+                    })
+                    setLoading(false)
+                    return
+                }
+
+                if (parsed.type === 'error' || !parsed.xml) {
+                    throw new Error(parsed.errorMessage || "Format de fichier non reconnu.")
+                }
+
+                if (!containerRef.current) return
+
+                const viewer = new BpmnNavigatedViewer({
+                    container: containerRef.current
+                })
+                viewerRef.current = viewer
+
+                await viewer.importXML(parsed.xml)
                 if (!isMounted) return
 
                 const canvas = viewer.get('canvas')
@@ -355,8 +384,79 @@ export function BPMNViewer({
                     </div>
                 )}
 
+                {/* Extracted Image Preview from archive */}
+                {extractedImageUrl && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-muted/10 overflow-auto">
+                        <img
+                            src={extractedImageUrl}
+                            alt={fileName}
+                            className="max-w-full max-h-full object-contain rounded-lg shadow-sm transition-transform duration-200"
+                            style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center' }}
+                        />
+                    </div>
+                )}
+
+                {/* Specialized Bizagi / BPM project container guidance */}
+                {unsupportedInfo && (
+                    <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-4 sm:p-6 bg-background/95 backdrop-blur-xs text-center overflow-y-auto">
+                        <div className="max-w-lg w-full bg-card border rounded-2xl shadow-xl p-6 sm:p-8 space-y-5 text-left animate-in fade-in zoom-in-95">
+                            <div className="flex items-start gap-3.5 border-b pb-4">
+                                <div className="p-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 rounded-xl flex-shrink-0">
+                                    <Workflow className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 uppercase tracking-wider mb-1">
+                                        Projet Bizagi / BPM (.bpm)
+                                    </div>
+                                    <h3 className="font-bold text-base sm:text-lg text-foreground truncate">
+                                        {fileName}
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <div className="text-xs sm:text-sm text-muted-foreground space-y-3">
+                                <p>
+                                    Ce fichier est un conteneur de projet interne (ex: <strong>Bizagi Modeler</strong>). 
+                                    Pour être affiché dans une visionneuse web interactive (BPMN 2.0), le diagramme doit être exporté au format standard <code className="text-primary font-mono font-bold bg-muted px-1.5 py-0.5 rounded">.bpmn</code>.
+                                </p>
+
+                                <div className="bg-muted/50 border rounded-xl p-3.5 sm:p-4 space-y-2">
+                                    <h4 className="font-semibold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                        <span>💡</span> Comment l'exporter en .bpmn :
+                                    </h4>
+                                    <ol className="list-decimal list-inside space-y-1.5 text-xs text-muted-foreground ml-1">
+                                        <li>Ouvrez le fichier dans <strong>Bizagi Modeler</strong> (ou votre outil de modélisation).</li>
+                                        <li>Dans le ruban en haut, cliquez sur <strong>Exporter / Importer</strong> puis sur <strong>BPMN</strong> (BPMN 2.0 XML).</li>
+                                        <li>Déposez le fichier <strong>.bpmn</strong> obtenu dans EduTrack pour profiter du visualiseur interactif !</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t">
+                                <a
+                                    href={url}
+                                    download={fileName}
+                                    className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:opacity-90 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    <span>Télécharger le fichier .bpm</span>
+                                </a>
+                                <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3.5 py-2 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    <span>Ouvrir en brut</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Error state */}
-                {error && (
+                {error && !unsupportedInfo && (
                     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-background/95 gap-3 text-center">
                         <div className="p-3 bg-red-100 dark:bg-red-900/30 text-destructive rounded-full">
                             <AlertCircle className="h-6 w-6" />
@@ -387,7 +487,10 @@ export function BPMNViewer({
                 {/* The actual bpmn-js DOM host */}
                 <div 
                     ref={containerRef} 
-                    className="w-full h-full min-h-[500px]" 
+                    className={cn(
+                        "w-full h-full min-h-[500px]",
+                        (unsupportedInfo || extractedImageUrl) && "hidden"
+                    )} 
                 />
             </div>
         </div>

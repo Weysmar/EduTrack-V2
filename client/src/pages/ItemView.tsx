@@ -666,6 +666,16 @@ export function ItemView() {
                         </div>
                     </div>
 
+                    {/* Mobile TTS Controls for notes & text resources */}
+                    {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
+                        <div className="md:hidden flex items-center flex-shrink-0 ml-1">
+                            <TTSControls
+                                text={item.content || item.extractedContent || ''}
+                                lang={item.language || (course?.language === 'en' ? 'en-US' : (course?.language === 'fr' ? 'fr-FR' : (language === 'en' ? 'en-US' : 'fr-FR')))}
+                            />
+                        </div>
+                    )}
+
                     {/* Mobile quick Open in new tab button */}
                     {item.type === 'resource' && pdfUrl && (
                         <a

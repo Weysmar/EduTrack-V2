@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import BpmnNavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { parseProcessModelData } from '@/lib/processModelParser';
 
 interface BPMNThumbnailProps {
     url: string;
@@ -12,13 +13,14 @@ interface BPMNThumbnailProps {
 
 // Global caches to ensure diagrams are only fetched & parsed once per session
 const bpmnSvgCache = new Map<string, string>();
-const bpmnFetchCache = new Map<string, Promise<string>>();
+const bpmnFetchCache = new Map<string, Promise<ArrayBuffer>>();
 
 export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbnailProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<BpmnNavigatedViewer | null>(null);
 
     const [svg, setSvg] = useState<string | null>(() => bpmnSvgCache.get(url) || null);
+    const [imgSrc, setImgSrc] = useState<string | null>(null);
     const [loading, setLoading] = useState(!bpmnSvgCache.has(url));
     const [failed, setFailed] = useState(false);
 
@@ -42,22 +44,33 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
 
         const renderDiagram = async () => {
             try {
-                // Fetch and deduplicate XML request
+                // Fetch and deduplicate buffer request
                 let fetchPromise = bpmnFetchCache.get(url);
                 if (!fetchPromise) {
                     fetchPromise = fetch(url).then(async (res) => {
                         if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
-                        return res.text();
+                        return res.arrayBuffer();
                     });
                     bpmnFetchCache.set(url, fetchPromise);
                 }
 
-                const xml = await fetchPromise;
+                const buffer = await fetchPromise;
                 if (!isMounted) return;
 
-                if (!xml.trim().startsWith('<')) {
-                    throw new Error("Contenu non reconnu comme un schéma XML / BPMN valide");
+                const parsed = await parseProcessModelData(buffer);
+                if (!isMounted) return;
+
+                if (parsed.type === 'image' && parsed.imageUrl) {
+                    setImgSrc(parsed.imageUrl);
+                    setLoading(false);
+                    return;
                 }
+
+                if (parsed.type !== 'bpmn_xml' || !parsed.xml) {
+                    throw new Error("Contenu non reconnu comme un schéma BPMN XML");
+                }
+
+                const xml = parsed.xml;
 
                 if (!containerRef.current) return;
 
@@ -126,7 +139,7 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                     setLoading(false);
                 }
             } catch (err) {
-                console.error("BPMN Thumbnail Error:", err);
+                console.debug("BPMN Thumbnail fallback:", err);
                 if (isMounted) {
                     setFailed(true);
                     setLoading(false);
@@ -172,8 +185,12 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                 </div>
             )}
 
-            {/* Render Cached SVG if available */}
-            {svg ? (
+            {/* Render Image, Cached SVG, or dynamic container */}
+            {imgSrc ? (
+                <div className="w-full h-full p-2 flex items-center justify-center pointer-events-none select-none">
+                    <img src={imgSrc} alt={fileName} className="w-full h-full object-contain" />
+                </div>
+            ) : svg ? (
                 <div
                     className="w-full h-full p-2.5 flex items-center justify-center pointer-events-none select-none bpmn-thumb-container [&>svg]:w-full [&>svg]:h-full [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:object-contain"
                     dangerouslySetInnerHTML={{ __html: svg }}

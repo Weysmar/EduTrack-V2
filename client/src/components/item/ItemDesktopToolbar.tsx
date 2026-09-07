@@ -47,7 +47,7 @@ export function ItemDesktopToolbar({
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     <TTSControls
                         text={item.content || item.extractedContent || ''}
-                        lang={item.language || (course?.language === 'fr' ? 'fr-FR' : 'en-US')}
+                        lang={item.language || (course?.language === 'en' ? 'en-US' : (course?.language === 'fr' ? 'fr-FR' : 'fr-FR'))}
                     />
                     <div className="h-4 w-px bg-border mx-0.5" />
                 </div>
