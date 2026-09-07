@@ -28,6 +28,69 @@ const isMobileDevice = () => {
     );
 };
 
+interface LazyPageProps {
+    pageNumber: number
+    width: number | undefined
+    devicePixelRatio: number
+}
+
+function LazyPage({ pageNumber, width, devicePixelRatio }: LazyPageProps) {
+    // Render first 2 pages immediately, others when scrolled near view
+    const [isVisible, setIsVisible] = useState(pageNumber <= 2)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (isVisible) return
+        const el = containerRef.current
+        if (!el) return
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true)
+                    observer.disconnect()
+                }
+            },
+            { rootMargin: '800px 0px' }
+        )
+
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [isVisible])
+
+    return (
+        <div ref={containerRef} className="w-full flex justify-center min-h-[300px]">
+            {isVisible ? (
+                <Page
+                    pageNumber={pageNumber}
+                    width={width}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="shadow-lg bg-white"
+                    devicePixelRatio={devicePixelRatio}
+                    loading={
+                        <div className="h-[600px] w-full bg-white animate-pulse rounded shadow-lg flex items-center justify-center text-xs text-muted-foreground">
+                            Chargement page {pageNumber}...
+                        </div>
+                    }
+                />
+            ) : (
+                <div className="h-[600px] w-full bg-slate-200/40 dark:bg-slate-800/40 rounded flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border/40">
+                    Page {pageNumber}
+                </div>
+            )}
+        </div>
+    )
+}
+
+const getTargetDpr = (scale: number) => {
+    if (typeof window === 'undefined') return 2.5
+    const base = window.devicePixelRatio || 2
+    // On high-DPI screens, multiply base by scale so 1 physical screen pixel = 1 rendered canvas pixel
+    // Min 2.5 so base view is crisp, Max 5 to avoid GPU memory saturation
+    return Math.min(Math.max(scale * base, 2.5), 5)
+}
+
 export function PDFViewer({
     url,
     className = "",
@@ -40,7 +103,9 @@ export function PDFViewer({
     const [numPages, setNumPages] = useState<number | null>(null)
     const [loading, setLoading] = useState(true)
     const [zoomScale, setZoomScale] = useState(100)
+    const [renderDpr, setRenderDpr] = useState(() => getTargetDpr(1))
     const transformRef = useRef<any>(null)
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     // Initialize pageWidth to mobile width immediately so first render fits screen
     const [pageWidth, setPageWidth] = useState<number | null>(() => {
         if (typeof window !== 'undefined') {
@@ -54,6 +119,28 @@ export function PDFViewer({
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    // Clear debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+        }
+    }, [])
+
+    const handleTransformed = (_: any, state: { scale: number }) => {
+        const percent = Math.round(state.scale * 100)
+        setZoomScale(percent)
+
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+        }
+
+        // Debounce high-resolution canvas re-render so gestures stay 60fps,
+        // and snaps to crisp resolution right after the user stops zooming/panning
+        debounceTimerRef.current = setTimeout(() => {
+            setRenderDpr(getTargetDpr(state.scale))
+        }, 280)
+    }
 
     // PDF.js options to suppress benign font sanitization warnings in console (verbosity: 0 = ERRORS only)
     const documentOptions = useMemo(() => ({
@@ -155,6 +242,12 @@ export function PDFViewer({
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                    {numPages && (
+                        <span className="text-[11px] sm:text-xs font-medium text-muted-foreground px-1 hidden sm:inline">
+                            {numPages} {numPages > 1 ? 'pages' : 'page'}
+                        </span>
+                    )}
+
                     {!useNativeEmbed && (
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-background/80 border rounded-lg p-0.5 shadow-xs">
                             <button
@@ -272,12 +365,12 @@ export function PDFViewer({
                             minScale={0.7}
                             maxScale={4}
                             centerOnInit={false}
-                            limitToBounds={false}
+                            limitToBounds={true}
                             wheel={{ disabled: true }}
                             pinch={{ disabled: false, step: 5 }}
                             panning={{ disabled: false, velocityDisabled: false }}
                             doubleClick={{ mode: 'toggle', step: 1.5 }}
-                            onTransformed={(_, state) => setZoomScale(Math.round(state.scale * 100))}
+                            onTransformed={handleTransformed}
                         >
                             <TransformComponent
                                 wrapperClass="!w-full !h-full"
@@ -331,18 +424,12 @@ export function PDFViewer({
                                     }
                                     className="flex flex-col gap-4"
                                 >
-                                    {numPages && Array.from(new Array(numPages), (el, index) => (
-                                        <Page
+                                    {numPages && Array.from(new Array(numPages), (_, index) => (
+                                        <LazyPage
                                             key={`page_${index + 1}`}
                                             pageNumber={index + 1}
                                             width={pageWidth || undefined}
-                                            renderTextLayer={false}
-                                            renderAnnotationLayer={false}
-                                            className="shadow-lg bg-white"
-                                            devicePixelRatio={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)}
-                                            loading={
-                                                <div className="h-[800px] w-full bg-white animate-pulse rounded shadow-lg" />
-                                            }
+                                            devicePixelRatio={renderDpr}
                                         />
                                     ))}
                                 </Document>
