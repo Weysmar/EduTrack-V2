@@ -1,5 +1,8 @@
 import * as path from 'path';
+import * as fs from 'fs/promises';
+import * as os from 'os';
 import mammoth from 'mammoth';
+import { extractionService } from './extractionService';
 
 const pdfParse = require('pdf-parse');
 
@@ -26,6 +29,7 @@ export const detectMimeType = (filename: string): string => {
         '.pdf': 'application/pdf',
         '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         '.doc': 'application/msword',
+        '.odt': 'application/vnd.oasis.opendocument.text',
         '.txt': 'text/plain',
         '.md': 'text/markdown',
         '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -199,6 +203,53 @@ export const extractFromText = (
 };
 
 /**
+ * Extract text from ODT buffer
+ */
+export const extractFromODT = async (
+    buffer: Buffer,
+    filename: string,
+    options?: ExtractionOptions
+): Promise<ExtractionResult> => {
+    const warnings: string[] = [];
+    const validation = validateBuffer(buffer, filename);
+    if (!validation.valid) {
+        throw new Error(validation.error);
+    }
+
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'odt-extract-'));
+    const safeName = path.basename(filename) || 'document.odt';
+    const tempFilePath = path.join(tempDir, safeName);
+
+    try {
+        await fs.writeFile(tempFilePath, buffer);
+        const { text: rawText } = await extractionService.extractText(tempFilePath);
+
+        let text = rawText || '';
+        if (!text || text.trim().length === 0) {
+            throw new Error(`No text content found in ODT: ${filename}`);
+        }
+
+        const maxLength = options?.maxLength || 50000;
+        if (text.length > maxLength) {
+            text = text.substring(0, maxLength);
+            warnings.push(`Content truncated from ${rawText.length} to ${maxLength} characters`);
+        }
+
+        const words = text.split(/\s+/).filter((w: string) => w.length > 0).length;
+        return {
+            text: text.trim(),
+            stats: { words, chars: text.length },
+            warnings
+        };
+    } catch (error: any) {
+        console.error(`[Extraction] ODT extraction failed for ${filename}:`, error);
+        throw new Error(`Failed to extract text from ODT ${filename}: ${error.message}`);
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+};
+
+/**
  * Unified extraction function - detects type and routes appropriately
  */
 export const extractTextFromBuffer = async (
@@ -217,6 +268,9 @@ export const extractTextFromBuffer = async (
         case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         case 'application/msword':
             return extractFromDOCX(buffer, filename, options);
+
+        case 'application/vnd.oasis.opendocument.text':
+            return extractFromODT(buffer, filename, options);
             
         case 'text/plain':
         case 'text/markdown':
@@ -298,6 +352,7 @@ export const contentExtractionService = {
     extractMultipleFiles,
     extractFromPDF,
     extractFromDOCX,
+    extractFromODT,
     extractFromText,
     detectMimeType
 };

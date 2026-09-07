@@ -91,6 +91,50 @@ if __name__ == '__main__':
     }
 
     /**
+     * Extract text from ODT files using Python's built-in zipfile & XML parser.
+     * Fastest, most reliable method without LibreOffice overhead.
+     */
+    async extractOdtViaPython(filePath: string): Promise<string> {
+        const pythonScript = `
+import sys, zipfile, xml.etree.ElementTree as ET
+
+def extract(path):
+    text_parts = []
+    try:
+        with zipfile.ZipFile(path, 'r') as z:
+            root = ET.fromstring(z.read('content.xml'))
+            for elem in root.iter():
+                if elem.text and elem.text.strip():
+                    text_parts.append(elem.text.strip())
+    except Exception as e:
+        sys.stderr.write(str(e))
+        sys.exit(1)
+    return "\\n\\n".join(text_parts)
+
+if __name__ == '__main__':
+    res = extract(sys.argv[1])
+    sys.stdout.buffer.write(res.encode('utf-8'))
+`;
+        const tempScript = path.join(os.tmpdir(), `extract_odt_${Date.now()}_${Math.random().toString(36).substring(7)}.py`);
+        await fs.writeFile(tempScript, pythonScript, 'utf-8');
+
+        try {
+            const command = process.platform === 'win32' 
+                ? `python "${tempScript}" "${filePath}"` 
+                : `python3 "${tempScript}" "${filePath}" || python "${tempScript}" "${filePath}"`;
+
+            const { stdout } = await execAsync(command, {
+                timeout: 30000,
+                maxBuffer: 20 * 1024 * 1024
+            });
+
+            return stdout.toString().trim();
+        } finally {
+            await fs.unlink(tempScript).catch(() => {});
+        }
+    }
+
+    /**
      * Extract text from DOCX/DOC files
      */
     async extractDocxText(filePath: string): Promise<string> {
@@ -139,6 +183,13 @@ if __name__ == '__main__':
             }
         } else if (ext === '.ppt') {
             text = await this.extractPptViaLibreOffice(filePath);
+        } else if (ext === '.odt') {
+            try {
+                text = await this.extractOdtViaPython(filePath);
+            } catch (pyErr) {
+                console.warn('Python ODT extraction failed, trying LibreOffice:', pyErr);
+                text = await this.extractDocxText(filePath);
+            }
         } else if (['.doc', '.docx'].includes(ext)) {
             text = await this.extractDocxText(filePath);
         } else {

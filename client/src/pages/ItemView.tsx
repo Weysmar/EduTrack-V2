@@ -261,7 +261,7 @@ export function ItemView() {
         (item?.fileData ? item.fileData.split('.').pop()?.toLowerCase() : '') || '';
 
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif'].includes(ext);
-    const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext);
+    const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'odt'].includes(ext);
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
@@ -611,7 +611,7 @@ export function ItemView() {
                                     {course && <span>•</span>}
                                     {(() => {
                                         const ext = (item.fileName?.split('.').pop() || item.fileType?.split('/')[1] || 'PDF').toUpperCase();
-                                        const isWord = ['DOC', 'DOCX'].includes(ext);
+                                        const isWord = ['DOC', 'DOCX', 'ODT'].includes(ext);
                                         const isPPT = ['PPT', 'PPTX'].includes(ext);
                                         const isPDF = ['PDF'].includes(ext);
                                         const isExcel = ['XLS', 'XLSX', 'CSV'].includes(ext);

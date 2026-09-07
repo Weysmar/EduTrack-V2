@@ -6,7 +6,7 @@ interface ExtractionStatsProps {
         pages?: number;
         timeMs: number;
         warnings?: string[];
-        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text' | 'bpmn';
+        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text' | 'bpmn' | 'odt';
     };
     className?: string;
 }

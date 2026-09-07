@@ -10,7 +10,7 @@ const getFileIconStyle = (fileName: string | undefined) => {
     const ext = fileName?.split('.').pop()?.toLowerCase() || '';
 
     if (['pdf'].includes(ext)) return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', label: 'PDF' };
-    if (['doc', 'docx'].includes(ext)) return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: 'WORD' };
+    if (['doc', 'docx', 'odt'].includes(ext)) return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', label: ext === 'odt' ? 'ODT' : 'WORD' };
     if (['xls', 'xlsx', 'csv'].includes(ext)) return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-400', label: 'EXCEL' };
     if (['ppt', 'pptx'].includes(ext)) return { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400', label: 'PPT' };
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif', 'bmp'].includes(ext)) return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-600 dark:text-yellow-400', label: ext.toUpperCase() };
@@ -26,7 +26,7 @@ const getFileExtensionColor = (fileName: string | undefined) => {
 
     switch (ext) {
         case 'pdf': return 'bg-red-500/90 text-white'
-        case 'docx': case 'doc': return 'bg-blue-500/90 text-white'
+        case 'docx': case 'doc': case 'odt': return 'bg-blue-500/90 text-white'
         case 'xlsx': case 'xls': case 'csv': return 'bg-green-600/90 text-white'
         case 'pptx': case 'ppt': return 'bg-orange-500/90 text-white'
         case 'zip': case 'rar': case '7z': return 'bg-slate-600/90 text-white'

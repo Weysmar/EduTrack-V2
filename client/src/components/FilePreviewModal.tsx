@@ -31,11 +31,11 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
 
     const isPdf = fileType === 'application/pdf' || ext === 'pdf'
     const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext)
-    const isOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes(ext)
+    const isOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv', 'odt'].includes(ext)
     const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext)
 
     // Rely on standard browser capabilities, OfficeViewer, or BPMNViewer
-    const canPreview = isPdf || isImage || isBpmn || (isOffice && fileUrl)
+    const canPreview = isPdf || isImage || isBpmn || (isOffice && (fileUrl || previewUrl))
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -105,9 +105,9 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                                                     className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                                                 />
                                             )}
-                                            {isOffice && fileUrl && (
+                                            {isOffice && (fileUrl || previewUrl) && (
                                                 <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
-                                                    <OfficeViewer url={fileUrl} storageKey={storageKey} className="w-full h-full" />
+                                                    <OfficeViewer url={fileUrl || previewUrl!} storageKey={storageKey} className="w-full h-full" />
                                                 </div>
                                             )}
                                             {isBpmn && (previewUrl || fileUrl) && (

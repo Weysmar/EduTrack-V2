@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileText, Download, RefreshCw, Laptop, Minimize } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
+import { OdtViewer } from './OdtViewer';
 import { useLanguage } from './language-provider';
 import { API_URL } from '@/config';
 
@@ -18,11 +19,11 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
 
     // Determine file type
     const isDocx = /\.docx($|\?)/i.test(initialUrl) || initialUrl.toLowerCase().includes('docx');
+    const isOdt = /\.odt($|\?)/i.test(initialUrl) || initialUrl.toLowerCase().includes('odt');
 
-    // Default engine: 'microsoft' for DOCX (best fidelity), 'google' otherwise (better wide support)
-    // However, if on localhost, we might default to local logic later, but state initialization is simple here.
+    // Default engine: 'google' for ODT (Google Docs Viewer natively handles ODT), 'microsoft' for DOCX/Office
     const [internalEngine, setInternalEngine] = useState<'google' | 'microsoft' | 'local'>(
-        isDocx ? 'microsoft' : 'microsoft'
+        isOdt ? 'google' : 'microsoft'
     );
     const [hasError, setHasError] = useState(false);
 
@@ -61,6 +62,47 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
 
     // Render Local Viewer
     if (engine === 'local') {
+        if (isOdt) {
+            return (
+                <div className={`flex flex-col h-full bg-slate-100 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
+                    <div className="flex items-center justify-between p-2 md:p-3 bg-slate-200 dark:bg-slate-800 border-b text-sm">
+                        <div className="flex items-center gap-3">
+                            <span className="font-medium text-foreground flex items-center gap-2">
+                                <Laptop className="h-4 w-4" />
+                                <span className="hidden sm:inline">Mode Local (Rapide)</span>
+                                <span className="sm:hidden">Local</span>
+                            </span>
+                            <button
+                                onClick={() => setEngine('google')}
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                            >
+                                <RefreshCw className="h-3 w-3" />
+                                <span className="hidden sm:inline">Passer en Haute Fidélité (Google)</span>
+                                <span className="sm:hidden">En ligne</span>
+                            </button>
+                        </div>
+                        <div className="flex gap-2">
+                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 transition-opacity">
+                                <Download className="h-3 w-3" /> Télécharger
+                            </a>
+                            {onExitFocusMode && (
+                                <button
+                                    onClick={onExitFocusMode}
+                                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600 text-foreground rounded text-xs transition-colors"
+                                    title={t('focus.exit') || "Quitter le plein écran"}
+                                >
+                                    <Minimize className="h-3 w-3 text-primary" />
+                                    <span className="hidden sm:inline">{t('focus.exit') || "Quitter plein écran"}</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden relative bg-slate-50 dark:bg-slate-950">
+                        <OdtViewer url={initialUrl} className="h-full w-full" />
+                    </div>
+                </div>
+            );
+        }
         if (isDocx) {
             return (
                 <div className={`flex flex-col h-full bg-slate-100 dark:bg-slate-900 md:border md:rounded-lg overflow-hidden ${className}`}>
@@ -102,8 +144,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                 </div>
             )
         }
-        // Fallback for non-docx local? usually we only have DocxViewer for now.
-        // Could fallback to simple iframe or error.
+        // Fallback for other files
     }
 
     // Render Error State for Online Viewers
@@ -127,8 +168,8 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                 )}
 
                 <div className="flex flex-col gap-3 w-full max-w-xs">
-                    {/* Primary Action: Use Local Viewer if DOCX */}
-                    {isDocx && (
+                    {/* Primary Action: Use Local Viewer if DOCX or ODT */}
+                    {(isDocx || isOdt) && (
                         <button
                             onClick={() => setEngine('local')}
                             className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors font-medium shadow-sm"
@@ -174,11 +215,11 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                     </span>
 
                     {/* Quick Switcher */}
-                    {isDocx && (
+                    {(isDocx || isOdt) && (
                         <button
                             onClick={() => setEngine('local')}
                             className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground border border-border/60 bg-background/50 px-2 py-0.5 rounded transition-colors"
-                            title="Utiliser le rendu navigateur (plus rapide, moins fidèle)"
+                            title="Utiliser le rendu navigateur (plus rapide, sans tiers)"
                         >
                             <Laptop className="h-3 w-3" />
                             <span className="hidden sm:inline">Mode Local</span>
@@ -189,11 +230,17 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
 
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setEngine(engine === 'google' ? 'microsoft' : 'google')}
+                        onClick={() => {
+                            if (isOdt) {
+                                setEngine(engine === 'google' ? 'local' : 'google');
+                            } else {
+                                setEngine(engine === 'google' ? 'microsoft' : 'google');
+                            }
+                        }}
                         className="text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline px-2"
                     >
                         <RefreshCw className="h-3 w-3" />
-                        <span className="hidden sm:inline">Changer moteur</span>
+                        <span className="hidden sm:inline">{isOdt ? (engine === 'local' ? 'Passer en ligne' : 'Passer en local') : 'Changer moteur'}</span>
                     </button>
                     {onExitFocusMode && (
                         <button

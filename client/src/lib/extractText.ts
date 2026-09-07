@@ -19,7 +19,7 @@ export interface ExtractionResult {
         pages?: number;
         timeMs: number;
         warnings?: string[];
-        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text' | 'bpmn';
+        method: 'pdf' | 'docx' | 'ppt' | 'ocr' | 'image' | 'text' | 'bpmn' | 'odt';
     };
 }
 
@@ -27,7 +27,7 @@ export async function extractText(file: File): Promise<ExtractionResult> {
     const startTime = Date.now();
     console.log(`Starting extraction for file: ${file.name} (${file.type})`);
 
-    // Fix: Prioritize extension over MIME type for DOCX/PPT
+    // Fix: Prioritize extension over MIME type for DOCX/PPT/ODT
     // Some browsers/environments might report incorrect MIME types or generic 'application/pdf'
     let fileType = file.type;
     const fileName = file.name.toLowerCase();
@@ -36,6 +36,8 @@ export async function extractText(file: File): Promise<ExtractionResult> {
         fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     } else if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) {
         fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    } else if (fileName.endsWith('.odt')) {
+        fileType = 'application/vnd.oasis.opendocument.text';
     }
 
     try {
@@ -69,6 +71,20 @@ export async function extractText(file: File): Promise<ExtractionResult> {
                     words: countWords(text),
                     timeMs: Date.now() - startTime,
                     method: 'docx'
+                }
+            };
+        } else if (
+            fileType === 'application/vnd.oasis.opendocument.text' ||
+            fileName.endsWith('.odt')
+        ) {
+            console.log('Detected ODT document');
+            const text = await extractOdtText(file);
+            return {
+                text,
+                stats: {
+                    words: countWords(text),
+                    timeMs: Date.now() - startTime,
+                    method: 'odt'
                 }
             };
         } else if (
@@ -261,6 +277,40 @@ async function extractDocxText(file: File): Promise<string> {
     } catch (error) {
         console.error('DOCX Extraction Error:', error);
         throw new Error('Failed to extract text from DOCX.');
+    }
+}
+
+async function extractOdtText(file: File): Promise<string> {
+    try {
+        const JSZip = (await import('jszip')).default;
+        const arrayBuffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const contentFile = zip.file('content.xml');
+        if (!contentFile) {
+            throw new Error("Fichier ODT invalide (content.xml manquant)");
+        }
+        const contentXml = await contentFile.async('text');
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(contentXml, 'application/xml');
+
+        // Extract headings and paragraphs from XML
+        const body = xmlDoc.getElementsByTagNameNS('*', 'body')[0] || xmlDoc.documentElement;
+        const paragraphs = body.querySelectorAll('p, h, text\\:p, text\\:h');
+        const lines: string[] = [];
+        paragraphs.forEach(p => {
+            const text = p.textContent?.trim();
+            if (text) lines.push(text);
+        });
+
+        if (lines.length === 0) {
+            const fallbackText = contentXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            return fallbackText;
+        }
+
+        return lines.join('\n\n').trim();
+    } catch (error) {
+        console.error('ODT Extraction Error:', error);
+        throw new Error('Impossible d\'extraire le texte du document ODT.');
     }
 }
 

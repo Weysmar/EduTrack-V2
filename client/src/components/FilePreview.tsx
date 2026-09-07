@@ -32,7 +32,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext);
     const isHeic = ['heic', 'heif'].includes(ext);
     const isPDF = ext === 'pdf';
-    const isWord = ['doc', 'docx'].includes(ext);
+    const isWord = ['doc', 'docx', 'odt'].includes(ext);
     const isPPT = ['ppt', 'pptx'].includes(ext);
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
@@ -190,7 +190,10 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     if ((isWord || isPPT || isExcel) && url && showThumbnails) {
         // Construct absolute URL for external viewers
         const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
-        const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
+        const isOdt = ext === 'odt';
+        const viewerUrl = isOdt
+            ? `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`
+            : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullUrl)}`;
 
         return (
             <div className={cn("w-full h-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative group", className)}>
@@ -208,7 +211,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
                 <div className={cn("absolute top-2 left-2 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-90 z-20",
                     isWord ? "bg-blue-600" : isExcel ? "bg-green-600" : "bg-orange-600"
                 )}>
-                    {isWord ? "WORD" : isExcel ? "EXCEL" : "PPT"}
+                    {isWord ? (isOdt ? "ODT" : "WORD") : isExcel ? "EXCEL" : "PPT"}
                 </div>
             </div>
         );
@@ -254,7 +257,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         bgColor = "bg-blue-50 dark:bg-blue-900/20";
         textColor = "text-blue-600 dark:text-blue-400";
         Icon = FileText;
-        label = "WORD";
+        label = ext === 'odt' ? "ODT" : "WORD";
     } else if (isPPT) {
         bgColor = "bg-orange-50 dark:bg-orange-900/20";
         textColor = "text-orange-600 dark:text-orange-400";

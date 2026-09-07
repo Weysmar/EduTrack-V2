@@ -64,8 +64,9 @@ export function ItemDesktopToolbar({
                         const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
                         const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
 
+                        const isOdt = item.fileName?.toLowerCase().endsWith('.odt') || item.fileData?.toLowerCase().endsWith('.odt');
                         if (isOffice) {
-                            if (officeEngine === 'microsoft') {
+                            if (officeEngine === 'microsoft' && !isOdt) {
                                 targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
                             } else {
                                 targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
