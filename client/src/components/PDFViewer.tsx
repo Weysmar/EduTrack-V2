@@ -18,6 +18,15 @@ interface PDFViewerProps {
     onExitFocusMode?: () => void
 }
 
+const isMobileDevice = () => {
+    if (typeof window === 'undefined') return false;
+    return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth < 768 ||
+        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024)
+    );
+};
+
 export function PDFViewer({
     url,
     className = "",
@@ -26,11 +35,20 @@ export function PDFViewer({
     onExitFocusMode
 }: PDFViewerProps) {
     const { t } = useLanguage()
+    const isMobile = useMemo(() => isMobileDevice(), [])
     const [numPages, setNumPages] = useState<number | null>(null)
     const [scale, setScale] = useState(1.0)
     const [loading, setLoading] = useState(true)
-    const [pageWidth, setPageWidth] = useState<number | null>(null)
-    const [useNativeEmbed, setUseNativeEmbed] = useState(true)
+    // Initialize pageWidth to mobile width immediately so first render fits screen
+    const [pageWidth, setPageWidth] = useState<number | null>(() => {
+        if (typeof window !== 'undefined') {
+            return Math.min(window.innerWidth - 16, 840)
+        }
+        return null
+    })
+    // On mobile devices (smartphones/tablets), Android Chrome and iOS Safari cannot render inline PDFs in iframes,
+    // so we default to interactive mode (React-PDF with Canvas) on mobile, and native iframe on desktop.
+    const [useNativeEmbed, setUseNativeEmbed] = useState(() => !isMobileDevice())
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -159,15 +177,67 @@ export function PDFViewer({
                         </>
                     )}
 
-                    <button
-                        onClick={() => setUseNativeEmbed(prev => !prev)}
-                        className="px-2 py-1 text-xs font-medium rounded hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors border bg-background/50"
-                        title={useNativeEmbed ? "Passer au visualiseur interactif (React-PDF)" : "Passer au visualiseur natif intégré"}
-                    >
-                        {useNativeEmbed ? "Interactif" : "Natif"}
-                    </button>
+                    {/* Mode Selector Segmented Pill */}
+                    <div className="flex items-center rounded-lg border bg-background/80 p-0.5 text-xs shadow-xs shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setUseNativeEmbed(false)}
+                            className={cn(
+                                "px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1",
+                                !useNativeEmbed
+                                    ? "bg-primary text-primary-foreground shadow-xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                            title="Mode interactif (React-PDF - recommandé sur smartphone et tablette)"
+                        >
+                            <span>Interactif</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUseNativeEmbed(true)}
+                            className={cn(
+                                "px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1",
+                                useNativeEmbed
+                                    ? "bg-primary text-primary-foreground shadow-xs"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                            title="Mode natif (navigateur de bureau)"
+                        >
+                            <span>Natif</span>
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {/* Mobile Native Warning & Action Banner */}
+            {isMobile && useNativeEmbed && (
+                <div className="w-full bg-amber-500/10 border-b border-amber-500/30 px-3 py-2 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-amber-900 dark:text-amber-200 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-amber-500 font-bold text-sm shrink-0">📱</span>
+                        <span>
+                            <strong>Mode natif sur smartphone :</strong> Les navigateurs mobiles (Android Chrome) ne peuvent pas afficher le PDF directement dans la page.
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                        <button
+                            type="button"
+                            onClick={() => setUseNativeEmbed(false)}
+                            className="px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-semibold shadow-xs text-xs hover:bg-primary/90 transition-all"
+                        >
+                            Basculer en Interactif
+                        </button>
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded-md border border-amber-500/40 bg-background text-foreground text-xs hover:bg-muted font-medium transition-all flex items-center gap-1"
+                        >
+                            <ExternalLink className="h-3 w-3" />
+                            <span>Ouvrir dans l'app PDF</span>
+                        </a>
+                    </div>
+                </div>
+            )}
 
             {/* PDF Document - Scrollable Area */}
             <div className={cn(
