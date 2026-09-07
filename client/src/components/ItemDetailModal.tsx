@@ -1,5 +1,5 @@
 import { Item } from '@/lib/types';
-import { X, Dumbbell, FileText, FolderOpen, Download, Calendar, Trash2, MonitorPlay, Eye, Image as ImageIcon } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Download, Calendar, Trash2, MonitorPlay, Eye, Image as ImageIcon, Workflow } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useState } from 'react'
@@ -154,11 +154,11 @@ export function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
                             <div className={cn("p-2 rounded-md flex-shrink-0",
                                 item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/20",
                                 item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
-                                item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
+                                item.type === 'resource' && (item.fileName && ['bpmn', 'bpmn2'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20" : item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
                             )}>
                                 {item.type === 'exercise' && <Dumbbell className="h-5 w-5" />}
                                 {item.type === 'note' && <FileText className="h-5 w-5" />}
-                                {item.type === 'resource' && (item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
+                                {item.type === 'resource' && (item.fileName && ['bpmn', 'bpmn2'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? <Workflow className="h-5 w-5" /> : item.fileName && ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(item.fileName.split('.').pop()?.toLowerCase() || '') ? <ImageIcon className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />)}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h2 className="text-lg md:text-xl font-bold line-clamp-2 break-words">{item.title}</h2>

@@ -3,12 +3,11 @@ import { pdfjs, Document, Page } from 'react-pdf';
 import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
+import { BPMNThumbnail } from './BPMNThumbnail';
 
 // Configure PDF Worker
 // Worker is now configured globally in main.tsx
 // pdfjs.GlobalWorkerOptions.workerSrc = ... 
-
-
 
 interface FilePreviewProps {
     url?: string | null;
@@ -25,6 +24,7 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
     const [pdfError, setPdfError] = useState(false);
+    const [bpmnError, setBpmnError] = useState(false);
 
     // Determine file extension and type
     const ext = (fileName?.split('.').pop() || fileType?.split('/')[1] || '').toLowerCase();
@@ -214,7 +214,22 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         );
     }
 
-    // 3. Generic / Other Formats (Word, PPT, etc.)
+    // 4. BPMN Diagram Thumbnail
+    if (isBpmn) {
+        if (url && showThumbnails && !bpmnError) {
+            return (
+                <BPMNThumbnail
+                    url={url}
+                    fileName={fileName}
+                    className={className}
+                    onError={() => setBpmnError(true)}
+                />
+            );
+        }
+        return <BPMNCardFallback className={className} fileName={fileName} />;
+    }
+
+    // 5. Generic / Other Formats (Word, PPT, etc.)
     let bgColor = "bg-slate-100 dark:bg-slate-800";
     let textColor = "text-slate-500";
     let Icon = FileIcon;
@@ -255,11 +270,6 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
         textColor = "text-yellow-600 dark:text-yellow-400";
         Icon = ImageIcon;
         label = ext.toUpperCase();
-    } else if (isBpmn) {
-        bgColor = "bg-cyan-50 dark:bg-cyan-950/30";
-        textColor = "text-cyan-600 dark:text-cyan-400";
-        Icon = Workflow;
-        label = "BPMN";
     }
 
     return (
@@ -306,3 +316,37 @@ function PDFCardFallback({ className, fileName }: { className?: string; fileName
         </div>
     );
 }
+
+function BPMNCardFallback({ className, fileName }: { className?: string; fileName?: string }) {
+    return (
+        <div
+            className={cn(
+                "w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-transparent border-cyan-500/20",
+                className
+            )}
+        >
+            {/* BPMN Badge */}
+            <div className="absolute top-2.5 left-2.5 bg-cyan-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm z-10 tracking-wider">
+                BPMN
+            </div>
+
+            {/* Decorative Document Center */}
+            <div className="flex flex-col items-center justify-center gap-2 transform group-hover:scale-105 transition-transform duration-200">
+                <div className="w-12 h-14 bg-card border-2 border-cyan-500/30 rounded-lg shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-cyan-500/20 rounded-bl" />
+                    <Workflow className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                    <div className="w-6 h-0.5 bg-cyan-500/30 rounded-full mt-1" />
+                </div>
+                {fileName && (
+                    <span className="text-[11px] font-medium text-muted-foreground line-clamp-1 max-w-[140px] px-2 text-center">
+                        {fileName.replace(/\.(bpmn|bpmn2)$/i, '')}
+                    </span>
+                )}
+            </div>
+
+            {/* Corner Fold Effect */}
+            <div className="absolute top-0 right-0 w-8 h-8 bg-cyan-500/10 rounded-bl-2xl border-b border-l border-cyan-500/20" />
+        </div>
+    );
+}
+

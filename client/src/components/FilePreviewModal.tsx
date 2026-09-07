@@ -2,6 +2,7 @@ import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState, useEffect } from 'react'
 import { X, Download, AlertCircle } from 'lucide-react'
 import { OfficeViewer } from './OfficeViewer'
+import { BPMNViewer } from './BPMNViewer'
 
 interface FilePreviewModalProps {
     isOpen: boolean
@@ -31,9 +32,10 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
     const isPdf = fileType === 'application/pdf' || ext === 'pdf'
     const isImage = fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif'].includes(ext)
     const isOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes(ext)
+    const isBpmn = ['bpmn', 'bpmn2'].includes(ext)
 
-    // Rely on standard browser capabilities or OfficeViewer
-    const canPreview = isPdf || isImage || (isOffice && fileUrl)
+    // Rely on standard browser capabilities, OfficeViewer, or BPMNViewer
+    const canPreview = isPdf || isImage || isBpmn || (isOffice && fileUrl)
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
@@ -106,6 +108,11 @@ export function FilePreviewModal({ isOpen, onClose, fileData, fileName, fileType
                                             {isOffice && fileUrl && (
                                                 <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
                                                     <OfficeViewer url={fileUrl} storageKey={storageKey} className="w-full h-full" />
+                                                </div>
+                                            )}
+                                            {isBpmn && (previewUrl || fileUrl) && (
+                                                <div className="w-full h-full bg-card rounded-lg shadow-lg overflow-hidden">
+                                                    <BPMNViewer url={(previewUrl || fileUrl)!} fileName={fileName} className="w-full h-full" />
                                                 </div>
                                             )}
                                             {!canPreview && (
