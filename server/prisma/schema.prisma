@@ -118,6 +118,7 @@ model Item {
   storageKey       String?  // S3 key
   status           String?
   difficulty       String?
+  dueDate          DateTime?
   tags             String[]
   extractedContent String?  @db.Text
   createdAt        DateTime @default(now())
@@ -125,10 +126,12 @@ model Item {
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tasks   StudyTask[]
 
   @@index([profileId])
   @@index([courseId])
   @@index([type])
+  @@index([dueDate])
 }
 
 model FlashcardSet {
@@ -274,6 +277,7 @@ model StudyTask {
   weekId          String
   planId          String
   courseId        String?
+  itemId          String?
   dayNumber       Int
   description     String
   durationMinutes Int
@@ -283,10 +287,12 @@ model StudyTask {
   week   StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
   plan   StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   course Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  item   Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([weekId])
   @@index([planId])
   @@index([courseId])
+  @@index([itemId])
 }
 
 model MindMap {

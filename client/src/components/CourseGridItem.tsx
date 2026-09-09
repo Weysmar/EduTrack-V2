@@ -148,19 +148,21 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                     </h3>
                 </div>
 
-                <div className="text-[10px] sm:text-xs text-muted-foreground/70 flex items-center gap-1.5 overflow-hidden mt-auto pt-1.5 border-t border-border/40">
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    {item.fileName ? (
-                        <>
-                            <span className="opacity-40">•</span>
-                            <span className="truncate italic opacity-80" title={item.fileName}>{item.fileName}</span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="opacity-40">•</span>
-                            <span className="truncate italic opacity-60">{t(typeKey)}</span>
-                        </>
+                <div className="text-[10px] sm:text-xs text-muted-foreground/70 flex items-center justify-between gap-1.5 overflow-hidden mt-auto pt-1.5 border-t border-border/40">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{new Date(item.createdAt).toLocaleDateString()}</span>
+                        {item.fileName && (
+                            <>
+                                <span className="opacity-40">•</span>
+                                <span className="truncate italic opacity-80" title={item.fileName}>{item.fileName}</span>
+                            </>
+                        )}
+                    </div>
+                    {item.type === 'exercise' && item.dueDate && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <span>📅 {new Date(item.dueDate).toLocaleDateString()}</span>
+                        </span>
                     )}
                 </div>
             </div>

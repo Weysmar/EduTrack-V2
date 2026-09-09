@@ -49,6 +49,7 @@ export interface Item {
     // Exercise specifics
     status?: 'not-started' | 'in-progress' | 'completed';
     difficulty?: 'easy' | 'medium' | 'hard';
+    dueDate?: string | Date | null;
 
     createdAt: Date;
     updatedAt: Date;

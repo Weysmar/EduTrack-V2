@@ -122,6 +122,15 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                         <span className="uppercase tracking-wider font-bold text-primary/80">{t(typeKey)}</span>
                         <span>•</span>
                         <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                        {item.type === 'exercise' && item.dueDate && (
+                            <>
+                                <span>•</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{t('item.dueDate')}: {new Date(item.dueDate).toLocaleDateString()}</span>
+                                </span>
+                            </>
+                        )}
                         {item.fileName && (
                             <>
                                 <span>•</span>

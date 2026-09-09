@@ -11,7 +11,7 @@ import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar } from 'lucide-react'
 import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
 import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
@@ -658,6 +658,23 @@ export function ItemView() {
                                                     month: '2-digit',
                                                     year: 'numeric'
                                                 })}
+                                            </span>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            {item.type === 'exercise' && (
+                                <>
+                                    {course && <span>•</span>}
+                                    <span className="capitalize">{t(`status.${item.status || 'todo'}`)}</span>
+                                    <span>•</span>
+                                    <span className="capitalize">{t(`diff.${item.difficulty || 'medium'}`)}</span>
+                                    {item.dueDate && (
+                                        <>
+                                            <span>•</span>
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                <Calendar className="h-3 w-3" />
+                                                <span>{t('item.dueDate')}: {new Date(item.dueDate).toLocaleDateString()}</span>
                                             </span>
                                         </>
                                     )}

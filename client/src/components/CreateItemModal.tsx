@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight, Calendar as CalendarIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
@@ -28,6 +28,8 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const [content, setContent] = useState('') // For note/exercise
     const [status, setStatus] = useState('todo') // For exercise
     const [difficulty, setDifficulty] = useState('medium') // For exercise
+    const [dueDate, setDueDate] = useState('') // For exercise deadline
+    const [hasDueDate, setHasDueDate] = useState(false) // For exercise deadline toggle
     const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []) // For resource/exercise
     const [uploadProgress, setUploadProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false)
@@ -43,11 +45,14 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         }),
         onSuccess: (createdItem: any) => {
             queryClient.invalidateQueries({ queryKey: ['items'] })
+            queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
             onClose()
             const itemType = type
             const newId = createdItem?.id
             setTitle('')
             setContent('')
+            setDueDate('')
+            setHasDueDate(false)
             setFiles([])
             setUploadProgress(0)
 
@@ -151,6 +156,9 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         if (type === 'exercise') {
             formData.append('status', status);
             formData.append('difficulty', difficulty);
+            if (hasDueDate && dueDate) {
+                formData.append('dueDate', new Date(dueDate).toISOString());
+            }
 
             if (files.length > 0) {
                 let fileToUpload = files[0];
@@ -279,6 +287,50 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                         <option value="hard">{t('diff.hard')}</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* Échéance de l'exercice avec case optionnelle */}
+                            <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-2.5 transition-all">
+                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={hasDueDate}
+                                        onChange={e => {
+                                            const checked = e.target.checked;
+                                            setHasDueDate(checked);
+                                            if (checked && !dueDate) {
+                                                setDueDate(new Date().toISOString().split('T')[0]);
+                                            } else if (!checked) {
+                                                setDueDate('');
+                                            }
+                                        }}
+                                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                                    />
+                                    <span className="text-sm font-semibold flex items-center gap-1.5">
+                                        <CalendarIcon className="h-4 w-4 text-emerald-500" />
+                                        <span>{t('item.form.hasDueDate') || (language === 'fr' ? "Définir une échéance (ajouter à l'agenda)" : "Set a deadline (add to calendar)")}</span>
+                                    </span>
+                                </label>
+
+                                {hasDueDate && (
+                                    <div className="pt-1.5 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        <input
+                                            type="date"
+                                            value={dueDate}
+                                            onChange={e => setDueDate(e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium"
+                                            required={hasDueDate}
+                                        />
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-medium">
+                                            <span>📅</span>
+                                            <span>
+                                                {t('item.form.dueDate.hint') || (language === 'fr'
+                                                    ? "Cet exercice sera automatiquement ajouté à votre agenda pour cette date."
+                                                    : "This exercise will automatically be added to your calendar for this date.")}
+                                            </span>
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">{t('item.form.desc')}</label>

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { storageService } from '../services/storageService';
 import { socketService } from '../services/socketService';
+import { addOrUpdateExerciseAgendaTask, removeExerciseAgendaTask } from '../services/agendaService';
 
 import { prisma } from '../lib/prisma';
 interface AuthRequest extends Request {
@@ -117,7 +118,7 @@ export const getItem = async (req: AuthRequest, res: Response) => {
 export const createItem = async (req: AuthRequest, res: Response) => {
     try {
         console.log('Creating item with body:', req.body);
-        const { courseId, type, title, content, status, difficulty, tags } = req.body;
+        const { courseId, type, title, content, status, difficulty, tags, dueDate } = req.body;
         let fileUrl = null;
         let storageKey = null;
         let fileName = null;
@@ -149,6 +150,8 @@ export const createItem = async (req: AuthRequest, res: Response) => {
             }
         }
 
+        const parsedDueDate = dueDate ? new Date(dueDate) : null;
+
         const item = await prisma.item.create({
             data: {
                 profileId: req.user!.id,
@@ -158,6 +161,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 content,
                 status,
                 difficulty,
+                dueDate: (parsedDueDate && !isNaN(parsedDueDate.getTime())) ? parsedDueDate : null,
                 tags: tags ? JSON.parse(tags) : [],
                 fileUrl,
                 storageKey,
@@ -167,6 +171,21 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 thumbnailUrl
             }
         });
+
+        // Automatically add to Agenda if it's an exercise with a due date
+        if (item.type === 'exercise' && item.dueDate) {
+            try {
+                await addOrUpdateExerciseAgendaTask({
+                    profileId: req.user!.id,
+                    description: `Exercice : ${item.title}`,
+                    date: item.dueDate,
+                    courseId: item.courseId,
+                    itemId: item.id
+                });
+            } catch (err) {
+                console.error("[ItemController] Failed to auto-add exercise to agenda:", err);
+            }
+        }
 
         socketService.emitToProfile(req.user!.id, 'item:created', item);
 
@@ -234,10 +253,34 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
             }
         }
 
+        if (updateData.dueDate !== undefined) {
+            if (updateData.dueDate) {
+                const parsed = new Date(updateData.dueDate);
+                updateData.dueDate = isNaN(parsed.getTime()) ? null : parsed;
+            } else {
+                updateData.dueDate = null;
+            }
+        }
+
         const updatedItem = await prisma.item.update({
             where: { id: req.params.id },
             data: updateData
         });
+
+        // Sync with agenda if exercise
+        if (updatedItem.type === 'exercise') {
+            if (updatedItem.dueDate) {
+                await addOrUpdateExerciseAgendaTask({
+                    profileId: req.user!.id,
+                    description: `Exercice : ${updatedItem.title}`,
+                    date: updatedItem.dueDate,
+                    courseId: updatedItem.courseId,
+                    itemId: updatedItem.id
+                }).catch(err => console.error("[ItemController] Error updating exercise in agenda:", err));
+            } else {
+                await removeExerciseAgendaTask(updatedItem.id, req.user!.id).catch(err => console.error("[ItemController] Error removing exercise from agenda:", err));
+            }
+        }
 
         socketService.emitToProfile(req.user!.id, 'item:updated', updatedItem);
 
@@ -259,6 +302,10 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
 
         if (item.storageKey) {
             await storageService.deleteFile(item.storageKey);
+        }
+
+        if (item.type === 'exercise') {
+            await removeExerciseAgendaTask(item.id, req.user!.id).catch(() => {});
         }
 
         // Cascade delete summaries linked to this item (both as source itemId and as generatedItemId)

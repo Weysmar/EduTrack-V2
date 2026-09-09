@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
     ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon,
     Loader2, CheckSquare, Square, CheckCircle2, Clock, BookOpen, AlertCircle,
-    Plus, Trash2, X, Sparkles
+    Plus, Trash2, X, Sparkles, ExternalLink
 } from 'lucide-react'
 import {
     format, addWeeks, subWeeks, addDays, subDays,
@@ -22,6 +23,7 @@ import { CreateTaskModal } from '@/components/CreateTaskModal'
 export const TASK_TYPES = [
     { id: 'exam', label: 'Examen / Partiel', labelEn: 'Exam', icon: '🎓', color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30' },
     { id: 'assignment', label: 'Rendu / Devoir', labelEn: 'Assignment', icon: '📝', color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30' },
+    { id: 'exercise', label: 'Exercice', labelEn: 'Exercise', icon: '🏋️', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
     { id: 'revision', label: 'Révision', labelEn: 'Revision', icon: '📖', color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/30' },
     { id: 'project', label: 'Projet', labelEn: 'Project', icon: '👥', color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30' },
     { id: 'task', label: 'Tâche', labelEn: 'Task', icon: '📌', color: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/30' },
@@ -357,7 +359,9 @@ export function CalendarWidget() {
                                                             ? "bg-rose-500/5 border-rose-500/40 hover:border-rose-500/70 shadow-xs"
                                                             : task.type === 'assignment'
                                                                 ? "bg-amber-500/5 border-amber-500/40 hover:border-amber-500/70 shadow-xs"
-                                                                : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
+                                                                : task.type === 'exercise'
+                                                                    ? "bg-emerald-500/5 border-emerald-500/40 hover:border-emerald-500/70 shadow-xs"
+                                                                    : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
                                                 )}
                                                 style={{
                                                     borderLeftColor: course?.color || undefined,
@@ -381,9 +385,20 @@ export function CalendarWidget() {
                                                             )}
                                                         </button>
                                                         <div className="flex flex-col min-w-0 flex-1">
-                                                            <div className="font-semibold leading-tight line-clamp-2 select-none break-words">
-                                                                {task.description}
-                                                            </div>
+                                                            {task.itemId && course ? (
+                                                                <Link
+                                                                    to={`/edu/course/${course.id}/item/${task.itemId}`}
+                                                                    className="font-semibold leading-tight line-clamp-2 hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors select-none break-words flex items-center gap-1 group/link"
+                                                                    title={language === 'fr' ? "Ouvrir l'exercice" : "Open exercise"}
+                                                                >
+                                                                    <span>{task.description}</span>
+                                                                    <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
+                                                                </Link>
+                                                            ) : (
+                                                                <div className="font-semibold leading-tight line-clamp-2 select-none break-words">
+                                                                    {task.description}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
 
