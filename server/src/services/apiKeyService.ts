@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
+import { resolveModelId, detectProvider } from '../config/aiModels';
 
 export type AIProvider = 'google' | 'perplexity';
 
@@ -10,42 +11,9 @@ export interface ApiKeyConfig {
     source: 'request' | 'profile_settings' | 'environment';
 }
 
-// Map friendly model names to their actual API versions
-const mapModelName = (model: string): string => {
-    const modelMap: Record<string, string> = {
-        // Google Gemini models (officiers Google)
-        'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7-thinking': 'gemini-3.7-flash',
-        'gemini-2.5-flash': 'gemini-2.5-flash',
-        
-        // Redirections de compatibilité pour anciens réglages sauvegardés
-        'gemini-3.7': 'gemini-3.7-flash',
-        'gemini-3.7-pro': 'gemini-3.7-flash',
-        'gemini-3.8-flash': 'gemini-3.7-flash',
-        'gemini-3.8-pro': 'gemini-3.7-flash',
-        'gemini-3.8': 'gemini-3.7-flash',
-        
-        // Perplexity models
-        'sonar-pro': 'sonar-pro',
-        'sonar': 'sonar',
-        'sonar-reasoning': 'sonar-reasoning',
-        'sonar-reasoning-pro': 'sonar-reasoning-pro',
-        'sonar-deep-research': 'sonar-deep-research',
-        'llama-3.1-sonar-small-128k-online': 'sonar',
-        'llama-3.1-sonar-large-128k-online': 'sonar-pro',
-        'llama-3.1-sonar-huge-128k-online': 'sonar-reasoning'
-    };
-    return modelMap[model] || model || 'gemini-3.7-flash';
-};
-
-// Detect provider from model name
-export const detectProvider = (model: string): AIProvider => {
-    const lowerModel = model.toLowerCase();
-    if (lowerModel.includes('sonar') || lowerModel.includes('pplx')) {
-        return 'perplexity';
-    }
-    return 'google';
-};
+// resolveModelId and detectProvider are imported from ../config/aiModels.ts
+// which is the single source of truth for all model definitions.
+export { resolveModelId, detectProvider };
 
 // Validate API key format (basic checks)
 const validateApiKey = (key: string, provider: AIProvider): boolean => {
@@ -204,7 +172,7 @@ export const getFinanceApiKey = async (
  */
 export const getDefaultModel = (provider: AIProvider, preferredModel?: string): string => {
     if (preferredModel) {
-        return mapModelName(preferredModel);
+        return resolveModelId(preferredModel);
     }
     return provider === 'google' ? 'gemini-3.7-flash' : 'sonar';
 };

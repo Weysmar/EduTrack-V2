@@ -1,11 +1,15 @@
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState, useEffect } from 'react'
 import { generateFlashcards, GenerationParams } from '@/lib/flashcards/generator'
-import { Loader2, Brain, AlertCircle, Zap, Globe } from 'lucide-react'
+import { Loader2, Brain, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
+import { ModelSelector } from '@/components/ModelSelector'
+import { useAIProvider } from '@/hooks/useAIProvider'
+
+import type { FileCategory } from '@/config/aiModels'
 
 interface GenerateFlashcardsModalProps {
     isOpen: boolean
@@ -14,9 +18,18 @@ interface GenerateFlashcardsModalProps {
     courseId?: number
     itemId?: number
     sourceTitle: string
+    fileCategory?: FileCategory
 }
 
-export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle }: GenerateFlashcardsModalProps) {
+export function GenerateFlashcardsModal({
+    isOpen,
+    onClose,
+    sourceContent,
+    courseId,
+    itemId,
+    sourceTitle,
+    fileCategory
+}: GenerateFlashcardsModalProps) {
     const { t, language } = useLanguage()
     const navigate = useNavigate()
     const isOnline = useOnlineStatus()
@@ -24,25 +37,20 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
 
     const geminiKey = getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries')
     const perplexityKey = getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries')
-    const defaultProvider: 'google' | 'perplexity' = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
+    const ai = useAIProvider({ geminiKey, perplexityKey })
 
-    const [provider, setProvider] = useState<'google' | 'perplexity'>(defaultProvider)
-    const [model, setModel] = useState<string>(defaultProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
     const [isLoading, setIsLoading] = useState(false)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
     const [count, setCount] = useState<number>(10)
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['concepts'])
     const [error, setError] = useState<string | null>(null)
 
-    const hasKeyForProvider = provider === 'google' ? !!geminiKey : !!perplexityKey
     const hasContent = !!sourceContent?.trim()
 
     // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
-            const p: 'google' | 'perplexity' = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
-            setProvider(p)
-            setModel(p === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
+            ai.reset()
             setDifficulty('mixed')
             setCount(10)
             setSelectedTypes(['concepts'])
@@ -50,10 +58,6 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
         }
     }, [isOpen, geminiKey, perplexityKey])
 
-    const handleProviderChange = (p: 'google' | 'perplexity') => {
-        setProvider(p)
-        setModel(p === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
-    }
 
     const handleTypeToggle = (type: string) => {
         if (selectedTypes.includes(type)) {
@@ -64,8 +68,8 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
     }
 
     const handleGenerate = async () => {
-        if (!hasKeyForProvider) {
-            setError(`Clé API manquante pour ${provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé dans Profil > Paramètres > Clés API.`)
+        if (!ai.hasKeyForProvider) {
+            setError(`Clé API manquante pour ${ai.provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé dans Profil > Paramètres > Clés API.`)
             return
         }
         if (!hasContent) {
@@ -88,8 +92,8 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
                 count,
                 difficulty,
                 types: selectedTypes as GenerationParams['types'],
-                provider,
-                model
+                provider: ai.provider,
+                model: ai.model
             })
 
             const difficultyLabel = difficulty === 'easy' ? 'Facile' : difficulty === 'hard' ? 'Difficile' : difficulty === 'mixed' ? 'Mixte' : 'Moyen'
@@ -175,74 +179,19 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
                                         </div>
                                     )}
 
-                                    {/* Provider selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            {language === 'fr' ? 'Fournisseur IA' : 'AI Provider'}
-                                        </label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => handleProviderChange('google')}
-                                                disabled={!geminiKey}
-                                                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px] touch-manipulation
-                                                    ${provider === 'google'
-                                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                                        : 'hover:bg-muted border-border'}
-                                                    ${!geminiKey ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                            >
-                                                <Zap className="h-4 w-4" />
-                                                Google Gemini
-                                                {!geminiKey && <span className="text-xs ml-1 opacity-70">(no key)</span>}
-                                            </button>
-                                            <button
-                                                onClick={() => handleProviderChange('perplexity')}
-                                                disabled={!perplexityKey}
-                                                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px] touch-manipulation
-                                                    ${provider === 'perplexity'
-                                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                                        : 'hover:bg-muted border-border'}
-                                                    ${!perplexityKey ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                            >
-                                                <Globe className="h-4 w-4" />
-                                                Perplexity
-                                                {!perplexityKey && <span className="text-xs ml-1 opacity-70">(no key)</span>}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Model selection */}
-                                    {provider === 'google' && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1.5">
-                                                {language === 'fr' ? 'Modèle Gemini' : 'Gemini Model'}
-                                            </label>
-                                            <select
-                                                value={model}
-                                                onChange={(e) => setModel(e.target.value)}
-                                                className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                            >
-                                                <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Rapide et performant)</option>
-                                                <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Flash Thinking (Raisonnement étape par étape)</option>
-                                                <option value="gemini-2.5-flash">🛡️ Gemini 2.5 Flash (Secours haute disponibilité)</option>
-                                            </select>
-                                        </div>
-                                    )}
-                                    {provider === 'perplexity' && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1.5">
-                                                {language === 'fr' ? 'Modèle Perplexity' : 'Perplexity Model'}
-                                            </label>
-                                            <select
-                                                value={model}
-                                                onChange={(e) => setModel(e.target.value)}
-                                                className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                            >
-                                                <option value="sonar-pro">Sonar Pro (Recommandé)</option>
-                                                <option value="sonar">Sonar (Standard)</option>
-                                                <option value="sonar-reasoning">Sonar Reasoning</option>
-                                            </select>
-                                        </div>
-                                    )}
+                                    {/* Provider & Model Selection */}
+                                    <ModelSelector
+                                        provider={ai.provider}
+                                        model={ai.model}
+                                        setProvider={ai.setProvider}
+                                        setModel={ai.setModel}
+                                        hasKeyForProvider={ai.hasKeyForProvider}
+                                        geminiKey={geminiKey}
+                                        perplexityKey={perplexityKey}
+                                        onClose={onClose}
+                                        contentLength={sourceContent?.length}
+                                        fileCategory={fileCategory}
+                                    />
 
                                     {/* Count */}
                                     <div>
@@ -323,7 +272,7 @@ export function GenerateFlashcardsModal({ isOpen, onClose, sourceContent, course
                                     </button>
                                     <button
                                         onClick={handleGenerate}
-                                        disabled={isLoading || !isOnline || !hasKeyForProvider}
+                                        disabled={isLoading || !isOnline || !ai.hasKeyForProvider}
                                         className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}

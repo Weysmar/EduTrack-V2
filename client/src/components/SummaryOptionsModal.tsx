@@ -2,47 +2,67 @@ import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS, CompressionLevel, SummaryForma
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
-
-import { X, Sliders, AlertCircle } from 'lucide-react'
+import { ModelSelector } from '@/components/ModelSelector'
+import { getDefaultModel } from '@/config/aiModels'
+import { useAIProvider } from '@/hooks/useAIProvider'
+import { X, Sliders } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useLanguage } from '@/components/language-provider'
+import type { FileCategory } from '@/config/aiModels'
 
 interface SummaryOptionsModalProps {
     isOpen: boolean
     onClose: () => void
     onGenerate: (options: SummaryOptions) => void
     initialOptions?: SummaryOptions
+    fileCategory?: FileCategory
+    contentLength?: number
 }
 
-export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOptions = DEFAULT_SUMMARY_OPTIONS }: SummaryOptionsModalProps) {
+export function SummaryOptionsModal({
+    isOpen,
+    onClose,
+    onGenerate,
+    initialOptions = DEFAULT_SUMMARY_OPTIONS,
+    fileCategory,
+    contentLength,
+}: SummaryOptionsModalProps) {
     const navigate = useNavigate()
     const { getApiKey } = useProfileStore()
     const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises')
     const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises')
     const initialProvider = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
 
+    // Hook qui garantit le couplage provider ↔ modèle
+    const ai = useAIProvider({
+        geminiKey,
+        perplexityKey,
+        initialProvider: initialOptions?.provider as 'google' | 'perplexity' | undefined,
+        initialModel: initialOptions?.model
+    })
+
     const [options, setOptions] = useState<SummaryOptions>({
         ...initialOptions,
-        provider: initialOptions?.provider || initialProvider,
-        model: initialOptions?.model || (initialProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
+        provider: ai.provider,
+        model: ai.model
     })
     const { t } = useLanguage()
 
     useEffect(() => {
         if (isOpen) {
-            const chosenProvider = initialOptions?.provider || ((!perplexityKey && geminiKey) ? 'google' : 'perplexity')
-            const defaultModel = chosenProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro'
-            setOptions({
+            ai.reset()
+            setOptions(prev => ({
                 ...initialOptions,
-                provider: chosenProvider,
-                model: initialOptions?.model || defaultModel
-            })
+                ...prev,
+                provider: ai.provider,
+                model: ai.model
+            }))
         }
     }, [isOpen, initialOptions, geminiKey, perplexityKey])
 
     if (!isOpen) return null
 
-    const hasKeyForSelectedProvider = options.provider === 'google' ? !!geminiKey : !!perplexityKey
+    const hasKeyForSelectedProvider = ai.hasKeyForProvider
 
     const handleGenerate = () => {
         if (!hasKeyForSelectedProvider) {
@@ -73,89 +93,28 @@ export function SummaryOptionsModal({ isOpen, onClose, onGenerate, initialOption
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* Provider & Model Selection */}
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold">Moteur IA</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOptions({ ...options, provider: 'perplexity', model: 'sonar-pro' })}
-                                        className={cn(
-                                            "px-3 py-2.5 rounded-md text-sm font-medium border flex items-center justify-center gap-2 min-h-[44px] touch-manipulation transition-all",
-                                            options.provider === 'perplexity'
-                                                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                                                : 'hover:bg-accent border-muted'
-                                        )}
-                                    >
-                                        🤖 Perplexity Pro (Sonar)
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setOptions({ ...options, provider: 'google', model: 'gemini-3.7-flash' })}
-                                        className={cn(
-                                            "px-3 py-2.5 rounded-md text-sm font-medium border flex items-center justify-center gap-2 min-h-[44px] touch-manipulation transition-all",
-                                            options.provider === 'google'
-                                                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                                                : 'hover:bg-accent border-muted'
-                                        )}
-                                    >
-                                        ⚡ Google Gemini
-                                    </button>
-                                </div>
-                                {!hasKeyForSelectedProvider && (
-                                    <div className="mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs animate-in fade-in">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                                            <span className="truncate">Clé manquante pour {options.provider === 'google' ? 'Google Gemini' : 'Perplexity'}.</span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                onClose()
-                                                navigate('/settings')
-                                            }}
-                                            className="font-semibold underline hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs"
-                                        >
-                                            Paramètres ↗
-                                        </button>
-                                    </div>
-                                )}
+                            {/* Provider & Model Selection */}
+                            <div className="space-y-4">
+                                <ModelSelector
+                                    provider={ai.provider}
+                                    model={ai.model}
+                                    setProvider={(p) => {
+                                        ai.setProvider(p)
+                                        setOptions(prev => ({ ...prev, provider: p, model: ai.model }))
+                                    }}
+                                    setModel={(m) => {
+                                        ai.setModel(m)
+                                        setOptions(prev => ({ ...prev, model: m }))
+                                    }}
+                                    hasKeyForProvider={ai.hasKeyForProvider}
+                                    geminiKey={geminiKey}
+                                    perplexityKey={perplexityKey}
+                                    onClose={onClose}
+                                    compact
+                                    fileCategory={fileCategory}
+                                    contentLength={contentLength}
+                                />
                             </div>
-
-                            {/* Specific Model Selection */}
-                            {options.provider === 'google' && (
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
-                                    <select
-                                        value={options.model || 'gemini-3.7-flash'}
-                                        onChange={(e) => setOptions({ ...options, model: e.target.value })}
-                                        className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background"
-                                    >
-                                        <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Rapide et performant)</option>
-                                        <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Flash Thinking (Raisonnement étape par étape)</option>
-                                        <option value="gemini-2.5-flash">🛡️ Gemini 2.5 Flash (Secours haute disponibilité)</option>
-                                    </select>
-                                </div>
-                            )}
-
-                            {options.provider === 'perplexity' && (
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
-                                    <select
-                                        value={options.model || 'sonar-pro'}
-                                        onChange={(e) => setOptions({ ...options, model: e.target.value })}
-                                        className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 ring-offset-background"
-                                    >
-                                        <option value="sonar-pro">Sonar Pro (Recommandé)</option>
-                                        <option value="sonar">Sonar (Rapide)</option>
-                                        <option value="sonar-reasoning">Sonar Reasoning (Expert)</option>
-                                        <option value="sonar-reasoning-pro">Sonar Reasoning Pro</option>
-                                        <option value="sonar-deep-research">Sonar Deep Research (Recherche Profonde)</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
 
                         {/* Compression */}
                         <div className="space-y-3">

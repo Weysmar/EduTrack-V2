@@ -12,7 +12,7 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('=== AI Generate Request ===');
         console.log('Body:', JSON.stringify(req.body, null, 2));
 
-        const { systemPrompt, provider, model } = req.body;
+        const { systemPrompt, provider, model, fileCategory } = req.body;
         const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : req.body.apiKey;
         // Type validation: ensure prompt is a non-empty string
         const prompt = typeof req.body.prompt === 'string' ? req.body.prompt : undefined;
@@ -33,10 +33,11 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('Model:', model);
         console.log('Has API Key:', !!apiKey);
         console.log('Prompt length:', prompt.length);
+        if (fileCategory) console.log('File Category:', fileCategory);
 
         const selectedProvider = provider === 'perplexity' ? 'perplexity' : 'google';
         console.log('Calling aiService.generateText with provider:', selectedProvider, 'and model:', model);
-        const response = await aiService.generateText(prompt, systemPrompt, model, apiKey, selectedProvider);
+        const response = await aiService.generateText(prompt, systemPrompt, model, apiKey, selectedProvider, fileCategory);
         console.log('Generation successful, response length:', response?.length);
 
         // Increment AI generation counter if user is authenticated
@@ -70,7 +71,7 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
 
 export const generateJSON = async (req: AuthRequest, res: Response) => {
     try {
-        const { prompt, systemPrompt, provider, model } = req.body;
+        const { prompt, systemPrompt, provider, model, fileCategory } = req.body;
         const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : req.body.apiKey;
         if (!apiKey) {
             return res.status(400).json({
@@ -78,7 +79,8 @@ export const generateJSON = async (req: AuthRequest, res: Response) => {
                 error: 'Aucune clé API configurée. Veuillez renseigner votre clé API personnelle dans Profil > Paramètres > Clés API.'
             });
         }
-        const response = await aiService.generateJSON(prompt, systemPrompt, model, apiKey);
+        const selectedProvider = provider === 'perplexity' ? 'perplexity' : 'google';
+        const response = await aiService.generateJSON(prompt, systemPrompt, model, apiKey, selectedProvider, fileCategory);
 
         // Increment AI generation counter if user is authenticated
         if (req.user?.id) {

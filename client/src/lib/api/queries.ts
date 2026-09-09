@@ -278,6 +278,7 @@ export const mindmapQueries = {
         name?: string;
         apiKey?: string;
         model?: string;
+        provider?: string;
         courseId?: string;
     }) => {
         const { data: res } = await apiClient.post('/mindmaps/generate', data);

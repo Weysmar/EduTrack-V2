@@ -1,40 +1,46 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCompatibility, FileCategory } from '../config/aiModels';
 
 // Multi-user architecture: Each user provides their own API key (BYOK)
 // Keys are passed per-request from the user's saved profile settings.
-
-// Map friendly model names to their actual API versions
-const mapModelName = (model: string): string => {
-    const modelMap: Record<string, string> = {
-        // Google Gemini models (officiels Google)
-        'gemini-3.7-flash': 'gemini-3.7-flash',
-        'gemini-3.7-thinking': 'gemini-3.7-flash',
-        'gemini-2.5-flash': 'gemini-2.5-flash',
-
-        // Redirections de compatibilité pour anciens réglages sauvegardés
-        'gemini-3.7': 'gemini-3.7-flash',
-        'gemini-3.7-pro': 'gemini-3.7-flash',
-        'gemini-3.8-flash': 'gemini-3.7-flash',
-        'gemini-3.8-pro': 'gemini-3.7-flash',
-        'gemini-3.8': 'gemini-3.7-flash',
-
-        // Perplexity mappings
-        'sonar-pro': 'sonar-pro',
-        'sonar-reasoning-pro': 'sonar-reasoning-pro',
-        'sonar-reasoning': 'sonar-reasoning',
-        'sonar-deep-research': 'sonar-deep-research',
-        'sonar': 'sonar'
-    };
-
-    return modelMap[model] || model || 'gemini-3.7-flash';
-};
+// Model name resolution and fallback chains are managed by ../config/aiModels.ts.
 
 export const aiService = {
-    async generateText(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<string> {
+    async generateText(
+        prompt: string,
+        systemPrompt?: string,
+        model: string = 'gemini-3.7-flash',
+        apiKey?: string,
+        provider: 'google' | 'perplexity' = 'google',
+        fileCategory?: FileCategory
+    ): Promise<string> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
+        const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
+
+        if (!fullPrompt || fullPrompt.trim().length === 0) {
+            throw new Error('Prompt is empty');
+        }
+
+        const apiModel = resolveModelId(model);
+
+        // Validation de la compatibilité fichier ↔ modèle
+        if (fileCategory) {
+            const compat = validateFileModelCompatibility(fileCategory, apiModel);
+            if (!compat.compatible && compat.warning) {
+                console.warn(`[AI Service] File compatibility notice: ${compat.warning}`);
+            }
+        }
+
+        // Vérification de la capacité de contexte basée sur les tokens estimés du registre (couvre Google et Perplexity)
+        const contextCheck = checkContextFit(fullPrompt.length, apiModel);
+        if (!contextCheck.fits) {
+            throw new Error(contextCheck.warning!);
+        }
 
         if (provider === 'perplexity') {
             if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
+
+            console.log(`[AI Service] Generating text with Perplexity model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars (~${contextCheck.estimatedTokens} tokens).`);
 
             const response = await fetch('https://api.perplexity.ai/chat/completions', {
                 method: 'POST',
@@ -43,7 +49,7 @@ export const aiService = {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: mapModelName(model),
+                    model: apiModel,
                     messages: [
                         { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
                         { role: 'user', content: prompt }
@@ -66,27 +72,11 @@ export const aiService = {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
-            const fullPrompt = systemPrompt ? `${systemPrompt}\n\nUser Request:\n${prompt}` : prompt;
-
-            if (!fullPrompt || fullPrompt.length === 0) {
-                throw new Error('Prompt is empty');
-            }
-
-            const MAX_PROMPT_LENGTH = 500000;
-            if (fullPrompt.length > MAX_PROMPT_LENGTH) {
-                throw new Error(
-                    `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
-                    `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
-                    `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
-                );
-            }
-            const apiModel = mapModelName(model);
-            console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars.`);
+            console.log(`[AI Service] Generating text with model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars (~${contextCheck.estimatedTokens} tokens).`);
 
             const client = new GoogleGenerativeAI(effectiveKey);
 
-            // Cascading candidate models: starts with requested model (mapped to 3.7-flash), with silent fallback to 2.5-flash if Google 3.7 is overloaded
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = getFallbackChain(apiModel);
             let response;
             let lastErr: any;
 
@@ -150,26 +140,33 @@ export const aiService = {
                 message = `Le modèle IA a mis trop de temps à répondre (délai dépassé). Veuillez réessayer ou réduire la sélection.`;
             }
             if (message.includes('404') && message.includes('find')) {
-                message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant.`;
+                message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant ou changer de modèle dans les paramètres.`;
             }
             if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
-                message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
+                message = `Clé API invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
-                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou utiliser Perplexity.`;
+                message = `Les serveurs IA sont temporairement surchargés (503). Veuillez réessayer dans quelques instants.`;
             }
             if (message.includes('429') || message.includes('Quota')) {
-                message = `Quota d'IA dépassé. Veuillez patienter une minute ou changer de clé/fournisseur.`;
+                message = `Quota IA dépassé. Veuillez patienter une minute ou changer de clé/fournisseur dans les paramètres.`;
             }
             throw new Error(message);
         }
     },
 
-    async generateJSON(prompt: string, systemPrompt?: string, model: string = 'gemini-3.7-flash', apiKey?: string, provider: 'google' | 'perplexity' = 'google'): Promise<any> {
+    async generateJSON(
+        prompt: string,
+        systemPrompt?: string,
+        model: string = 'gemini-3.7-flash',
+        apiKey?: string,
+        provider: 'google' | 'perplexity' = 'google',
+        fileCategory?: FileCategory
+    ): Promise<any> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
         if (provider === 'perplexity') {
-            const text = await this.generateText(prompt, systemPrompt + " Output strictly valid JSON.", model, effectiveKey, 'perplexity');
+            const text = await this.generateText(prompt, (systemPrompt || '') + " Output strictly valid JSON.", model, effectiveKey, 'perplexity', fileCategory);
             const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
             return JSON.parse(cleanText);
         }
@@ -179,21 +176,26 @@ export const aiService = {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');
             }
 
-            const apiModel = mapModelName(model);
+            const apiModel = resolveModelId(model);
             console.log(`[AI JSON] Generating with model ${model} -> ${apiModel}`);
 
+            // Validation de la compatibilité fichier ↔ modèle
+            if (fileCategory) {
+                const compat = validateFileModelCompatibility(fileCategory, apiModel);
+                if (!compat.compatible && compat.warning) {
+                    console.warn(`[AI JSON] File compatibility notice: ${compat.warning}`);
+                }
+            }
+
             const client = new GoogleGenerativeAI(effectiveKey);
-            const candidateModels = [apiModel, 'gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter((m, i, arr) => arr.indexOf(m) === i);
+            const candidateModels = getFallbackChain(apiModel);
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
-            const MAX_PROMPT_LENGTH = 500000;
-            if (fullPrompt.length > MAX_PROMPT_LENGTH) {
-                throw new Error(
-                    `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
-                    `Limite: ${MAX_PROMPT_LENGTH} caractères. ` +
-                    `Veuillez réduire la taille du document ou sélectionner moins de contenu.`
-                );
+            // Vérification de la capacité de contexte basée sur les tokens estimés du registre
+            const contextCheck = checkContextFit(fullPrompt.length, apiModel);
+            if (!contextCheck.fits) {
+                throw new Error(contextCheck.warning!);
             }
 
             let text = "";
@@ -261,15 +263,15 @@ export const aiService = {
             console.error('AI JSON Generation Error Stack:', error);
 
             let message = error.message || 'Failed to generate JSON from AI';
-            if (message.includes('404')) message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant.`;
+            if (message.includes('404')) message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant ou changer de modèle dans les paramètres.`;
             if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
-                message = `Clé API Gemini invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
+                message = `Clé API invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
             }
             if (message.includes('Safety')) message = `L'IA a bloqué la réponse pour des raisons de sécurité.`;
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
-                message = `Les serveurs de Google IA sont temporairement surchargés (erreur 503). Veuillez réessayer dans quelques instants ou utiliser Perplexity.`;
+                message = `Les serveurs IA sont temporairement surchargés (503). Veuillez réessayer dans quelques instants.`;
             }
-            if (message.includes('429') || message.includes('Quota')) message = `Quota d'IA dépassé. Veuillez patienter une minute.`;
+            if (message.includes('429') || message.includes('Quota')) message = `Quota IA dépassé. Veuillez patienter une minute.`;
 
             throw new Error(`AI JSON Error: ${message}`);
         }

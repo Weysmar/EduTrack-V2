@@ -12,6 +12,9 @@ import { toast } from 'sonner';
 import { itemQueries } from '@/lib/api/queries';
 import { mindmapQueries } from '@/lib/api/queries';
 import { useLanguage } from '@/components/language-provider';
+import { ModelSelector } from '@/components/ModelSelector';
+import { useAIProvider } from '@/hooks/useAIProvider';
+import { useProfileStore } from '@/store/profileStore';
 
 interface GenerateMindMapModalProps {
     isOpen: boolean;
@@ -25,6 +28,11 @@ interface GenerateMindMapModalProps {
 export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile, onSuccess }: GenerateMindMapModalProps) {
     const { t } = useLanguage();
     const queryClient = useQueryClient();
+    const { getApiKey } = useProfileStore();
+
+    const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises');
+    const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises');
+    const ai = useAIProvider({ geminiKey, perplexityKey });
 
     // State
     const [selectedNotes, setSelectedNotes] = useState<any[]>(initialSelectedNotes);
@@ -34,14 +42,14 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
-    const [model, setModel] = useState('gemini-3.7-flash');
 
     useEffect(() => {
         if (isOpen) {
+            ai.reset();
             if (initialSelectedNotes.length) setSelectedNotes(initialSelectedNotes);
             if (initialSelectedFile) setSelectedFiles([initialSelectedFile]);
         }
-    }, [isOpen, initialSelectedNotes, initialSelectedFile]);
+    }, [isOpen, initialSelectedNotes, initialSelectedFile, geminiKey, perplexityKey]);
 
 
     // Fetch available notes
@@ -75,13 +83,18 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     // Mutation for generation
     const generateMutation = useMutation({
         mutationFn: async () => {
+            if (!ai.hasKeyForProvider) {
+                throw new Error(`Clé API manquante pour ${ai.provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez configurer votre clé dans Profil > Paramètres.`);
+            }
             const data = await mindmapQueries.generate({
                 noteIds: selectedNotes.map(n => n.id),
                 fileItemIds: selectedFiles.map(f => f.id),
                 name: name || `Mind Map ${new Date().toLocaleDateString()}`,
-                model,
+                model: ai.model,
+                provider: ai.provider,
                 courseId // Pass courseId to link the mind map
             });
+            return data;
         },
         onSuccess: (data) => {
             toast.success(t('mindmap.gen.success'));
@@ -342,25 +355,16 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                     </div>
 
                                     {/* Model Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">{t('ai.model.label') || 'Model'}</label>
-                                        <select
-                                            value={model}
-                                            onChange={(e) => setModel(e.target.value)}
-                                            className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                        >
-                                            <optgroup label="Google Gemini">
-                                                <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Rapide & Performant)</option>
-                                                <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Flash Thinking (Raisonnement approfondi)</option>
-                                                <option value="gemini-2.5-flash">🛡️ Gemini 2.5 Flash (Secours haute disponibilité)</option>
-                                            </optgroup>
-                                            <optgroup label="Perplexity AI">
-                                                <option value="sonar">Sonar (Standard)</option>
-                                                <option value="sonar-pro">Sonar Pro (Advanced)</option>
-                                                <option value="sonar-reasoning">Sonar Reasoning</option>
-                                            </optgroup>
-                                        </select>
-                                    </div>
+                                    <ModelSelector
+                                        provider={ai.provider}
+                                        model={ai.model}
+                                        setProvider={ai.setProvider}
+                                        setModel={ai.setModel}
+                                        hasKeyForProvider={ai.hasKeyForProvider}
+                                        geminiKey={geminiKey}
+                                        perplexityKey={perplexityKey}
+                                        onClose={handleClose}
+                                    />
 
                                     {/* File Upload (Placeholder for now) */}
                                     <div className="border border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center bg-muted/20">
@@ -380,7 +384,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                         </button>
                                         <button
                                             onClick={() => generateMutation.mutate()}
-                                            disabled={generateMutation.isPending || (selectedNotes.length === 0 && selectedFiles.length === 0 && uploadedFiles.length === 0)}
+                                            disabled={generateMutation.isPending || !ai.hasKeyForProvider || (selectedNotes.length === 0 && selectedFiles.length === 0 && uploadedFiles.length === 0)}
                                             className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
                                             {generateMutation.isPending ? (

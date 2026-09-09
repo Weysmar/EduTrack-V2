@@ -9,6 +9,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useProfileStore } from '@/store/profileStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { ModelSelector } from '@/components/ModelSelector'
+import { useAIProvider } from '@/hooks/useAIProvider'
+
+import type { FileCategory } from '@/config/aiModels'
 
 interface GenerateExerciseModalProps {
     isOpen: boolean
@@ -18,22 +22,30 @@ interface GenerateExerciseModalProps {
     itemId?: string
     sourceTitle: string
     initialMode?: 'flashcards' | 'quiz'
+    fileCategory?: FileCategory
 }
 
 import { useLanguage } from '@/components/language-provider'
 
-export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId, itemId, sourceTitle, initialMode = 'flashcards' }: GenerateExerciseModalProps) {
+export function GenerateExerciseModal({
+    isOpen,
+    onClose,
+    sourceContent,
+    courseId,
+    itemId,
+    sourceTitle,
+    initialMode = 'flashcards',
+    fileCategory
+}: GenerateExerciseModalProps) {
     const { t } = useLanguage()
     const navigate = useNavigate()
     const queryClient = useQueryClient()
     const { activeProfile, getApiKey } = useProfileStore()
     const geminiKey = getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries')
     const perplexityKey = getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries')
-    const initialProvider = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
+    const ai = useAIProvider({ geminiKey, perplexityKey })
 
     const [mode, setMode] = useState<'flashcards' | 'quiz'>(initialMode)
-    const [provider, setProvider] = useState<'perplexity' | 'google'>(initialProvider)
-    const [model, setModel] = useState<string | undefined>(initialProvider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro')
     const [isLoading, setIsLoading] = useState(false)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
     const [count, setCount] = useState<number>(10)
@@ -41,7 +53,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
     const [error, setError] = useState<string | null>(null)
     const isOnline = useOnlineStatus()
 
-    const hasKeyForSelectedProvider = provider === 'google' ? !!geminiKey : !!perplexityKey
+    const hasKeyForSelectedProvider = ai.hasKeyForProvider
 
     useEffect(() => {
         if (isOpen) {
@@ -50,10 +62,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
             setDifficulty('mixed')
             setSelectedTypes(['concept', 'fact'])
             setError(null)
-            if (!perplexityKey && geminiKey) {
-                setProvider('google')
-                setModel('gemini-3.7-flash')
-            }
+            ai.reset()
         }
     }, [isOpen, initialMode, geminiKey, perplexityKey])
 
@@ -67,7 +76,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
 
     const handleGenerate = async () => {
         if (!hasKeyForSelectedProvider) {
-            setError(`Clé API manquante pour ${provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.`);
+            setError(`Clé API manquante pour ${ai.provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.`);
             return;
         }
 
@@ -94,8 +103,8 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                     count,
                     difficulty,
                     types: selectedTypes as GenerationParams['types'],
-                    provider,
-                    model
+                    provider: ai.provider,
+                    model: ai.model
                 })
 
                 if (!cards || cards.length === 0) throw new Error("No flashcards returned.")
@@ -136,8 +145,8 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                     count,
                     difficulty,
                     types: selectedTypes as any,
-                    provider,
-                    model
+                    provider: ai.provider,
+                    model: ai.model
                 })
 
                 if (!questions || questions.length === 0) throw new Error("No questions returned.")
@@ -152,7 +161,7 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                     difficulty,
                     questionCount: questions.length,
                     createdAt: now,
-                    generatedBy: 'perplexity',
+                    generatedBy: ai.provider,
                     attemptsCount: 0,
                     questions: questions.map(q => ({
                         stem: q.stem || '?',
@@ -161,26 +170,6 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                         explanation: q.explanation || ''
                     }))
                 })
-
-                // Note: If quizQueries.create supports nested questions, use it. 
-                // Assuming creating separate questions if not.
-                // But typically API allows bulk create?
-                // For now, let's assume we need to create questions separately if the API doesn't handle them in the nested create.
-                // Or maybe create a specialized bulk create.
-                // Let's assume we added questions to the payload if the controller supports it.
-                // My backend implementation might not have fully supported nested Quiz.
-                // Let's check quizRoutes... wait I marked quiz as placeholder.
-
-                // If I haven't implemented Quiz Controller fully, this will fail.
-                // I need to implement QUIZ CONTROLLER and ROUTES!
-
-                // Assuming I will do that next or soon.
-                // For now, let's simulate the API call structure.
-
-                // If the user hasn't implemented Quiz Controller, I should probably do it.
-                // But I'm in the middle of frontend refactor.
-                // I will assume `quizQueries.create` works and accepts questions or I call `quizQuestionQueries`.
-
 
                 /* Invalidate queries so that quiz list is instantly refreshed */
                 queryClient.invalidateQueries({ queryKey: ['quizzes'] })
@@ -279,82 +268,19 @@ export function GenerateExerciseModal({ isOpen, onClose, sourceContent, courseId
                                                 <span>Aucun contenu textuel détecté. La génération risque d'échouer. Assurez-vous que le fichier contient du texte (PDF, DOCX, TXT, SQL…).</span>
                                             </div>
                                         )}
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">Moteur IA</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button
-                                                    onClick={() => { setProvider('perplexity'); setModel('sonar-pro') }}
-                                                    className={cn(
-                                                        "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
-                                                        provider === 'perplexity'
-                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                            : "hover:bg-accent border-muted"
-                                                    )}
-                                                >
-                                                    🤖 Perplexity Pro (Sonar)
-                                                </button>
-                                                <button
-                                                    onClick={() => { setProvider('google'); setModel('gemini-3.7-flash') }}
-                                                    className={cn(
-                                                        "px-3 py-2 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all",
-                                                        provider === 'google'
-                                                            ? "bg-primary text-primary-foreground border-primary"
-                                                            : "hover:bg-accent border-muted"
-                                                    )}
-                                                >
-                                                    ⚡ Google Gemini
-                                                </button>
-                                            </div>
-                                            {!hasKeyForSelectedProvider && (
-                                                <div className="mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs animate-in fade-in">
-                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                                                        <span className="truncate">Clé manquante pour {provider === 'google' ? 'Google Gemini' : 'Perplexity'}.</span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            onClose()
-                                                            navigate('/settings')
-                                                        }}
-                                                        className="font-semibold underline hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs"
-                                                    >
-                                                        Paramètres ↗
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Specific Model Selection (conditional) */}
-                                        {provider === 'google' && (
-                                            <div>
-                                                <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
-                                                <select
-                                                    value={model || 'gemini-3.7-flash'}
-                                                    onChange={(e) => setModel(e.target.value)}
-                                                    className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
-                                                >
-                                                    <option value="gemini-3.7-flash">⚡ Gemini 3.7 Flash (Recommandé - Rapide et performant)</option>
-                                                    <option value="gemini-3.7-thinking">🧠 Gemini 3.7 Flash Thinking (Raisonnement étape par étape)</option>
-                                                    <option value="gemini-2.5-flash">🛡️ Gemini 2.5 Flash (Secours haute disponibilité)</option>
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {provider === 'perplexity' && (
-                                            <div>
-                                                <label className="block text-xs text-muted-foreground mb-1">Version du modèle</label>
-                                                <select
-                                                    value={model}
-                                                    onChange={(e) => setModel(e.target.value)}
-                                                    className="w-full text-sm rounded-md border border-input bg-background px-3 py-1 ring-offset-background"
-                                                >
-                                                    <option value="sonar-pro">Sonar Pro (Recommandé)</option>
-                                                    <option value="sonar">Sonar (Rapide)</option>
-                                                    <option value="sonar-reasoning">Sonar Reasoning (Expert)</option>
-                                                </select>
-                                            </div>
-                                        )}
+                                        {/* Provider & Model Selection */}
+                                        <ModelSelector
+                                            provider={ai.provider}
+                                            model={ai.model}
+                                            setProvider={ai.setProvider}
+                                            setModel={ai.setModel}
+                                            hasKeyForProvider={ai.hasKeyForProvider}
+                                            geminiKey={geminiKey}
+                                            perplexityKey={perplexityKey}
+                                            onClose={onClose}
+                                            contentLength={sourceContent?.length}
+                                            fileCategory={fileCategory}
+                                        />
 
 
                                     </div>

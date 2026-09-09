@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { useProfileStore } from '@/store/profileStore'
+import { getModelsForProvider, getDefaultModel } from '@/config/aiModels'
 import { Eye, EyeOff, Save, AlertCircle, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -195,7 +196,7 @@ export function ApiKeySettings() {
                                     setKeys(prev => ({
                                         ...prev,
                                         finance_audit_provider: provider,
-                                        finance_audit_model: provider === 'google' ? 'gemini-3.7-flash' : 'sonar'
+                                        finance_audit_model: provider === 'google' ? getDefaultModel('google') : getDefaultModel('perplexity')
                                     }));
                                 }}
                                 className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -212,18 +213,9 @@ export function ApiKeySettings() {
                                 onChange={(e) => setKeys(prev => ({ ...prev, finance_audit_model: e.target.value }))}
                                 className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                             >
-                                {keys.finance_audit_provider === 'google' ? (
-                                    <>
-                                        <option value="gemini-3.7-flash">Gemini 3.7 Flash (Recommandé - Stable & Performant)</option>
-                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Secours haute disponibilité)</option>
-                                    </>
-                                ) : (
-                                    <>
-                                        <option value="sonar">Sonar (Stable)</option>
-                                        <option value="sonar-pro">Sonar Pro</option>
-                                        <option value="sonar-reasoning">Sonar Reasoning</option>
-                                    </>
-                                )}
+                                {getModelsForProvider(keys.finance_audit_provider as 'google' | 'perplexity').map(m => (
+                                    <option key={m.id} value={m.id}>{m.displayName}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

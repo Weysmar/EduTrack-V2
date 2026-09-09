@@ -41,7 +41,7 @@ const _legacyExtractTextFromFile = async (buffer: Buffer, mimetype: string): Pro
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
         // Updated to remove 'files' for direct upload
-        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-3.7-flash', courseId } = req.body;
+        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-3.7-flash', provider: explicitProvider, courseId } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {
@@ -58,8 +58,10 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        // Resolve API Key using standardized service
-        const provider = detectProvider(model);
+        // Resolve API Key using standardized service (supports explicit provider with robust registry detection fallback)
+        const provider = explicitProvider === 'perplexity' || explicitProvider === 'google'
+            ? explicitProvider
+            : detectProvider(model);
         const apiConfig = await getApiKey(profileId, provider, {
             requestApiKey: apiKey,
             purpose: 'summaries'

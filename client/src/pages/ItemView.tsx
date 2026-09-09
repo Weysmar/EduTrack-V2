@@ -532,6 +532,12 @@ export function ItemView() {
         setIsExerciseModalOpen(true);
     }
 
+    const itemFileCategory = (
+        item.fileType?.startsWith('image/') ||
+        /\.(jpg|jpeg|png|webp|avif|heic|heif)$/i.test(item.fileName || item.storageKey || '')
+    ) ? 'image' as const : 'text' as const;
+    const itemContentLength = (exerciseContent || item.extractedContent || item.content || '').length;
+
     return (
         <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-right-5 duration-300">
             {/* HOISTED Fullscreen Modal REMOVED - Unified with Focus Mode */}
@@ -550,6 +556,8 @@ export function ItemView() {
                 onClose={() => setIsSummaryOptionsOpen(false)}
                 onGenerate={handleGenerateSummary}
                 initialOptions={summary?.options}
+                fileCategory={itemFileCategory}
+                contentLength={itemContentLength}
             />
             {/* Removed redundant item check and fragment */}
             <GenerateExerciseModal
@@ -560,6 +568,7 @@ export function ItemView() {
                 courseId={String(course?.id || '')}
                 itemId={String(item.id || '')}
                 initialMode={exerciseMode}
+                fileCategory={itemFileCategory}
             />
 
             {/* Header */}

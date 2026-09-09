@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/store/authStore';
+import { useProfileStore } from '@/store/profileStore';
 import { queryClient } from '@/lib/queryClient';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || '';

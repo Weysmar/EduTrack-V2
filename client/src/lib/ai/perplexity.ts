@@ -1,5 +1,14 @@
+/**
+ * perplexity.ts — Intégration Perplexity côté client.
+ *
+ * ⚠️  CHEMIN UNIQUE : toutes les requêtes passent par le backend Express
+ * (/api/ai/generate) qui gère le logging, les limites de taux et la sécurité des clés.
+ * Plus d'appel direct à api.perplexity.ai depuis le navigateur.
+ */
+
 import { SummaryOptions } from "../summary/types";
 import { useProfileStore } from "@/store/profileStore";
+import { apiClient } from "@/lib/api/client";
 
 export interface PerplexityOptions {
     compressionLevel: '20' | '30' | '40' | '50';
@@ -31,11 +40,11 @@ export class PerplexityService {
     }
 
     static async generateSummary(text: string, options: SummaryOptions, perplexityOptions: PerplexityOptions): Promise<string> {
-        // GET KEY FROM STORE
-        const API_KEY = useProfileStore.getState().getApiKey('perplexity_summaries');
+        const API_KEY = useProfileStore.getState().getApiKey('perplexity_summaries')
+            || useProfileStore.getState().getApiKey('perplexity_exercises');
 
         if (!API_KEY) {
-            throw new Error("Clé API Perplexity manquante. Veuillez l'ajouter dans les paramètres du profil.");
+            throw new Error("Clé API Perplexity manquante. Veuillez la configurer dans Profil > Paramètres > Clés API.");
         }
 
         const systemPrompt = `Tu es un expert en synthèse académique structurée et pédagogique.
@@ -83,85 +92,49 @@ INSTRUCTIONS DE CONTENU :
 -   Compression : ${this.getCompressionInstruction(perplexityOptions.compressionLevel)}
 -   ${this.getFormatInstruction(options.format)}
 -   Vérifie qu'aucun caractère Markdown brut (#, *) ne reste visible s'il n'est pas interprété par le rendu final.
-`
+`;
 
-        try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: perplexityOptions.model || 'sonar-pro',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `Voici le texte à résumer :\n\n${text}` }
-                    ],
-                    max_tokens: 4096, // Large window for detailed summaries
-                    temperature: 0.1, // High precision
-                    top_p: 0.9,
-                    stream: false
-                })
-            });
+        // Routage via le backend unifié — plus d'appel direct à l'API Perplexity
+        const { data } = await apiClient.post('/ai/generate', {
+            prompt: `Voici le texte à résumer :\n\n${text}`,
+            systemPrompt,
+            provider: 'perplexity',
+            model: perplexityOptions.model || 'sonar-pro',
+            apiKey: API_KEY
+        }, { timeout: 120000 });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Perplexity API Error: ${errorData.error?.message || response.statusText}`);
-            }
-
-            const data = await response.json();
-            return data.choices[0]?.message?.content || "Aucun résumé généré.";
-
-        } catch (error: any) {
-            console.error("Perplexity Service Error:", error);
-            throw error;
-        }
+        return data.text;
     }
 }
 
-export async function generateWithPerplexity(prompt: string, systemPrompt: string = "You are a helpful AI assistant.", model?: string): Promise<string> {
-    const API_KEY = useProfileStore.getState().getApiKey('perplexity_exercises'); // Uses exercises key for generic gen
+/**
+ * Génération générique avec Perplexity — routée via le backend.
+ */
+export async function generateWithPerplexity(
+    prompt: string,
+    systemPrompt: string = "You are a helpful AI assistant.",
+    model?: string
+): Promise<string> {
+    const API_KEY = useProfileStore.getState().getApiKey('perplexity_exercises')
+        || useProfileStore.getState().getApiKey('perplexity_summaries');
 
     if (!API_KEY) {
-        // Fallback to summary key if exercises missing, or throw error?
-        // Let's try summary key as fallback or just error.
-        const fallback = useProfileStore.getState().getApiKey('perplexity_summaries');
-        if (!fallback) throw new Error("Clé API Perplexity manquante (Exercises).");
+        throw new Error("Clé API Perplexity manquante. Veuillez la configurer dans Profil > Paramètres > Clés API.");
     }
 
-    // We use the found key (re-fetch to be clean)
-    const validKey = API_KEY || useProfileStore.getState().getApiKey('perplexity_summaries');
-
     try {
-        const response = await fetch('https://api.perplexity.ai/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${validKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model || 'llama-3.1-sonar-large-128k-online',
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: prompt }
-                ],
-                max_tokens: 8000,
-                temperature: 0.1,
-                stream: false
-            })
+        const { data } = await apiClient.post('/ai/generate', {
+            prompt,
+            systemPrompt,
+            provider: 'perplexity',
+            // Résolution du modèle : utilise sonar-pro par défaut (l'ancien alias llama est géré par le registre serveur)
+            model: model || 'sonar-pro',
+            apiKey: API_KEY
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Perplexity API Error: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-        return data.choices[0]?.message?.content || "";
-
+        return data.text;
     } catch (error: any) {
-        console.error("Perplexity Generator Error:", error);
-        throw error;
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération Perplexity";
+        throw new Error(errorMessage);
     }
 }
