@@ -209,7 +209,7 @@ export const studyPlanQueries = {
         const { data: res } = await apiClient.put(`/plans/tasks/${taskId}`, data);
         return res;
     },
-    createTask: async (data: { description: string; date?: string; durationMinutes?: number; type?: string; courseId?: string }) => {
+    createTask: async (data: { description: string; date?: string; dueTime?: string; dueDate?: string; durationMinutes?: number; type?: string; courseId?: string }) => {
         const { data: res } = await apiClient.post('/plans/tasks', data);
         return res;
     },

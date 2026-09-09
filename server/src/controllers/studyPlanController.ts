@@ -152,7 +152,7 @@ export const updateStudyTask = async (req: AuthRequest, res: Response) => {
     try {
         const { taskId } = req.params;
         const profileId = req.user?.id;
-        const { isCompleted, description, durationMinutes, type, courseId } = req.body;
+        const { isCompleted, description, durationMinutes, type, courseId, dueTime, dueDate } = req.body;
 
         const existingTask = await prisma.studyTask.findFirst({
             where: {
@@ -170,6 +170,8 @@ export const updateStudyTask = async (req: AuthRequest, res: Response) => {
         if (description !== undefined) updateData.description = description;
         if (durationMinutes !== undefined) updateData.durationMinutes = durationMinutes;
         if (type !== undefined) updateData.type = type;
+        if (dueTime !== undefined) updateData.dueTime = dueTime ? String(dueTime).trim() : null;
+        if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
         if (courseId !== undefined) {
             if (courseId) {
                 const c = await prisma.course.findFirst({ where: { id: courseId, profileId } });
@@ -232,12 +234,22 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
         const profileId = req.user?.id;
         if (!profileId) return res.status(401).json({ error: "Unauthorized" });
 
-        const { description, date, durationMinutes, type, courseId } = req.body;
+        const { description, date, dueTime, dueDate, durationMinutes, type, courseId } = req.body;
         if (!description || !description.trim()) {
             return res.status(400).json({ error: "La description de la tâche est requise" });
         }
 
-        const targetDate = date ? new Date(date) : new Date();
+        // Determine calendar targetDate at noon without timezone drift
+        let targetDate = new Date();
+        if (date) {
+            const dateStr = String(date).split('T')[0];
+            const [y, m, d] = dateStr.split('-').map(Number);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                targetDate = new Date(y, m - 1, d, 12, 0, 0);
+            } else {
+                targetDate = new Date(date);
+            }
+        }
 
         // Check course if provided
         let validCourseId: string | null = null;
@@ -315,6 +327,20 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
         const dayOfWeek = targetDate.getDay();
         const dayNumber = dayOfWeek === 0 ? 7 : dayOfWeek;
 
+        // Parse dueDate if provided or compute from date + dueTime
+        let parsedDueDate: Date | null = null;
+        if (dueDate) {
+            parsedDueDate = new Date(dueDate);
+        } else if (date) {
+            const dateStr = String(date).split('T')[0];
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const timeStr = dueTime ? String(dueTime).trim() : '23:59';
+            const [h, min] = timeStr.split(':').map(Number);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                parsedDueDate = new Date(y, m - 1, d, isNaN(h) ? 23 : h, isNaN(min) ? 59 : min, 0);
+            }
+        }
+
         const taskData: any = {
             weekId: week.id,
             planId: defaultPlan.id,
@@ -322,7 +348,9 @@ export const createStudyTask = async (req: AuthRequest, res: Response) => {
             description: description.trim(),
             durationMinutes: Number(durationMinutes) || 30,
             type: type || "task",
-            isCompleted: false
+            isCompleted: false,
+            dueTime: dueTime ? String(dueTime).trim() : '23:59',
+            dueDate: parsedDueDate
         };
 
         if (validCourseId) {

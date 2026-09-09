@@ -33,6 +33,7 @@ export function CourseTasksModal({
     const [isAdding, setIsAdding] = useState(false)
     const [title, setTitle] = useState('')
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+    const [dueTime, setDueTime] = useState('23:59')
     const [type, setType] = useState('assignment')
 
     // Fetch tasks specifically for this course
@@ -44,13 +45,14 @@ export function CourseTasksModal({
 
     // Create task mutation
     const createTaskMutation = useMutation({
-        mutationFn: (data: { description: string; date: string; courseId: string; type: string }) =>
+        mutationFn: (data: { description: string; date: string; dueTime?: string; dueDate?: string; courseId: string; type: string }) =>
             studyPlanQueries.createTask(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
             setIsAdding(false)
             setTitle('')
             setDate(new Date().toISOString().split('T')[0])
+            setDueTime('23:59')
             setType('assignment')
         }
     })
@@ -91,9 +93,15 @@ export function CourseTasksModal({
         e.preventDefault()
         if (!title.trim()) return
 
+        const [hours, minutes] = (dueTime || '23:59').split(':').map(Number)
+        const [year, month, day] = date.split('-').map(Number)
+        const deadlineDate = new Date(year, month - 1, day, isNaN(hours) ? 23 : hours, isNaN(minutes) ? 59 : minutes, 0)
+
         createTaskMutation.mutate({
             description: title.trim(),
-            date: new Date(date).toISOString(),
+            date,
+            dueTime: dueTime || '23:59',
+            dueDate: deadlineDate.toISOString(),
             courseId,
             type
         })
@@ -183,20 +191,32 @@ export function CourseTasksModal({
 
                                 <div>
                                     <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
-                                        {language === 'fr' ? 'Type' : 'Type'}
+                                        {language === 'fr' ? 'Horaire limite' : 'Due time'}
                                     </label>
-                                    <select
-                                        value={type}
-                                        onChange={(e) => setType(e.target.value)}
-                                        className="w-full text-xs px-3 py-1.5 rounded-lg bg-background border border-input focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                                    >
-                                        {TASK_TYPES.map((t) => (
-                                            <option key={t.id} value={t.id}>
-                                                {t.icon} {language === 'fr' ? t.label : t.labelEn}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <input
+                                        type="time"
+                                        value={dueTime}
+                                        onChange={(e) => setDueTime(e.target.value)}
+                                        className="w-full text-xs px-3 py-1.5 rounded-lg bg-background border border-input focus:outline-none focus:ring-1 focus:ring-primary font-medium font-mono"
+                                    />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
+                                    {language === 'fr' ? 'Type' : 'Type'}
+                                </label>
+                                <select
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value)}
+                                    className="w-full text-xs px-3 py-1.5 rounded-lg bg-background border border-input focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                                >
+                                    {TASK_TYPES.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.icon} {language === 'fr' ? t.label : t.labelEn}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
@@ -284,8 +304,14 @@ export function CourseTasksModal({
                                                                 </span>
                                                                 {taskDate && (
                                                                     <span className="flex items-center gap-1 font-medium text-foreground">
-                                                                        <Clock className="h-3 w-3 text-muted-foreground" />
+                                                                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
                                                                         {format(taskDate, 'EEEE d MMMM yyyy', { locale })}
+                                                                    </span>
+                                                                )}
+                                                                {task.dueTime && (
+                                                                    <span className="flex items-center gap-1 font-mono font-semibold text-primary">
+                                                                        <Clock className="h-3 w-3 text-primary" />
+                                                                        {task.dueTime}
                                                                     </span>
                                                                 )}
                                                             </div>

@@ -273,7 +273,7 @@ model StudyWeek {
 }
 
 model StudyTask {
-  id              String  @id @default(uuid())
+  id              String    @id @default(uuid())
   weekId          String
   planId          String
   courseId        String?
@@ -281,8 +281,10 @@ model StudyTask {
   dayNumber       Int
   description     String
   durationMinutes Int
-  type            String  @default("task")
-  isCompleted     Boolean @default(false)
+  type            String    @default("task")
+  isCompleted     Boolean   @default(false)
+  dueTime         String?
+  dueDate         DateTime?
   
   week   StudyWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
   plan   StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)

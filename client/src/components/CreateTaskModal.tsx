@@ -18,16 +18,6 @@ interface CreateTaskModalProps {
     courses: any[]
 }
 
-const DURATIONS = [
-    { label: '15m', value: 15 },
-    { label: '30m', value: 30 },
-    { label: '45m', value: 45 },
-    { label: '1h', value: 60 },
-    { label: '1h30', value: 90 },
-    { label: '2h', value: 120 },
-    { label: '3h', value: 180 },
-]
-
 export function CreateTaskModal({
     isOpen,
     onClose,
@@ -48,7 +38,7 @@ export function CreateTaskModal({
     })
     const [courseId, setCourseId] = useState(initialCourseId)
     const [type, setType] = useState(initialType)
-    const [durationMinutes, setDurationMinutes] = useState(30)
+    const [dueTime, setDueTime] = useState('23:59')
 
     useEffect(() => {
         if (isOpen) {
@@ -66,7 +56,7 @@ export function CreateTaskModal({
     }, [isOpen, initialDate, initialCourseId, initialType])
 
     const createTaskMutation = useMutation({
-        mutationFn: (data: { description: string; date: string; courseId?: string; type?: string; durationMinutes?: number }) =>
+        mutationFn: (data: { description: string; date: string; dueTime?: string; dueDate?: string; courseId?: string; type?: string }) =>
             studyPlanQueries.createTask(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
@@ -78,7 +68,7 @@ export function CreateTaskModal({
         setDescription('')
         setCourseId('')
         setType('task')
-        setDurationMinutes(30)
+        setDueTime('23:59')
         onClose()
     }
 
@@ -86,12 +76,17 @@ export function CreateTaskModal({
         e.preventDefault()
         if (!description.trim()) return
 
+        const [hours, minutes] = (dueTime || '23:59').split(':').map(Number)
+        const [year, month, day] = date.split('-').map(Number)
+        const deadlineDate = new Date(year, month - 1, day, isNaN(hours) ? 23 : hours, isNaN(minutes) ? 59 : minutes, 0)
+
         createTaskMutation.mutate({
             description: description.trim(),
-            date: new Date(date).toISOString(),
+            date,
+            dueTime: dueTime || '23:59',
+            dueDate: deadlineDate.toISOString(),
             courseId: courseId || undefined,
-            type,
-            durationMinutes
+            type
         })
     }
 
@@ -202,12 +197,12 @@ export function CreateTaskModal({
                         </select>
                     </div>
 
-                    {/* 4. Date & Duration in Grid */}
+                    {/* 4. Date & Horaire limite in Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                 <CalendarIcon className="h-3.5 w-3.5" />
-                                {language === 'fr' ? 'Date prévue' : 'Scheduled Date'}
+                                {language === 'fr' ? 'Date de l\'échéance' : 'Due Date'}
                             </label>
                             <input
                                 type="date"
@@ -221,24 +216,38 @@ export function CreateTaskModal({
                         <div className="space-y-1.5">
                             <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                 <Clock className="h-3.5 w-3.5" />
-                                {language === 'fr' ? 'Durée estimée' : 'Estimated Duration'}
+                                {language === 'fr' ? 'Horaire limite' : 'Due Time'}
                             </label>
-                            <div className="flex flex-wrap gap-1">
-                                {DURATIONS.map((dur) => (
-                                    <button
-                                        key={dur.value}
-                                        type="button"
-                                        onClick={() => setDurationMinutes(dur.value)}
-                                        className={cn(
-                                            "px-2 py-1 rounded-lg text-xs font-semibold border transition-all",
-                                            durationMinutes === dur.value
-                                                ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                                                : "border-border/60 hover:bg-muted text-muted-foreground"
-                                        )}
-                                    >
-                                        {dur.label}
-                                    </button>
-                                ))}
+                            <div className="space-y-2">
+                                <input
+                                    type="time"
+                                    value={dueTime}
+                                    onChange={(e) => setDueTime(e.target.value)}
+                                    className="w-full text-sm px-3.5 py-2.5 rounded-xl bg-muted/40 border border-input focus:outline-none focus:ring-2 focus:ring-primary font-medium font-mono"
+                                    required
+                                />
+                                <div className="flex flex-wrap gap-1">
+                                    {[
+                                        { label: language === 'fr' ? '12:00' : '12:00', value: '12:00' },
+                                        { label: '18:00', value: '18:00' },
+                                        { label: '20:00', value: '20:00' },
+                                        { label: language === 'fr' ? '23:59 (Fin de journée)' : '23:59 (End of day)', value: '23:59' }
+                                    ].map((preset) => (
+                                        <button
+                                            key={preset.value}
+                                            type="button"
+                                            onClick={() => setDueTime(preset.value)}
+                                            className={cn(
+                                                "px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all",
+                                                dueTime === preset.value
+                                                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                                                    : "border-border/60 hover:bg-muted text-muted-foreground"
+                                            )}
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>

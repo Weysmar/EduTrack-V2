@@ -29,6 +29,36 @@ const formatIcsDateTime = (date: Date): string => {
 };
 
 /**
+ * Calculates UTC date from Europe/Paris local calendar date and time.
+ * Automatically handles CET (UTC+1) and CEST (UTC+2 daylight saving).
+ */
+const getParisUtcDate = (year: number, month: number, day: number, hours: number, minutes: number): Date => {
+    const guess = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    });
+    const parts = formatter.formatToParts(guess);
+    const pDay = Number(parts.find(p => p.type === 'day')?.value);
+    let pHour = Number(parts.find(p => p.type === 'hour')?.value);
+    if (pHour === 24) pHour = 0;
+    const pMinute = Number(parts.find(p => p.type === 'minute')?.value);
+
+    const parisMinutes = pHour * 60 + pMinute;
+    const targetMinutes = hours * 60 + minutes;
+    let diffMinutes = parisMinutes - targetMinutes;
+    if (pDay > day) diffMinutes += 24 * 60;
+    else if (pDay < day) diffMinutes -= 24 * 60;
+
+    return new Date(guess.getTime() - diffMinutes * 60 * 1000);
+};
+
+/**
  * Gets an existing calendar token or generates a new one stored in Profile.settings
  */
 export const getOrGenerateCalendarToken = async (profileId: string): Promise<string> => {
@@ -214,11 +244,40 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         if (!task.week || !task.week.startDate) continue;
 
         const taskDate = addDays(new Date(task.week.startDate), task.dayNumber - 1);
-        const durationMinutes = task.durationMinutes || 45;
+        const y = taskDate.getFullYear();
+        const m = taskDate.getMonth() + 1;
+        const d = taskDate.getDate();
 
-        const start = new Date(taskDate);
-        start.setUTCHours(9, 0, 0, 0);
-        const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+        const timeStr = ((task as any).dueTime || '').trim();
+        let start: Date;
+        let end: Date;
+
+        if (timeStr) {
+            const [rawH, rawM] = timeStr.split(':').map(Number);
+            const hours = isNaN(rawH) ? 23 : rawH;
+            const minutes = isNaN(rawM) ? 59 : rawM;
+
+            const deadlineUtc = (task as any).dueDate
+                ? new Date((task as any).dueDate)
+                : getParisUtcDate(y, m, d, hours, minutes);
+
+            if (hours === 23 && minutes >= 30) {
+                // End of day (e.g. 23:59): display 30m block ending at 23:59 so it stays on the same day
+                end = deadlineUtc;
+                start = new Date(end.getTime() - 30 * 60 * 1000);
+            } else {
+                // Specific deadline time (e.g. 14:00, 18:00): starts at deadline time
+                start = deadlineUtc;
+                end = new Date(start.getTime() + 30 * 60 * 1000);
+            }
+        } else if ((task as any).dueDate) {
+            start = new Date((task as any).dueDate);
+            end = new Date(start.getTime() + 30 * 60 * 1000);
+        } else {
+            // Default morning time
+            start = getParisUtcDate(y, m, d, 9, 0);
+            end = new Date(start.getTime() + 30 * 60 * 1000);
+        }
 
         const typeLabels: Record<string, string> = {
             exercise: '🏋️ Exercice : ',
@@ -230,12 +289,14 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         };
 
         const prefix = typeLabels[task.type] || '📌 ';
-        const summary = `${prefix}${task.description}`;
+        const dueSuffix = timeStr ? ` [${timeStr}]` : '';
+        const summary = `${prefix}${task.description}${dueSuffix}`;
 
         let desc = '';
         if (task.course?.title) desc += `Cours : ${task.course.title}\n`;
         if (task.plan?.title) desc += `Plan : ${task.plan.title}\n`;
         if (task.item?.title) desc += `Document : ${task.item.title}\n`;
+        if (timeStr) desc += `Horaire limite : ${timeStr}\n`;
         if (task.item?.content) {
             const cleanContent = task.item.content.replace(/<[^>]*>?/gm, '').trim();
             if (cleanContent) {
@@ -256,9 +317,7 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         lines.push(`DESCRIPTION:${escapeIcs(desc)}`);
         lines.push(`CATEGORIES:${escapeIcs(task.type.toUpperCase())},EDUTRACK`);
         lines.push(`STATUS:${task.isCompleted ? 'COMPLETED' : 'CONFIRMED'}`);
-        if (task.itemId && task.courseId) {
-            lines.push(`URL:${baseUrl}/edu/course/${task.courseId}/item/${task.itemId}`);
-        }
+        // Note: URL is intentionally not included in VEVENT so Google Calendar displays the summary title as plain text, not a hyperlink
         lines.push('END:VEVENT');
         eventCount++;
     }
@@ -302,7 +361,7 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         lines.push(`DESCRIPTION:${escapeIcs(desc)}`);
         lines.push(`CATEGORIES:${escapeIcs(item.type.toUpperCase())},EDUTRACK`);
         lines.push(`STATUS:${item.status === 'completed' ? 'COMPLETED' : 'CONFIRMED'}`);
-        lines.push(`URL:${baseUrl}/edu/course/${item.courseId}/item/${item.id}`);
+        // Note: URL is intentionally not included in VEVENT so Google Calendar displays the summary title as plain text, not a hyperlink
         lines.push('END:VEVENT');
         eventCount++;
     }

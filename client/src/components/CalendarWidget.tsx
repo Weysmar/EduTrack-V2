@@ -432,11 +432,16 @@ export function CalendarWidget() {
                                                             <span>{language === 'fr' ? taskTypeInfo.label : taskTypeInfo.labelEn}</span>
                                                         </span>
                                                     )}
-                                                    {task.durationMinutes && task.durationMinutes !== 30 && (
+                                                    {task.dueTime ? (
+                                                        <span className="text-[9px] text-muted-foreground ml-auto shrink-0 font-mono flex items-center gap-0.5">
+                                                            <Clock className="h-2.5 w-2.5" />
+                                                            {task.dueTime}
+                                                        </span>
+                                                    ) : task.durationMinutes && task.durationMinutes !== 30 ? (
                                                         <span className="text-[9px] text-muted-foreground ml-auto shrink-0 font-mono">
                                                             {task.durationMinutes}m
                                                         </span>
-                                                    )}
+                                                    ) : null}
                                                 </div>
                                             </div>
                                         );
