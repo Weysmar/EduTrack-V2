@@ -32,7 +32,7 @@ export function CompactFocusTimer() {
 
     return (
         <div
-            onClick={() => navigate('/focus')}
+            onClick={() => navigate('/edu/focus')}
             className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors cursor-pointer hover:bg-muted/50",
                 mode === 'work'

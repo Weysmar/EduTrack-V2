@@ -141,6 +141,10 @@ const router = createBrowserRouter([
                         path: '/quiz/study/:id',
                         element: <LegacyQuizRedirect />
                     },
+                    {
+                        path: '/focus',
+                        element: <Navigate to="/edu/focus" replace />
+                    },
                     // EduTrack Routes
                     {
                         path: '/edu',
