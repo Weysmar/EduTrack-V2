@@ -130,6 +130,10 @@ const router = createBrowserRouter([
                     },
                     // Redirects for legacy root routes to EduTrack
                     {
+                        path: '/library',
+                        element: <Navigate to="/edu/library" replace />
+                    },
+                    {
                         path: '/flashcards',
                         element: <Navigate to="/edu/flashcards" replace />
                     },

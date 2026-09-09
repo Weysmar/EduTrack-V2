@@ -427,7 +427,15 @@ export function Dashboard() {
                                         <Clock className="h-5 w-5 text-primary" />
                                         {t('dashboard.recent')}
                                     </h2>
-                                    <Link to="/library" className="text-xs text-primary hover:underline">
+                                    <Link
+                                        to="/edu/library"
+                                        className={cn(
+                                            "text-xs transition-colors",
+                                            minecraftTheme
+                                                ? "text-[#55ff55] hover:text-[#74c69d] font-bold drop-shadow-[1px_1px_0px_#000]"
+                                                : "text-primary hover:underline"
+                                        )}
+                                    >
                                         {language === 'fr' ? "Voir tout" : "View all"}
                                     </Link>
                                 </div>
