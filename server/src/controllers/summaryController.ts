@@ -71,10 +71,17 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
                     select: { title: true }
                 });
                 if (course?.title) sourceTitle = course.title;
+            } else if (itemType === 'folder') {
+                const folder = await prisma.folder.findUnique({
+                    where: { id: itemId },
+                    select: { name: true }
+                });
+                if (folder?.name) sourceTitle = folder.name;
             }
         }
 
         const summaryTitle = `Résumé : ${sourceTitle}`;
+        const targetCourseId = courseId || existingSummary?.courseId || null;
 
         if (generatedItemId) {
             // Update existing Item
@@ -91,19 +98,23 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
             });
         }
 
-        if (!generatedItemId) {
-            // Create new Item
-            const newItem = await prisma.item.create({
-                data: {
-                    profileId,
-                    courseId: courseId || (existingSummary?.courseId) || "", // Should have courseId
-                    type: 'summary',
-                    title: summaryTitle,
-                    content: content,
-                    status: 'generated'
-                }
-            });
-            generatedItemId = newItem.id;
+        if (!generatedItemId && targetCourseId) {
+            // Create new Item if linked to a course
+            try {
+                const newItem = await prisma.item.create({
+                    data: {
+                        profileId,
+                        courseId: targetCourseId,
+                        type: 'summary',
+                        title: summaryTitle,
+                        content: content,
+                        status: 'generated'
+                    }
+                });
+                generatedItemId = newItem.id;
+            } catch (err) {
+                console.warn('Could not create standalone Item for summary:', err);
+            }
         }
 
         // 3. Upsert Summary Record with link to Item
@@ -118,7 +129,7 @@ export const saveSummary = async (req: AuthRequest, res: Response) => {
         const summary = await prisma.summary.create({
             data: {
                 profileId,
-                courseId,
+                courseId: targetCourseId,
                 itemId,
                 itemType,
                 content,

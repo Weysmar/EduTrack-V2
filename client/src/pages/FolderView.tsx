@@ -4,10 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { folderQueries, courseQueries, itemQueries } from '@/lib/api/queries'
 import { useState } from 'react'
 import { useLanguage } from '@/components/language-provider'
-import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2, Pencil, Menu } from 'lucide-react'
+import { Plus, FolderPlus, ArrowLeft, Folder as FolderIcon, Trash2, Brain, Loader2, Pencil, Menu, Sparkles, FileText } from 'lucide-react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { EditFolderModal } from '@/components/EditFolderModal'
+import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
+import { SummaryResultModal } from '@/components/SummaryResultModal'
+import { useSummary } from '@/hooks/useSummary'
+import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { useProfileStore } from '@/store/profileStore'
 import { useUIStore } from '@/store/uiStore'
 
@@ -25,10 +29,7 @@ export function FolderView() {
         enabled: !!folderId
     })
 
-    // Helper to get subfolders and courses. 
-    // Ideally backend 'getOne' folder includes children, or we fetch separate.
-    // Assuming separated for now or we filter 'getAll'.
-    // Let's assume we use 'getAll' and filter for now as it's easier given API limit info.
+    // Subfolders and courses in this folder
     const { data: allFolders } = useQuery({
         queryKey: ['folders'],
         queryFn: folderQueries.getAll,
@@ -47,8 +48,18 @@ export function FolderView() {
     const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false)
     const [isEditFolderOpen, setIsEditFolderOpen] = useState(false)
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+    const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
+    const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isAggregating, setIsAggregating] = useState(false)
     const [aggregatedContent, setAggregatedContent] = useState('')
+
+    // Summary hook for this folder
+    const {
+        summary,
+        generate: generateSummary,
+        isGenerating: isSummaryGenerating,
+        remove: removeSummary
+    } = useSummary(folderId || '', 'folder')
 
     const createFolderMutation = useMutation({
         mutationFn: folderQueries.create,
@@ -84,18 +95,14 @@ export function FolderView() {
         }
     }
 
-    const handleOpenGeneration = async () => {
+    const getFolderAggregatedContent = async () => {
         if (!courses || courses.length === 0) {
-            toast.error("No courses in this folder to generate from.")
-            return
+            toast.error(t('folder.summary.noCourses') || "Aucun cours dans ce dossier pour générer du contenu.")
+            return null
         }
 
         setIsAggregating(true)
         try {
-            // Need to fetch items for ALL courses in this folder.
-            // Using itemQueries.getAll() and filtering active courseIds? 
-            // Better: itemQueries could accept a list or we loop?
-            // For now, let's fetch all items (which might be cached) and filter.
             const itemsRes = await itemQueries.getAll(1, 1000)
             const items = itemsRes.items || []
             const courseIds = courses.map((c: any) => c.id)
@@ -112,16 +119,43 @@ export function FolderView() {
 
             const content = itemsToProcess.join(' ')
             if (!content.trim()) {
-                toast.warning("No content available in these courses to generate exercises.")
-            } else {
-                setAggregatedContent(content)
-                setIsGenerateModalOpen(true)
+                toast.warning(t('folder.summary.noContent') || "Aucun contenu textuel disponible dans les cours de ce dossier.")
+                return null
             }
+            return content
         } catch (e) {
             console.error(e)
-            toast.error("Failed to aggregate content.")
+            toast.error("Erreur lors de la récupération des contenus.")
+            return null
         } finally {
             setIsAggregating(false)
+        }
+    }
+
+    const handleOpenGeneration = async () => {
+        const content = await getFolderAggregatedContent()
+        if (content) {
+            setAggregatedContent(content)
+            setIsGenerateModalOpen(true)
+        }
+    }
+
+    const handleOpenSummaryGeneration = async () => {
+        const content = await getFolderAggregatedContent()
+        if (content) {
+            setAggregatedContent(content)
+            setIsSummaryOptionsOpen(true)
+        }
+    }
+
+    const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
+        setIsSummaryOptionsOpen(false)
+        toast.info(t('summary.generating') || "Génération du résumé du dossier en cours...")
+        try {
+            await generateSummary(options, aggregatedContent)
+            setShowSummaryModal(true)
+        } catch (e) {
+            console.error("Summary generation error:", e)
         }
     }
 
@@ -181,11 +215,12 @@ export function FolderView() {
                 <div className="flex flex-wrap items-center gap-2">
                     <button
                         onClick={() => setIsCreateCourseOpen(true)}
-                        className="flex items-center gap-1.5 bg-primary text-primary-foreground py-2 px-3 sm:px-4 rounded-md hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium"
+                        className="flex items-center gap-1.5 bg-primary text-primary-foreground py-2 px-3 sm:px-4 rounded-md hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium shadow-sm"
                     >
                         <Plus className="h-4 w-4" />
                         <span>{t('nav.newCourse')}</span>
                     </button>
+
                     <button
                         onClick={handleCreateFolder}
                         className="flex items-center gap-1.5 bg-muted text-muted-foreground py-2 px-3 sm:px-4 rounded-md hover:bg-muted/80 transition-colors text-xs sm:text-sm font-medium"
@@ -194,15 +229,41 @@ export function FolderView() {
                         <span>{t('folder.create.sub')}</span>
                     </button>
 
+                    {/* Generate Exercises Button */}
                     <button
                         onClick={handleOpenGeneration}
-                        disabled={isAggregating}
-                        className="flex items-center gap-1.5 bg-indigo-600 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50"
+                        disabled={isAggregating || isSummaryGenerating}
+                        className="flex items-center gap-1.5 bg-indigo-600 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 shadow-sm"
                     >
                         {isAggregating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
                         <span className="hidden sm:inline">Générer Exercices IA</span>
                         <span className="sm:hidden">Exercices IA</span>
                     </button>
+
+                    {/* Generate Folder Summary Button */}
+                    <button
+                        onClick={handleOpenSummaryGeneration}
+                        disabled={isAggregating || isSummaryGenerating}
+                        className="flex items-center gap-1.5 bg-violet-600 text-white py-2 px-3 sm:px-4 rounded-md hover:bg-violet-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 shadow-sm"
+                        title="Générer une fiche de synthèse pour l'ensemble des cours du dossier"
+                    >
+                        {isSummaryGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{summary ? 'Régénérer Résumé IA' : 'Générer Résumé IA'}</span>
+                        <span className="sm:hidden">Résumé IA</span>
+                    </button>
+
+                    {/* View existing summary button */}
+                    {summary && (
+                        <button
+                            onClick={() => setShowSummaryModal(true)}
+                            className="flex items-center gap-1.5 bg-card border border-violet-500/30 text-violet-600 dark:text-violet-400 py-2 px-3 sm:px-4 rounded-md hover:bg-violet-500/10 transition-colors text-xs sm:text-sm font-medium shadow-sm"
+                            title="Afficher le résumé de ce dossier"
+                        >
+                            <FileText className="h-4 w-4" />
+                            <span className="hidden sm:inline">Voir le résumé</span>
+                            <span className="sm:hidden">Résumé</span>
+                        </button>
+                    )}
 
                     <button
                         onClick={() => {
@@ -219,7 +280,74 @@ export function FolderView() {
             </div>
 
             {/* Content Grid */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+                {/* Folder Summary Banner Card if available */}
+                {summary && (
+                    <div className="bg-gradient-to-r from-violet-500/10 via-purple-500/5 to-transparent border border-violet-500/20 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                        <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="p-2.5 bg-violet-600/10 text-violet-600 dark:text-violet-400 rounded-lg shrink-0 mt-0.5">
+                                <Sparkles className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-foreground text-sm sm:text-base">
+                                        Résumé du dossier : {folder.name}
+                                    </h3>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-700 dark:text-violet-300 font-medium">
+                                        IA
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {typeof summary.content === 'string' ? summary.content.replace(/[#*`_]/g, '').slice(0, 200) : ''}
+                                </p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                                    {summary.stats?.summaryWordCount && (
+                                        <span>{summary.stats.summaryWordCount} mots</span>
+                                    )}
+                                    {summary.stats?.originalWordCount && (
+                                        <>
+                                            <span>•</span>
+                                            <span>Source : {summary.stats.originalWordCount} mots</span>
+                                        </>
+                                    )}
+                                    <span>•</span>
+                                    <span>{new Date(summary.createdAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                                onClick={() => setShowSummaryModal(true)}
+                                className="px-3.5 py-2 bg-violet-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-violet-700 transition-colors flex items-center gap-1.5 shadow-sm"
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span>Lire le résumé</span>
+                            </button>
+                            <button
+                                onClick={handleOpenSummaryGeneration}
+                                disabled={isAggregating || isSummaryGenerating}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                title="Régénérer avec de nouvelles options"
+                            >
+                                <Sparkles className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (confirm("Supprimer ce résumé ?")) {
+                                        await removeSummary()
+                                    }
+                                }}
+                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                title="Supprimer le résumé"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
                     {/* Render Sub-Folders */}
@@ -269,6 +397,7 @@ export function FolderView() {
                 </div>
             </div>
 
+            {/* Modals */}
             <CreateCourseModal
                 isOpen={isCreateCourseOpen}
                 onClose={() => setIsCreateCourseOpen(false)}
@@ -280,6 +409,23 @@ export function FolderView() {
                 onClose={() => setIsGenerateModalOpen(false)}
                 sourceContent={aggregatedContent}
                 sourceTitle={folder.name}
+            />
+
+            <SummaryOptionsModal
+                isOpen={isSummaryOptionsOpen}
+                onClose={() => setIsSummaryOptionsOpen(false)}
+                onGenerate={handleGenerateSummary}
+                initialOptions={summary?.options}
+            />
+
+            <SummaryResultModal
+                summary={summary}
+                isOpen={showSummaryModal}
+                onClose={() => setShowSummaryModal(false)}
+                onDelete={removeSummary ? async () => {
+                    await removeSummary()
+                    setShowSummaryModal(false)
+                } : undefined}
             />
 
             <EditFolderModal
