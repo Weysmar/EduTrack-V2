@@ -84,14 +84,14 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             };
         }
 
+        const updateData: any = { settings: mergedSettings };
+        if (name !== undefined) updateData.name = name;
+        if (theme !== undefined) updateData.theme = theme;
+        if (language !== undefined) updateData.language = language;
+
         const updatedProfile = await prisma.profile.update({
             where: { id: targetId },
-            data: {
-                name,
-                theme,
-                language,
-                settings: mergedSettings
-            }
+            data: updateData
         });
 
         const { passwordHash, ...profileData } = updatedProfile;

@@ -42,7 +42,24 @@ interface ProfileState {
     setApiKey: (service: keyof ApiKeyMap, key: string) => Promise<void>;
     updateApiKeys: (keys: ApiKeyMap) => Promise<void>;
     getApiKey: (service: keyof ApiKeyMap) => string | null;
+
+    // Folder Expansion State (saved in user account)
+    isFolderExpanded: (folderId: string) => boolean;
+    toggleFolderExpanded: (folderId: string) => void;
+    setFolderExpanded: (folderId: string, isOpen: boolean) => void;
 }
+
+let folderSyncTimeout: any = null;
+const debouncedSyncSettings = (profileId: string, settings: any) => {
+    if (folderSyncTimeout) clearTimeout(folderSyncTimeout);
+    folderSyncTimeout = setTimeout(async () => {
+        try {
+            await apiClient.put(`/profiles/${profileId || 'me'}`, { settings });
+        } catch (err) {
+            console.error('[ProfileStore] Failed to sync folder expansion settings:', err);
+        }
+    }, 400);
+};
 
 export const useProfileStore = create<ProfileState>()(
     persist(
@@ -205,6 +222,43 @@ export const useProfileStore = create<ProfileState>()(
                 } catch (e) {
                     console.error("Failed to switch profile", e);
                 }
+            },
+
+            isFolderExpanded: (folderId: string) => {
+                const { activeProfile } = get();
+                const expandedFolders = (activeProfile?.settings as any)?.expandedFolders || {};
+                return expandedFolders[folderId] ?? true;
+            },
+
+            toggleFolderExpanded: (folderId: string) => {
+                const { isFolderExpanded, setFolderExpanded } = get();
+                const current = isFolderExpanded(folderId);
+                setFolderExpanded(folderId, !current);
+            },
+
+            setFolderExpanded: (folderId: string, isOpen: boolean) => {
+                const { activeProfile } = get();
+                if (!activeProfile) return;
+
+                const currentSettings = (activeProfile.settings as Record<string, any>) || {};
+                const currentExpanded = { ...(currentSettings.expandedFolders || {}) };
+                currentExpanded[folderId] = isOpen;
+
+                const updatedSettings = {
+                    ...currentSettings,
+                    expandedFolders: currentExpanded
+                };
+
+                // Immediate optimistic update (also saved to localStorage via Zustand persist)
+                set({
+                    activeProfile: {
+                        ...activeProfile,
+                        settings: updatedSettings
+                    }
+                });
+
+                // Debounced sync to database in the user's account
+                debouncedSyncSettings(activeProfile.id, updatedSettings);
             }
         }),
         {

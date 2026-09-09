@@ -7,6 +7,7 @@ import { ChevronRight, Folder as FolderIcon, Pencil } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from '@/components/language-provider'
 import { EditFolderModal } from '@/components/EditFolderModal'
+import { useProfileStore } from '@/store/profileStore'
 
 interface FolderTreeProps {
     folders: Folder[]
@@ -51,7 +52,9 @@ export function FolderTree({ folders, courses, parentId, level = 0 }: FolderTree
 
 function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder, allFolders: Folder[], allCourses: Course[], level: number }) {
     const { t } = useLanguage()
-    const [isOpen, setIsOpen] = useState(true)
+    const isFolderExpanded = useProfileStore((state) => state.isFolderExpanded)
+    const toggleFolderExpanded = useProfileStore((state) => state.toggleFolderExpanded)
+    const isOpen = isFolderExpanded(String(folder.id))
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const location = useLocation()
     const isActive = location.pathname === `/edu/folder/${folder.id}`
@@ -90,7 +93,7 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
             >
                 <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
                     <button
-                        onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen) }}
+                        onClick={(e) => { e.preventDefault(); toggleFolderExpanded(String(folder.id)) }}
                         className="p-0.5 hover:bg-muted-foreground/10 rounded-sm transition-colors shrink-0"
                     >
                         <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200", isOpen && "rotate-90")} />
