@@ -204,20 +204,15 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         }
     });
 
-    // 3. Fetch study plans
+    // 3. Fetch study plans (excluding generic container plan)
     const plans = await prisma.studyPlan.findMany({
         where: {
-            profileId
+            profileId,
+            title: { not: "Mon Planning" }
         },
         include: {
             course: true
         }
-    });
-
-    // 4. Fetch study sessions
-    const sessions = await prisma.studySession.findMany({
-        where: { profileId },
-        include: { course: true }
     });
 
     const nowStr = formatIcsDateTime(new Date());
@@ -230,11 +225,11 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         'METHOD:PUBLISH',
         `X-WR-CALNAME:${escapeIcs(`EduTrack (${profile.name})`)}`,
         `NAME:${escapeIcs(`EduTrack (${profile.name})`)}`,
-        'X-WR-CALDESC:Échéances, exercices et cours EduTrack',
-        'DESCRIPTION:Échéances, exercices et cours EduTrack',
+        'X-WR-CALDESC:Échéances, devoirs et examens EduTrack',
+        'DESCRIPTION:Échéances, devoirs et examens EduTrack',
         'X-WR-TIMEZONE:Europe/Paris',
-        'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
-        'X-PUBLISHED-TTL:PT1H'
+        'REFRESH-INTERVAL;VALUE=DURATION:PT15M',
+        'X-PUBLISHED-TTL:PT15M'
     ];
 
     let eventCount = 0;
@@ -390,29 +385,6 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         lines.push(`DESCRIPTION:${escapeIcs(desc)}`);
         lines.push('CATEGORIES:PLAN,EXAM,EDUTRACK');
         lines.push(`STATUS:${plan.status === 'completed' ? 'COMPLETED' : 'CONFIRMED'}`);
-        lines.push('END:VEVENT');
-        eventCount++;
-    }
-
-    // Helper for study sessions
-    for (const session of sessions) {
-        const start = new Date(session.startTime || session.date);
-        const end = new Date(start.getTime() + (session.durationMinutes || 60) * 60 * 1000);
-
-        const sessionCourseTitle = (session as any).course?.title;
-        const summary = `⏱️ Session : ${sessionCourseTitle || session.type}`;
-        let desc = `Type : ${session.type}\nDurée : ${session.durationMinutes} min\n`;
-        if (session.notes) desc += `Notes : ${session.notes}\n`;
-
-        lines.push('BEGIN:VEVENT');
-        lines.push(`UID:session-${session.id}@edutrack`);
-        lines.push(`DTSTAMP:${nowStr}`);
-        lines.push(`DTSTART:${formatIcsDateTime(start)}`);
-        lines.push(`DTEND:${formatIcsDateTime(end)}`);
-        lines.push(`SUMMARY:${escapeIcs(summary)}`);
-        lines.push(`DESCRIPTION:${escapeIcs(desc)}`);
-        lines.push('CATEGORIES:SESSION,EDUTRACK');
-        lines.push('STATUS:CONFIRMED');
         lines.push('END:VEVENT');
         eventCount++;
     }

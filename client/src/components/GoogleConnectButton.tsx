@@ -324,6 +324,14 @@ export function GoogleConnectButton() {
                                                     ? 'Fonctionne également avec Apple Calendar (Mac/iPhone) et Microsoft Outlook.' 
                                                     : 'Also works with Apple Calendar (Mac/iPhone) and Microsoft Outlook.'}
                                             </p>
+                                            <div className="pt-2 border-t border-border/50 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg flex items-start gap-1.5">
+                                                <span className="shrink-0 font-bold">⚠️</span>
+                                                <span>
+                                                    {language === 'fr'
+                                                        ? 'Délai de mise à jour Google : Google Agenda actualise automatiquement les flux externes toutes les quelques heures. Pour forcer l\'affichage immédiat de nouvelles échéances sans attendre, cliquez sur « Régénérer » ci-dessus puis ajoutez le nouveau lien dans Google Agenda.'
+                                                        : 'Google update delay: Google Calendar checks external feeds automatically every few hours. To force an immediate update of newly added deadlines, click "Regenerate" above and add the new link in Google Calendar.'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

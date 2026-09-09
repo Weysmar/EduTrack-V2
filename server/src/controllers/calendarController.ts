@@ -164,7 +164,9 @@ export const exportCalendarFeed = async (req: Request, res: Response) => {
 
         res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
         res.setHeader('Content-Disposition', `inline; filename="edutrack-${profile.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.ics"`);
-        res.setHeader('Cache-Control', 'public, max-age=900, s-maxage=900');
+        res.setHeader('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
         res.setHeader('X-Content-Type-Options', 'nosniff');
