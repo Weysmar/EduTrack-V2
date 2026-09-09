@@ -13,6 +13,7 @@ interface CreateTaskModalProps {
     isOpen: boolean
     onClose: () => void
     initialDate?: Date | string | null
+    initialTime?: string | null
     initialCourseId?: string
     initialType?: string
     courses: any[]
@@ -22,6 +23,7 @@ export function CreateTaskModal({
     isOpen,
     onClose,
     initialDate,
+    initialTime,
     initialCourseId = '',
     initialType = 'task',
     courses
@@ -38,13 +40,16 @@ export function CreateTaskModal({
     })
     const [courseId, setCourseId] = useState(initialCourseId)
     const [type, setType] = useState(initialType)
-    const [dueTime, setDueTime] = useState('23:59')
+    const [dueTime, setDueTime] = useState(initialTime || '23:59')
 
     useEffect(() => {
         if (isOpen) {
             if (initialDate) {
                 const d = typeof initialDate === 'string' ? new Date(initialDate) : initialDate
                 setDate(d.toISOString().split('T')[0])
+            }
+            if (initialTime !== undefined) {
+                setDueTime(initialTime || '23:59')
             }
             if (initialCourseId !== undefined) {
                 setCourseId(initialCourseId)
@@ -53,7 +58,7 @@ export function CreateTaskModal({
                 setType(initialType)
             }
         }
-    }, [isOpen, initialDate, initialCourseId, initialType])
+    }, [isOpen, initialDate, initialTime, initialCourseId, initialType])
 
     const createTaskMutation = useMutation({
         mutationFn: (data: { description: string; date: string; dueTime?: string; dueDate?: string; courseId?: string; type?: string }) =>

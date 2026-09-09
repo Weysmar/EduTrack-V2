@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
     ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon,
-    Loader2, CheckSquare, Square, CheckCircle2, Clock, BookOpen, AlertCircle,
-    Plus, Trash2, X, Sparkles, ExternalLink
+    Loader2, CheckSquare, Square, Clock, AlertCircle,
+    Plus, Trash2, X, ExternalLink, MapPin
 } from 'lucide-react'
 import {
     format, addWeeks, subWeeks, addDays, subDays,
@@ -29,6 +29,91 @@ export const TASK_TYPES = [
     { id: 'task', label: 'Tâche', labelEn: 'Task', icon: '📌', color: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/30' },
 ];
 
+const HOUR_HEIGHT = 60; // 60px per hour -> 1 minute = 1 pixel
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+export interface TimedCalendarItem {
+    id: string;
+    itemType: 'event' | 'task';
+    title: string;
+    startMinutes: number; // 0..1440
+    endMinutes: number;   // 0..1440
+    raw: any;
+    columnIndex?: number;
+    totalColumns?: number;
+}
+
+/**
+ * Robust overlapping layout algorithm (greedy coloring / cluster scheduling).
+ * Groups overlapping items and assigns each a column index + total columns
+ * so that they can be displayed side-by-side without masking each other.
+ */
+export function layoutDayTimedItems(items: TimedCalendarItem[]): TimedCalendarItem[] {
+    if (!items || items.length === 0) return [];
+
+    // 1. Sort by startMinutes ASC, then by duration DESC
+    const sorted = [...items].sort((a, b) => {
+        if (a.startMinutes !== b.startMinutes) {
+            return a.startMinutes - b.startMinutes;
+        }
+        return (b.endMinutes - b.startMinutes) - (a.endMinutes - a.startMinutes);
+    });
+
+    // 2. Group into overlapping clusters
+    const clusters: TimedCalendarItem[][] = [];
+    let currentCluster: TimedCalendarItem[] = [];
+    let clusterEnd = -1;
+
+    for (const item of sorted) {
+        if (currentCluster.length === 0) {
+            currentCluster.push(item);
+            clusterEnd = item.endMinutes;
+        } else if (item.startMinutes < clusterEnd) {
+            // Overlaps with current cluster
+            currentCluster.push(item);
+            clusterEnd = Math.max(clusterEnd, item.endMinutes);
+        } else {
+            clusters.push(currentCluster);
+            currentCluster = [item];
+            clusterEnd = item.endMinutes;
+        }
+    }
+    if (currentCluster.length > 0) {
+        clusters.push(currentCluster);
+    }
+
+    // 3. Assign columns within each cluster
+    const result: TimedCalendarItem[] = [];
+
+    for (const cluster of clusters) {
+        const columnEnds: number[] = [];
+
+        for (const item of cluster) {
+            let assignedCol = -1;
+            for (let c = 0; c < columnEnds.length; c++) {
+                if (columnEnds[c] <= item.startMinutes) {
+                    assignedCol = c;
+                    columnEnds[c] = item.endMinutes;
+                    break;
+                }
+            }
+            if (assignedCol === -1) {
+                assignedCol = columnEnds.length;
+                columnEnds.push(item.endMinutes);
+            }
+            item.columnIndex = assignedCol;
+        }
+
+        const totalCols = columnEnds.length;
+        for (const item of cluster) {
+            item.totalColumns = totalCols;
+            result.push(item);
+        }
+    }
+
+    return result;
+}
+
 export function CalendarWidget() {
     const { apiKeys, activeProfile } = useProfileStore()
     const { icalUrl: storeUrl } = useCalendarStore()
@@ -42,13 +127,23 @@ export function CalendarWidget() {
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
+    // Current real-time clock for now line
+    const [now, setNow] = useState(new Date())
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
     // Filter by course
     const [filterCourseId, setFilterCourseId] = useState<string>('all')
 
     // Pop-up Task Creation Modal state
     const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
     const [selectedModalDate, setSelectedModalDate] = useState<Date | null>(null)
+    const [selectedModalTime, setSelectedModalTime] = useState<string | null>(null)
     const [showGoogleTip, setShowGoogleTip] = useState(true)
+
+    const gridContainerRef = useRef<HTMLDivElement>(null)
 
     const icalUrl = apiKeys.google_calendar || storeUrl;
     const isConnected = !!icalUrl;
@@ -155,10 +250,25 @@ export function CalendarWidget() {
         })()
         : allDays
 
+    // Auto-scroll to morning or current hour on mount / view switch
+    useEffect(() => {
+        if (gridContainerRef.current) {
+            const hasToday = days.some(d => isToday(d));
+            const targetHour = hasToday ? Math.max(0, now.getHours() - 1) : 7.5;
+            gridContainerRef.current.scrollTop = targetHour * HOUR_HEIGHT;
+        }
+    }, [currentDate, isMobile]);
+
     const isLoading = isLoadingEvents || isLoadingTasks;
 
+    const handleSlotClick = (day: Date, hour: number) => {
+        setSelectedModalDate(day);
+        setSelectedModalTime(`${hour.toString().padStart(2, '0')}:00`);
+        setIsCreateTaskModalOpen(true);
+    };
+
     return (
-        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[450px]">
+        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
             {/* Header */}
             <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/30">
                 <div className="flex items-center gap-2">
@@ -236,11 +346,11 @@ export function CalendarWidget() {
                         <span>
                             {language === 'fr' ? (
                                 <>
-                                    <strong>Astuce Google Agenda :</strong> Google n'inclut pas ses « Tâches » dans le lien iCal (seuls les <strong>« Événements »</strong> sont synchronisés). Pour voir une tâche ici, enregistrez-la en tant qu'<strong>Événement</strong> dans Google Agenda, ou ajoutez-la directement ci-dessous avec le bouton <strong>+</strong>.
+                                    <strong>Astuce Google Agenda :</strong> Google n'inclut pas ses « Tâches » dans le lien iCal (seuls les <strong>« Événements »</strong> sont synchronisés). Pour voir une tâche ici, enregistrez-la en tant qu'<strong>Événement</strong> dans Google Agenda, ou ajoutez-la directement ci-dessous en cliquant sur un créneau.
                                 </>
                             ) : (
                                 <>
-                                    <strong>Google Calendar Tip:</strong> Google does not export "Tasks" through iCal feeds (only <strong>Events</strong> are synced). To view tasks here, save them as <strong>Events</strong> in Google Calendar, or add them directly below using <strong>+</strong>.
+                                    <strong>Google Calendar Tip:</strong> Google does not export "Tasks" through iCal feeds (only <strong>Events</strong> are synced). To view tasks here, save them as <strong>Events</strong> in Google Calendar, or click any time slot below.
                                 </>
                             )}
                         </span>
@@ -271,131 +381,396 @@ export function CalendarWidget() {
                 </div>
             )}
 
-            {/* Calendar Grid Container */}
-            <div className="flex-1 p-2 md:p-4 overflow-x-auto">
-                <div className="grid grid-cols-3 md:grid-cols-7 gap-1 md:gap-3 w-full h-full min-h-[350px]">
-                    {days.map((day) => {
-                        // 1. External Events
-                        const dayEvents = events.filter(e => {
-                            if (!e.start) return false
-                            return isSameDay(new Date(e.start), day)
-                        }).sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+            {/* Day Columns Header & All-Day Header */}
+            <div className="border-b border-border bg-card sticky top-0 z-30 shadow-2xs">
+                {/* 1. Day Titles Header */}
+                <div className="flex border-b border-border/40">
+                    {/* Time Gutter Header spacer */}
+                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 flex items-center justify-center p-2 text-[10px] text-muted-foreground font-mono">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
+                    </div>
 
-                        // 2. Separate VTODO tasks from events in iCal
-                        const iCalTasks = dayEvents.filter(e => e.isTask)
-                        const pureEvents = dayEvents.filter(e => !e.isTask)
-
-                        // 3. EduTrack Study Tasks (with course filter)
-                        const dayStudyTasks = studyTasks.filter((task: any) => {
-                            if (!task.week?.startDate) return false;
-                            const taskDate = addDays(new Date(task.week.startDate), (task.dayNumber || 1) - 1);
-                            const matchesDay = isSameDay(taskDate, day);
-                            if (!matchesDay) return false;
-
-                            if (filterCourseId !== 'all') {
-                                const cId = task.course?.id || task.courseId || task.plan?.course?.id || task.plan?.courseId;
-                                return cId === filterCourseId;
-                            }
-                            return true;
-                        });
-
-                        const totalTasksCount = dayStudyTasks.length + iCalTasks.length;
-                        const totalEventsCount = pureEvents.length;
-
-                        return (
-                            <div
-                                key={day.toISOString()}
-                                className={cn(
-                                    "flex flex-col rounded-xl p-2 transition-colors min-h-[160px]",
-                                    isToday(day)
-                                        ? "bg-primary/5 border-2 border-primary/30 shadow-sm"
-                                        : "bg-muted/10 border border-border/50 hover:border-border transition-colors"
-                                )}
-                            >
-                                {/* Day Header */}
-                                <div className="flex items-center justify-between mb-2 pb-1 border-b border-border/30">
-                                    <div className="flex-1 text-center">
-                                        <div className="text-[11px] font-semibold text-muted-foreground uppercase hidden md:block">
+                    {/* Day Headers */}
+                    <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                        {days.map((day) => {
+                            const today = isToday(day);
+                            return (
+                                <div
+                                    key={`header-${day.toISOString()}`}
+                                    className={cn(
+                                        "p-2 text-center border-r border-border/30 last:border-r-0 flex items-center justify-between gap-1 transition-colors",
+                                        today ? "bg-primary/5" : "bg-card"
+                                    )}
+                                >
+                                    <div className="flex-1 text-center min-w-0">
+                                        <div className="text-[11px] font-semibold text-muted-foreground uppercase truncate hidden sm:block">
                                             {format(day, 'EEE', { locale })}
                                         </div>
-                                        <div className="text-[11px] font-semibold text-muted-foreground uppercase md:hidden">
+                                        <div className="text-[11px] font-semibold text-muted-foreground uppercase truncate sm:hidden">
                                             {format(day, 'EEEEE', { locale })}
                                         </div>
                                         <div className={cn(
-                                            "text-sm md:text-base font-bold w-7 h-7 mx-auto flex items-center justify-center rounded-full mt-0.5",
-                                            isToday(day) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground"
+                                            "text-xs sm:text-sm font-bold w-6 h-6 sm:w-7 sm:h-7 mx-auto flex items-center justify-center rounded-full mt-0.5 transition-transform",
+                                            today ? "bg-primary text-primary-foreground shadow-sm scale-105" : "text-foreground"
                                         )}>
                                             {format(day, 'd')}
                                         </div>
                                     </div>
+
                                     <button
                                         onClick={() => {
                                             setSelectedModalDate(day);
+                                            setSelectedModalTime(null);
                                             setIsCreateTaskModalOpen(true);
                                         }}
-                                        className="p-1 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-all shrink-0 active:scale-95"
+                                        className="p-1 hover:bg-primary/10 hover:text-primary rounded text-muted-foreground transition-all shrink-0 active:scale-95"
                                         title={language === 'fr' ? "Ajouter une échéance / tâche" : "Add deadline / task"}
                                     >
                                         <Plus className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
+                            );
+                        })}
+                    </div>
+                </div>
 
-                                {/* Items Container */}
-                                <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto max-h-[340px] pr-0.5">
-                                    {/* EduTrack Tasks Section */}
-                                    {dayStudyTasks.map((task: any) => {
+                {/* 2. All-Day / Untimed Section */}
+                <div className="flex min-h-[38px] max-h-[120px] overflow-y-auto border-b border-border/60 bg-muted/15">
+                    {/* Time Gutter Label */}
+                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 p-1 flex items-center justify-center text-[10px] font-medium text-muted-foreground uppercase text-center leading-tight">
+                        <span className="hidden sm:inline">{language === 'fr' ? 'Journée' : 'All day'}</span>
+                        <span className="sm:hidden">24h</span>
+                    </div>
+
+                    {/* Day All-Day Cells */}
+                    <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                        {days.map((day) => {
+                            // Filter all-day events
+                            const dayAllDayEvents = events.filter(e => {
+                                if (!e.start) return false;
+                                return isSameDay(new Date(e.start), day) && (e.allDay || e.isTask);
+                            });
+
+                            // Filter untimed or 23:59 study tasks
+                            const dayUntimedStudyTasks = studyTasks.filter((task: any) => {
+                                if (!task.week?.startDate) return false;
+                                const taskDate = addDays(new Date(task.week.startDate), (task.dayNumber || 1) - 1);
+                                if (!isSameDay(taskDate, day)) return false;
+
+                                if (filterCourseId !== 'all') {
+                                    const cId = task.course?.id || task.courseId || task.plan?.course?.id || task.plan?.courseId;
+                                    if (cId !== filterCourseId) return false;
+                                }
+
+                                return !task.dueTime || task.dueTime === '23:59';
+                            });
+
+                            const hasAllDayItems = dayAllDayEvents.length > 0 || dayUntimedStudyTasks.length > 0;
+
+                            return (
+                                <div
+                                    key={`allday-${day.toISOString()}`}
+                                    className={cn(
+                                        "p-1 border-r border-border/30 last:border-r-0 flex flex-col gap-1 overflow-y-auto",
+                                        isToday(day) ? "bg-primary/5" : "bg-transparent"
+                                    )}
+                                >
+                                    {dayAllDayEvents.map(event => (
+                                        <div
+                                            key={`allday-event-${event.id}`}
+                                            className="px-1.5 py-0.5 rounded bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary-foreground truncate flex items-center gap-1 shadow-2xs"
+                                            title={event.summary}
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                                            <span className="truncate">{event.summary}</span>
+                                        </div>
+                                    ))}
+
+                                    {dayUntimedStudyTasks.map((task: any) => {
                                         const course = task.course;
-                                        const taskTypeInfo = TASK_TYPES.find(t => t.id === task.type) || TASK_TYPES[4];
-                                        const isSpecialType = task.type && task.type !== 'task';
+                                        return (
+                                            <div
+                                                key={`allday-task-${task.id}`}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded border text-[11px] flex items-center justify-between gap-1 group shadow-2xs transition-all",
+                                                    task.isCompleted
+                                                        ? "bg-muted/40 border-muted text-muted-foreground line-through opacity-70"
+                                                        : "bg-card border-purple-500/30 hover:border-purple-500/60"
+                                                )}
+                                                style={{
+                                                    borderLeftColor: course?.color || '#8b5cf6',
+                                                    borderLeftWidth: '3px'
+                                                }}
+                                                title={task.description}
+                                            >
+                                                <button
+                                                    onClick={() => toggleTaskMutation.mutate({
+                                                        taskId: task.id,
+                                                        isCompleted: !task.isCompleted
+                                                    })}
+                                                    className="shrink-0 text-purple-600 dark:text-purple-400"
+                                                >
+                                                    {task.isCompleted ? <CheckSquare className="h-3 w-3 text-emerald-500" /> : <Square className="h-3 w-3" />}
+                                                </button>
+                                                <span className="truncate flex-1 font-medium">{task.description}</span>
+                                                <button
+                                                    onClick={() => deleteTaskMutation.mutate(task.id)}
+                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 p-0.5 shrink-0 transition-opacity"
+                                                    title={language === 'fr' ? "Supprimer" : "Delete"}
+                                                >
+                                                    <Trash2 className="h-2.5 w-2.5" />
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {!hasAllDayItems && (
+                                        <div className="h-6" />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. Main Scrollable Vertical Time Grid */}
+            <div
+                ref={gridContainerRef}
+                className="flex-1 overflow-y-auto overflow-x-auto relative select-none"
+                style={{ height: 'calc(100% - 130px)' }}
+            >
+                <div className="flex min-w-[650px] relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
+                    {/* Time Gutter Column */}
+                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 bg-card/60 sticky left-0 z-20 select-none">
+                        {HOURS.map(hour => (
+                            <div
+                                key={`gutter-${hour}`}
+                                className="border-b border-border/30 relative text-right pr-2 text-[10px] font-mono text-muted-foreground flex items-start justify-end pt-1"
+                                style={{ height: `${HOUR_HEIGHT}px` }}
+                            >
+                                <span className="-mt-2.5 bg-card px-1 rounded">
+                                    {hour.toString().padStart(2, '0')}:00
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Day Columns */}
+                    <div className="flex-1 grid relative" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                        {days.map((day) => {
+                            const today = isToday(day);
+
+                            // Current time minute for today line
+                            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+                            // 1. Timed iCal Events
+                            const timedEvents: TimedCalendarItem[] = events
+                                .filter(e => {
+                                    if (!e.start || e.allDay || e.isTask) return false;
+                                    return isSameDay(new Date(e.start), day);
+                                })
+                                .map(e => {
+                                    const startDate = new Date(e.start);
+                                    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+                                    let endMinutes = startMinutes + 60;
+                                    if (e.end) {
+                                        const endDate = new Date(e.end);
+                                        const rawEnd = endDate.getHours() * 60 + endDate.getMinutes();
+                                        if (rawEnd > startMinutes) {
+                                            endMinutes = rawEnd;
+                                        }
+                                    }
+                                    const duration = Math.max(30, endMinutes - startMinutes);
+                                    return {
+                                        id: `event-${e.id}`,
+                                        itemType: 'event',
+                                        title: e.summary,
+                                        startMinutes,
+                                        endMinutes: Math.min(1440, startMinutes + duration),
+                                        raw: e
+                                    };
+                                });
+
+                            // 2. Timed Study Tasks
+                            const timedTasks: TimedCalendarItem[] = studyTasks
+                                .filter((task: any) => {
+                                    if (!task.week?.startDate) return false;
+                                    const taskDate = addDays(new Date(task.week.startDate), (task.dayNumber || 1) - 1);
+                                    if (!isSameDay(taskDate, day)) return false;
+
+                                    if (filterCourseId !== 'all') {
+                                        const cId = task.course?.id || task.courseId || task.plan?.course?.id || task.plan?.courseId;
+                                        if (cId !== filterCourseId) return false;
+                                    }
+
+                                    return task.dueTime && task.dueTime !== '23:59';
+                                })
+                                .map((task: any) => {
+                                    const [h, m] = task.dueTime.split(':').map(Number);
+                                    const startMinutes = (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+                                    const duration = task.durationMinutes || 45;
+                                    return {
+                                        id: `task-${task.id}`,
+                                        itemType: 'task',
+                                        title: task.description,
+                                        startMinutes,
+                                        endMinutes: Math.min(1440, startMinutes + duration),
+                                        raw: task
+                                    };
+                                });
+
+                            // 3. Compute layout with overlapping columns
+                            const positionedItems = layoutDayTimedItems([...timedEvents, ...timedTasks]);
+
+                            return (
+                                <div
+                                    key={`col-${day.toISOString()}`}
+                                    className={cn(
+                                        "relative border-r border-border/30 last:border-r-0 h-full",
+                                        today ? "bg-primary/[0.02]" : "bg-transparent"
+                                    )}
+                                >
+                                    {/* Hour Slot Backgrounds & Guide Lines */}
+                                    {HOURS.map(hour => (
+                                        <div
+                                            key={`slot-${day.toISOString()}-${hour}`}
+                                            onClick={() => handleSlotClick(day, hour)}
+                                            className="border-b border-border/30 w-full relative group/slot cursor-pointer transition-colors hover:bg-primary/5"
+                                            style={{ height: `${HOUR_HEIGHT}px` }}
+                                            title={language === 'fr' ? `Cliquer pour ajouter à ${hour}:00` : `Click to add at ${hour}:00`}
+                                        >
+                                            {/* Subtle Half-hour dashed line */}
+                                            <div
+                                                className="absolute left-0 right-0 border-b border-dashed border-border/15 pointer-events-none"
+                                                style={{ top: `${HOUR_HEIGHT / 2}px` }}
+                                            />
+                                            {/* Plus button hint on slot hover */}
+                                            <div className="absolute right-1 top-1 opacity-0 group-hover/slot:opacity-100 text-muted-foreground/40 hover:text-primary transition-opacity">
+                                                <Plus className="h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Current Time Indicator Line (for Today) */}
+                                    {today && (
+                                        <div
+                                            className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                                            style={{ top: `${currentMinutes}px` }}
+                                        >
+                                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 -ml-1 shadow-sm ring-2 ring-background" />
+                                            <div className="h-[2px] bg-red-500 w-full shadow-xs" />
+                                        </div>
+                                    )}
+
+                                    {/* Render Positioned Timed Items with Side-by-Side Overlapping */}
+                                    {positionedItems.map(item => {
+                                        const topPx = item.startMinutes;
+                                        const heightPx = Math.max(26, item.endMinutes - item.startMinutes);
+                                        const totalCols = item.totalColumns || 1;
+                                        const colIndex = item.columnIndex || 0;
+
+                                        // Column width & left offset
+                                        const leftPercent = (colIndex / totalCols) * 100;
+                                        const widthPercent = 100 / totalCols;
+
+                                        if (item.itemType === 'event') {
+                                            const event = item.raw as ICalEvent;
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    className="absolute rounded-lg p-1.5 text-xs shadow-xs transition-all hover:z-30 hover:shadow-md cursor-pointer overflow-hidden border border-blue-500/40 bg-blue-500/10 dark:bg-blue-500/20 text-foreground flex flex-col justify-between"
+                                                    style={{
+                                                        top: `${topPx}px`,
+                                                        height: `${heightPx}px`,
+                                                        left: `calc(${leftPercent}% + 1px)`,
+                                                        width: `calc(${widthPercent}% - 2px)`,
+                                                        zIndex: 10 + colIndex
+                                                    }}
+                                                    title={`${event.summary}\n${formatEventTime(event, t)}${event.location ? `\n📍 ${event.location}` : ''}`}
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="font-semibold text-[11px] leading-tight truncate text-blue-700 dark:text-blue-300">
+                                                            {event.summary}
+                                                        </div>
+                                                        {heightPx >= 44 && (
+                                                            <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                                                                <Clock className="h-2.5 w-2.5 shrink-0" />
+                                                                <span className="truncate">{formatEventTime(event, t)}</span>
+                                                            </div>
+                                                        )}
+                                                        {heightPx >= 60 && event.location && (
+                                                            <div className="text-[9px] text-muted-foreground/80 flex items-center gap-0.5 mt-0.5 truncate">
+                                                                <MapPin className="h-2.5 w-2.5 shrink-0" />
+                                                                <span className="truncate">{event.location}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Item is an EduTrack Task
+                                        const task = item.raw;
+                                        const course = task.course;
+                                        const taskTypeInfo = TASK_TYPES.find(t => t.id === task.type) || TASK_TYPES[5];
 
                                         return (
                                             <div
-                                                key={`task-${task.id}`}
+                                                key={item.id}
                                                 className={cn(
-                                                    "p-2 rounded-xl border text-xs space-y-1.5 transition-all group relative overflow-hidden",
+                                                    "absolute rounded-lg p-1.5 text-xs shadow-xs transition-all hover:z-30 hover:shadow-md overflow-hidden border group flex flex-col justify-between",
                                                     task.isCompleted
-                                                        ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
+                                                        ? "bg-muted/40 border-muted text-muted-foreground line-through opacity-70"
                                                         : task.type === 'exam'
-                                                            ? "bg-rose-500/5 border-rose-500/40 hover:border-rose-500/70 shadow-xs"
+                                                            ? "bg-rose-500/10 border-rose-500/40 hover:border-rose-500/70"
                                                             : task.type === 'assignment'
-                                                                ? "bg-amber-500/5 border-amber-500/40 hover:border-amber-500/70 shadow-xs"
+                                                                ? "bg-amber-500/10 border-amber-500/40 hover:border-amber-500/70"
                                                                 : task.type === 'exercise'
-                                                                    ? "bg-emerald-500/5 border-emerald-500/40 hover:border-emerald-500/70 shadow-xs"
-                                                                    : "bg-card border-purple-500/30 hover:border-purple-500/60 shadow-xs"
+                                                                    ? "bg-emerald-500/10 border-emerald-500/40 hover:border-emerald-500/70"
+                                                                    : "bg-card border-purple-500/30 hover:border-purple-500/60"
                                                 )}
                                                 style={{
-                                                    borderLeftColor: course?.color || undefined,
-                                                    borderLeftWidth: course?.color ? '3px' : undefined
+                                                    top: `${topPx}px`,
+                                                    height: `${heightPx}px`,
+                                                    left: `calc(${leftPercent}% + 1px)`,
+                                                    width: `calc(${widthPercent}% - 2px)`,
+                                                    zIndex: 10 + colIndex,
+                                                    borderLeftColor: course?.color || '#8b5cf6',
+                                                    borderLeftWidth: '3px'
                                                 }}
                                             >
-                                                <div className="flex items-start justify-between gap-1.5">
-                                                    <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-1 min-w-0">
+                                                    <div className="flex items-start gap-1 min-w-0 flex-1">
                                                         <button
-                                                            onClick={() => toggleTaskMutation.mutate({
-                                                                taskId: task.id,
-                                                                isCompleted: !task.isCompleted
-                                                            })}
-                                                            className="mt-0.5 text-purple-600 dark:text-purple-400 hover:scale-110 transition-transform shrink-0"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleTaskMutation.mutate({
+                                                                    taskId: task.id,
+                                                                    isCompleted: !task.isCompleted
+                                                                });
+                                                            }}
+                                                            className="mt-0.5 text-purple-600 dark:text-purple-400 shrink-0 hover:scale-110 transition-transform"
                                                             title={task.isCompleted ? "Marquer non terminée" : "Marquer terminée"}
                                                         >
                                                             {task.isCompleted ? (
-                                                                <CheckSquare className="h-3.5 w-3.5 text-emerald-500" />
+                                                                <CheckSquare className="h-3 w-3 text-emerald-500" />
                                                             ) : (
-                                                                <Square className="h-3.5 w-3.5" />
+                                                                <Square className="h-3 w-3" />
                                                             )}
                                                         </button>
-                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                        <div className="min-w-0 flex-1">
                                                             {task.itemId && course ? (
                                                                 <Link
                                                                     to={`/edu/course/${course.id}/item/${task.itemId}`}
-                                                                    className="font-semibold leading-tight line-clamp-2 hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors select-none break-words flex items-center gap-1 group/link"
-                                                                    title={language === 'fr' ? "Ouvrir l'exercice" : "Open exercise"}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="font-semibold text-[11px] leading-tight line-clamp-1 hover:underline text-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-0.5"
                                                                 >
-                                                                    <span>{task.description}</span>
-                                                                    <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
+                                                                    <span className="truncate">{task.description}</span>
+                                                                    <ExternalLink className="h-2 w-2 shrink-0 opacity-60" />
                                                                 </Link>
                                                             ) : (
-                                                                <div className="font-semibold leading-tight line-clamp-2 select-none break-words">
+                                                                <div className="font-semibold text-[11px] leading-tight line-clamp-1 truncate">
                                                                     {task.description}
                                                                 </div>
                                                             )}
@@ -403,105 +778,50 @@ export function CalendarWidget() {
                                                     </div>
 
                                                     <button
-                                                        onClick={() => deleteTaskMutation.mutate(task.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteTaskMutation.mutate(task.id);
+                                                        }}
                                                         className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-red-500 transition-opacity shrink-0"
                                                         title={language === 'fr' ? "Supprimer la tâche" : "Delete task"}
                                                     >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Trash2 className="h-2.5 w-2.5" />
                                                     </button>
                                                 </div>
 
-                                                {/* Badges: Course and Type */}
-                                                <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                                                    {course && (
-                                                        <span
-                                                            className="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 truncate max-w-[120px]"
-                                                            style={{
-                                                                backgroundColor: `${course.color || '#8b5cf6'}20`,
-                                                                color: course.color || '#8b5cf6',
-                                                                borderColor: `${course.color || '#8b5cf6'}40`
-                                                            }}
-                                                        >
-                                                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: course.color || '#8b5cf6' }} />
-                                                            <span className="truncate">{course.title}</span>
-                                                        </span>
-                                                    )}
-                                                    {isSpecialType && (
-                                                        <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-0.5", taskTypeInfo.color)}>
-                                                            <span>{taskTypeInfo.icon}</span>
-                                                            <span>{language === 'fr' ? taskTypeInfo.label : taskTypeInfo.labelEn}</span>
-                                                        </span>
-                                                    )}
-                                                    {task.dueTime ? (
-                                                        <span className="text-[9px] text-muted-foreground ml-auto shrink-0 font-mono flex items-center gap-0.5">
+                                                {/* Meta: Course, Type, Time */}
+                                                {heightPx >= 45 && (
+                                                    <div className="flex items-center gap-1 mt-0.5 text-[9px] text-muted-foreground truncate">
+                                                        {course && (
+                                                            <span
+                                                                className="px-1 py-0.2 rounded font-bold truncate max-w-[80px]"
+                                                                style={{
+                                                                    backgroundColor: `${course.color || '#8b5cf6'}20`,
+                                                                    color: course.color || '#8b5cf6'
+                                                                }}
+                                                            >
+                                                                {course.title}
+                                                            </span>
+                                                        )}
+                                                        <span className="font-mono flex items-center gap-0.5 ml-auto shrink-0">
                                                             <Clock className="h-2.5 w-2.5" />
                                                             {task.dueTime}
                                                         </span>
-                                                    ) : task.durationMinutes && task.durationMinutes !== 30 ? (
-                                                        <span className="text-[9px] text-muted-foreground ml-auto shrink-0 font-mono">
-                                                            {task.durationMinutes}m
-                                                        </span>
-                                                    ) : null}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
-
-                                    {/* iCal VTODO Tasks */}
-                                    {iCalTasks.map(task => (
-                                        <div
-                                            key={`ical-task-${task.id}`}
-                                            className={cn(
-                                                "p-2 rounded-lg border text-xs space-y-1 transition-all",
-                                                task.isCompleted
-                                                    ? "bg-muted/30 border-muted text-muted-foreground line-through opacity-70"
-                                                    : "bg-card border-blue-500/30 hover:border-blue-500/60 shadow-xs"
-                                            )}
-                                        >
-                                            <div className="flex items-start gap-1.5">
-                                                <div className="mt-0.5 text-blue-600 dark:text-blue-400 shrink-0">
-                                                    {task.isCompleted ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-                                                </div>
-                                                <div className="font-semibold leading-tight line-clamp-2">
-                                                    {task.summary}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Calendar Events */}
-                                    {pureEvents.map(event => (
-                                        <div
-                                            key={`event-${event.id}`}
-                                            className="p-2 rounded-lg bg-card border border-border/80 shadow-xs text-xs space-y-1 hover:border-primary/50 transition-colors cursor-default"
-                                            title={event.summary}
-                                        >
-                                            <div className="font-semibold truncate leading-tight">
-                                                {event.summary}
-                                            </div>
-                                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                                <Clock className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                                                <span className="truncate">{formatEventTime(event, t)}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {totalTasksCount === 0 && totalEventsCount === 0 && (
-                                        <div className="flex-1 flex items-center justify-center py-6">
-                                            <span className="text-[10px] text-muted-foreground/40 italic hidden md:block">
-                                                {t('calendar.noEvents') || 'Libre'}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
-                        )
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
+            {/* Footer / Synced Status */}
             {lastSynced && (
-                <div className="p-2 border-t text-[10px] text-center text-muted-foreground bg-muted/10">
+                <div className="p-2 border-t text-[10px] text-center text-muted-foreground bg-muted/10 shrink-0">
                     {t('calendar.synced')}: {format(lastSynced, 'HH:mm')}
                 </div>
             )}
@@ -512,8 +832,10 @@ export function CalendarWidget() {
                 onClose={() => {
                     setIsCreateTaskModalOpen(false)
                     setSelectedModalDate(null)
+                    setSelectedModalTime(null)
                 }}
                 initialDate={selectedModalDate}
+                initialTime={selectedModalTime}
                 initialCourseId={filterCourseId !== 'all' ? filterCourseId : ''}
                 courses={courses}
             />
