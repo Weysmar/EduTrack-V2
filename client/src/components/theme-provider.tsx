@@ -7,8 +7,10 @@ type ThemeProviderProps = {
     children: React.ReactNode
     defaultTheme?: Theme
     defaultThemeColor?: ThemeColor
+    defaultMinecraftTheme?: boolean
     storageKey?: string
     storageKeyColor?: string
+    storageKeyMinecraft?: string
 }
 
 type ThemeProviderState = {
@@ -16,6 +18,8 @@ type ThemeProviderState = {
     setTheme: (theme: Theme) => void
     themeColor: ThemeColor
     setThemeColor: (color: ThemeColor) => void
+    minecraftTheme: boolean
+    setMinecraftTheme: (enabled: boolean) => void
 }
 
 const initialState: ThemeProviderState = {
@@ -23,6 +27,8 @@ const initialState: ThemeProviderState = {
     setTheme: () => null,
     themeColor: "default",
     setThemeColor: () => null,
+    minecraftTheme: false,
+    setMinecraftTheme: () => null,
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -31,8 +37,10 @@ export function ThemeProvider({
     children,
     defaultTheme = "system",
     defaultThemeColor = "default",
+    defaultMinecraftTheme = false,
     storageKey = "vite-ui-theme",
     storageKeyColor = "vite-ui-theme-color",
+    storageKeyMinecraft = "vite-ui-minecraft-theme",
     ...props
 }: ThemeProviderProps) {
     const [theme, setTheme] = useState<Theme>(
@@ -42,6 +50,20 @@ export function ThemeProvider({
     const [themeColor, setThemeColor] = useState<ThemeColor>(
         () => (localStorage.getItem(storageKeyColor) as ThemeColor) || defaultThemeColor
     )
+
+    const [minecraftTheme, setMinecraftThemeState] = useState<boolean>(() => {
+        // Automatic migration if user previously selected 'mc' language
+        if (typeof window !== 'undefined') {
+            if (localStorage.getItem("vite-ui-language") === 'mc') {
+                localStorage.setItem("vite-ui-language", "fr");
+                localStorage.setItem(storageKeyMinecraft, "true");
+                return true;
+            }
+            const stored = localStorage.getItem(storageKeyMinecraft);
+            if (stored !== null) return stored === "true";
+        }
+        return defaultMinecraftTheme;
+    })
 
     useEffect(() => {
         const root = window.document.documentElement
@@ -74,6 +96,15 @@ export function ThemeProvider({
         }
     }, [themeColor])
 
+    // Effect for Minecraft Visual Theme
+    useEffect(() => {
+        if (minecraftTheme) {
+            document.body.classList.add("minecraft-theme");
+        } else {
+            document.body.classList.remove("minecraft-theme");
+        }
+    }, [minecraftTheme])
+
     const value = {
         theme,
         setTheme: (theme: Theme) => {
@@ -84,6 +115,11 @@ export function ThemeProvider({
         setThemeColor: (color: ThemeColor) => {
             localStorage.setItem(storageKeyColor, color)
             setThemeColor(color)
+        },
+        minecraftTheme,
+        setMinecraftTheme: (enabled: boolean) => {
+            localStorage.setItem(storageKeyMinecraft, String(enabled));
+            setMinecraftThemeState(enabled);
         }
     }
 

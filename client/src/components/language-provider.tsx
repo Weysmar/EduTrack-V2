@@ -1,12 +1,8 @@
 import { createContext, useContext, useEffect, useState, useMemo } from "react"
 
-export type Language = "en" | "fr" | "mc"
+export type Language = "en" | "fr"
 
-type Translations = {
-    [key in Language]: {
-        [key: string]: string
-    }
-}
+type Translations = Record<string, Record<string, string>>
 
 const translations: Translations = {
     en: {
@@ -2408,23 +2404,18 @@ export function LanguageProvider({
     storageKey = "vite-ui-language",
     ...props
 }: LanguageProviderProps) {
-    const [language, setLanguage] = useState<Language>(
-        () => (localStorage.getItem(storageKey) as Language) || defaultLanguage
-    )
+    const [language, setLanguage] = useState<Language>(() => {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+        if (stored === 'en' || stored === 'fr') return stored
+        return defaultLanguage
+    })
 
     useEffect(() => {
         localStorage.setItem(storageKey, language)
-
-        // Global Theme Injection for Minecraft Mode
-        if (language === 'mc') {
-            document.body.classList.add('minecraft-theme')
-        } else {
-            document.body.classList.remove('minecraft-theme')
-        }
     }, [language, storageKey])
 
     const t = (key: string, variables?: Record<string, string | number>) => {
-        let text = translations[language]?.[key] || translations['fr']?.[key] || translations['en']?.[key] || key
+        let text = translations[language]?.[key] || (language === 'en' ? translations['en']?.[key] : translations['fr']?.[key]) || translations['fr']?.[key] || key
         if (variables) {
             Object.entries(variables).forEach(([k, v]) => {
                 text = text.replace(`{${k}}`, String(v))

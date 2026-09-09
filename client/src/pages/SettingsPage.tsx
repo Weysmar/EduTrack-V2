@@ -14,7 +14,7 @@ import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users' | 'calendars'>('calendars')
-    const { theme, setTheme, themeColor, setThemeColor } = useTheme()
+    const { theme, setTheme, themeColor, setThemeColor, minecraftTheme, setMinecraftTheme } = useTheme()
     const { t, language, setLanguage } = useLanguage()
     const { feeds } = useCalendarStore()
     const useNavigateCallback = useNavigate()
@@ -181,6 +181,37 @@ export function SettingsPage() {
                                     </div>
                                 </div>
 
+                                <div className="space-y-4 pt-4 border-t">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border bg-muted/20">
+                                        <div className="space-y-1">
+                                            <h3 className="text-base font-semibold flex items-center gap-2">
+                                                <img src="/assets/minecraft_grass_block.webp" alt="MC" className="w-6 h-6 object-contain" />
+                                                {language === 'fr' ? 'Style Visuel Rétro (Minecraft / Cubique)' : 'Retro Visual Style (Minecraft / Cubic)'}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground max-w-xl">
+                                                {language === 'fr' 
+                                                    ? "Active l'esthétique pixel art, la typographie Minecraftia et les bordures carrées tout en conservant intégralement votre langue choisie (Français ou Anglais)."
+                                                    : "Enables pixel art aesthetics, Minecraftia typography, and square borders while preserving your chosen language (French or English)."}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMinecraftTheme(!minecraftTheme)}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out self-start sm:self-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                                minecraftTheme ? "bg-emerald-600" : "bg-muted"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                                                    minecraftTheme ? "translate-x-5" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-4 pt-6 border-t">
                                     <h3 className="text-lg font-medium flex items-center gap-2">
                                         <Globe className="w-5 h-5 text-primary" />
@@ -191,7 +222,7 @@ export function SettingsPage() {
                                             ? 'Choisissez la langue principale d\'affichage pour l\'ensemble d\'EduTrack.' 
                                             : 'Choose the interface display language for EduTrack.'}
                                     </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <button
                                             type="button"
                                             onClick={() => setLanguage('fr')}
@@ -203,7 +234,7 @@ export function SettingsPage() {
                                             <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-8 h-5 object-cover rounded shadow-sm" />
                                             <div>
                                                 <div className="font-semibold text-sm">Français</div>
-                                                <div className="text-xs text-muted-foreground">Par défaut</div>
+                                                <div className="text-xs text-muted-foreground">{language === 'fr' ? 'Langue par défaut' : 'Default language'}</div>
                                             </div>
                                         </button>
                                         <button
@@ -218,20 +249,6 @@ export function SettingsPage() {
                                             <div>
                                                 <div className="font-semibold text-sm">English</div>
                                                 <div className="text-xs text-muted-foreground">International</div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setLanguage('mc')}
-                                            className={cn(
-                                                "flex items-center gap-3.5 p-4 rounded-xl border-2 transition-all hover:bg-muted group text-left",
-                                                language === 'mc' ? "border-primary bg-primary/5 shadow-inner" : "border-transparent bg-muted/30"
-                                            )}
-                                        >
-                                            <img src="/assets/minecraft_grass_block.webp" alt="MC" className="w-8 h-8 object-contain" />
-                                            <div>
-                                                <div className="font-semibold text-sm">Minecraft</div>
-                                                <div className="text-xs text-muted-foreground">Thème cubique</div>
                                             </div>
                                         </button>
                                     </div>

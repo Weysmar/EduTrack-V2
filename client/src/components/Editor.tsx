@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
+import { useTheme } from '@/components/theme-provider'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
@@ -78,7 +79,7 @@ interface EditorProps {
 
 export function Editor({ content, onChange, editable = true, className }: EditorProps) {
     const { language, t } = useLanguage()
-    const isMinecraft = language === 'mc'
+    const { minecraftTheme: isMinecraft } = useTheme()
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)

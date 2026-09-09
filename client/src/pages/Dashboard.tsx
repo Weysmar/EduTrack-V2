@@ -15,7 +15,7 @@ import { StatCardVariant } from '@/components/ui/StatCard';
 import { apiClient } from '@/lib/api/client'
 
 export function Dashboard() {
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false)
     const { activeProfile } = useProfileStore()
@@ -54,10 +54,16 @@ export function Dashboard() {
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
-        if (hour < 12) return "Bonjour";
-        if (hour < 18) return "Bon après-midi";
-        return "Bonsoir";
-    }, []);
+        if (language === 'fr') {
+            if (hour < 12) return "Bonjour";
+            if (hour < 18) return "Bon après-midi";
+            return "Bonsoir";
+        } else {
+            if (hour < 12) return "Good morning";
+            if (hour < 18) return "Good afternoon";
+            return "Good evening";
+        }
+    }, [language]);
 
     // Calculate Streak from Session Data
     const { data: sessions = [] } = useQuery({
@@ -189,10 +195,10 @@ export function Dashboard() {
 
     // Quick Actions
     const quickActions = [
-        { icon: Plus, label: "Nouveau Sujet", action: () => setIsCreateModalOpen(true), color: "bg-blue-500" },
-        { icon: PenTool, label: "Nouvelle Note", link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" }, // Fallback logic
-        { icon: Zap, label: "Mode Focus", link: "/edu/focus", color: "bg-violet-600" },
-        { icon: CalendarIcon, label: "Mon Planning", action: () => setIsRevisionModalOpen(true), color: "bg-emerald-500" },
+        { icon: Plus, label: language === 'fr' ? "Nouveau Sujet" : "New Course", action: () => setIsCreateModalOpen(true), color: "bg-blue-500" },
+        { icon: PenTool, label: language === 'fr' ? "Nouvelle Note" : "New Note", link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" },
+        { icon: Zap, label: language === 'fr' ? "Mode Focus" : "Focus Mode", link: "/edu/focus", color: "bg-violet-600" },
+        { icon: CalendarIcon, label: language === 'fr' ? "Mon Planning" : "My Schedule", action: () => setIsRevisionModalOpen(true), color: "bg-emerald-500" },
     ]
 
     return (
@@ -210,8 +216,10 @@ export function Dashboard() {
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-muted text-foreground px-2.5 md:px-3 py-1 rounded-full border border-border dark:bg-white/10 dark:text-white/80 dark:border-white/10">
                                 <Flame className="w-3 h-3 md:w-4 md:h-4 text-orange-500 fill-orange-500 dark:text-orange-400 dark:fill-orange-400" />
-                                <span className="hidden sm:inline">{streakDays} Jours de série</span>
-                                <span className="sm:hidden">{streakDays}j</span>
+                                <span className="hidden sm:inline">
+                                    {streakDays} {language === 'fr' ? (streakDays > 1 ? 'Jours de série' : 'Jour de série') : (streakDays > 1 ? 'Days streak' : 'Day streak')}
+                                </span>
+                                <span className="sm:hidden">{streakDays}{language === 'fr' ? 'j' : 'd'}</span>
                             </span>
 
                         </div>
@@ -221,7 +229,11 @@ export function Dashboard() {
                                 {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-300 dark:to-violet-300">{activeProfile.name}</span>.
                             </h1>
                             <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none dark:text-slate-300">
-                                Prêt à continuer votre progression ? Vous étiez sur <strong className="text-foreground dark:text-white">{lastActiveCourse?.title || "vos cours"}</strong> récemment.
+                                {language === 'fr' ? (
+                                    <>Prêt à continuer votre progression ? Vous étiez sur <strong className="text-foreground dark:text-white">{lastActiveCourse?.title || "vos cours"}</strong> récemment.</>
+                                ) : (
+                                    <>Ready to continue your progress? You were working on <strong className="text-foreground dark:text-white">{lastActiveCourse?.title || "your courses"}</strong> recently.</>
+                                )}
                             </p>
                         </div>
 
@@ -232,7 +244,9 @@ export function Dashboard() {
                                     className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
                                 >
                                     <Zap className="w-4 h-4 fill-primary-foreground dark:fill-slate-900" />
-                                    <span className="truncate">Reprendre {lastActiveCourse.title}</span>
+                                    <span className="truncate">
+                                        {language === 'fr' ? `Reprendre ${lastActiveCourse.title}` : `Resume ${lastActiveCourse.title}`}
+                                    </span>
                                 </Link>
                             </div>
                         )}
@@ -330,7 +344,9 @@ export function Dashboard() {
                                         <Clock className="h-5 w-5 text-primary" />
                                         {t('dashboard.recent')}
                                     </h2>
-                                    <Link to="/library" className="text-xs text-primary hover:underline">Voir tout</Link>
+                                    <Link to="/library" className="text-xs text-primary hover:underline">
+                                        {language === 'fr' ? "Voir tout" : "View all"}
+                                    </Link>
                                 </div>
 
                                 {recentCourses.length > 0 ? (
@@ -338,7 +354,7 @@ export function Dashboard() {
                                         {recentCourses.slice(0, 4).map((course: any) => (
                                             <Link
                                                 key={course.id}
-                                                to={`/edu/course/${course.id}`} /** FIX: Add /edu prefix */
+                                                to={`/edu/course/${course.id}`}
                                                 className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
                                             >
                                                 <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
@@ -356,7 +372,9 @@ export function Dashboard() {
                                                         </div>
                                                     </div>
                                                     <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2">{course.description || "Aucune description"}</p>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2">
+                                                        {course.description || (language === 'fr' ? "Aucune description" : "No description")}
+                                                    </p>
                                                 </div>
                                             </Link>
                                         ))}
@@ -372,7 +390,7 @@ export function Dashboard() {
                             <div className="space-y-3">
                                 <h2 className="text-lg font-bold flex items-center gap-2">
                                     <Sparkles className="h-5 w-5 text-amber-500" />
-                                    Activité Récente
+                                    {language === 'fr' ? "Activité Récente" : "Recent Activity"}
                                 </h2>
                                 <div className="bg-card border rounded-2xl p-4 space-y-1 max-h-[400px] overflow-auto">
                                     {activity.length > 0 ? (

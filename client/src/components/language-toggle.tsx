@@ -31,11 +31,6 @@ export function LanguageToggle() {
             label: "English",
             icon: <img src="https://flagcdn.com/w40/gb.png" alt="UK" loading="lazy" decoding="async" className="w-5 h-3.5 object-cover rounded-[1px]" />
         },
-        {
-            code: "mc",
-            label: "Minecraft",
-            icon: <img src="/assets/minecraft_grass_block.webp" alt="MC" loading="lazy" decoding="async" className="w-5 h-5 object-contain" />
-        },
     ]
 
     const currentLang = languages.find(l => l.code === language) || languages[0]
