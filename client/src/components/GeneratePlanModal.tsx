@@ -3,7 +3,7 @@ import { Calendar, Clock, Target, BookOpen, Brain, Loader2, X, RefreshCw, AlertC
 import { cn } from '@/lib/utils'
 import { generateStudyPlan } from '@/lib/plans/generator'
 import { useCalendarStore } from '@/store/calendarStore'
-import { fetchICalFeed } from '@/lib/ical-parser'
+import { fetchAllICalFeeds, type ICalFeedTarget } from '@/lib/ical-parser'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
 import { toast } from 'sonner'
@@ -19,7 +19,7 @@ interface GeneratePlanModalProps {
 export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }: GeneratePlanModalProps) {
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
-    const { icalUrl, isConnected } = useCalendarStore()
+    const { feeds, icalUrl, isConnected } = useCalendarStore()
 
     // Form Data
     const [deadline, setDeadline] = useState<string>('')
@@ -35,8 +35,19 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
     if (!isOpen) return null
 
     const handleSyncCalendar = async () => {
-        if (!isConnected || !icalUrl) {
-            toast.error(t('plan.calendar.notConnected') || "Connectez d'abord votre calendrier Google.")
+        const activeTargets: ICalFeedTarget[] = [];
+        if (feeds && feeds.length > 0) {
+            for (const f of feeds) {
+                if (f.enabled && f.url) {
+                    activeTargets.push({ id: f.id, name: f.name, url: f.url, color: f.color });
+                }
+            }
+        } else if (icalUrl) {
+            activeTargets.push({ id: 'legacy', name: 'Calendar', url: icalUrl });
+        }
+
+        if (activeTargets.length === 0) {
+            toast.error(t('plan.calendar.notConnected') || "Connectez d'abord vos agendas (iCal) dans les paramètres.")
             return
         }
 
@@ -47,15 +58,13 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
 
             if (!course) return
 
-            // Decode URL if strictly needed, but fetchICalFeed handles it via proxy
-            const events = await fetchICalFeed(icalUrl)
+            const events = await fetchAllICalFeeds(activeTargets)
 
             // Searching for exam event in calendar
-
             const examEvent = events.find(e =>
                 e.summary.toLowerCase().includes(`examen ${course.title.toLowerCase()}`) ||
                 e.summary.toLowerCase().includes(`exam ${course.title.toLowerCase()}`) ||
-                e.summary.toLowerCase().includes(course.title.toLowerCase()) && e.summary.toLowerCase().includes('examen')
+                (e.summary.toLowerCase().includes(course.title.toLowerCase()) && e.summary.toLowerCase().includes('examen'))
             )
 
             if (examEvent) {
@@ -63,7 +72,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
                 setDeadline(dateStr)
                 toast.success(t('plan.calendar.found', { event: examEvent.summary, date: dateStr }) || `Examen trouvé : ${examEvent.summary} le ${dateStr}`)
             } else {
-                toast.warning(t('plan.calendar.notFound', { course: course.title }) || `Aucun événement "Examen ${course.title}" trouvé.`)
+                toast.warning(t('plan.calendar.notFound', { course: course.title }) || `Aucun événement "Examen ${course.title}" trouvé dans vos agendas.`)
             }
         } catch (error) {
             console.error(error)

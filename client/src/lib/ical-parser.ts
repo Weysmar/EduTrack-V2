@@ -8,6 +8,9 @@ export interface ICalEvent {
     allDay: boolean;
     isTask?: boolean;
     isCompleted?: boolean;
+    feedId?: string;
+    feedName?: string;
+    feedColor?: string;
 }
 
 export class ICalParser {
@@ -165,3 +168,46 @@ export const fetchICalFeed = async (url: string): Promise<ICalEvent[]> => {
         throw error;
     }
 }
+
+export interface ICalFeedTarget {
+    id: string;
+    name: string;
+    url: string;
+    color?: string;
+    enabled?: boolean;
+}
+
+/**
+ * Récupère et fusionne en parallèle plusieurs flux iCal.
+ * Chaque événement est étiqueté avec l'ID, le nom et la couleur de son flux d'origine.
+ * Tolérant aux pannes : si un flux échoue, les événements des autres flux restent disponibles.
+ */
+export const fetchAllICalFeeds = async (feeds: ICalFeedTarget[]): Promise<ICalEvent[]> => {
+    const activeFeeds = feeds.filter(f => f.enabled !== false && f.url && f.url.trim());
+    if (activeFeeds.length === 0) return [];
+
+    const results = await Promise.allSettled(
+        activeFeeds.map(async (feed) => {
+            const events = await fetchICalFeed(feed.url.trim());
+            return events.map(e => ({
+                ...e,
+                id: `${feed.id}-${e.id}`,
+                feedId: feed.id,
+                feedName: feed.name,
+                feedColor: feed.color || '#3b82f6',
+            }));
+        })
+    );
+
+    const merged: ICalEvent[] = [];
+    results.forEach((res, index) => {
+        if (res.status === 'fulfilled') {
+            merged.push(...res.value);
+        } else {
+            console.warn(`[ICalParser] Échec du chargement du flux "${activeFeeds[index].name}":`, res.reason);
+        }
+    });
+
+    return merged;
+};
+

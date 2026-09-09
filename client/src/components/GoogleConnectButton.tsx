@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { 
     Calendar, Check, Link2, ExternalLink, AlertCircle, Loader2, X, Trash2,
-    Copy, RefreshCw, ArrowUpFromLine, ArrowDownToLine, Sparkles, ShieldAlert
+    Copy, RefreshCw, ArrowUpFromLine, ArrowDownToLine, Sparkles, ShieldCheck,
+    Plus, Eye, EyeOff, CheckCircle2
 } from 'lucide-react'
-import { useCalendarStore } from '@/store/calendarStore'
+import { useCalendarStore, DEFAULT_CALENDAR_COLORS, type ICalFeed } from '@/store/calendarStore'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
 import { fetchICalFeed } from '@/lib/ical-parser'
@@ -13,28 +14,43 @@ import { calendarQueries } from '@/lib/api/queries'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-export function GoogleConnectButton() {
+export interface GoogleConnectButtonProps {
+    className?: string;
+    variant?: 'default' | 'compact';
+}
+
+export function GoogleConnectButton({ className, variant = 'default' }: GoogleConnectButtonProps = {}) {
     const { t, language } = useLanguage()
     const queryClient = useQueryClient()
-    const { icalUrl: storeUrl, setUrl: setStoreUrl, disconnect: storeDisconnect } = useCalendarStore()
+    const { 
+        feeds, 
+        addFeed, 
+        removeFeed, 
+        toggleFeed, 
+        updateFeed, 
+        icalUrl: storeUrl,
+        isConnected: storeConnected
+    } = useCalendarStore()
     const { apiKeys, setApiKey } = useProfileStore()
 
-    const currentUrl = apiKeys.google_calendar || storeUrl || ''
-    const isConnected = !!currentUrl
-
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [activeTab, setActiveTab] = useState<'export' | 'import'>('export')
-    const [urlInput, setUrlInput] = useState(currentUrl)
-    const [isTesting, setIsTesting] = useState(false)
-    const [isSaving, setIsSaving] = useState(false)
+    const [activeTab, setActiveTab] = useState<'import' | 'export'>('import')
+    
+    // New feed form state
+    const [newFeedName, setNewFeedName] = useState('')
+    const [newFeedUrl, setNewFeedUrl] = useState('')
+    const [newFeedColor, setNewFeedColor] = useState(DEFAULT_CALENDAR_COLORS[0])
+    const [isTestingNew, setIsTestingNew] = useState(false)
+    const [testingFeedId, setTestingFeedId] = useState<string | null>(null)
+    const [feedCounts, setFeedCounts] = useState<Record<string, number>>({})
     const [hasCopied, setHasCopied] = useState(false)
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string; count?: number } | null>(null)
+    const [showAddForm, setShowAddForm] = useState(feeds.length === 0)
 
-    // Fetch user's personal EduTrack iCal feed info
-    const { data: feedInfo, isLoading: isLoadingFeed, refetch: refetchFeed } = useQuery({
+    // Fetch user's personal EduTrack iCal feed info (Export tab)
+    const { data: feedInfo, isLoading: isLoadingFeed } = useQuery({
         queryKey: ['calendarFeedInfo'],
         queryFn: calendarQueries.getFeedInfo,
-        enabled: isModalOpen,
+        enabled: isModalOpen && activeTab === 'export',
         staleTime: 1000 * 60 * 5
     });
 
@@ -49,13 +65,12 @@ export function GoogleConnectButton() {
         }
     });
 
+    // Auto open add form if no feeds
     useEffect(() => {
-        if (isModalOpen) {
-            setUrlInput(currentUrl)
-            setTestResult(null)
-            setHasCopied(false)
+        if (isModalOpen && feeds.length === 0) {
+            setShowAddForm(true)
         }
-    }, [isModalOpen, currentUrl])
+    }, [isModalOpen, feeds.length])
 
     const handleCopyFeed = async () => {
         if (!feedInfo?.feedUrl) return
@@ -70,83 +85,96 @@ export function GoogleConnectButton() {
         }
     }
 
-    const handleTest = async () => {
-        if (!urlInput.trim()) {
-            setTestResult({
-                success: false,
-                message: language === 'fr' ? 'Veuillez saisir une URL iCal' : 'Please enter an iCal URL'
-            })
-            return
+    const normalizeUrl = (raw: string) => {
+        let clean = raw.trim();
+        if (clean.startsWith('webcal://')) {
+            clean = 'https://' + clean.substring(9);
+        } else if (clean.startsWith('webcals://')) {
+            clean = 'https://' + clean.substring(10);
         }
+        return clean;
+    }
 
-        setIsTesting(true)
-        setTestResult(null)
+    const handleAddFeed = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const cleanUrl = normalizeUrl(newFeedUrl);
+        if (!cleanUrl) return;
 
+        setIsTestingNew(true);
         try {
-            const events = await fetchICalFeed(urlInput.trim())
-            setTestResult({
-                success: true,
-                message: language === 'fr'
-                    ? `Connexion réussie ! ${events.length} événement(s) récupéré(s).`
-                    : `Connection successful! ${events.length} event(s) found.`,
-                count: events.length
-            })
-        } catch (error: any) {
-            console.error('Test iCal error:', error)
-            const detail = error.response?.data?.error || error.message || ''
-            setTestResult({
-                success: false,
-                message: language === 'fr'
+            const events = await fetchICalFeed(cleanUrl);
+            const name = newFeedName.trim() || (language === 'fr' ? `Agenda ${feeds.length + 1}` : `Calendar ${feeds.length + 1}`);
+            
+            const newId = addFeed({
+                name,
+                url: cleanUrl,
+                color: newFeedColor,
+                enabled: true,
+            });
+
+            // Update legacy apiKeys.google_calendar for backwards compatibility
+            await setApiKey('google_calendar', cleanUrl);
+
+            setFeedCounts(prev => ({ ...prev, [newId]: events.length }));
+            setNewFeedName('');
+            setNewFeedUrl('');
+            setNewFeedColor(DEFAULT_CALENDAR_COLORS[(feeds.length + 1) % DEFAULT_CALENDAR_COLORS.length]);
+            setShowAddForm(false);
+            
+            toast.success(
+                language === 'fr'
+                    ? `Agenda « ${name} » connecté (${events.length} événements) !`
+                    : `Calendar "${name}" connected (${events.length} events)!`
+            );
+        } catch (err: any) {
+            console.error('[GoogleConnectButton] Add feed error:', err);
+            const detail = err.response?.data?.error || err.message || '';
+            toast.error(
+                language === 'fr'
                     ? `Impossible de charger l'agenda : ${detail || 'Vérifiez le lien iCal'}`
                     : `Failed to load calendar: ${detail || 'Check the iCal link'}`
-            })
+            );
         } finally {
-            setIsTesting(false)
+            setIsTestingNew(false);
         }
-    }
+    };
 
-    const handleSave = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault()
-        const trimmed = urlInput.trim()
-        if (!trimmed) return
-
-        setIsSaving(true)
+    const handleTestExisting = async (feed: ICalFeed) => {
+        setTestingFeedId(feed.id);
         try {
-            // Normalize webcal:// to https://
-            let cleanUrl = trimmed
-            if (cleanUrl.startsWith('webcal://')) {
-                cleanUrl = 'https://' + cleanUrl.substring(9)
-            } else if (cleanUrl.startsWith('webcals://')) {
-                cleanUrl = 'https://' + cleanUrl.substring(10)
-            }
-
-            // Save in Profile & Calendar store
-            await setApiKey('google_calendar', cleanUrl)
-            setStoreUrl(cleanUrl)
-            toast.success(language === 'fr' ? 'Agenda Google connecté avec succès !' : 'Google Calendar connected successfully!')
-            setIsModalOpen(false)
-        } catch (error) {
-            console.error('Error saving calendar url:', error)
-            toast.error(language === 'fr' ? 'Erreur lors de l\'enregistrement' : 'Error saving calendar')
+            const events = await fetchICalFeed(feed.url);
+            setFeedCounts(prev => ({ ...prev, [feed.id]: events.length }));
+            toast.success(
+                language === 'fr'
+                    ? `« ${feed.name} » : ${events.length} événement(s) récupéré(s) avec succès !`
+                    : `"${feed.name}": ${events.length} event(s) fetched successfully!`
+            );
+        } catch (err: any) {
+            const detail = err.response?.data?.error || err.message || '';
+            toast.error(
+                language === 'fr'
+                    ? `Erreur sur « ${feed.name} » : ${detail || 'Vérifiez le lien'}`
+                    : `Error on "${feed.name}": ${detail || 'Check the link'}`
+            );
         } finally {
-            setIsSaving(false)
+            setTestingFeedId(null);
         }
-    }
+    };
 
-    const handleDisconnect = async () => {
-        setIsSaving(true)
-        try {
-            await setApiKey('google_calendar', '')
-            storeDisconnect()
-            setUrlInput('')
-            toast.success(language === 'fr' ? 'Agenda déconnecté' : 'Calendar disconnected')
-            setIsModalOpen(false)
-        } catch (error) {
-            console.error('Error disconnecting calendar:', error)
-        } finally {
-            setIsSaving(false)
+    const handleRemoveFeed = async (feed: ICalFeed) => {
+        removeFeed(feed.id);
+        const remaining = feeds.filter(f => f.id !== feed.id);
+        if (remaining.length > 0) {
+            await setApiKey('google_calendar', remaining[0].url);
+        } else {
+            await setApiKey('google_calendar', '');
         }
-    }
+        toast.info(language === 'fr' ? `Agenda « ${feed.name} » retiré.` : `Calendar "${feed.name}" removed.`);
+    };
+
+    // Active feeds count
+    const activeFeedsCount = feeds.filter(f => f.enabled).length;
+    const isConnected = activeFeedsCount > 0 || !!apiKeys.google_calendar || storeConnected;
 
     // Google Calendar direct webcal subscription URL
     const googleSubscribeUrl = feedInfo?.webcalUrl
@@ -155,22 +183,51 @@ export function GoogleConnectButton() {
 
     return (
         <>
-            {isConnected ? (
+            {variant === 'compact' ? (
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-500 border border-green-500/30 rounded-full text-xs sm:text-sm font-medium transition-all"
-                    title={language === 'fr' ? 'Google Agenda connecté (cliquer pour gérer)' : 'Google Calendar connected (click to manage)'}
+                    className={cn(
+                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold border transition-colors shadow-xs",
+                        isConnected
+                            ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                            : "border-border bg-background hover:bg-muted text-foreground",
+                        className
+                    )}
+                    title={language === 'fr' ? 'Gérer les agendas synchronisés (iCal)' : 'Manage synchronized calendars (iCal)'}
                 >
-                    <Check className="h-3.5 w-3.5" />
-                    <span>{t('calendar.connected') || 'Agenda connecté'}</span>
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>
+                        {isConnected 
+                            ? `${activeFeedsCount} ${language === 'fr' ? 'agenda(s)' : 'cal(s)'}`
+                            : (language === 'fr' ? 'Agendas' : 'Calendars')}
+                    </span>
+                </button>
+            ) : isConnected ? (
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-full text-xs sm:text-sm font-medium transition-all",
+                        className
+                    )}
+                    title={language === 'fr' ? 'Gérer les agendas connectés' : 'Manage connected calendars'}
+                >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>
+                        {feeds.length > 1
+                            ? `${activeFeedsCount}/${feeds.length} ${language === 'fr' ? 'agendas' : 'calendars'}`
+                            : (feeds[0]?.name || (language === 'fr' ? 'Agenda connecté' : 'Calendar connected'))}
+                    </span>
                 </button>
             ) : (
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 shadow-sm rounded-full transition-all text-xs sm:text-sm font-medium"
+                    className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 shadow-xs rounded-full transition-all text-xs sm:text-sm font-medium",
+                        className
+                    )}
                 >
                     <Calendar className="h-4 w-4" />
-                    <span>{language === 'fr' ? 'Synchroniser Google Agenda' : 'Sync Google Calendar'}</span>
+                    <span>{language === 'fr' ? 'Connecter un agenda (iCal)' : 'Connect calendar (iCal)'}</span>
                 </button>
             )}
 
@@ -185,10 +242,10 @@ export function GoogleConnectButton() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-lg">
-                                        {language === 'fr' ? 'Synchronisation Google Agenda' : 'Google Calendar Sync'}
+                                        {language === 'fr' ? 'Gestion des Agendas (iCal)' : 'Calendar Management (iCal)'}
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        {language === 'fr' ? 'Synchronisez vos exercices, révisions et cours' : 'Sync your exercises, revisions, and classes'}
+                                        {language === 'fr' ? 'Connectez l\'emploi du temps de votre promo et vos agendas personnels' : 'Connect school timetable and personal calendars'}
                                     </p>
                                 </div>
                             </div>
@@ -200,54 +257,269 @@ export function GoogleConnectButton() {
                             </button>
                         </div>
 
-                        {/* Tabs Switcher */}
-                        <div className="grid grid-cols-2 p-1.5 bg-muted/50 border-b text-xs font-semibold">
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('export')}
-                                className={cn(
-                                    "py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5",
-                                    activeTab === 'export'
-                                        ? "bg-background text-foreground shadow-sm font-bold"
-                                        : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <ArrowUpFromLine className="h-3.5 w-3.5 text-emerald-500" />
-                                <span>{language === 'fr' ? 'EduTrack ➔ Google Agenda' : 'EduTrack ➔ Google Calendar'}</span>
-                            </button>
+                        {/* Navigation Tabs */}
+                        <div className="flex border-b bg-muted/20 px-5 pt-2 gap-2 text-xs font-medium">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('import')}
                                 className={cn(
-                                    "py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5",
+                                    "flex items-center gap-2 px-3 py-2.5 border-b-2 transition-all",
                                     activeTab === 'import'
-                                        ? "bg-background text-foreground shadow-sm font-bold"
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "border-primary text-primary font-semibold"
+                                        : "border-transparent text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
-                                <span>{language === 'fr' ? 'Google Agenda ➔ EduTrack' : 'Google Calendar ➔ EduTrack'}</span>
+                                <ArrowDownToLine className="h-3.5 w-3.5" />
+                                <span>{language === 'fr' ? `Agendas externes (${feeds.length})` : `External feeds (${feeds.length})`}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('export')}
+                                className={cn(
+                                    "flex items-center gap-2 px-3 py-2.5 border-b-2 transition-all",
+                                    activeTab === 'export'
+                                        ? "border-primary text-primary font-semibold"
+                                        : "border-transparent text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <ArrowUpFromLine className="h-3.5 w-3.5" />
+                                <span>{language === 'fr' ? 'Exporter vers Google / Apple' : 'Export to Google / Apple'}</span>
                             </button>
                         </div>
 
-                        {/* TAB 1: EXPORT EDUTRACK TO GOOGLE CALENDAR */}
+                        {/* TAB 1: EXTERNAL FEEDS (MULTI-ICAL IMPORT) */}
+                        {activeTab === 'import' && (
+                            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+                                {/* Read-only safety badge */}
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 p-3 rounded-xl text-xs flex items-start gap-2.5">
+                                    <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                                    <div className="leading-relaxed">
+                                        <span className="font-semibold">{language === 'fr' ? 'Lecture seule garantie :' : 'Read-only guaranteed:'} </span>
+                                        {language === 'fr'
+                                            ? 'EduTrack lit uniquement les événements de vos liens iCal sans jamais écrire ni modifier vos calendriers externes. Aucun événement personnel EduTrack n\'est partagé avec vos camarades de promo.'
+                                            : 'EduTrack only reads events from your iCal links and never writes to or alters your external calendars. No personal EduTrack tasks are ever sent to your school shared calendar.'}
+                                    </div>
+                                </div>
+
+                                {/* List of registered feeds */}
+                                {feeds.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                {language === 'fr' ? 'Mes agendas connectés' : 'Connected calendars'}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {activeFeedsCount} {language === 'fr' ? 'actif(s)' : 'active'}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {feeds.map((feed) => {
+                                                const count = feedCounts[feed.id];
+                                                return (
+                                                    <div
+                                                        key={feed.id}
+                                                        className={cn(
+                                                            "p-3 rounded-xl border transition-all flex items-center justify-between gap-3 bg-card",
+                                                            feed.enabled ? "border-border shadow-xs" : "opacity-60 bg-muted/30 border-dashed"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            {/* Color indicator / picker */}
+                                                            <div 
+                                                                className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs ring-2 ring-background" 
+                                                                style={{ backgroundColor: feed.color || '#3b82f6' }}
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-medium text-xs truncate text-foreground">
+                                                                        {feed.name}
+                                                                    </span>
+                                                                    {count !== undefined && (
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                                                                            {count} {language === 'fr' ? 'évts' : 'events'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[11px] font-mono text-muted-foreground truncate">
+                                                                    {feed.url}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Feed actions */}
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            {/* Test button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleTestExisting(feed)}
+                                                                disabled={testingFeedId === feed.id}
+                                                                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors text-xs"
+                                                                title={language === 'fr' ? 'Tester / rafraîchir ce flux' : 'Test / refresh feed'}
+                                                            >
+                                                                <RefreshCw className={cn("h-3.5 w-3.5", testingFeedId === feed.id && "animate-spin text-primary")} />
+                                                            </button>
+
+                                                            {/* Toggle enabled / disabled */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleFeed(feed.id)}
+                                                                className={cn(
+                                                                    "p-1.5 rounded-lg transition-colors text-xs",
+                                                                    feed.enabled 
+                                                                        ? "text-primary hover:bg-primary/10" 
+                                                                        : "text-muted-foreground hover:bg-muted"
+                                                                )}
+                                                                title={feed.enabled 
+                                                                    ? (language === 'fr' ? 'Masquer du calendrier' : 'Hide from calendar') 
+                                                                    : (language === 'fr' ? 'Afficher dans le calendrier' : 'Show in calendar')}
+                                                            >
+                                                                {feed.enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                                                            </button>
+
+                                                            {/* Delete button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveFeed(feed)}
+                                                                className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                                title={language === 'fr' ? 'Supprimer cet agenda' : 'Delete this feed'}
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Add New Feed Section / Form */}
+                                {!showAddForm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddForm(true)}
+                                        className="w-full py-2.5 px-3 border border-dashed border-primary/40 text-primary hover:bg-primary/5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span>{language === 'fr' ? 'Ajouter un autre agenda iCal' : 'Add another iCal calendar'}</span>
+                                    </button>
+                                )}
+
+                                {showAddForm && (
+                                    <form onSubmit={handleAddFeed} className="p-4 border rounded-xl bg-muted/20 space-y-3 animate-in fade-in">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                                                <Plus className="h-3.5 w-3.5 text-primary" />
+                                                {language === 'fr' ? 'Nouvel agenda externe' : 'New external calendar'}
+                                            </span>
+                                            {feeds.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAddForm(false)}
+                                                    className="text-xs text-muted-foreground hover:text-foreground"
+                                                >
+                                                    {language === 'fr' ? 'Annuler' : 'Cancel'}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Name input */}
+                                        <div>
+                                            <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                                                {language === 'fr' ? 'Nom de l\'agenda' : 'Calendar name'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder={language === 'fr' ? 'Ex : Emploi du temps Promo, Perso, Job...' : 'Ex: School Timetable, Personal, Work...'}
+                                                value={newFeedName}
+                                                onChange={(e) => setNewFeedName(e.target.value)}
+                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            />
+                                        </div>
+
+                                        {/* URL input */}
+                                        <div>
+                                            <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+                                                {language === 'fr' ? 'Lien secret iCal (.ics ou webcal://)' : 'Secret iCal URL (.ics or webcal://)'}
+                                            </label>
+                                            <input
+                                                type="url"
+                                                required
+                                                placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                                                value={newFeedUrl}
+                                                onChange={(e) => setNewFeedUrl(e.target.value)}
+                                                className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs font-mono outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            />
+                                        </div>
+
+                                        {/* Color picker presets */}
+                                        <div>
+                                            <label className="text-[11px] font-medium text-muted-foreground block mb-1.5">
+                                                {language === 'fr' ? 'Couleur d\'identification' : 'Badge color'}
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                {DEFAULT_CALENDAR_COLORS.map((color) => (
+                                                    <button
+                                                        key={color}
+                                                        type="button"
+                                                        onClick={() => setNewFeedColor(color)}
+                                                        className={cn(
+                                                            "w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow-xs",
+                                                            newFeedColor === color ? "scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:scale-110"
+                                                        )}
+                                                        style={{ backgroundColor: color }}
+                                                    >
+                                                        {newFeedColor === color && <Check className="h-3.5 w-3.5 text-white" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Submit button */}
+                                        <div className="pt-2 flex justify-end">
+                                            <button
+                                                type="submit"
+                                                disabled={isTestingNew || !newFeedUrl.trim()}
+                                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            >
+                                                {isTestingNew && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                                <span>{language === 'fr' ? 'Tester & Ajouter cet agenda' : 'Test & Add Calendar'}</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {/* Tutorial guide */}
+                                <div className="bg-muted/40 border rounded-xl p-3.5 text-xs space-y-2 text-muted-foreground">
+                                    <div className="font-semibold text-foreground flex items-center gap-1.5">
+                                        <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                                        <span>{language === 'fr' ? 'Où trouver l\'adresse iCal :' : 'Where to find your iCal link:'}</span>
+                                    </div>
+                                    <ul className="list-disc list-inside space-y-1 pl-1 text-[11px]">
+                                        <li><strong>Google Agenda</strong> : Paramètres de l'agenda &gt; Intégrer l'agenda &gt; <em>Adresse secrète au format iCal</em>.</li>
+                                        <li><strong>Université / École</strong> : Sur votre portail étudiant (ADE, Hyperplanning, Celcat), cherchez l'option <em>« Exporter vers agenda »</em> ou <em>« Abonnement iCal / ICS »</em>.</li>
+                                        <li><strong>Apple Calendar / Outlook</strong> : Partage de calendrier &gt; <em>Lien ICS public ou privé</em>.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 2: EXPORT EDUTRACK TASKS TO GOOGLE/APPLE CALENDAR */}
                         {activeTab === 'export' && (
                             <div className="p-5 space-y-4 overflow-y-auto flex-1">
-                                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-2">
-                                    <div className="font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 text-sm">
-                                        <Sparkles className="h-4 w-4 shrink-0" />
-                                        <span>
-                                            {language === 'fr' ? 'Abonnement automatique iCal' : 'Automatic iCal Subscription'}
-                                        </span>
-                                    </div>
-                                    <p className="text-muted-foreground leading-relaxed">
+                                <div className="bg-primary/5 border border-primary/20 p-3.5 rounded-xl text-xs text-muted-foreground space-y-1">
+                                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        {language === 'fr' ? 'Synchronisation automatique vers votre mobile' : 'Automatic sync to your phone'}
+                                    </span>
+                                    <p>
                                         {language === 'fr'
-                                            ? 'Google Agenda récupère automatiquement tous vos exercices avec échéance, révisions, partiels et plannings créés dans EduTrack. Aucune action manuelle future n\'est nécessaire !'
-                                            : 'Google Calendar automatically fetches all your exercises with deadlines, revisions, exams, and study plans created in EduTrack. No manual export needed!'}
+                                            ? 'Abonnez-vous à ce flux iCal dans Google Agenda, l\'application Calendrier de votre iPhone ou Outlook pour retrouver automatiquement vos devoirs, révisions et partiels EduTrack sur votre smartphone.'
+                                            : 'Subscribe to this iCal feed in Google Calendar, Apple Calendar or Outlook to automatically see your EduTrack assignments and study tasks on your phone.'}
                                     </p>
                                 </div>
 
-                                {/* 1-Click Action Button */}
                                 {isLoadingFeed ? (
                                     <div className="flex items-center justify-center py-4 text-xs text-muted-foreground gap-2">
                                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -319,127 +591,22 @@ export function GoogleConnectButton() {
                                                 <li>{language === 'fr' ? 'Choisissez « À partir de l\'URL ».' : 'Choose "From URL".'}</li>
                                                 <li>{language === 'fr' ? 'Collez ce lien et cliquez sur « Ajouter un agenda ».' : 'Paste this link and click "Add calendar".'}</li>
                                             </ol>
-                                            <p className="text-[11px] italic pt-1 text-muted-foreground/80">
-                                                💡 {language === 'fr' 
-                                                    ? 'Fonctionne également avec Apple Calendar (Mac/iPhone) et Microsoft Outlook.' 
-                                                    : 'Also works with Apple Calendar (Mac/iPhone) and Microsoft Outlook.'}
-                                            </p>
-                                            <div className="pt-2 border-t border-border/50 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg flex items-start gap-1.5">
-                                                <span className="shrink-0 font-bold">⚠️</span>
-                                                <span>
-                                                    {language === 'fr'
-                                                        ? 'Délai de mise à jour Google : Google Agenda actualise automatiquement les flux externes toutes les quelques heures. Pour forcer l\'affichage immédiat de nouvelles échéances sans attendre, cliquez sur « Régénérer » ci-dessus puis ajoutez le nouveau lien dans Google Agenda.'
-                                                        : 'Google update delay: Google Calendar checks external feeds automatically every few hours. To force an immediate update of newly added deadlines, click "Regenerate" above and add the new link in Google Calendar.'}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
-
-                                <div className="flex justify-end pt-3 border-t">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
-                                    >
-                                        {language === 'fr' ? 'Terminé' : 'Done'}
-                                    </button>
-                                </div>
                             </div>
                         )}
 
-                        {/* TAB 2: IMPORT FROM GOOGLE CALENDAR (EXISTING FLOW) */}
-                        {activeTab === 'import' && (
-                            <form onSubmit={handleSave} className="p-5 space-y-4 overflow-y-auto flex-1">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium flex items-center gap-2">
-                                        <Link2 className="h-4 w-4 text-primary" />
-                                        <span>{language === 'fr' ? 'Adresse secrète au format iCal de Google (.ics)' : 'Secret iCal Feed URL from Google (.ics)'}</span>
-                                    </label>
-                                    <input
-                                        type="url"
-                                        required
-                                        placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
-                                        value={urlInput}
-                                        onChange={(e) => setUrlInput(e.target.value)}
-                                        className="w-full bg-background border border-input rounded-lg px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono text-xs"
-                                        autoFocus
-                                    />
-                                </div>
-
-                                {/* Test & Actions buttons */}
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleTest}
-                                        disabled={isTesting || !urlInput.trim()}
-                                        className="px-3.5 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                                    >
-                                        {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                                        {language === 'fr' ? 'Tester le lien' : 'Test connection'}
-                                    </button>
-                                </div>
-
-                                {/* Test feedback */}
-                                {testResult && (
-                                    <div className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
-                                        testResult.success
-                                            ? 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20'
-                                            : 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20'
-                                    }`}>
-                                        {testResult.success ? <Check className="h-4 w-4 shrink-0 mt-0.5" /> : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
-                                        <span>{testResult.message}</span>
-                                    </div>
-                                )}
-
-                                {/* Tutorial guide */}
-                                <div className="bg-muted/50 border rounded-xl p-4 text-xs space-y-2.5 text-muted-foreground">
-                                    <div className="font-semibold text-foreground flex items-center gap-1.5">
-                                        <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                                        <span>{language === 'fr' ? 'Comment obtenir votre lien Google Agenda :' : 'How to get your Google Calendar link:'}</span>
-                                    </div>
-                                    <ol className="list-decimal list-inside space-y-1 pl-1">
-                                        <li>{language === 'fr' ? 'Ouvrez Google Agenda sur votre ordinateur.' : 'Open Google Calendar on your computer.'}</li>
-                                        <li>{language === 'fr' ? 'À gauche, survolez votre agenda, cliquez sur les 3 points puis "Paramètres et partage".' : 'On the left, hover over your calendar, click 3 dots and "Settings and sharing".'}</li>
-                                        <li>{language === 'fr' ? 'Descendez jusqu\'à la section "Intégrer l\'agenda".' : 'Scroll down to the "Integrate calendar" section.'}</li>
-                                        <li>{language === 'fr' ? 'Copiez le lien "Adresse secrète au format iCal".' : 'Copy the "Secret address in iCal format" link.'}</li>
-                                    </ol>
-                                </div>
-
-                                {/* Modal Footer */}
-                                <div className="flex items-center justify-between pt-3 border-t mt-4">
-                                    {isConnected ? (
-                                        <button
-                                            type="button"
-                                            onClick={handleDisconnect}
-                                            disabled={isSaving}
-                                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                            {language === 'fr' ? 'Déconnecter' : 'Disconnect'}
-                                        </button>
-                                    ) : <div />}
-
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsModalOpen(false)}
-                                            className="px-4 py-2 border rounded-lg text-xs font-medium hover:bg-muted transition-colors"
-                                        >
-                                            {t('action.cancel')}
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={isSaving || !urlInput.trim()}
-                                            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                        >
-                                            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                                            {language === 'fr' ? 'Enregistrer l\'agenda' : 'Save Calendar'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        )}
+                        {/* Footer */}
+                        <div className="flex items-center justify-end p-4 border-t bg-muted/20">
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors"
+                            >
+                                {language === 'fr' ? 'Fermer' : 'Close'}
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body
