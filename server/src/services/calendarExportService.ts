@@ -158,9 +158,11 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         'PRODID:-//EduTrack//EduTrack Calendar 2.0//FR',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        `X-WR-CALNAME:${escapeIcs(`EduTrack - ${profile.name}`)}`,
-        'X-WR-CALDESC:Échéances, exercices et tâches d\'étude synchronisés depuis EduTrack',
-        'X-WR-TIMEZONE:UTC',
+        `X-WR-CALNAME:${escapeIcs(`EduTrack (${profile.name})`)}`,
+        `NAME:${escapeIcs(`EduTrack (${profile.name})`)}`,
+        'X-WR-CALDESC:Échéances, exercices et tâches d\'étude EduTrack',
+        'DESCRIPTION:Échéances, exercices et tâches d\'étude EduTrack',
+        'X-WR-TIMEZONE:Europe/Paris',
         'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
         'X-PUBLISHED-TTL:PT1H'
     ];

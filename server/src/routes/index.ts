@@ -39,7 +39,7 @@ router.use('/plans', authMiddleware, studyPlanRoutes);
 router.use('/analytics', authMiddleware, analyticsRoutes);
 router.use('/mindmaps', authMiddleware, mindmapRoutes);
 router.use('/finance', authMiddleware, financeRoutes);
-router.use('/calendar', authMiddleware, calendarRoutes);
+router.use('/calendar', calendarRoutes);
 router.use('/search', authMiddleware, searchRoutes);
 
 export default router;
