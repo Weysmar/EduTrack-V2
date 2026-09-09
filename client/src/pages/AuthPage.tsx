@@ -4,6 +4,7 @@ import { useProfileStore } from '@/store/profileStore';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
+import { useTheme } from '@/components/theme-provider';
 
 
 interface AuthPageProps {
@@ -19,7 +20,8 @@ export function AuthPage({ isEmbedded = false }: AuthPageProps) {
     const { login } = useAuthStore();
     const navigate = useNavigate();
     const { t } = useLanguage();
-    const logoSrc = '/logo.svg';
+    const { minecraftTheme } = useTheme();
+    const logoSrc = minecraftTheme ? '/logo-mc.svg' : '/logo.svg';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

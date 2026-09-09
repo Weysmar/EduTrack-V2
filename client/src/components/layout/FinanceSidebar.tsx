@@ -10,13 +10,16 @@ import { useEffect, useState } from 'react'
 import { BankFormModal } from '../finance/BankFormModal'
 import { CategoryManager } from '../finance/CategoryManager'
 
+import { useTheme } from '@/components/theme-provider'
+
 export function FinanceSidebar() {
     const { t } = useLanguage()
+    const { minecraftTheme } = useTheme()
     const { isCollapsed, toggleCollapse, isBankModalOpen, closeBankModal, openBankModal } = useUIStore()
     // Use useFinance hook directly for better sync with TanStack Query
     const { banks, accounts, createBank, exportData } = useFinance()
     const location = useLocation()
-    const logoSrc = '/logo.svg'
+    const logoSrc = minecraftTheme ? '/logo-mc.svg' : '/logo.svg'
 
     const [expandedBanks, setExpandedBanks] = useState<Record<string, boolean>>({});
 

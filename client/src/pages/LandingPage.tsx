@@ -6,9 +6,11 @@ import { useAuthStore } from '@/store/authStore';
 import { AuthPage } from './AuthPage';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
+import { useTheme } from '@/components/theme-provider';
 
 export function LandingPage() {
     const { isAuthenticated } = useAuthStore();
+    const { minecraftTheme } = useTheme();
     const controls = useAnimation();
 
     useEffect(() => {
@@ -23,8 +25,7 @@ export function LandingPage() {
             transition: { duration: 0.6, ease: "easeInOut" }
         });
         // Optional: Focus the email input if possible, but visual cue is often enough
-        document.querySelector('input[name="email"]')?.classList.add('ring-2', 'ring-primary');
-        setTimeout(() => document.querySelector('input[name="email"]')?.classList.remove('ring-2', 'ring-primary'), 1000);
+        document.getElementById('email')?.focus();
     };
 
     if (isAuthenticated) {
@@ -37,7 +38,7 @@ export function LandingPage() {
             <nav className="border-b bg-background/50 backdrop-blur-xl sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/logo.svg" alt="Logo" className="h-8 w-8" />
+                        <img src={minecraftTheme ? "/logo-mc.svg" : "/logo.svg"} alt="Logo" className="h-8 w-8" />
                         <span className="font-bold text-xl tracking-tight">HubTrack</span>
                     </div>
                     <div className="flex items-center gap-4">

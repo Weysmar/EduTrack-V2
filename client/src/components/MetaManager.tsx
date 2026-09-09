@@ -1,23 +1,26 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTheme } from '@/components/theme-provider';
 
 export function MetaManager() {
     const location = useLocation();
+    const { minecraftTheme } = useTheme();
 
     useEffect(() => {
         const path = location.pathname;
         let title = 'HubTrack';
-        let favicon = '/logo.svg';
+        const defaultLogo = minecraftTheme ? '/logo-mc.svg' : '/logo.svg';
+        let favicon = defaultLogo;
 
         if (path.startsWith('/finance')) {
             title = 'FinanceTrack - Gestion de Portefeuille';
             favicon = '/finance.svg';
         } else if (path.startsWith('/hub')) {
             title = 'HubTrack - Hub';
-            favicon = '/logo.svg';
+            favicon = defaultLogo;
         } else if (path.startsWith('/edu')) {
             title = 'EduTrack - Espace Étudiant';
-            favicon = '/logo.svg';
+            favicon = defaultLogo;
 
             // Sub-routes specific titles
             if (path.includes('/dashboard')) title = 'EduTrack - Tableau de bord';
@@ -25,7 +28,7 @@ export function MetaManager() {
             if (path.includes('/calendar')) title = 'EduTrack - Calendrier';
         } else if (path === '/') {
             title = 'HubTrack - Hub central pour votre vie';
-            favicon = '/logo.svg';
+            favicon = defaultLogo;
         }
 
         // Update Title

@@ -12,14 +12,17 @@ import { useProfileStore } from '@/store/profileStore'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 
+import { useTheme } from '@/components/theme-provider'
+
 export function EduSidebar() {
     const activeProfile = useProfileStore(state => state.activeProfile);
     const { t } = useLanguage()
+    const { minecraftTheme } = useTheme()
     const queryClient = useQueryClient()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const { isCollapsed, toggleCollapse } = useUIStore()
 
-    const logoSrc = '/logo.svg'
+    const logoSrc = minecraftTheme ? '/logo-mc.svg' : '/logo.svg'
 
     const { data } = useQuery({
         queryKey: ['courses'],
