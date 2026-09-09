@@ -174,11 +174,10 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         }
     });
 
-    // 3. Fetch study plans with deadlines
+    // 3. Fetch study plans
     const plans = await prisma.studyPlan.findMany({
         where: {
-            profileId,
-            deadline: { not: null }
+            profileId
         },
         include: {
             course: true
@@ -317,7 +316,8 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
 
         const summary = `🎓 Échéance / Objectif : ${plan.title}`;
         let desc = '';
-        if (plan.course?.title) desc += `Cours : ${plan.course.title}\n`;
+        const courseTitle = (plan as any).course?.title;
+        if (courseTitle) desc += `Cours : ${courseTitle}\n`;
         if (plan.goal) desc += `Objectif : ${plan.goal}\n`;
         desc += `Heures prévues/semaine : ${plan.hoursPerWeek}h\n`;
         desc += `Statut : ${plan.status === 'completed' ? 'Terminé ✅' : 'En cours 🚀'}\n`;
@@ -340,7 +340,8 @@ export const generateIcsFeed = async (profileId: string, baseUrl: string): Promi
         const start = new Date(session.startTime || session.date);
         const end = new Date(start.getTime() + (session.durationMinutes || 60) * 60 * 1000);
 
-        const summary = `⏱️ Session : ${session.course?.title || session.type}`;
+        const sessionCourseTitle = (session as any).course?.title;
+        const summary = `⏱️ Session : ${sessionCourseTitle || session.type}`;
         let desc = `Type : ${session.type}\nDurée : ${session.durationMinutes} min\n`;
         if (session.notes) desc += `Notes : ${session.notes}\n`;
 
