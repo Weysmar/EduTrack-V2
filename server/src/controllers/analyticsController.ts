@@ -70,18 +70,7 @@ export const AnalyticsController = {
         }
     },
 
-    getWeeklyGoals: async (req: Request, res: Response) => {
-        // Mock data
-        res.json([]);
-    },
 
-    createWeeklyGoal: async (req: Request, res: Response) => {
-        res.json({ success: true, id: "goal_" + Date.now() });
-    },
-
-    updateWeeklyGoal: async (req: Request, res: Response) => {
-        res.json({ success: true });
-    },
 
     getAchievements: async (req: Request, res: Response) => {
         res.json([]);

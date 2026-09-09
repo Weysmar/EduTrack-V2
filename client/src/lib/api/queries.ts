@@ -245,18 +245,7 @@ export const analyticsQueries = {
         const { data: res } = await apiClient.post('/analytics/questions', data);
         return res;
     },
-    getWeeklyGoals: async () => {
-        const { data } = await apiClient.get('/analytics/goals');
-        return data;
-    },
-    updateWeeklyGoal: async (id: string, data: any) => {
-        const { data: res } = await apiClient.put(`/analytics/goals/${id}`, data);
-        return res;
-    },
-    createWeeklyGoal: async (data: any) => {
-        const { data: res } = await apiClient.post('/analytics/goals', data);
-        return res;
-    },
+
     getAchievements: async () => {
         const { data } = await apiClient.get('/analytics/achievements');
         return data;

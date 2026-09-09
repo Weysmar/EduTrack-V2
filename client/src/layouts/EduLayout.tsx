@@ -4,11 +4,9 @@ import { cn } from '@/lib/utils'
 import { EduSidebar } from '@/components/layout/EduSidebar'
 import { Menu, ArrowLeft, Search } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
-import { LanguageToggle } from '@/components/language-toggle'
 import { useState, useEffect } from 'react'
 import { CommandPalette } from '@/components/CommandPalette'
 import { useCommandStore } from '@/store/commandStore'
-import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
@@ -156,10 +154,6 @@ export function EduLayout() {
 
                     <div className="flex items-center gap-1 md:gap-2">
                         <CompactFocusTimer />
-                        <div className="hidden md:block">
-                            <GoogleConnectButton />
-                        </div>
-                        <LanguageToggle />
                         <ModeToggle />
                     </div>
                 </header>

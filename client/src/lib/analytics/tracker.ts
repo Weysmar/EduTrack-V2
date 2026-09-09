@@ -63,20 +63,7 @@ export const AnalyticsService = {
         });
     },
 
-    /**
-     * Update progress on the current weekly goal
-     */
-    async updateWeeklyGoalProgress(minutes: number) {
-        // Backend should handle goal updates based on session logs ideally.
-        // But if we keep this explicit call:
-        const goals = await analyticsQueries.getWeeklyGoals();
-        const activeGoal = goals.find((g: any) => g.status === 'active'); // simplified
-        if (activeGoal) {
-            await analyticsQueries.updateWeeklyGoal(activeGoal.id, {
-                achievedMinutes: activeGoal.achievedMinutes + minutes
-            });
-        }
-    },
+
 
     /**
      * Calculate current streak

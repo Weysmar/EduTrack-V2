@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
 import { AdminUserManagement } from "@/components/settings/AdminUserManagement"
-import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users } from "lucide-react"
+import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users, Calendar, Globe } from "lucide-react"
 import { useTheme } from '@/components/theme-provider'
 import { useLanguage } from '@/components/language-provider'
+import { GoogleConnectButton } from '@/components/GoogleConnectButton'
+import { useCalendarStore } from '@/store/calendarStore'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
@@ -11,9 +13,10 @@ import { useAuthStore } from '@/store/authStore'
 import { changelogs } from '@/data/changelog'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users'>('api')
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users' | 'calendars'>('calendars')
     const { theme, setTheme, themeColor, setThemeColor } = useTheme()
-    const { t, language } = useLanguage()
+    const { t, language, setLanguage } = useLanguage()
+    const { feeds } = useCalendarStore()
     const useNavigateCallback = useNavigate()
     const { activeProfile, updateProfile } = useProfileStore()
     const { user } = useAuthStore()
@@ -22,8 +25,9 @@ export function SettingsPage() {
 
     const tabs = [
         ...(isAdmin ? [{ id: 'users', label: language === 'fr' ? 'Utilisateurs' : 'Users', icon: Users }] : []),
+        { id: 'calendars', label: language === 'fr' ? 'Agendas' : 'Calendars', icon: Calendar },
+        { id: 'appearance', label: language === 'fr' ? 'Apparence & Langue' : 'Appearance & Language', icon: Sun },
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
-        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Sun },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
         { id: 'changelog', label: t('changelog.title'), icon: History },
     ] as const
@@ -174,6 +178,139 @@ export function SettingsPage() {
                                             <div className="w-full h-12 rounded-lg bg-orange-500 mb-2 shadow-sm" />
                                             <span className="text-sm font-medium">Sunset</span>
                                         </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-6 border-t">
+                                    <h3 className="text-lg font-medium flex items-center gap-2">
+                                        <Globe className="w-5 h-5 text-primary" />
+                                        {language === 'fr' ? 'Langue de l\'application' : 'Application Language'}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {language === 'fr' 
+                                            ? 'Choisissez la langue principale d\'affichage pour l\'ensemble d\'EduTrack.' 
+                                            : 'Choose the interface display language for EduTrack.'}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setLanguage('fr')}
+                                            className={cn(
+                                                "flex items-center gap-3.5 p-4 rounded-xl border-2 transition-all hover:bg-muted group text-left",
+                                                language === 'fr' ? "border-primary bg-primary/5 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <img src="https://flagcdn.com/w40/fr.png" alt="FR" className="w-8 h-5 object-cover rounded shadow-sm" />
+                                            <div>
+                                                <div className="font-semibold text-sm">Français</div>
+                                                <div className="text-xs text-muted-foreground">Par défaut</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLanguage('en')}
+                                            className={cn(
+                                                "flex items-center gap-3.5 p-4 rounded-xl border-2 transition-all hover:bg-muted group text-left",
+                                                language === 'en' ? "border-primary bg-primary/5 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <img src="https://flagcdn.com/w40/gb.png" alt="UK" className="w-8 h-5 object-cover rounded shadow-sm" />
+                                            <div>
+                                                <div className="font-semibold text-sm">English</div>
+                                                <div className="text-xs text-muted-foreground">International</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLanguage('mc')}
+                                            className={cn(
+                                                "flex items-center gap-3.5 p-4 rounded-xl border-2 transition-all hover:bg-muted group text-left",
+                                                language === 'mc' ? "border-primary bg-primary/5 shadow-inner" : "border-transparent bg-muted/30"
+                                            )}
+                                        >
+                                            <img src="/assets/minecraft_grass_block.webp" alt="MC" className="w-8 h-8 object-contain" />
+                                            <div>
+                                                <div className="font-semibold text-sm">Minecraft</div>
+                                                <div className="text-xs text-muted-foreground">Thème cubique</div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'calendars' && (
+                            <div className="space-y-8">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">
+                                        {language === 'fr' ? "Agendas & Synchronisation (iCal)" : "Calendars & Sync (iCal)"}
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground mb-6">
+                                        {language === 'fr'
+                                            ? "Connectez vos emplois du temps de promotion ou vos calendriers personnels (Google Calendar, Apple, Outlook) pour afficher vos cours et devoirs."
+                                            : "Connect your school schedules or personal calendars (Google Calendar, Apple, Outlook) to view your classes and assignments."}
+                                    </p>
+                                </div>
+
+                                <div className="p-6 rounded-2xl bg-muted/30 border space-y-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div>
+                                            <h3 className="font-semibold text-base flex items-center gap-2">
+                                                <Calendar className="w-5 h-5 text-primary" />
+                                                {language === 'fr' ? "Gestionnaire des agendas" : "Calendar Manager"}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {language === 'fr'
+                                                    ? "Configurez l'agenda principal, ajoutez de multiples lignes iCal ou exportez votre emploi du temps."
+                                                    : "Configure your primary calendar, add multiple iCal feeds or export your schedule."}
+                                            </p>
+                                        </div>
+
+                                        <GoogleConnectButton />
+                                    </div>
+
+                                    {/* List current feeds status */}
+                                    <div className="pt-4 border-t space-y-3">
+                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                            {language === 'fr' ? "Agendas connectés actuels" : "Currently connected calendars"}
+                                        </h4>
+                                        {feeds.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground italic">
+                                                {language === 'fr' 
+                                                    ? "Aucun agenda n'est actuellement synchronisé. Cliquez sur le bouton ci-dessus pour connecter votre premier calendrier."
+                                                    : "No calendars are currently synced. Click the button above to connect your first calendar."}
+                                            </p>
+                                        ) : (
+                                            <div className="grid gap-2">
+                                                {feeds.map((feed) => (
+                                                    <div 
+                                                        key={feed.id}
+                                                        className="flex items-center justify-between p-3 rounded-xl bg-card border text-sm"
+                                                    >
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div 
+                                                                className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm" 
+                                                                style={{ backgroundColor: feed.color }} 
+                                                            />
+                                                            <div className="min-w-0">
+                                                                <div className="font-medium truncate">{feed.name}</div>
+                                                                <div className="text-xs text-muted-foreground truncate max-w-md">{feed.url}</div>
+                                                            </div>
+                                                        </div>
+                                                        <span className={cn(
+                                                            "text-xs px-2.5 py-1 rounded-full font-medium shrink-0",
+                                                            feed.enabled !== false 
+                                                                ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+                                                                : "bg-muted text-muted-foreground"
+                                                        )}>
+                                                            {feed.enabled !== false 
+                                                                ? (language === 'fr' ? "Actif" : "Active")
+                                                                : (language === 'fr' ? "Masqué" : "Hidden")}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

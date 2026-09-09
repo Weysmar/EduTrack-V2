@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, Target, PenTool, Layout, CheckCircle2, Network } from 'lucide-react'
+import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, PenTool, Layout, CheckCircle2, Network } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
@@ -146,23 +146,6 @@ export function Dashboard() {
         return streak;
     }, [sessions]);
 
-    // Calculate Weekly Goal Progress
-    const { data: weeklyGoals = [] } = useQuery({
-        queryKey: ['weekly-goals', activeProfile?.id],
-        queryFn: () => analyticsQueries.getWeeklyGoals(),
-        enabled: !!activeProfile
-    });
-
-    const weeklyGoalProgress = useMemo(() => {
-        const activeGoal = weeklyGoals.find((g: any) => g.status === 'active');
-        if (!activeGoal || !activeGoal.targetMinutes) return 0;
-
-        const achieved = activeGoal.achievedMinutes || 0;
-        const target = activeGoal.targetMinutes;
-        const percentage = Math.round((achieved / target) * 100);
-
-        return Math.min(percentage, 100); // Cap at 100%
-    }, [weeklyGoals]);
 
     if (!activeProfile) {
         return (
@@ -230,11 +213,7 @@ export function Dashboard() {
                                 <span className="hidden sm:inline">{streakDays} Jours de série</span>
                                 <span className="sm:hidden">{streakDays}j</span>
                             </span>
-                            <span className="text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-muted text-foreground px-2.5 md:px-3 py-1 rounded-full border border-border dark:bg-white/10 dark:text-white/80 dark:border-white/10">
-                                <Target className="w-3 h-3 md:w-4 md:h-4 text-emerald-500 dark:text-emerald-400" />
-                                <span className="hidden sm:inline">Objectif: {weeklyGoalProgress}%</span>
-                                <span className="sm:hidden">{weeklyGoalProgress}%</span>
-                            </span>
+
                         </div>
 
                         <div>

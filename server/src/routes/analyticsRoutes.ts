@@ -4,14 +4,6 @@ import { AnalyticsController } from '../controllers/analyticsController';
 
 const router = Router();
 
-// Retrieve Weekly Goals
-router.get('/goals', AnalyticsController.getWeeklyGoals);
-
-// Create Weekly Goal
-router.post('/goals', AnalyticsController.createWeeklyGoal);
-
-// Update Weekly Goal
-router.put('/goals/:id', AnalyticsController.updateWeeklyGoal);
 
 // Record Session
 router.get('/sessions', AnalyticsController.getSessions);
