@@ -118,3 +118,113 @@ export const getCalendarProxy = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Internal server error while fetching calendar feed' });
     }
 };
+
+interface AuthRequest extends Request {
+    user?: {
+        id: string;
+        email?: string;
+    };
+}
+
+const getBaseUrl = (req: Request): string => {
+    if (process.env.APP_URL) {
+        return process.env.APP_URL.replace(/\/+$/, '');
+    }
+    const host = req.get('x-forwarded-host') || req.get('host') || 'localhost:3000';
+    const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+    return `${proto}://${host}`;
+};
+
+const getWebcalUrl = (feedUrl: string): string => {
+    return feedUrl.replace(/^https?:/, 'webcal:');
+};
+
+/**
+ * Public iCalendar (.ics) feed endpoint for Google Calendar, Apple Calendar, Outlook, etc.
+ * Accessible with a secure token: /api/calendar/feed/:token.ics
+ */
+export const exportCalendarFeed = async (req: Request, res: Response) => {
+    try {
+        const rawToken = req.params.token || '';
+        const token = rawToken.endsWith('.ics') ? rawToken.slice(0, -4) : rawToken;
+
+        if (!token) {
+            return res.status(400).send('Token manquant');
+        }
+
+        const { verifyCalendarToken, generateIcsFeed } = await import('../services/calendarExportService');
+        const profile = await verifyCalendarToken(token);
+
+        if (!profile) {
+            return res.status(404).send('Calendrier introuvable ou lien révoqué');
+        }
+
+        const baseUrl = getBaseUrl(req);
+        const icsData = await generateIcsFeed(profile.id, baseUrl);
+
+        res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+        res.setHeader('Content-Disposition', `inline; filename="edutrack-${profile.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.ics"`);
+        res.setHeader('Cache-Control', 'public, max-age=900, s-maxage=900');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+
+        return res.status(200).send(icsData);
+    } catch (error: any) {
+        console.error('[CalendarController] Error generating calendar feed:', error);
+        return res.status(500).send('Erreur lors de la génération du calendrier');
+    }
+};
+
+/**
+ * Returns the authenticated user's calendar subscription URLs
+ */
+export const getCalendarFeedInfo = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user?.id;
+        if (!profileId) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
+
+        const { getOrGenerateCalendarToken } = await import('../services/calendarExportService');
+        const token = await getOrGenerateCalendarToken(profileId);
+        const baseUrl = getBaseUrl(req);
+        const feedUrl = `${baseUrl}/api/calendar/feed/${token}.ics`;
+        const webcalUrl = getWebcalUrl(feedUrl);
+
+        return res.json({
+            token,
+            feedUrl,
+            webcalUrl
+        });
+    } catch (error: any) {
+        console.error('[CalendarController] Error getting feed info:', error);
+        return res.status(500).json({ error: 'Erreur lors de la récupération du lien iCal' });
+    }
+};
+
+/**
+ * Regenerates the calendar subscription token (revokes previous links)
+ */
+export const regenerateCalendarFeed = async (req: AuthRequest, res: Response) => {
+    try {
+        const profileId = req.user?.id;
+        if (!profileId) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
+
+        const { regenerateCalendarToken } = await import('../services/calendarExportService');
+        const token = await regenerateCalendarToken(profileId);
+        const baseUrl = getBaseUrl(req);
+        const feedUrl = `${baseUrl}/api/calendar/feed/${token}.ics`;
+        const webcalUrl = getWebcalUrl(feedUrl);
+
+        return res.json({
+            token,
+            feedUrl,
+            webcalUrl
+        });
+    } catch (error: any) {
+        console.error('[CalendarController] Error regenerating feed token:', error);
+        return res.status(500).json({ error: 'Erreur lors de la régénération du lien iCal' });
+    }
+};
+

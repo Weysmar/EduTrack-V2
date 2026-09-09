@@ -299,3 +299,15 @@ export const mindmapQueries = {
         await apiClient.delete(`/mindmaps/${id}`);
     }
 };
+
+export const calendarQueries = {
+    getFeedInfo: async (): Promise<{ token: string; feedUrl: string; webcalUrl: string }> => {
+        const { data } = await apiClient.get('/calendar/feed-info');
+        return data;
+    },
+    regenerateFeed: async (): Promise<{ token: string; feedUrl: string; webcalUrl: string }> => {
+        const { data } = await apiClient.post('/calendar/feed-info/regenerate');
+        return data;
+    }
+};
+
