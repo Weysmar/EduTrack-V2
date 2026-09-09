@@ -13,9 +13,11 @@ import { cn } from '@/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { StatCardVariant } from '@/components/ui/StatCard';
 import { apiClient } from '@/lib/api/client'
+import { useTheme } from '@/components/theme-provider'
 
 export function Dashboard() {
     const { t, language } = useLanguage()
+    const { minecraftTheme } = useTheme()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false)
     const { activeProfile } = useProfileStore()
@@ -195,27 +197,67 @@ export function Dashboard() {
 
     // Quick Actions
     const quickActions = [
-        { icon: Plus, label: language === 'fr' ? "Nouveau Sujet" : "New Course", action: () => setIsCreateModalOpen(true), color: "bg-blue-500" },
-        { icon: PenTool, label: language === 'fr' ? "Nouvelle Note" : "New Note", link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, color: "bg-amber-500" },
-        { icon: Zap, label: language === 'fr' ? "Mode Focus" : "Focus Mode", link: "/edu/focus", color: "bg-violet-600" },
-        { icon: CalendarIcon, label: language === 'fr' ? "Mon Planning" : "My Schedule", action: () => setIsRevisionModalOpen(true), color: "bg-emerald-500" },
+        { 
+            icon: Plus, 
+            label: language === 'fr' ? "Nouveau Sujet" : "New Course", 
+            action: () => setIsCreateModalOpen(true), 
+            color: minecraftTheme ? "bg-[#2d6a4f] hover:bg-[#40916c] border-[#52b788]/60 text-white" : "bg-blue-500" 
+        },
+        { 
+            icon: PenTool, 
+            label: language === 'fr' ? "Nouvelle Note" : "New Note", 
+            link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, 
+            color: minecraftTheme ? "bg-[#8c501e] hover:bg-[#a45e23] border-[#d4976a]/60 text-white" : "bg-amber-500" 
+        },
+        { 
+            icon: Zap, 
+            label: language === 'fr' ? "Mode Focus" : "Focus Mode", 
+            link: "/edu/focus", 
+            color: minecraftTheme ? "bg-[#5a189a] hover:bg-[#7b2cbf] border-[#b5179e]/60 text-white" : "bg-violet-600" 
+        },
+        { 
+            icon: CalendarIcon, 
+            label: language === 'fr' ? "Mon Planning" : "My Schedule", 
+            action: () => setIsRevisionModalOpen(true), 
+            color: minecraftTheme ? "bg-[#0077b6] hover:bg-[#0096c7] border-[#90e0ef]/60 text-white" : "bg-emerald-500" 
+        },
     ]
 
     return (
         <div className="p-3 md:p-4 lg:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-4 md:space-y-6">
 
             {/* HERO SECTION */}
-            <section className="relative overflow-hidden rounded-3xl bg-card border text-card-foreground shadow-sm dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 dark:text-white dark:shadow-xl dark:border-0">
+            <section className={cn(
+                "relative overflow-hidden transition-all",
+                minecraftTheme
+                    ? "rounded-none border-4 border-[#2d6a4f] bg-gradient-to-br from-[#143624] via-[#1b4332] to-[#081c15] text-white shadow-[6px_6px_0px_0px_#081c15]"
+                    : "rounded-3xl bg-card border text-card-foreground shadow-sm dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 dark:text-white dark:shadow-xl dark:border-0"
+            )}>
                 {/* Background decorative elements */}
-                <div className="absolute top-0 right-0 p-12 opacity-10">
-                    <Sparkles className="w-64 h-64 text-primary dark:text-white" />
-                </div>
+                {minecraftTheme ? (
+                    <div className="absolute -top-4 -right-4 p-6 opacity-30 select-none pointer-events-none">
+                        <img 
+                            src="/assets/minecraft_grass_block.webp" 
+                            alt="Minecraft Grass Block" 
+                            className="w-56 h-56 object-contain filter drop-shadow-[0_12px_16px_rgba(0,0,0,0.8)] rotate-6" 
+                        />
+                    </div>
+                ) : (
+                    <div className="absolute top-0 right-0 p-12 opacity-10">
+                        <Sparkles className="w-64 h-64 text-primary dark:text-white" />
+                    </div>
+                )}
 
                 <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col gap-6">
                     <div className="space-y-3 md:space-y-4 max-w-2xl">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 bg-muted text-foreground px-2.5 md:px-3 py-1 rounded-full border border-border dark:bg-white/10 dark:text-white/80 dark:border-white/10">
-                                <Flame className="w-3 h-3 md:w-4 md:h-4 text-orange-500 fill-orange-500 dark:text-orange-400 dark:fill-orange-400" />
+                            <span className={cn(
+                                "text-xs md:text-sm font-medium uppercase tracking-wider flex items-center gap-1.5 transition-all select-none",
+                                minecraftTheme
+                                    ? "rounded-none border-2 border-[#52b788] bg-[#081c15]/90 text-[#b7e4c7] px-3 py-1 shadow-[2px_2px_0px_0px_#081c15]"
+                                    : "rounded-full border border-border bg-muted text-foreground px-2.5 md:px-3 py-1 dark:bg-white/10 dark:text-white/80 dark:border-white/10"
+                            )}>
+                                <Flame className={cn("w-3 h-3 md:w-4 md:h-4", minecraftTheme ? "text-[#55ff55] fill-[#55ff55]" : "text-orange-500 fill-orange-500 dark:text-orange-400 dark:fill-orange-400")} />
                                 <span className="hidden sm:inline">
                                     {streakDays} {language === 'fr' ? (streakDays > 1 ? 'Jours de série' : 'Jour de série') : (streakDays > 1 ? 'Days streak' : 'Day streak')}
                                 </span>
@@ -226,13 +268,23 @@ export function Dashboard() {
 
                         <div>
                             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2 text-foreground dark:text-white">
-                                {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-300 dark:to-violet-300">{activeProfile.name}</span>.
+                                {greeting},{" "}
+                                <span className={cn(
+                                    minecraftTheme 
+                                        ? "text-[#55ff55] drop-shadow-[2px_2px_0px_#000]" 
+                                        : "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-300 dark:to-violet-300"
+                                )}>
+                                    {activeProfile.name}
+                                </span>.
                             </h1>
-                            <p className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none dark:text-slate-300">
+                            <p className={cn(
+                                "text-sm md:text-base lg:text-lg max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none",
+                                minecraftTheme ? "text-emerald-100/90" : "text-muted-foreground dark:text-slate-300"
+                            )}>
                                 {language === 'fr' ? (
-                                    <>Prêt à continuer votre progression ? Vous étiez sur <strong className="text-foreground dark:text-white">{lastActiveCourse?.title || "vos cours"}</strong> récemment.</>
+                                    <>Prêt à continuer votre progression ? Vous étiez sur <strong className={cn(minecraftTheme ? "text-white bg-[#081c15]/60 px-1 border border-[#52b788]/50" : "text-foreground dark:text-white")}>{lastActiveCourse?.title || "vos cours"}</strong> récemment.</>
                                 ) : (
-                                    <>Ready to continue your progress? You were working on <strong className="text-foreground dark:text-white">{lastActiveCourse?.title || "your courses"}</strong> recently.</>
+                                    <>Ready to continue your progress? You were working on <strong className={cn(minecraftTheme ? "text-white bg-[#081c15]/60 px-1 border border-[#52b788]/50" : "text-foreground dark:text-white")}>{lastActiveCourse?.title || "your courses"}</strong> recently.</>
                                 )}
                             </p>
                         </div>
@@ -241,9 +293,14 @@ export function Dashboard() {
                             <div className="pt-2">
                                 <Link
                                     to={`/edu/course/${lastActiveCourse.id}`}
-                                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
+                                    className={cn(
+                                        "inline-flex items-center justify-center gap-2 font-bold text-sm transition-all shadow-sm w-full sm:w-auto",
+                                        minecraftTheme
+                                            ? "rounded-none border-2 border-[#74c69d] bg-[#3a7d44] hover:bg-[#469d53] text-white px-5 py-2.5 shadow-[3px_3px_0px_0px_#081c15] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                                            : "rounded-xl bg-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 hover:bg-primary/90 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
+                                    )}
                                 >
-                                    <Zap className="w-4 h-4 fill-primary-foreground dark:fill-slate-900" />
+                                    <Zap className={cn("w-4 h-4", minecraftTheme ? "fill-yellow-300 text-yellow-300" : "fill-primary-foreground dark:fill-slate-900")} />
                                     <span className="truncate">
                                         {language === 'fr' ? `Reprendre ${lastActiveCourse.title}` : `Resume ${lastActiveCourse.title}`}
                                     </span>
@@ -261,10 +318,23 @@ export function Dashboard() {
                                     to={action.link}
                                     className="group flex flex-col items-center gap-1 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-12 h-12 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95", action.color)}>
+                                    <div className={cn(
+                                        "w-12 h-12 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95",
+                                        minecraftTheme 
+                                            ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
+                                            : "rounded-2xl",
+                                        action.color
+                                    )}>
                                         <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center truncate max-w-[70px] sm:max-w-none dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
+                                    <span className={cn(
+                                        "text-[11px] sm:text-xs font-medium transition-colors text-center truncate max-w-[70px] sm:max-w-none",
+                                        minecraftTheme 
+                                            ? "text-emerald-100/80 group-hover:text-white" 
+                                            : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
+                                    )}>
+                                        {action.label}
+                                    </span>
                                 </Link>
                             ) : (
                                 <button
@@ -272,10 +342,23 @@ export function Dashboard() {
                                     onClick={action.action}
                                     className="group flex flex-col items-center gap-1 sm:gap-1.5"
                                 >
-                                    <div className={cn("w-12 h-12 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95", action.color)}>
+                                    <div className={cn(
+                                        "w-12 h-12 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95",
+                                        minecraftTheme 
+                                            ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
+                                            : "rounded-2xl",
+                                        action.color
+                                    )}>
                                         <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </div>
-                                    <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-center truncate max-w-[70px] sm:max-w-none dark:text-white/70 dark:group-hover:text-white">{action.label}</span>
+                                    <span className={cn(
+                                        "text-[11px] sm:text-xs font-medium transition-colors text-center truncate max-w-[70px] sm:max-w-none",
+                                        minecraftTheme 
+                                            ? "text-emerald-100/80 group-hover:text-white" 
+                                            : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
+                                    )}>
+                                        {action.label}
+                                    </span>
                                 </button>
                             )
                         ))}

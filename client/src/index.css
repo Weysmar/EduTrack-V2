@@ -217,6 +217,18 @@
         --radius: 0 !important;
     }
 
+    /* Force sharp cubic corners on all elements in Minecraft theme */
+    .minecraft-theme [class*="rounded-"],
+    .minecraft-theme .rounded-3xl,
+    .minecraft-theme .rounded-2xl,
+    .minecraft-theme .rounded-xl,
+    .minecraft-theme .rounded-lg,
+    .minecraft-theme .rounded-md,
+    .minecraft-theme .rounded-sm,
+    .minecraft-theme .rounded-full {
+        border-radius: 0px !important;
+    }
+
     /* Override colors when in Minecraft Mode AND Dark Mode */
     .dark .minecraft-theme {
         --background: 240 5% 10%;
