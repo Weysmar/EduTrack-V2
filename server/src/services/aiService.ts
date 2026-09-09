@@ -72,7 +72,7 @@ export const aiService = {
                 throw new Error('Prompt is empty');
             }
 
-            const MAX_PROMPT_LENGTH = 50000;
+            const MAX_PROMPT_LENGTH = 500000;
             if (fullPrompt.length > MAX_PROMPT_LENGTH) {
                 throw new Error(
                     `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
@@ -187,7 +187,7 @@ export const aiService = {
 
             const fullPrompt = systemPrompt ? `${systemPrompt}\n\nIMPORTANT: Output strictly JSON.\n\nUser Request:\n${prompt}` : `${prompt}\n\nOutput strictly JSON.`;
 
-            const MAX_PROMPT_LENGTH = 50000;
+            const MAX_PROMPT_LENGTH = 500000;
             if (fullPrompt.length > MAX_PROMPT_LENGTH) {
                 throw new Error(
                     `Le contenu est trop volumineux (${fullPrompt.length} caractères). ` +
