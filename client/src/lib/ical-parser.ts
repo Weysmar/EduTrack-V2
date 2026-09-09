@@ -25,6 +25,7 @@ export class ICalParser {
         
         let currentEvent: Partial<ICalEvent> | null = null;
         let inEvent = false;
+        let pendingDuration: string | null = null;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -32,6 +33,7 @@ export class ICalParser {
 
             if (line.startsWith('BEGIN:VEVENT')) {
                 inEvent = true;
+                pendingDuration = null;
                 currentEvent = {
                     id: Math.random().toString(36).substring(2, 9),
                     allDay: false,
@@ -43,6 +45,7 @@ export class ICalParser {
 
             if (line.startsWith('BEGIN:VTODO')) {
                 inEvent = true;
+                pendingDuration = null;
                 currentEvent = {
                     id: Math.random().toString(36).substring(2, 9),
                     allDay: true,
@@ -58,9 +61,28 @@ export class ICalParser {
                     if (!currentEvent.start) {
                         currentEvent.start = currentEvent.end || new Date();
                     }
+
+                    // If DURATION was parsed but no DTEND was set
+                    if (!currentEvent.end && pendingDuration && currentEvent.start) {
+                        const durMs = this.parseDuration(pendingDuration);
+                        if (durMs > 0) {
+                            currentEvent.end = new Date(currentEvent.start.getTime() + durMs);
+                        }
+                    }
+
+                    // Default end date if still not specified
+                    if (!currentEvent.end && currentEvent.start) {
+                        if (currentEvent.allDay) {
+                            currentEvent.end = new Date(currentEvent.start.getTime() + 24 * 60 * 60 * 1000);
+                        } else {
+                            currentEvent.end = new Date(currentEvent.start.getTime() + 60 * 60 * 1000);
+                        }
+                    }
+
                     events.push(currentEvent as ICalEvent);
                 }
                 currentEvent = null;
+                pendingDuration = null;
                 continue;
             }
 
@@ -80,6 +102,8 @@ export class ICalParser {
                 } else if (nameAndParams === 'DTEND' || nameAndParams.startsWith('DTEND;') || nameAndParams.startsWith('DTEND:')) {
                     const { date } = this.parseDate(line);
                     currentEvent.end = date;
+                } else if (nameAndParams === 'DURATION' || nameAndParams.startsWith('DURATION;') || nameAndParams.startsWith('DURATION:')) {
+                    pendingDuration = value.trim();
                 } else if (nameAndParams === 'DUE' || nameAndParams.startsWith('DUE;') || nameAndParams.startsWith('DUE:')) {
                     const { date, allDay } = this.parseDate(line);
                     if (!currentEvent.start) {
@@ -112,6 +136,29 @@ export class ICalParser {
             .replace(/\\;/g, ';')
             .replace(/\\\\/g, '\\')
             .trim();
+    }
+
+    public static parseDuration(value: string): number {
+        const regex = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i;
+        const matches = value.trim().match(regex);
+        if (!matches) return 0;
+
+        const sign = matches[1] === '-' ? -1 : 1;
+        const weeks = parseInt(matches[2] || '0', 10);
+        const days = parseInt(matches[3] || '0', 10);
+        const hours = parseInt(matches[4] || '0', 10);
+        const minutes = parseInt(matches[5] || '0', 10);
+        const seconds = parseInt(matches[6] || '0', 10);
+
+        const totalMs = (
+            weeks * 7 * 24 * 60 * 60 +
+            days * 24 * 60 * 60 +
+            hours * 60 * 60 +
+            minutes * 60 +
+            seconds
+        ) * 1000;
+
+        return sign * totalMs;
     }
 
     private static parseDate(line: string): { date: Date; allDay: boolean } {
@@ -149,16 +196,115 @@ export class ICalParser {
     }
 }
 
+/**
+ * Vérifie si un événement s'étend sur plusieurs jours civils.
+ */
+export function isMultiDayEvent(event: ICalEvent): boolean {
+    if (!event.start) return false;
+    const start = new Date(event.start);
+    const end = event.end ? new Date(event.end) : null;
+    if (!end) return false;
+
+    if (event.allDay) {
+        // En RFC 5545, pour VALUE=DATE, DTEND est non-inclusif (fin exclusive à 00:00).
+        // Si DTEND > DTSTART + 1 jour, l'événement couvre au moins 2 jours civils.
+        const diffMs = end.getTime() - start.getTime();
+        return diffMs > 24 * 60 * 60 * 1000;
+    }
+
+    // Pour un événement avec heure :
+    // Vérifie s'il commence et finit sur des jours civils différents
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+    // Si la fin est exactement à 00:00:00 du jour suivant, il s'est terminé à minuit pile du jour de départ
+    if (endDay.getTime() > startDay.getTime()) {
+        if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
+            const diffDays = Math.round((endDay.getTime() - startDay.getTime()) / (24 * 60 * 60 * 1000));
+            return diffDays > 1;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Détermine si un événement iCal (journée entière ou avec heure, mono ou multi-jours)
+ * est actif sur un jour civil donné.
+ */
+export function isEventOnDay(event: ICalEvent, day: Date): boolean {
+    if (!event.start) return false;
+
+    const evStart = new Date(event.start);
+    let evEnd: Date;
+    if (event.end) {
+        evEnd = new Date(event.end);
+    } else if (event.allDay) {
+        evEnd = new Date(evStart.getTime() + 24 * 60 * 60 * 1000);
+    } else {
+        evEnd = new Date(evStart.getTime() + 60 * 60 * 1000);
+    }
+
+    if (evEnd <= evStart) {
+        evEnd = event.allDay
+            ? new Date(evStart.getTime() + 24 * 60 * 60 * 1000)
+            : new Date(evStart.getTime() + 30 * 60 * 1000);
+    }
+
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0);
+    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1, 0, 0, 0, 0);
+
+    // L'événement chevauche la journée si evStart < dayEnd ET evEnd > dayStart
+    return evStart.getTime() < dayEnd.getTime() && evEnd.getTime() > dayStart.getTime();
+}
+
+/**
+ * Calcule les minutes de début et de fin (0..1440) pour un événement horaire sur un jour précis.
+ * Gère le découpage automatique pour les événements nocturnes ou multi-jours.
+ */
+export function getEventMinutesForDay(
+    event: ICalEvent,
+    day: Date
+): { startMinutes: number; endMinutes: number } | null {
+    if (!isEventOnDay(event, day)) return null;
+
+    const evStart = new Date(event.start);
+    const evEnd = event.end
+        ? new Date(event.end)
+        : new Date(evStart.getTime() + 60 * 60 * 1000);
+
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0);
+    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1, 0, 0, 0, 0);
+
+    let startMinutes = 0;
+    if (evStart.getTime() >= dayStart.getTime()) {
+        startMinutes = evStart.getHours() * 60 + evStart.getMinutes();
+    }
+
+    let endMinutes = 1440;
+    if (evEnd.getTime() <= dayEnd.getTime()) {
+        endMinutes = evEnd.getHours() * 60 + evEnd.getMinutes();
+    }
+
+    // Cas où l'événement finit exactement à minuit pile (00:00 du lendemain)
+    if (endMinutes === 0 && evEnd.getTime() >= dayEnd.getTime()) {
+        endMinutes = 1440;
+    }
+
+    const duration = Math.max(20, endMinutes - startMinutes);
+    return {
+        startMinutes,
+        endMinutes: Math.min(1440, startMinutes + duration)
+    };
+}
+
 import { apiClient } from './api/client';
 
 export const fetchICalFeed = async (url: string): Promise<ICalEvent[]> => {
     try {
-        // Use our backend proxy to fetch the iCal feed
-        // This avoids CORS issues and is more reliable than public proxies
         const response = await apiClient.get('/calendar/proxy', {
             params: { url },
-            // Ensure we get text back, not JSON (though axios might try to parse JSON if content-type is json)
-            // But our backend returns text/calendar.
             responseType: 'text'
         });
 
@@ -210,4 +356,3 @@ export const fetchAllICalFeeds = async (feeds: ICalFeedTarget[]): Promise<ICalEv
 
     return merged;
 };
-

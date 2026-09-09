@@ -13,7 +13,14 @@ import {
 import { fr, enUS } from 'date-fns/locale'
 import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
-import { fetchAllICalFeeds, type ICalEvent, type ICalFeedTarget } from '@/lib/ical-parser'
+import { 
+    fetchAllICalFeeds, 
+    type ICalEvent, 
+    type ICalFeedTarget,
+    isMultiDayEvent,
+    isEventOnDay,
+    getEventMinutesForDay
+} from '@/lib/ical-parser'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -290,17 +297,19 @@ export function CalendarWidget() {
         // Scan events
         for (const e of events) {
             if (!e.start || e.allDay || e.isTask) continue;
-            const sDate = new Date(e.start);
-            if (days.some(d => isSameDay(d, sDate))) {
-                hasAnyItem = true;
-                const sm = sDate.getHours() * 60 + sDate.getMinutes();
-                let em = sm + 60;
-                if (e.end) {
-                    const eDate = new Date(e.end);
-                    em = Math.max(em, eDate.getHours() * 60 + eDate.getMinutes());
+            // Long multi-day events (>= 24h) appear in the top all-day section, exclude from hour zoom
+            const isLongMultiDay = isMultiDayEvent(e) && (e.end ? (new Date(e.end).getTime() - new Date(e.start).getTime() >= 24 * 60 * 60 * 1000) : false);
+            if (isLongMultiDay) continue;
+
+            for (const day of days) {
+                if (isEventOnDay(e, day)) {
+                    const times = getEventMinutesForDay(e, day);
+                    if (times) {
+                        hasAnyItem = true;
+                        minMinutes = Math.min(minMinutes, times.startMinutes);
+                        maxMinutes = Math.max(maxMinutes, times.endMinutes);
+                    }
                 }
-                minMinutes = Math.min(minMinutes, sm);
-                maxMinutes = Math.max(maxMinutes, em);
             }
         }
 
@@ -768,10 +777,14 @@ export function CalendarWidget() {
                     {/* Day All-Day Cells */}
                     <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
                         {days.map((day) => {
-                            // Filter all-day events
+                            // Filter all-day and multi-day events
                             const dayAllDayEvents = events.filter(e => {
                                 if (!e.start) return false;
-                                return isSameDay(new Date(e.start), day) && (e.allDay || e.isTask);
+                                const isLongMultiDay = isMultiDayEvent(e) && (e.end ? (new Date(e.end).getTime() - new Date(e.start).getTime() >= 24 * 60 * 60 * 1000) : false);
+                                if (e.allDay || e.isTask || isLongMultiDay) {
+                                    return isEventOnDay(e, day);
+                                }
+                                return false;
                             });
 
                             // Filter untimed or 23:59 study tasks
@@ -800,22 +813,46 @@ export function CalendarWidget() {
                                 >
                                     {dayAllDayEvents.map(event => {
                                         const feedColor = event.feedColor || '#3b82f6';
+                                        const isMulti = isMultiDayEvent(event);
+                                        const evStart = new Date(event.start);
+                                        const evEnd = event.end ? new Date(event.end) : addDays(evStart, 1);
+                                        const isFirstDay = isSameDay(evStart, day);
+                                        const lastActiveDay = event.allDay && evEnd.getHours() === 0 && evEnd.getMinutes() === 0
+                                            ? addDays(evEnd, -1)
+                                            : evEnd;
+                                        const isLastDay = isSameDay(lastActiveDay, day);
+
+                                        let indicator = '';
+                                        if (isMulti) {
+                                            if (isFirstDay && !isLastDay) {
+                                                indicator = !event.allDay ? `${format(evStart, 'HH:mm')} ▶ ` : '▶ ';
+                                            } else if (!isFirstDay && isLastDay) {
+                                                indicator = !event.allDay ? `◀ ${format(evEnd, 'HH:mm')} ` : '◀ ';
+                                            } else if (!isFirstDay && !isLastDay) {
+                                                indicator = '↔ ';
+                                            }
+                                        }
+
                                         return (
                                             <div
-                                                key={`allday-event-${event.id}`}
-                                                className="px-1.5 py-0.5 rounded border text-[11px] font-medium truncate flex items-center gap-1 shadow-2xs"
+                                                key={`allday-event-${event.id}-${day.toISOString()}`}
+                                                className={cn(
+                                                    "px-1.5 py-0.5 rounded border text-[11px] font-medium truncate flex items-center gap-1 shadow-2xs",
+                                                    isMulti && !isFirstDay && "rounded-l-none border-l-0",
+                                                    isMulti && !isLastDay && "rounded-r-none border-r-0"
+                                                )}
                                                 style={{
                                                     backgroundColor: `${feedColor}18`,
                                                     borderColor: `${feedColor}40`
                                                 }}
-                                                title={`${event.summary}${event.feedName ? ` (${event.feedName})` : ''}`}
+                                                title={`${event.summary}\n${formatEventTime(event, t, language)}${event.feedName ? `\n📅 ${event.feedName}` : ''}`}
                                             >
                                                 <span
                                                     className="w-1.5 h-1.5 rounded-full shrink-0"
                                                     style={{ backgroundColor: feedColor }}
                                                 />
                                                 <span className="truncate font-semibold" style={{ color: feedColor }}>
-                                                    {event.summary}
+                                                    {indicator}{event.summary}
                                                 </span>
                                             </div>
                                         );
@@ -904,26 +941,22 @@ export function CalendarWidget() {
                             const timedEvents: TimedCalendarItem[] = events
                                 .filter(e => {
                                     if (!e.start || e.allDay || e.isTask) return false;
-                                    return isSameDay(new Date(e.start), day);
+                                    // Multi-day events (>= 24h) are rendered in the top all-day section
+                                    const isLongMultiDay = isMultiDayEvent(e) && (e.end ? (new Date(e.end).getTime() - new Date(e.start).getTime() >= 24 * 60 * 60 * 1000) : false);
+                                    if (isLongMultiDay) return false;
+
+                                    return isEventOnDay(e, day);
                                 })
                                 .map(e => {
-                                    const startDate = new Date(e.start);
-                                    const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
-                                    let endMinutes = startMinutes + 60;
-                                    if (e.end) {
-                                        const endDate = new Date(e.end);
-                                        const rawEnd = endDate.getHours() * 60 + endDate.getMinutes();
-                                        if (rawEnd > startMinutes) {
-                                            endMinutes = rawEnd;
-                                        }
-                                    }
-                                    const duration = Math.max(30, endMinutes - startMinutes);
+                                    const times = getEventMinutesForDay(e, day);
+                                    const startMinutes = times ? times.startMinutes : 0;
+                                    const endMinutes = times ? times.endMinutes : 60;
                                     return {
-                                        id: `event-${e.id}`,
+                                        id: `event-${e.id}-${day.toISOString()}`,
                                         itemType: 'event',
                                         title: e.summary,
                                         startMinutes,
-                                        endMinutes: Math.min(1440, startMinutes + duration),
+                                        endMinutes,
                                         raw: e
                                     };
                                 });
@@ -1034,7 +1067,7 @@ export function CalendarWidget() {
                                                         backgroundColor: `${feedColor}18`,
                                                         borderColor: `${feedColor}35`,
                                                     }}
-                                                    title={`${event.summary}\n${formatEventTime(event, t)}${event.feedName ? `\n📅 ${event.feedName}` : ''}${event.location ? `\n📍 ${event.location}` : ''}`}
+                                                    title={`${event.summary}\n${formatEventTime(event, t, language)}${event.feedName ? `\n📅 ${event.feedName}` : ''}${event.location ? `\n📍 ${event.location}` : ''}`}
                                                 >
                                                     <div className="min-w-0">
                                                         <div 
@@ -1046,7 +1079,7 @@ export function CalendarWidget() {
                                                         {heightPx >= 42 && (
                                                             <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
                                                                 <Clock className="h-2.5 w-2.5 shrink-0 opacity-70" />
-                                                                <span className="truncate">{formatEventTime(event, t)}</span>
+                                                                <span className="truncate">{formatEventTime(event, t, language)}</span>
                                                             </div>
                                                         )}
                                                         {heightPx >= 58 && ((event.feedName && feeds.length > 1) || event.location) && (
@@ -1204,12 +1237,33 @@ export function CalendarWidget() {
     )
 }
 
-function formatEventTime(event: ICalEvent, t: (key: string) => string) {
-    if (event.allDay) return t('calendar.allDay') || 'Toute la journée'
-    const startTime = format(new Date(event.start), 'HH:mm')
-    if (event.end) {
-        const endTime = format(new Date(event.end), 'HH:mm')
-        return `${startTime} - ${endTime}`
+function formatEventTime(event: ICalEvent, t: (key: string) => string, language: string = 'fr') {
+    const locale = language === 'fr' ? fr : enUS;
+    if (!event.start) return '';
+    const start = new Date(event.start);
+    const end = event.end ? new Date(event.end) : null;
+
+    if (event.allDay) {
+        if (!end || isSameDay(start, addDays(end, -1)) || isSameDay(start, end)) {
+            return t('calendar.allDay') || 'Toute la journée';
+        }
+        // Multi-day all-day event
+        const lastDay = addDays(end, -1);
+        return language === 'fr'
+            ? `Du ${format(start, 'd MMM', { locale })} au ${format(lastDay, 'd MMM yyyy', { locale })} (Toute la journée)`
+            : `${format(start, 'MMM d', { locale })} - ${format(lastDay, 'MMM d, yyyy', { locale })} (All day)`;
     }
-    return startTime
+
+    const startTime = format(start, 'HH:mm');
+    if (end) {
+        if (isSameDay(start, end)) {
+            const endTime = format(end, 'HH:mm');
+            return `${startTime} - ${endTime}`;
+        }
+        // Multi-day timed event
+        return language === 'fr'
+            ? `Du ${format(start, 'd MMM HH:mm', { locale })} au ${format(end, 'd MMM HH:mm', { locale })}`
+            : `${format(start, 'MMM d, HH:mm', { locale })} to ${format(end, 'MMM d, HH:mm', { locale })}`;
+    }
+    return startTime;
 }
