@@ -1,3 +1,5 @@
+import { rrulestr, RRuleSet } from 'rrule';
+
 export interface ICalEvent {
     id: string;
     summary: string;
@@ -11,13 +13,16 @@ export interface ICalEvent {
     feedId?: string;
     feedName?: string;
     feedColor?: string;
+    rrule?: string;
+    exdates?: Date[];
+    recurrenceId?: Date;
 }
 
 export class ICalParser {
     static parse(icsContent: string): ICalEvent[] {
         if (!icsContent) return [];
 
-        const events: ICalEvent[] = [];
+        const rawEvents: ICalEvent[] = [];
         
         // 1. Unfold lines (RFC 5545: lines folded with CRLF + space/tab)
         const unfolded = icsContent.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').replace(/\r[ \t]/g, '');
@@ -79,7 +84,7 @@ export class ICalParser {
                         }
                     }
 
-                    events.push(currentEvent as ICalEvent);
+                    rawEvents.push(currentEvent as ICalEvent);
                 }
                 currentEvent = null;
                 pendingDuration = null;
@@ -104,6 +109,20 @@ export class ICalParser {
                     currentEvent.end = date;
                 } else if (nameAndParams === 'DURATION' || nameAndParams.startsWith('DURATION;') || nameAndParams.startsWith('DURATION:')) {
                     pendingDuration = value.trim();
+                } else if (nameAndParams === 'RRULE' || nameAndParams.startsWith('RRULE;') || nameAndParams.startsWith('RRULE:')) {
+                    currentEvent.rrule = value.trim();
+                } else if (nameAndParams === 'EXDATE' || nameAndParams.startsWith('EXDATE;') || nameAndParams.startsWith('EXDATE:')) {
+                    const parts = value.split(',');
+                    for (const p of parts) {
+                        if (p.trim()) {
+                            const { date } = this.parseDate(`:${p.trim()}`);
+                            if (!currentEvent.exdates) currentEvent.exdates = [];
+                            currentEvent.exdates.push(date);
+                        }
+                    }
+                } else if (nameAndParams === 'RECURRENCE-ID' || nameAndParams.startsWith('RECURRENCE-ID;') || nameAndParams.startsWith('RECURRENCE-ID:')) {
+                    const { date } = this.parseDate(line);
+                    currentEvent.recurrenceId = date;
                 } else if (nameAndParams === 'DUE' || nameAndParams.startsWith('DUE;') || nameAndParams.startsWith('DUE:')) {
                     const { date, allDay } = this.parseDate(line);
                     if (!currentEvent.start) {
@@ -126,7 +145,91 @@ export class ICalParser {
             }
         }
 
-        return events;
+        // 2. Expand recurring event series (RRULE)
+        return this.expandRecurringEvents(rawEvents);
+    }
+
+    private static expandRecurringEvents(rawEvents: ICalEvent[]): ICalEvent[] {
+        const result: ICalEvent[] = [];
+
+        // Collect overrides by UID
+        const overridesByUid = new Map<string, ICalEvent[]>();
+        for (const ev of rawEvents) {
+            if (ev.recurrenceId) {
+                const existing = overridesByUid.get(ev.id) || [];
+                existing.push(ev);
+                overridesByUid.set(ev.id, existing);
+            }
+        }
+
+        // Expanded window: from 6 months in the past to 18 months in the future
+        const now = Date.now();
+        const windowStart = new Date(now - 180 * 24 * 60 * 60 * 1000);
+        const windowEnd = new Date(now + 540 * 24 * 60 * 60 * 1000);
+
+        for (const ev of rawEvents) {
+            // Overridden instances are kept directly
+            if (ev.recurrenceId) {
+                result.push(ev);
+                continue;
+            }
+
+            // Non-recurring event: keep as is
+            if (!ev.rrule) {
+                result.push(ev);
+                continue;
+            }
+
+            // Recurring event with RRULE
+            try {
+                const durationMs = ev.end
+                    ? ev.end.getTime() - ev.start.getTime()
+                    : (ev.allDay ? 24 * 60 * 60 * 1000 : 60 * 60 * 1000);
+
+                const cleanRrule = ev.rrule.replace(/^RRULE:/i, '').trim();
+                const rule = rrulestr(cleanRrule, { dtstart: ev.start });
+                const rruleSet = new RRuleSet();
+                rruleSet.rrule(rule);
+
+                // Add explicit EXDATEs
+                if (ev.exdates && ev.exdates.length > 0) {
+                    for (const ex of ev.exdates) {
+                        rruleSet.exdate(ex);
+                    }
+                }
+
+                // Add modified instances (RECURRENCE-ID) to EXDATE so master doesn't duplicate them
+                const overrides = overridesByUid.get(ev.id) || [];
+                for (const ov of overrides) {
+                    if (ov.recurrenceId) {
+                        rruleSet.exdate(ov.recurrenceId);
+                    }
+                }
+
+                // Expand instances within viewing window
+                const occurrences = rruleSet.between(windowStart, windowEnd, true);
+
+                if (occurrences.length === 0) {
+                    result.push(ev);
+                    continue;
+                }
+
+                for (const occ of occurrences) {
+                    result.push({
+                        ...ev,
+                        id: `${ev.id}_${occ.getTime()}`,
+                        start: occ,
+                        end: new Date(occ.getTime() + durationMs),
+                        rrule: undefined
+                    });
+                }
+            } catch (err) {
+                console.warn(`[ICalParser] Failed to expand recurrence for "${ev.summary}":`, err);
+                result.push(ev);
+            }
+        }
+
+        return result;
     }
 
     private static unescapeText(text: string): string {
