@@ -18,6 +18,25 @@ export const DEFAULT_CALENDAR_COLORS = [
     '#06b6d4', // Cyan (Autre)
 ];
 
+export const EXTENDED_CALENDAR_COLORS = [
+    '#3b82f6', // Bleu
+    '#0ea5e9', // Bleu ciel
+    '#06b6d4', // Cyan
+    '#10b981', // Émeraude
+    '#22c55e', // Vert
+    '#84cc16', // Lime
+    '#eab308', // Jaune
+    '#f59e0b', // Ambre
+    '#f97316', // Orange
+    '#ef4444', // Rouge
+    '#f43f5e', // Rose vif
+    '#ec4899', // Rose
+    '#d946ef', // Fuchsia
+    '#8b5cf6', // Violet
+    '#6366f1', // Indigo
+    '#64748b', // Ardoise
+];
+
 interface CalendarState {
     // Gestion multi-flux iCal
     feeds: ICalFeed[];

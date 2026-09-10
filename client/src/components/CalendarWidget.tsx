@@ -4,7 +4,7 @@ import {
     ChevronLeft, ChevronRight, RefreshCw, Calendar as CalendarIcon,
     Loader2, CheckSquare, Square, Clock, AlertCircle,
     Plus, Trash2, X, ExternalLink, MapPin, ZoomIn, ZoomOut,
-    SlidersHorizontal
+    SlidersHorizontal, Pencil
 } from 'lucide-react'
 import {
     format, addWeeks, subWeeks, addDays, subDays,
@@ -12,7 +12,7 @@ import {
 } from 'date-fns'
 import { fr, enUS } from 'date-fns/locale'
 import { useProfileStore } from '@/store/profileStore'
-import { useCalendarStore } from '@/store/calendarStore'
+import { useCalendarStore, type ICalFeed } from '@/store/calendarStore'
 import { 
     fetchAllICalFeeds, 
     type ICalEvent, 
@@ -27,6 +27,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { studyPlanQueries, courseQueries } from '@/lib/api/queries'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { CreateTaskModal } from '@/components/CreateTaskModal'
+import { EditCalendarModal } from '@/components/EditCalendarModal'
 
 export const TASK_TYPES = [
     { id: 'exam', label: 'Examen / Partiel', labelEn: 'Exam', icon: '🎓', color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30' },
@@ -161,6 +162,7 @@ export function CalendarWidget() {
     const [selectedModalDate, setSelectedModalDate] = useState<Date | null>(null)
     const [selectedModalTime, setSelectedModalTime] = useState<string | null>(null)
     const [showGoogleTip, setShowGoogleTip] = useState(true)
+    const [editingCalendarFeed, setEditingCalendarFeed] = useState<ICalFeed | null>(null)
 
     const gridContainerRef = useRef<HTMLDivElement>(null)
 
@@ -632,25 +634,43 @@ export function CalendarWidget() {
                         {language === 'fr' ? 'Agendas :' : 'Calendars:'}
                     </span>
                     {feeds.map((feed) => (
-                        <button
+                        <div
                             key={feed.id}
-                            onClick={() => toggleFeed(feed.id)}
                             className={cn(
-                                "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-all select-none",
+                                "group inline-flex items-center rounded-full border text-[11px] font-medium transition-all select-none shadow-2xs",
                                 feed.enabled
-                                    ? "bg-card border-border shadow-2xs text-foreground hover:border-primary/50"
-                                    : "bg-muted/30 border-dashed border-border/60 text-muted-foreground line-through opacity-60 hover:opacity-100"
+                                    ? "bg-card border-border text-foreground hover:border-primary/50"
+                                    : "bg-muted/30 border-dashed border-border/60 text-muted-foreground opacity-60 hover:opacity-100"
                             )}
-                            title={feed.enabled 
-                                ? (language === 'fr' ? `Cliquer pour masquer « ${feed.name} »` : `Click to hide "${feed.name}"`)
-                                : (language === 'fr' ? `Cliquer pour afficher « ${feed.name} »` : `Click to show "${feed.name}"`)}
                         >
-                            <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: feed.enabled ? feed.color : '#94a3b8' }}
-                            />
-                            <span className="truncate max-w-[130px]">{feed.name}</span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => toggleFeed(feed.id)}
+                                className="inline-flex items-center gap-1.5 pl-2 pr-1 py-0.5 cursor-pointer"
+                                title={feed.enabled 
+                                    ? (language === 'fr' ? `Cliquer pour masquer « ${feed.name} »` : `Click to hide "${feed.name}"`)
+                                    : (language === 'fr' ? `Cliquer pour afficher « ${feed.name} »` : `Click to show "${feed.name}"`)}
+                            >
+                                <span
+                                    className="w-2 h-2 rounded-full shrink-0 transition-transform group-hover:scale-110"
+                                    style={{ backgroundColor: feed.enabled ? (feed.color || '#3b82f6') : '#94a3b8' }}
+                                />
+                                <span className={cn("truncate max-w-[120px]", !feed.enabled && "line-through")}>
+                                    {feed.name}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingCalendarFeed(feed);
+                                }}
+                                className="p-1 pr-1.5 text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded-full opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                                title={language === 'fr' ? `Personnaliser « ${feed.name} » (nom, couleur)` : `Customize "${feed.name}" (name, color)`}
+                            >
+                                <Pencil className="h-2.5 w-2.5" />
+                            </button>
+                        </div>
                     ))}
                 </div>
             )}
@@ -1232,6 +1252,13 @@ export function CalendarWidget() {
                 initialTime={selectedModalTime}
                 initialCourseId={filterCourseId !== 'all' ? filterCourseId : ''}
                 courses={courses}
+            />
+
+            {/* Edit Calendar (Name & Color) Modal */}
+            <EditCalendarModal
+                isOpen={!!editingCalendarFeed}
+                onClose={() => setEditingCalendarFeed(null)}
+                feed={editingCalendarFeed}
             />
         </div>
     )

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { 
     Calendar, Check, Link2, ExternalLink, AlertCircle, Loader2, X, Trash2,
     Copy, RefreshCw, ArrowUpFromLine, ArrowDownToLine, Sparkles, ShieldCheck,
-    Plus, Eye, EyeOff, CheckCircle2
+    Plus, Eye, EyeOff, CheckCircle2, Pencil, Palette
 } from 'lucide-react'
-import { useCalendarStore, DEFAULT_CALENDAR_COLORS, type ICalFeed } from '@/store/calendarStore'
+import { useCalendarStore, DEFAULT_CALENDAR_COLORS, EXTENDED_CALENDAR_COLORS, type ICalFeed } from '@/store/calendarStore'
+import { EditCalendarModal } from '@/components/EditCalendarModal'
 import { useProfileStore } from '@/store/profileStore'
 import { useLanguage } from '@/components/language-provider'
 import { fetchICalFeed } from '@/lib/ical-parser'
@@ -45,6 +46,7 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
     const [feedCounts, setFeedCounts] = useState<Record<string, number>>({})
     const [hasCopied, setHasCopied] = useState(false)
     const [showAddForm, setShowAddForm] = useState(feeds.length === 0)
+    const [editingFeed, setEditingFeed] = useState<ICalFeed | null>(null)
 
     // Fetch user's personal EduTrack iCal feed info (Export tab)
     const { data: feedInfo, isLoading: isLoadingFeed } = useQuery({
@@ -326,15 +328,23 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
                                                     >
                                                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                                             {/* Color indicator / picker */}
-                                                            <div 
-                                                                className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs ring-2 ring-background" 
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setEditingFeed(feed)}
+                                                                className="w-4 h-4 rounded-full shrink-0 shadow-xs ring-2 ring-background hover:scale-125 transition-transform cursor-pointer" 
                                                                 style={{ backgroundColor: feed.color || '#3b82f6' }}
+                                                                title={language === 'fr' ? 'Changer la couleur ou renommer' : 'Change color or rename'}
                                                             />
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="font-medium text-xs truncate text-foreground">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditingFeed(feed)}
+                                                                        className="font-medium text-xs truncate text-foreground hover:text-primary transition-colors text-left cursor-pointer"
+                                                                        title={language === 'fr' ? 'Renommer ou changer la couleur' : 'Rename or change color'}
+                                                                    >
                                                                         {feed.name}
-                                                                    </span>
+                                                                    </button>
                                                                     {count !== undefined && (
                                                                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
                                                                             {count} {language === 'fr' ? 'évts' : 'events'}
@@ -349,6 +359,16 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
 
                                                         {/* Feed actions */}
                                                         <div className="flex items-center gap-1 shrink-0">
+                                                            {/* Edit button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setEditingFeed(feed)}
+                                                                className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors text-xs cursor-pointer"
+                                                                title={language === 'fr' ? 'Renommer ou changer la couleur' : 'Rename or change color'}
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            </button>
+
                                                             {/* Test button */}
                                                             <button
                                                                 type="button"
@@ -453,26 +473,40 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
                                             />
                                         </div>
 
-                                        {/* Color picker presets */}
+                                        {/* Color picker presets + custom color */}
                                         <div>
                                             <label className="text-[11px] font-medium text-muted-foreground block mb-1.5">
                                                 {language === 'fr' ? 'Couleur d\'identification' : 'Badge color'}
                                             </label>
-                                            <div className="flex items-center gap-2">
-                                                {DEFAULT_CALENDAR_COLORS.map((color) => (
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {EXTENDED_CALENDAR_COLORS.map((color) => (
                                                     <button
                                                         key={color}
                                                         type="button"
                                                         onClick={() => setNewFeedColor(color)}
                                                         className={cn(
-                                                            "w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow-xs",
-                                                            newFeedColor === color ? "scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:scale-110"
+                                                            "w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow-xs cursor-pointer",
+                                                            newFeedColor.toLowerCase() === color.toLowerCase() ? "scale-125 ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:scale-110"
                                                         )}
                                                         style={{ backgroundColor: color }}
                                                     >
-                                                        {newFeedColor === color && <Check className="h-3.5 w-3.5 text-white" />}
+                                                        {newFeedColor.toLowerCase() === color.toLowerCase() && <Check className="h-3.5 w-3.5 text-white stroke-[3]" />}
                                                     </button>
                                                 ))}
+
+                                                {/* Custom color picker */}
+                                                <label
+                                                    className="relative cursor-pointer w-6 h-6 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary flex items-center justify-center transition-transform hover:scale-110 overflow-hidden shadow-xs"
+                                                    title={language === 'fr' ? 'Couleur personnalisée' : 'Custom color'}
+                                                >
+                                                    <input
+                                                        type="color"
+                                                        value={newFeedColor}
+                                                        onChange={(e) => setNewFeedColor(e.target.value)}
+                                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                                    />
+                                                    <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                                                </label>
                                             </div>
                                         </div>
 
@@ -611,6 +645,13 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
                 </div>,
                 document.body
             )}
+
+            {/* Edit Calendar Modal */}
+            <EditCalendarModal
+                isOpen={!!editingFeed}
+                onClose={() => setEditingFeed(null)}
+                feed={editingFeed}
+            />
         </>
     )
 }
