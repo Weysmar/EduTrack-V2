@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight, Calendar as CalendarIcon } from 'lucide-react'
+import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
@@ -299,7 +300,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                             const checked = e.target.checked;
                                             setHasDueDate(checked);
                                             if (checked && !dueDate) {
-                                                setDueDate(new Date().toISOString().split('T')[0]);
+                                                setDueDate(format(new Date(), 'yyyy-MM-dd'));
                                             } else if (!checked) {
                                                 setDueDate('');
                                             }

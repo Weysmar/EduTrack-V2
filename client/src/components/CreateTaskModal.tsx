@@ -19,6 +19,16 @@ interface CreateTaskModalProps {
     courses: any[]
 }
 
+function toLocalISODate(value?: Date | string | null): string {
+    if (!value) return format(new Date(), 'yyyy-MM-dd')
+    if (typeof value === 'string') {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+        const parsed = new Date(value)
+        return isNaN(parsed.getTime()) ? format(new Date(), 'yyyy-MM-dd') : format(parsed, 'yyyy-MM-dd')
+    }
+    return isNaN(value.getTime()) ? format(new Date(), 'yyyy-MM-dd') : format(value, 'yyyy-MM-dd')
+}
+
 export function CreateTaskModal({
     isOpen,
     onClose,
@@ -33,21 +43,14 @@ export function CreateTaskModal({
     const queryClient = useQueryClient()
 
     const [description, setDescription] = useState('')
-    const [date, setDate] = useState(() => {
-        if (!initialDate) return new Date().toISOString().split('T')[0]
-        const d = typeof initialDate === 'string' ? new Date(initialDate) : initialDate
-        return d.toISOString().split('T')[0]
-    })
+    const [date, setDate] = useState(() => toLocalISODate(initialDate))
     const [courseId, setCourseId] = useState(initialCourseId)
     const [type, setType] = useState(initialType)
     const [dueTime, setDueTime] = useState(initialTime || '23:59')
 
     useEffect(() => {
         if (isOpen) {
-            if (initialDate) {
-                const d = typeof initialDate === 'string' ? new Date(initialDate) : initialDate
-                setDate(d.toISOString().split('T')[0])
-            }
+            setDate(toLocalISODate(initialDate))
             if (initialTime !== undefined) {
                 setDueTime(initialTime || '23:59')
             }

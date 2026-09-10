@@ -32,7 +32,7 @@ export function CourseTasksModal({
 
     const [isAdding, setIsAdding] = useState(false)
     const [title, setTitle] = useState('')
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+    const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'))
     const [dueTime, setDueTime] = useState('23:59')
     const [type, setType] = useState('assignment')
 
@@ -51,7 +51,7 @@ export function CourseTasksModal({
             queryClient.invalidateQueries({ queryKey: ['studyTasks'] })
             setIsAdding(false)
             setTitle('')
-            setDate(new Date().toISOString().split('T')[0])
+            setDate(format(new Date(), 'yyyy-MM-dd'))
             setDueTime('23:59')
             setType('assignment')
         }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Calendar, Clock, Target, BookOpen, Brain, Loader2, X, RefreshCw, AlertCircle } from 'lucide-react'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { generateStudyPlan } from '@/lib/plans/generator'
 import { useCalendarStore } from '@/store/calendarStore'
@@ -68,7 +69,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
             )
 
             if (examEvent) {
-                const dateStr = examEvent.start.toISOString().split('T')[0]
+                const dateStr = format(new Date(examEvent.start), 'yyyy-MM-dd')
                 setDeadline(dateStr)
                 toast.success(t('plan.calendar.found', { event: examEvent.summary, date: dateStr }) || `Examen trouvé : ${examEvent.summary} le ${dateStr}`)
             } else {
@@ -150,7 +151,7 @@ export function GeneratePlanModal({ isOpen, onClose, courseId, onPlanGenerated }
                                 className="w-full p-2 border rounded-md bg-transparent focus:ring-2 focus:ring-primary/50 outline-none"
                                 value={deadline}
                                 onChange={(e) => setDeadline(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
+                                min={format(new Date(), 'yyyy-MM-dd')}
                             />
                             <p className="text-[10px] text-muted-foreground">
                                 Tip: Name your event "Examen {`{Course Name}`}" in Google Calendar.

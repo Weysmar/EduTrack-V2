@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Dumbbell, FileText, FolderOpen, Calendar as CalendarIcon } from 'lucide-react'
+import { format } from 'date-fns'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -17,6 +18,17 @@ interface EditItemModalProps {
     courseId: string
 }
 
+function parseDueDate(val?: string | null): string {
+    if (!val) return ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val
+    try {
+        const d = new Date(val)
+        return isNaN(d.getTime()) ? '' : format(d, 'yyyy-MM-dd')
+    } catch {
+        return ''
+    }
+}
+
 export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModalProps) {
     const { activeProfile } = useProfileStore()
     const [title, setTitle] = useState(item.title)
@@ -24,7 +36,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
     const [status, setStatus] = useState(item.status || 'todo')
     const [difficulty, setDifficulty] = useState(item.difficulty || 'medium')
     const [hasDueDate, setHasDueDate] = useState(!!item.dueDate)
-    const [dueDate, setDueDate] = useState(item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '')
+    const [dueDate, setDueDate] = useState(parseDueDate(item.dueDate))
     const [file, setFile] = useState<File | null>(null)
     const { t, language } = useLanguage()
     const queryClient = useQueryClient()
@@ -37,7 +49,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
             setStatus(item.status || 'todo')
             setDifficulty(item.difficulty || 'medium')
             setHasDueDate(!!item.dueDate)
-            setDueDate(item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '')
+            setDueDate(parseDueDate(item.dueDate))
             setFile(null)
         }
     }, [isOpen, item])
@@ -182,7 +194,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                                             const checked = e.target.checked;
                                             setHasDueDate(checked);
                                             if (checked && !dueDate) {
-                                                setDueDate(new Date().toISOString().split('T')[0]);
+                                                setDueDate(format(new Date(), 'yyyy-MM-dd'));
                                             } else if (!checked) {
                                                 setDueDate('');
                                             }
