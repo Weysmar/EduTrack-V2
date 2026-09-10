@@ -40,8 +40,8 @@ export function StudySession() {
     useEffect(() => {
         if (setInfo && setInfo.flashcards && sessionCards.length === 0) {
             const now = new Date();
-            // Filter due or new. API returns string dates.
-            const due = setInfo.flashcards.filter((c: any) => new Date(c.nextReview) <= now || c.interval === 0)
+            // Filter due or new (cards never reviewed or with nextReview <= now or interval === 0)
+            const due = setInfo.flashcards.filter((c: any) => !c.lastReviewed || new Date(c.nextReview) <= now || c.interval === 0)
                 .sort((a: any, b: any) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime());
             // If none are strictly due (e.g. fresh cards or minor clock skew), load all cards so the user can study immediately
             setSessionCards(due.length > 0 ? due : setInfo.flashcards);
@@ -87,7 +87,7 @@ export function StudySession() {
         setCurrentIndex(prev => prev + 1);
     }, [currentCard, updateProgressMutation]);
 
-    // Keyboard navigation (Space to flip, 1-4 to rate)
+    // Keyboard navigation (Space to flip, 1-4 / AZERTY to rate)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (isFinished || isSetLoading || !currentCard) return;
@@ -101,16 +101,16 @@ export function StudySession() {
                     setIsFlipped(true);
                 }
             } else if (isFlipped) {
-                if (e.key === '1' || e.code === 'Numpad1') {
+                if (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '&') {
                     e.preventDefault();
                     handleRate('again');
-                } else if (e.key === '2' || e.code === 'Numpad2') {
+                } else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2' || e.key === 'é') {
                     e.preventDefault();
                     handleRate('hard');
-                } else if (e.key === '3' || e.code === 'Numpad3') {
+                } else if (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3' || e.key === '"') {
                     e.preventDefault();
                     handleRate('good');
-                } else if (e.key === '4' || e.code === 'Numpad4') {
+                } else if (e.key === '4' || e.code === 'Digit4' || e.code === 'Numpad4' || e.key === "'") {
                     e.preventDefault();
                     handleRate('easy');
                 }

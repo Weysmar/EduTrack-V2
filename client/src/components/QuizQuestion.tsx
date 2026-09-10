@@ -13,14 +13,25 @@ interface QuizQuestionProps {
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOption }: QuizQuestionProps) {
-    // Standardize options order and strip duplicate prefixes (A., B., etc.)
+    // Standardize options order and strip duplicate prefixes (A., B., 1., etc.)
     const optionsList = useMemo(() => {
         if (!question?.options) return []
-        return question.options.map((opt: string, i: number) => ({
-            originalIndex: i,
-            text: opt.replace(/^[A-Z]\.\s+/, '')
-        }))
+        let rawOpts = question.options
+        if (typeof rawOpts === 'string') {
+            try { rawOpts = JSON.parse(rawOpts) } catch { rawOpts = [] }
+        }
+        if (!Array.isArray(rawOpts)) return []
+        return rawOpts.map((opt: any, i: number) => {
+            const rawText = typeof opt === 'string' ? opt : (opt?.text ?? String(opt ?? ''))
+            return {
+                originalIndex: i,
+                text: rawText.replace(/^[A-Za-z0-9][.)]\s*/, '').trim()
+            }
+        })
     }, [question?.id, question?.stem, question?.options])
+
+    const isAnswerCorrect = selectedOption !== null && Number(selectedOption) === Number(question.correctAnswer)
+    const isSkipped = selectedOption === -1
 
     return (
         <div className="w-full max-w-2xl mx-auto">
@@ -48,8 +59,8 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                 {/* Options List */}
                 <div className="space-y-3">
                     {optionsList.map((optionObj: any, index: number) => {
-                        const isSelected = selectedOption === optionObj.originalIndex
-                        const isCorrect = optionObj.originalIndex === question.correctAnswer
+                        const isSelected = selectedOption !== null && Number(selectedOption) === Number(optionObj.originalIndex)
+                        const isCorrect = Number(optionObj.originalIndex) === Number(question.correctAnswer)
                         const letter = LETTERS[index] || `${index + 1}`
 
                         let variant = "default"
@@ -125,19 +136,25 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                     <div className="mt-6 animate-in slide-in-from-top-2 fade-in duration-300">
                         <div className={cn(
                             "p-4 sm:p-5 rounded-xl border flex items-start gap-3.5",
-                            selectedOption === question.correctAnswer
+                            isAnswerCorrect
                                 ? "bg-green-500/10 border-green-500/30 text-green-900 dark:text-green-100"
-                                : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-100"
+                                : isSkipped
+                                    ? "bg-slate-500/10 border-slate-500/30 text-foreground"
+                                    : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-100"
                         )}>
                             <div className="shrink-0 mt-0.5">
-                                {selectedOption === question.correctAnswer
+                                {isAnswerCorrect
                                     ? <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                                     : <HelpCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                                 }
                             </div>
                             <div className="text-sm min-w-0 flex-1">
                                 <p className="font-bold mb-1.5 flex items-center gap-2">
-                                    {selectedOption === question.correctAnswer ? '🎉 Excellente réponse !' : '💡 Explication détaillée'}
+                                    {isAnswerCorrect
+                                        ? '🎉 Excellente réponse !'
+                                        : isSkipped
+                                            ? '⏭️ Question passée - Voici la bonne réponse'
+                                            : '💡 Explication détaillée'}
                                 </p>
                                 <div className="text-foreground/90 leading-relaxed font-normal">
                                     <ReactMarkdown

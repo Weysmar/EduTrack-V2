@@ -34,7 +34,7 @@ export function calculateNextReview(
         nextEaseFactor = Math.max(MIN_EASE, currentEaseFactor - 0.2);
     } else if (grade === 'hard') {
         // Struggle: Interval stays similar (1.2x just to move forward) or flattened
-        nextInterval = Math.max(1, currentInterval * 1.2);
+        nextInterval = Math.round(Math.max(1, currentInterval * 1.2));
         nextEaseFactor = Math.max(MIN_EASE, currentEaseFactor - 0.15);
     } else if (grade === 'good') {
         // Standard progression
@@ -57,7 +57,7 @@ export function calculateNextReview(
     nextReview.setDate(nextReview.getDate() + nextInterval);
 
     return {
-        interval: nextInterval,
+        interval: Math.max(1, Math.round(nextInterval)),
         easeFactor: Number(nextEaseFactor.toFixed(2)),
         nextReview
     };
