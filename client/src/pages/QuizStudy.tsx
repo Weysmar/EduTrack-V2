@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { quizQueries } from '@/lib/api/queries'
@@ -20,6 +20,7 @@ export function QuizStudy() {
     const { id } = useParams()
     const navigate = useNavigate()
     const { minecraftTheme } = useTheme()
+    const scrollContainerRef = useRef<HTMLDivElement>(null)
 
     const [currentIndex, setCurrentIndex] = useState(0)
     const [selectedOption, setSelectedOption] = useState<number | null>(null)
@@ -55,6 +56,9 @@ export function QuizStudy() {
     useEffect(() => {
         setStartTime(Date.now())
         window.scrollTo({ top: 0, behavior: 'smooth' })
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+        }
     }, [currentIndex])
 
     // Load saved question state when moving between questions
@@ -247,7 +251,7 @@ export function QuizStudy() {
 
     if (isLoading || !quiz) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-3">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] bg-background gap-3">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
                 <p className="text-muted-foreground text-sm font-medium">Chargement du QCM...</p>
             </div>
@@ -256,7 +260,7 @@ export function QuizStudy() {
 
     if (questions.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] bg-background p-6">
                 <div className="max-w-md w-full bg-card border rounded-2xl p-8 text-center space-y-6 shadow-md">
                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto text-muted-foreground">
                         <HelpCircle className="w-8 h-8" />
@@ -282,7 +286,7 @@ export function QuizStudy() {
         const totalTime = finalSummary?.totalTime ?? 0
 
         return (
-            <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+            <div className="min-h-full bg-background p-6 flex items-center justify-center">
                 <div className="max-w-2xl w-full bg-card border rounded-2xl shadow-lg p-8 text-center space-y-8 animate-in zoom-in-95 duration-300">
                     <div className="space-y-2">
                         <div className="inline-flex p-4 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 mb-4 shadow-sm">
@@ -349,9 +353,9 @@ export function QuizStudy() {
     }).length
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div ref={scrollContainerRef} className="flex-1 flex flex-col h-full overflow-y-auto bg-background">
             {/* Top Navigation Bar */}
-            <header className="h-16 border-b flex items-center justify-between px-4 sm:px-6 bg-card/60 backdrop-blur-md sticky top-0 z-50">
+            <header className="h-14 border-b flex items-center justify-between px-4 sm:px-6 bg-card/90 backdrop-blur-md sticky top-0 z-30 shrink-0">
                 <button
                     onClick={() => navigate(-1)}
                     className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -365,9 +369,9 @@ export function QuizStudy() {
                         <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Question</span>
                         <span className="font-bold text-sm sm:text-base">{currentIndex + 1} / {questions.length}</span>
                     </div>
-                    <div className="h-8 w-px bg-border" />
+                    <div className="h-7 w-px bg-border" />
                     <div className="flex flex-col items-center">
-                        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Réussite</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wider">Score</span>
                         <span className="font-bold text-primary text-sm sm:text-base">
                             {currentCorrect} / {answeredCount}
                         </span>
@@ -378,7 +382,7 @@ export function QuizStudy() {
             </header>
 
             {/* Continuous Progress Bar */}
-            <div className="h-1.5 bg-secondary/50 w-full overflow-hidden">
+            <div className="h-1.5 bg-secondary/50 w-full overflow-hidden shrink-0">
                 <div
                     className="h-full bg-primary transition-all duration-300 ease-out"
                     style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -386,7 +390,7 @@ export function QuizStudy() {
             </div>
 
             {/* Interactive Question Stepper Bar */}
-            <div className="w-full bg-card/40 border-b px-4 py-2.5 overflow-x-auto flex items-center justify-center gap-1.5 sm:gap-2">
+            <div className="w-full bg-card/60 border-b px-4 py-2 overflow-x-auto flex items-center justify-center gap-1.5 sm:gap-2 shrink-0">
                 {questions.map((q: any, idx: number) => {
                     const ans = answers[idx]
                     const isActive = idx === currentIndex
@@ -401,7 +405,7 @@ export function QuizStudy() {
                             onClick={() => goToQuestion(idx)}
                             className={cn(
                                 "w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center shrink-0 border",
-                                isActive && "ring-2 ring-primary ring-offset-2 scale-110 shadow-sm",
+                                isActive && "ring-2 ring-primary ring-offset-1 scale-105 shadow-sm",
                                 isCorrect && "bg-green-500 text-white border-green-600 dark:bg-green-600",
                                 isWrong && "bg-red-500 text-white border-red-600 dark:bg-red-600",
                                 isSkipped && "bg-muted text-muted-foreground border-border",
@@ -417,9 +421,8 @@ export function QuizStudy() {
             </div>
 
             {/* Main Question Content */}
-            <main className="flex-1 container max-w-3xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-start pt-6 sm:pt-10">
-
-                <div className="w-full mb-8">
+            <main className="flex-1 container max-w-3xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-start pt-4 sm:pt-8">
+                <div className="w-full mb-4">
                     <QuizQuestion
                         question={questions[currentIndex]}
                         selectedOption={selectedOption}
@@ -427,9 +430,11 @@ export function QuizStudy() {
                         onSelectOption={handleSelectOption}
                     />
                 </div>
+            </main>
 
-                {/* Bottom Action Bar */}
-                <div className="w-full max-w-2xl flex items-center justify-between gap-3 pt-2 pb-10">
+            {/* Sticky Bottom Action Dock: ALWAYS VISIBLE & ACCESSIBLE! */}
+            <footer className="sticky bottom-0 z-40 bg-card/95 backdrop-blur-md border-t px-4 sm:px-8 py-3 shadow-lg shrink-0">
+                <div className="container max-w-3xl mx-auto flex items-center justify-between gap-3">
                     {/* Left: Previous button */}
                     <div>
                         {currentIndex > 0 && (
@@ -491,8 +496,7 @@ export function QuizStudy() {
                         )}
                     </div>
                 </div>
-
-            </main>
+            </footer>
         </div>
     )
 }
