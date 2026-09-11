@@ -16,6 +16,7 @@ import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
 import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
+import { exportNoteToPdf } from '@/lib/exportNotePdf'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -239,6 +240,45 @@ export function ItemView() {
 
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
+
+    // Note HD PDF Export
+    const [isExportingNotePdf, setIsExportingNotePdf] = useState(false)
+    const handleExportNotePdf = async () => {
+        if (!item) return
+        setIsExportingNotePdf(true)
+        const toastId = toast.loading(
+            language === 'fr'
+                ? "Génération du PDF Haute Définition..."
+                : "Generating High-Definition PDF..."
+        )
+        try {
+            const noteContent = isEditMode ? editedContent : (item.content || item.extractedContent || '')
+            await exportNoteToPdf({
+                title: item.title || (language === 'fr' ? 'Note de cours' : 'Course note'),
+                content: noteContent,
+                courseTitle: course?.title,
+                courseCode: course?.code,
+                updatedAt: item.updatedAt,
+                language: item.language || language || 'fr'
+            })
+            toast.success(
+                language === 'fr'
+                    ? "PDF téléchargé avec succès !"
+                    : "PDF downloaded successfully!",
+                { id: toastId }
+            )
+        } catch (err: any) {
+            console.error("Failed to export PDF:", err)
+            toast.error(
+                language === 'fr'
+                    ? "Échec de l'exportation du PDF"
+                    : "PDF export failed",
+                { id: toastId, description: err?.message }
+            )
+        } finally {
+            setIsExportingNotePdf(false)
+        }
+    }
 
     // Auto-open summary when loaded
     useEffect(() => {
@@ -728,6 +768,8 @@ export function ItemView() {
                     handleDownload={handleDownload}
                     handleSyncDrive={driveFileId ? handleSyncDrive : undefined}
                     isSyncingDrive={isSyncingDrive}
+                    handleExportNotePdf={handleExportNotePdf}
+                    isExportingNotePdf={isExportingNotePdf}
                     setMobileTab={setMobileTab}
                     setIsFocusMode={setIsFocusMode}
                     isEditMode={!!isEditMode}
@@ -761,6 +803,8 @@ export function ItemView() {
                 hasSummary={!!summary}
                 setShowSummary={setShowSummary}
                 setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
+                handleExportNotePdf={handleExportNotePdf}
+                isExportingNotePdf={isExportingNotePdf}
                 t={t}
             />
             {/* Main Content Area */}

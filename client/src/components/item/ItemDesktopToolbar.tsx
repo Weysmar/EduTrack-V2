@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -14,6 +14,8 @@ interface ItemDesktopToolbarProps {
     handleDownload?: () => void;
     handleSyncDrive?: () => void;
     isSyncingDrive?: boolean;
+    handleExportNotePdf?: () => void;
+    isExportingNotePdf?: boolean;
     setMobileTab: (tab: 'pdf' | 'summary') => void;
     setIsFocusMode: (val: boolean) => void;
     isEditMode: boolean;
@@ -35,7 +37,7 @@ interface ItemDesktopToolbarProps {
 
 export function ItemDesktopToolbar({
     item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl, handleDownload,
-    handleSyncDrive, isSyncingDrive,
+    handleSyncDrive, isSyncingDrive, handleExportNotePdf, isExportingNotePdf,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
     hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
@@ -49,6 +51,26 @@ export function ItemDesktopToolbar({
                         text={item.content || item.extractedContent || ''}
                         lang={item.language || (course?.language === 'en' ? 'en-US' : (course?.language === 'fr' ? 'fr-FR' : 'fr-FR'))}
                     />
+                    <div className="h-4 w-px bg-border mx-0.5" />
+                </div>
+            )}
+
+            {/* Note HD PDF Export */}
+            {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && handleExportNotePdf && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                        onClick={handleExportNotePdf}
+                        disabled={isExportingNotePdf}
+                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
+                        title={t('item.exportPdf') || "Exporter en PDF Haute Définition (A4)"}
+                    >
+                        {isExportingNotePdf ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        ) : (
+                            <FileDown className="h-4 w-4 text-primary" />
+                        )}
+                        <span className="hidden xl:inline">Export PDF (HD)</span>
+                    </button>
                     <div className="h-4 w-px bg-border mx-0.5" />
                 </div>
             )}

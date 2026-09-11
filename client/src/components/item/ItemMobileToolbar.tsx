@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Check, Pencil, Edit, Loader2, Sparkles, Trash2, Layers, CheckSquare, BrainCircuit, FileText, Sliders } from 'lucide-react';
+import { Check, Pencil, Edit, Loader2, Sparkles, Trash2, Layers, CheckSquare, BrainCircuit, FileText, Sliders, FileDown } from 'lucide-react';
 
 interface ItemMobileToolbarProps {
     itemType: string;
@@ -14,6 +14,8 @@ interface ItemMobileToolbarProps {
     hasSummary: boolean;
     setShowSummary: (val: boolean) => void;
     setIsSummaryOptionsOpen: (val: boolean) => void;
+    handleExportNotePdf?: () => void;
+    isExportingNotePdf?: boolean;
     t: any;
 }
 
@@ -30,6 +32,8 @@ export function ItemMobileToolbar({
     hasSummary,
     setShowSummary,
     setIsSummaryOptionsOpen,
+    handleExportNotePdf,
+    isExportingNotePdf,
     t
 }: ItemMobileToolbarProps) {
     return (
@@ -53,6 +57,23 @@ export function ItemMobileToolbar({
                         >
                             <Edit className="h-6 w-6" />
                             <span className="text-[10px] font-medium">Éditer</span>
+                        </button>
+                    )}
+
+                    {/* 2. HD PDF Export (for notes) */}
+                    {itemType === 'note' && handleExportNotePdf && (
+                        <button
+                            onClick={handleExportNotePdf}
+                            disabled={isExportingNotePdf}
+                            className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation disabled:opacity-50"
+                            title="Exporter en PDF Haute Définition"
+                        >
+                            {isExportingNotePdf ? (
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            ) : (
+                                <FileDown className="h-6 w-6 text-primary" />
+                            )}
+                            <span className="text-[10px] font-medium">PDF HD</span>
                         </button>
                     )}
 

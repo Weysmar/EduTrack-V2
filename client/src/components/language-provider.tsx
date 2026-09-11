@@ -1732,12 +1732,6 @@ const translations: Translations = {
         "folder.create.error": "Erreur lors de la création du dossier",
         "folder.delete.success": "Dossier supprimé avec succès",
         "folder.delete.error": "Erreur lors de la suppression du dossier",
-        "item.form.submit.note": "Créer la note",
-        "item.form.submit.exercise": "Créer l'exercice",
-        "item.form.submit.resource": "Ajouter la ressource",
-        "item.form.submit.quiz": "Créer le quiz",
-        "item.form.submit.flashcards": "Créer les flashcards",
-        "item.form.submit.summary": "Créer la fiche",
         "export.title": "Exporter en PDF",
         "summary.viewOriginal": "Voir l'original",
         "exercise.error.noContent": "Aucun contenu disponible pour la génération. Veuillez vous assurer que le document contient du texte.",
@@ -2376,8 +2370,6 @@ const translations: Translations = {
         "finance.status.unknown": "Unknown Block",
         "finance.status.payment": "Trade",
         "finance.status.transfer": "Inventory Moving",
-        "editor.insertImage": "Insérer une image (ou glisser-déposer / Ctrl+V)",
-        "editor.insertMath": "Insérer une formule mathématique ($$...$$)",
     },
 }
 

@@ -9,8 +9,12 @@ import Highlight from '@tiptap/extension-highlight'
 import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
     Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
-    Image as ImageIcon, Sigma, Type, ChevronDown, Check
+    Image as ImageIcon, Sigma, Type, ChevronDown, Check, Table as TableIcon, Trash2
 } from 'lucide-react'
+import Table from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableHeader from '@tiptap/extension-table-header'
+import TableCell from '@tiptap/extension-table-cell'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useTheme } from '@/components/theme-provider'
@@ -85,21 +89,35 @@ export function Editor({ content, onChange, editable = true, className }: Editor
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontPicker, setShowFontPicker] = useState(false)
+    const [showTablePicker, setShowTablePicker] = useState(false)
+    const [, setSelectionCount] = useState(0)
+
     const fileInputRef = useRef<HTMLInputElement>(null)
     const fontPickerRef = useRef<HTMLDivElement>(null)
+    const colorPickerRef = useRef<HTMLDivElement>(null)
+    const highlightPickerRef = useRef<HTMLDivElement>(null)
+    const tablePickerRef = useRef<HTMLDivElement>(null)
 
-    // Close font picker on outside click
+    // Close all popover pickers on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (fontPickerRef.current && !fontPickerRef.current.contains(e.target as Node)) {
+            const target = e.target as Node
+            if (fontPickerRef.current && !fontPickerRef.current.contains(target)) {
                 setShowFontPicker(false)
             }
+            if (colorPickerRef.current && !colorPickerRef.current.contains(target)) {
+                setShowColorPicker(false)
+            }
+            if (highlightPickerRef.current && !highlightPickerRef.current.contains(target)) {
+                setShowHighlightPicker(false)
+            }
+            if (tablePickerRef.current && !tablePickerRef.current.contains(target)) {
+                setShowTablePicker(false)
+            }
         }
-        if (showFontPicker) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
+        document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [showFontPicker])
+    }, [])
 
     // Determine dictation language based on app language
     const dictationLang = language === 'fr' ? 'fr-FR' : 'en-US';
@@ -164,7 +182,14 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                 multicolor: true
             }),
             CustomImage,
-            MathematicsExtension
+            MathematicsExtension,
+            Table.configure({
+                resizable: true,
+                renderWrapper: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
         ],
         content,
         editable,
@@ -266,6 +291,16 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             editor.setEditable(editable)
         }
     }, [editable, editor])
+
+    // Re-render toolbar when selection moves (e.g., entering/leaving a table)
+    useEffect(() => {
+        if (!editor) return
+        const onSelection = () => setSelectionCount(c => c + 1)
+        editor.on('selectionUpdate', onSelection)
+        return () => {
+            editor.off('selectionUpdate', onSelection)
+        }
+    }, [editor])
 
     if (!editor) return null
 
@@ -471,7 +506,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
                     {/* Color & Highlight */}
-                    <div className="relative">
+                    <div className="relative" ref={colorPickerRef}>
                         <button
                             onClick={() => setShowColorPicker(!showColorPicker)}
                             className={cn(
@@ -500,7 +535,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                             </div>
                         )}
                     </div>
-                    <div className="relative">
+                    <div className="relative" ref={highlightPickerRef}>
                         <button
                             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
                             className={cn(
@@ -633,6 +668,54 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         <Sigma className="h-4 w-4" />
                     </button>
 
+                    {/* Insert Table Button */}
+                    <div className="relative" ref={tablePickerRef}>
+                        <button
+                            onClick={() => setShowTablePicker(!showTablePicker)}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors relative",
+                                (showTablePicker || editor.isActive('table')) && "bg-muted text-primary font-medium",
+                                mcBtn
+                            )}
+                            type="button"
+                            title={language === 'fr' ? "Insérer un tableau interactif" : "Insert interactive table"}
+                        >
+                            <TableIcon className="h-4 w-4" />
+                        </button>
+                        {showTablePicker && (
+                            <div className="absolute top-full left-0 mt-1.5 w-52 bg-popover text-popover-foreground border rounded-xl shadow-xl p-2.5 z-30 animate-in fade-in zoom-in-95">
+                                <div className="text-[11px] font-semibold text-foreground mb-2 flex items-center justify-between">
+                                    <span>{language === 'fr' ? 'Insérer un tableau' : 'Insert table'}</span>
+                                    <span className="text-[10px] text-muted-foreground font-normal">{language === 'fr' ? 'Grille' : 'Grid'}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                                    {[
+                                        { r: 2, c: 2, label: '2 × 2' },
+                                        { r: 3, c: 3, label: '3 × 3' },
+                                        { r: 4, c: 3, label: '4 × 3' },
+                                        { r: 5, c: 4, label: '5 × 4' },
+                                    ].map(({ r, c, label }) => (
+                                        <button
+                                            key={label}
+                                            type="button"
+                                            onClick={() => {
+                                                editor.chain().focus().insertTable({ rows: r, cols: c, withHeaderRow: true }).run()
+                                                setShowTablePicker(false)
+                                            }}
+                                            className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-border/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary text-xs font-medium transition-all cursor-pointer"
+                                        >
+                                            <TableIcon className="h-3 w-3 opacity-60" />
+                                            <span>{label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground border-t pt-1.5 text-center">
+                                    {language === 'fr' ? 'Colonnes redimensionnables' : 'Resizable columns'}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Speech to Text Button */}
                     {isSupported && (
                         <>
@@ -657,6 +740,100 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                             </button>
                         </>
                     )}
+                </div>
+            )}
+
+            {/* Contextual Table Toolbar (Active when cursor is inside a table) */}
+            {editable && editor.isActive('table') && (
+                <div className={cn(
+                    "px-3 py-1.5 bg-muted/40 border-b flex flex-wrap items-center gap-1 text-xs select-none animate-in fade-in duration-150",
+                    isMinecraft && "bg-[#dfd0b5] border-b-2 border-[#c8b393] text-[#2c1d11] dark:bg-stone-800 dark:border-stone-600 dark:text-stone-300"
+                )}>
+                    <span className="text-muted-foreground font-semibold flex items-center gap-1 mr-1 text-[11px]">
+                        <TableIcon className="h-3.5 w-3.5 text-primary" />
+                        <span>{language === 'fr' ? 'Tableau :' : 'Table:'}</span>
+                    </span>
+
+                    {/* Row controls */}
+                    <div className="flex items-center gap-0.5 bg-background/80 dark:bg-card/80 p-0.5 rounded-md border shadow-2xs">
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().addRowBefore().run()}
+                            className="px-1.5 py-0.5 hover:bg-muted rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Insérer une ligne au-dessus" : "Insert row above"}
+                        >
+                            + Ligne ↑
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().addRowAfter().run()}
+                            className="px-1.5 py-0.5 hover:bg-muted rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Insérer une ligne en-dessous" : "Insert row below"}
+                        >
+                            + Ligne ↓
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().deleteRow().run()}
+                            className="px-1.5 py-0.5 hover:bg-destructive/10 text-destructive rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Supprimer la ligne courante" : "Delete current row"}
+                        >
+                            - Ligne
+                        </button>
+                    </div>
+
+                    <div className="w-px h-3.5 bg-border mx-1" />
+
+                    {/* Column controls */}
+                    <div className="flex items-center gap-0.5 bg-background/80 dark:bg-card/80 p-0.5 rounded-md border shadow-2xs">
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().addColumnBefore().run()}
+                            className="px-1.5 py-0.5 hover:bg-muted rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Insérer une colonne à gauche" : "Insert column left"}
+                        >
+                            + Col ←
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().addColumnAfter().run()}
+                            className="px-1.5 py-0.5 hover:bg-muted rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Insérer une colonne à droite" : "Insert column right"}
+                        >
+                            + Col →
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => editor.chain().focus().deleteColumn().run()}
+                            className="px-1.5 py-0.5 hover:bg-destructive/10 text-destructive rounded text-[11px] font-medium transition-colors"
+                            title={language === 'fr' ? "Supprimer la colonne courante" : "Delete current column"}
+                        >
+                            - Col
+                        </button>
+                    </div>
+
+                    <div className="w-px h-3.5 bg-border mx-1" />
+
+                    {/* Header toggle */}
+                    <button
+                        type="button"
+                        onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+                        className="px-2 py-0.5 bg-background/80 dark:bg-card/80 hover:bg-muted rounded border shadow-2xs text-[11px] font-medium transition-colors"
+                        title={language === 'fr' ? "Activer/désactiver la ligne d'en-tête" : "Toggle header row"}
+                    >
+                        {language === 'fr' ? "Ligne d'en-tête" : "Header row"}
+                    </button>
+
+                    {/* Delete entire table */}
+                    <button
+                        type="button"
+                        onClick={() => editor.chain().focus().deleteTable().run()}
+                        className="ml-auto px-2 py-0.5 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded border border-destructive/20 text-[11px] font-medium transition-colors flex items-center gap-1"
+                        title={language === 'fr' ? "Supprimer l'intégralité du tableau" : "Delete table"}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                        <span>{language === 'fr' ? "Supprimer" : "Delete"}</span>
+                    </button>
                 </div>
             )}
             <EditorContent editor={editor} className="min-h-[150px]" />
