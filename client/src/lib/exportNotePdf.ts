@@ -244,7 +244,7 @@ export async function exportNoteToPdf({
 
     try {
         const opt = {
-            margin: [10, 10, 12, 10], // top, left, bottom, right in mm
+            margin: [10, 10, 12, 10] as [number, number, number, number], // top, left, bottom, right in mm
             filename: fileName,
             image: { type: 'jpeg' as const, quality: 0.98 },
             html2canvas: {
