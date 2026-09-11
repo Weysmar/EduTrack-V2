@@ -18,6 +18,7 @@ import { courseQueries, studyPlanQueries, itemQueries } from '@/lib/api/queries'
 import { saveCourseForOffline, removeCourseFromOffline, isCourseSavedOffline } from '@/lib/offlineManager'
 import { API_URL } from '@/config'
 import { extractText } from '@/lib/extractText'
+import { cn } from '@/lib/utils'
 
 // New Hooks & Components
 import { useCourseContent } from '@/hooks/useCourseContent'
