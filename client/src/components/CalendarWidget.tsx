@@ -28,6 +28,7 @@ import { studyPlanQueries, courseQueries } from '@/lib/api/queries'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { CreateTaskModal } from '@/components/CreateTaskModal'
 import { EditCalendarModal } from '@/components/EditCalendarModal'
+import { EventDetailModal } from '@/components/EventDetailModal'
 
 export const TASK_TYPES = [
     { id: 'exam', label: 'Examen / Partiel', labelEn: 'Exam', icon: '🎓', color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30' },
@@ -164,6 +165,8 @@ export function CalendarWidget() {
     const [selectedModalTime, setSelectedModalTime] = useState<string | null>(null)
     const [showGoogleTip, setShowGoogleTip] = useState(true)
     const [editingCalendarFeed, setEditingCalendarFeed] = useState<ICalFeed | null>(null)
+    const [selectedDetailEvent, setSelectedDetailEvent] = useState<ICalEvent | null>(null)
+    const [selectedDetailTask, setSelectedDetailTask] = useState<any | null>(null)
 
     const gridContainerRef = useRef<HTMLDivElement>(null)
 
@@ -887,8 +890,12 @@ export function CalendarWidget() {
                                         return (
                                             <div
                                                 key={`allday-event-${event.id}-${day.toISOString()}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDetailEvent(event);
+                                                }}
                                                 className={cn(
-                                                    "px-1.5 py-0.5 rounded border text-[11px] font-medium truncate flex items-center gap-1 shadow-2xs",
+                                                    "px-1.5 py-0.5 rounded border text-[11px] font-medium truncate flex items-center gap-1 shadow-2xs cursor-pointer hover:opacity-85 transition-opacity",
                                                     isMulti && !isFirstDay && "rounded-l-none border-l-0",
                                                     isMulti && !isLastDay && "rounded-r-none border-r-0"
                                                 )}
@@ -914,8 +921,12 @@ export function CalendarWidget() {
                                         return (
                                             <div
                                                 key={`allday-task-${task.id}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDetailTask(task);
+                                                }}
                                                 className={cn(
-                                                    "px-1.5 py-0.5 rounded border text-[11px] flex items-center justify-between gap-1 group shadow-2xs transition-all",
+                                                    "px-1.5 py-0.5 rounded border text-[11px] flex items-center justify-between gap-1 group shadow-2xs transition-all cursor-pointer hover:opacity-90",
                                                     task.isCompleted
                                                         ? "bg-muted/40 border-muted text-muted-foreground line-through opacity-70"
                                                         : "bg-card border-purple-500/30 hover:border-purple-500/60"
@@ -927,17 +938,23 @@ export function CalendarWidget() {
                                                 title={task.description}
                                             >
                                                 <button
-                                                    onClick={() => toggleTaskMutation.mutate({
-                                                        taskId: task.id,
-                                                        isCompleted: !task.isCompleted
-                                                    })}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleTaskMutation.mutate({
+                                                            taskId: task.id,
+                                                            isCompleted: !task.isCompleted
+                                                        });
+                                                    }}
                                                     className="shrink-0 text-purple-600 dark:text-purple-400"
                                                 >
                                                     {task.isCompleted ? <CheckSquare className="h-3 w-3 text-emerald-500" /> : <Square className="h-3 w-3" />}
                                                 </button>
                                                 <span className="truncate flex-1 font-medium">{task.description}</span>
                                                 <button
-                                                    onClick={() => deleteTaskMutation.mutate(task.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteTaskMutation.mutate(task.id);
+                                                    }}
                                                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 p-0.5 shrink-0 transition-opacity"
                                                     title={language === 'fr' ? "Supprimer" : "Delete"}
                                                 >
@@ -1106,6 +1123,10 @@ export function CalendarWidget() {
                                             return (
                                                 <div
                                                     key={item.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedDetailEvent(event);
+                                                    }}
                                                     className="absolute rounded-lg p-1.5 text-xs shadow-xs transition-all hover:z-30 hover:shadow-md cursor-pointer overflow-hidden border flex flex-col justify-between"
                                                     style={{
                                                         top: `${topPx}px`,
@@ -1163,8 +1184,12 @@ export function CalendarWidget() {
                                         return (
                                             <div
                                                 key={item.id}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDetailTask(task);
+                                                }}
                                                 className={cn(
-                                                    "absolute rounded-lg p-1.5 text-xs shadow-xs transition-all hover:z-30 hover:shadow-md overflow-hidden border group flex flex-col justify-between",
+                                                    "absolute rounded-lg p-1.5 text-xs shadow-xs transition-all hover:z-30 hover:shadow-md overflow-hidden border group flex flex-col justify-between cursor-pointer",
                                                     task.isCompleted
                                                         ? "bg-muted/40 border-muted text-muted-foreground line-through opacity-70"
                                                         : task.type === 'exam'
@@ -1290,6 +1315,27 @@ export function CalendarWidget() {
                 isOpen={!!editingCalendarFeed}
                 onClose={() => setEditingCalendarFeed(null)}
                 feed={editingCalendarFeed}
+            />
+
+            {/* Event & Task Detail Modal on Click */}
+            <EventDetailModal
+                isOpen={!!selectedDetailEvent || !!selectedDetailTask}
+                onClose={() => {
+                    setSelectedDetailEvent(null);
+                    setSelectedDetailTask(null);
+                }}
+                event={selectedDetailEvent}
+                task={selectedDetailTask}
+                onToggleTask={(taskId, isCompleted) => {
+                    toggleTaskMutation.mutate({ taskId, isCompleted });
+                    if (selectedDetailTask && selectedDetailTask.id === taskId) {
+                        setSelectedDetailTask({ ...selectedDetailTask, isCompleted });
+                    }
+                }}
+                onDeleteTask={(taskId) => {
+                    deleteTaskMutation.mutate(taskId);
+                    setSelectedDetailTask(null);
+                }}
             />
         </div>
     )
