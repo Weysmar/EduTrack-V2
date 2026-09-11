@@ -27,6 +27,10 @@ export function useCourseFilters(items: any[]) {
         })
     }, [])
 
+    const setFilter = useCallback((filter: FilterTab) => {
+        setActiveFilters([filter])
+    }, [])
+
     const filteredItems = useMemo(() => {
         const query = (searchQuery || '').trim().toLowerCase()
         let result = items.filter((item: any) => {
@@ -89,6 +93,8 @@ export function useCourseFilters(items: any[]) {
     return {
         activeFilters,
         toggleFilter,
+        setFilter,
+        setActiveFilters,
         searchQuery,
         setSearchQuery,
         sortOption,

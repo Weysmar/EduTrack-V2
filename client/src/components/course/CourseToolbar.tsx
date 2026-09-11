@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils'
 import { LayoutGrid, List, CheckSquare, Image as ImageIcon } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
-import { SortOption } from '@/hooks/useCourseFilters'
+import { SortOption, FilterTab } from '@/hooks/useCourseFilters'
 
 interface CourseToolbarProps {
+    activeFilters: FilterTab[];
+    onFilterChange: (tab: FilterTab) => void;
     sortOption: SortOption;
     onSortChange: (option: SortOption) => void;
     viewMode: 'grid' | 'list';
@@ -18,6 +20,8 @@ interface CourseToolbarProps {
 }
 
 export function CourseToolbar({
+    activeFilters,
+    onFilterChange,
     sortOption,
     onSortChange,
     viewMode,
@@ -34,8 +38,32 @@ export function CourseToolbar({
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 sm:p-4 bg-muted/20 border rounded-xl">
-            {/* Left: Sorting & Global Selection */}
+            {/* Left: Type Filter, Sorting & Global Selection */}
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                {/* 1. Document Type Dropdown Filter */}
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
+                        {t('filter.type') || 'TYPE'}:
+                    </span>
+                    <select
+                        value={activeFilters.includes('all') ? 'all' : (activeFilters[0] || 'all')}
+                        onChange={(e) => onFilterChange(e.target.value as FilterTab)}
+                        className="bg-transparent text-xs sm:text-sm font-semibold border-none focus:ring-0 cursor-pointer text-foreground p-0 [&>option]:bg-background [&>option]:text-foreground"
+                    >
+                        <option value="all">Tout</option>
+                        <option value="resource">Ressources</option>
+                        <option value="exercise">Exercices</option>
+                        <option value="note">Notes</option>
+                        <option value="flashcards">Flashcards</option>
+                        <option value="quiz">Quiz / QCM</option>
+                        <option value="mindmap">Cartes Mentales</option>
+                        <option value="summary">Résumés</option>
+                    </select>
+                </div>
+
+                <div className="h-4 w-px bg-border hidden sm:block"></div>
+
+                {/* 2. Sorting Dropdown */}
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground whitespace-nowrap">
                         {t('sort.label') || 'TRIER PAR'}:
@@ -50,7 +78,10 @@ export function CourseToolbar({
                         <option value="last_opened">{t('sort.lastOpened') || 'Dernier accès'}</option>
                     </select>
                 </div>
+
                 <div className="h-4 w-px bg-border hidden sm:block"></div>
+
+                {/* 3. Global Selection */}
                 <button
                     onClick={onSelectAll}
                     className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors"

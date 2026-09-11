@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils'
 // New Hooks & Components
 import { useCourseContent } from '@/hooks/useCourseContent'
 import { useCourseFilters } from '@/hooks/useCourseFilters'
-import { CourseFilters } from '@/components/course/CourseFilters'
 import { CourseToolbar } from '@/components/course/CourseToolbar'
 import { CourseContent } from '@/components/course/CourseContent'
 import { CourseTasksModal } from '@/components/course/CourseTasksModal'
@@ -73,7 +72,7 @@ export function CourseView() {
     const activeCourseItems = allVisibleItems.length > 0 ? allVisibleItems : (allItems || [])
 
     const {
-        activeFilters, toggleFilter,
+        activeFilters, toggleFilter, setFilter,
         filteredItems,
         sortOption, setSortOption,
         selectedItems, toggleSelection, clearSelection, handleSelectAll
@@ -344,7 +343,7 @@ export function CourseView() {
                     </button>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-3">
                     <div className="min-w-0">
                         <h1 className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 truncate">
                             {course.icon ? (
@@ -354,9 +353,12 @@ export function CourseView() {
                             )}
                             <span className="truncate">{course.title}</span>
                         </h1>
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-1">{course.description}</p>
+                        {course.description && (
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
+                        )}
                     </div>
-                    <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                    {/* Action buttons directly below title and description */}
+                    <div className="flex items-center gap-2 flex-wrap pt-1">
                         <button
                             onClick={() => setIsTasksModalOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md text-xs sm:text-sm font-medium transition-all active:scale-95 shadow-xs border border-border"
@@ -399,28 +401,36 @@ export function CourseView() {
                             <Plus className="h-4 w-4" />
                             <span className="whitespace-nowrap">{t('course.addContent')}</span>
                         </button>
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                onClick={() => setIsTrashModalOpen(true)}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs font-medium"
-                                title="Corbeille (restaurer des documents)"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="hidden sm:inline">Corbeille</span>
-                            </button>
-                            <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
-                                <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
-                            </button>
-                            <button onClick={handleDelete} className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors" title={t('common.delete')}>
-                                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setIsTrashModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs sm:text-sm font-medium"
+                            title="Corbeille (restaurer des documents)"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span>Corbeille</span>
+                        </button>
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs sm:text-sm font-medium"
+                            title={t('course.edit')}
+                        >
+                            <Pencil className="h-4 w-4" />
+                            <span>{t('course.edit') || 'Modifier'}</span>
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="flex items-center gap-1.5 px-3 py-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors border border-destructive/20 text-xs sm:text-sm font-medium"
+                            title={t('common.delete')}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span>{t('common.delete') || 'Supprimer'}</span>
+                        </button>
                     </div>
                 </div>
 
-                <CourseFilters activeFilters={activeFilters} onToggle={toggleFilter} />
-
                 <CourseToolbar
+                    activeFilters={activeFilters}
+                    onFilterChange={setFilter}
                     sortOption={sortOption}
                     onSortChange={setSortOption}
                     viewMode={viewMode}
