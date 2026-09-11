@@ -373,8 +373,8 @@ export function Dashboard() {
             <div className="space-y-6">
 
                 {/* CALENDAR (Moved up as requested) */}
-                <div className="w-full">
-                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full">
+                <div className="w-full min-w-0 max-w-full overflow-hidden">
+                    <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-full min-w-0 max-w-full">
                         <CalendarWidget />
                     </div>
                 </div>

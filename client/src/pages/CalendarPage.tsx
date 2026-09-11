@@ -15,18 +15,18 @@ export function CalendarPage() {
 
     return (
         <div className="h-full flex flex-col space-y-6">
-            <header className="flex items-center justify-between">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
                     <Calendar className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
                     <span>{language === 'fr' ? 'Mon Agenda' : 'My Calendar'}</span>
                 </h1>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-start sm:self-auto">
                     <GoogleConnectButton />
                 </div>
             </header>
 
-            <div className="flex-1 bg-card border rounded-xl shadow-sm overflow-hidden h-full min-h-[600px]">
-                <div className="h-full w-full">
+            <div className="flex-1 bg-card border rounded-xl shadow-sm overflow-hidden h-full min-h-[600px] min-w-0 max-w-full">
+                <div className="h-full w-full min-w-0 max-w-full">
                     <CalendarWidget />
                 </div>
             </div>

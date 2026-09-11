@@ -143,6 +143,7 @@ export function CalendarWidget() {
     const [error, setError] = useState<string | null>(null)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+    const [mobileDaysCount, setMobileDaysCount] = useState<1 | 3>(() => typeof window !== 'undefined' && window.innerWidth < 450 ? 1 : 3)
 
     // Display options popover state
     const [isDisplaySettingsOpen, setIsDisplaySettingsOpen] = useState(false)
@@ -279,7 +280,7 @@ export function CalendarWidget() {
         ? (() => {
             const startDay = new Date(currentDate)
             startDay.setHours(0, 0, 0, 0)
-            return eachDayOfInterval({ start: startDay, end: addDays(startDay, 2) })
+            return eachDayOfInterval({ start: startDay, end: addDays(startDay, mobileDaysCount - 1) })
         })()
         : allDays
 
@@ -383,7 +384,11 @@ export function CalendarWidget() {
                 <div className="flex items-center gap-2">
                     <h3 className="font-bold text-base md:text-lg capitalize">
                         <span className="hidden sm:inline">{format(weekStart, 'd MMM', { locale })} - {format(weekEnd, 'd MMM yyyy', { locale })}</span>
-                        <span className="sm:hidden">{format(currentDate, 'd MMM yyyy', { locale })}</span>
+                        <span className="sm:hidden">
+                            {mobileDaysCount === 1
+                                ? format(currentDate, 'EEEE d MMM yyyy', { locale })
+                                : `${format(days[0], 'd MMM', { locale })} - ${format(days[days.length - 1], 'd MMM yyyy', { locale })}`}
+                        </span>
                     </h3>
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
@@ -601,6 +606,30 @@ export function CalendarWidget() {
 
                     <div className="h-4 w-px bg-border mx-0.5 hidden sm:block" />
 
+                    {/* Mobile 1j / 3j view toggle */}
+                    <div className="flex sm:hidden items-center rounded-md border border-border bg-background p-0.5 shadow-2xs text-xs font-medium mr-0.5">
+                        <button
+                            type="button"
+                            onClick={() => setMobileDaysCount(1)}
+                            className={cn(
+                                "px-2 py-0.5 rounded text-[11px] font-semibold transition-colors",
+                                mobileDaysCount === 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            1j
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileDaysCount(3)}
+                            className={cn(
+                                "px-2 py-0.5 rounded text-[11px] font-semibold transition-colors",
+                                mobileDaysCount === 3 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            3j
+                        </button>
+                    </div>
+
                     {/* Refresh button */}
                     <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
@@ -608,9 +637,9 @@ export function CalendarWidget() {
 
                     {/* Navigation buttons */}
                     <button
-                        onClick={() => setCurrentDate(isMobile ? subDays(currentDate, 3) : subWeeks(currentDate, 1))}
+                        onClick={() => setCurrentDate(isMobile ? subDays(currentDate, mobileDaysCount) : subWeeks(currentDate, 1))}
                         className="p-1.5 hover:bg-muted rounded"
-                        aria-label={isMobile ? "3 jours précédents" : "Semaine précédente"}
+                        aria-label={isMobile ? `${mobileDaysCount} jour(s) précédent(s)` : "Semaine précédente"}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -618,9 +647,9 @@ export function CalendarWidget() {
                         {t('calendar.today') || 'Auj.'}
                     </button>
                     <button
-                        onClick={() => setCurrentDate(isMobile ? addDays(currentDate, 3) : addWeeks(currentDate, 1))}
+                        onClick={() => setCurrentDate(isMobile ? addDays(currentDate, mobileDaysCount) : addWeeks(currentDate, 1))}
                         className="p-1.5 hover:bg-muted rounded"
-                        aria-label={isMobile ? "3 jours suivants" : "Semaine suivante"}
+                        aria-label={isMobile ? `${mobileDaysCount} jour(s) suivant(s)` : "Semaine suivante"}
                     >
                         <ChevronRight className="h-4 w-4" />
                     </button>
@@ -677,25 +706,27 @@ export function CalendarWidget() {
 
             {/* Notification if no external calendar is linked */}
             {!hasAnyFeed && (
-                <div className="bg-primary/5 border-b border-primary/10 px-4 py-2 text-xs flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="bg-primary/5 border-b border-primary/10 px-3 sm:px-4 py-2 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-muted-foreground min-w-0">
                         <CalendarIcon className="h-4 w-4 text-primary shrink-0" />
-                        <span>
+                        <span className="break-words">
                             {language === 'fr'
                                 ? "Aucun agenda externe connecté : seules vos tâches EduTrack sont affichées."
                                 : "No external calendar connected: only your EduTrack tasks are shown."}
                         </span>
                     </div>
-                    <GoogleConnectButton />
+                    <div className="shrink-0 self-start sm:self-auto">
+                        <GoogleConnectButton variant="compact" />
+                    </div>
                 </div>
             )}
 
             {/* Hint about Google Tasks vs Events */}
             {hasAnyFeed && showGoogleTip && (
-                <div className="bg-muted/20 border-b px-4 py-2 text-xs flex items-center justify-between gap-2 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                        <span className="text-primary font-bold">💡</span>
-                        <span>
+                <div className="bg-muted/20 border-b px-3 sm:px-4 py-2 text-xs flex items-center justify-between gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-primary font-bold shrink-0">💡</span>
+                        <span className="break-words">
                             {language === 'fr' ? (
                                 <>
                                     <strong>Astuce synchronisation :</strong> La synchronisation est <strong>100% en lecture seule</strong>. Aucun événement ne sera jamais envoyé ni modifié sur vos agendas distants (promo ou école).
@@ -709,7 +740,7 @@ export function CalendarWidget() {
                     </div>
                     <button
                         onClick={() => setShowGoogleTip(false)}
-                        className="text-muted-foreground hover:text-foreground p-0.5 rounded"
+                        className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0"
                         title={language === 'fr' ? "Masquer cette astuce" : "Dismiss tip"}
                     >
                         <X className="h-3.5 w-3.5" />
@@ -738,7 +769,7 @@ export function CalendarWidget() {
                 {/* 1. Day Titles Header */}
                 <div className="flex border-b border-border/40">
                     {/* Time Gutter Header spacer */}
-                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 flex items-center justify-center p-2 text-[10px] text-muted-foreground font-mono">
+                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 flex items-center justify-center p-1 sm:p-2 text-[10px] text-muted-foreground font-mono">
                         <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
                     </div>
 
@@ -750,7 +781,7 @@ export function CalendarWidget() {
                                 <div
                                     key={`header-${day.toISOString()}`}
                                     className={cn(
-                                        "p-2 text-center border-r border-border/30 last:border-r-0 flex items-center justify-between gap-1 transition-colors",
+                                        "p-1.5 sm:p-2 text-center border-r border-border/30 last:border-r-0 flex items-center justify-between gap-1 transition-colors",
                                         today ? "bg-primary/5" : "bg-card"
                                     )}
                                 >
@@ -759,7 +790,7 @@ export function CalendarWidget() {
                                             {format(day, 'EEE', { locale })}
                                         </div>
                                         <div className="text-[11px] font-semibold text-muted-foreground uppercase truncate sm:hidden">
-                                            {format(day, 'EEEEE', { locale })}
+                                            {format(day, mobileDaysCount === 1 ? 'EEEE' : 'EEEEE', { locale })}
                                         </div>
                                         <div className={cn(
                                             "text-xs sm:text-sm font-bold w-6 h-6 sm:w-7 sm:h-7 mx-auto flex items-center justify-center rounded-full mt-0.5 transition-transform",
@@ -789,7 +820,7 @@ export function CalendarWidget() {
                 {/* 2. All-Day / Untimed Section */}
                 <div className="flex min-h-[38px] max-h-[120px] overflow-y-auto border-b border-border/60 bg-muted/15">
                     {/* Time Gutter Label */}
-                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 p-1 flex items-center justify-center text-[10px] font-medium text-muted-foreground uppercase text-center leading-tight">
+                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 p-1 flex items-center justify-center text-[10px] font-medium text-muted-foreground uppercase text-center leading-tight">
                         <span className="hidden sm:inline">{language === 'fr' ? 'Journée' : 'All day'}</span>
                         <span className="sm:hidden">24h</span>
                     </div>
@@ -929,19 +960,19 @@ export function CalendarWidget() {
             {/* 3. Main Scrollable Vertical Time Grid */}
             <div
                 ref={gridContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-auto relative select-none"
+                className="flex-1 overflow-y-auto overflow-x-hidden sm:overflow-x-auto relative select-none"
                 style={{ height: 'calc(100% - 130px)' }}
             >
-                <div className="flex min-w-[650px] relative" style={{ height: `${displayedHours.length * hourHeight}px` }}>
+                <div className="flex w-full min-w-full sm:min-w-[650px] relative" style={{ height: `${displayedHours.length * hourHeight}px` }}>
                     {/* Time Gutter Column */}
-                    <div className="w-14 sm:w-16 shrink-0 border-r border-border/40 bg-card/60 sticky left-0 z-20 select-none">
+                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 bg-card/60 sticky left-0 z-20 select-none">
                         {displayedHours.map(hour => (
                             <div
                                 key={`gutter-${hour}`}
-                                className="border-b border-border/30 relative text-right pr-2 text-[10px] font-mono text-muted-foreground flex items-start justify-end pt-1"
+                                className="border-b border-border/30 relative text-right pr-1 sm:pr-2 text-[10px] font-mono text-muted-foreground flex items-start justify-end pt-1"
                                 style={{ height: `${hourHeight}px` }}
                             >
-                                <span className="-mt-2.5 bg-card px-1 rounded">
+                                <span className="-mt-2.5 bg-card px-0.5 sm:px-1 rounded">
                                     {hour.toString().padStart(2, '0')}:00
                                 </span>
                             </div>
