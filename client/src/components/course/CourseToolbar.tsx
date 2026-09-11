@@ -50,14 +50,14 @@ export function CourseToolbar({
                         onChange={(e) => onFilterChange(e.target.value as FilterTab)}
                         className="bg-transparent text-xs sm:text-sm font-semibold border-none focus:ring-0 cursor-pointer text-foreground p-0 [&>option]:bg-background [&>option]:text-foreground"
                     >
-                        <option value="all">Tout</option>
-                        <option value="resource">Ressources</option>
-                        <option value="exercise">Exercices</option>
-                        <option value="note">Notes</option>
-                        <option value="flashcards">Flashcards</option>
-                        <option value="quiz">Quiz / QCM</option>
-                        <option value="mindmap">Cartes Mentales</option>
-                        <option value="summary">Résumés</option>
+                        <option value="all">{t('filter.all') || 'Tout'}</option>
+                        <option value="resource">{t('filter.resources') || 'Ressources'}</option>
+                        <option value="exercise">{t('filter.exercises') || 'Exercices'}</option>
+                        <option value="note">{t('filter.notes') || 'Notes'}</option>
+                        <option value="flashcards">{t('filter.flashcards') || 'Flashcards'}</option>
+                        <option value="quiz">{t('filter.quiz') || 'Quiz / QCM'}</option>
+                        <option value="mindmap">{t('filter.mindmaps') || 'Cartes Mentales'}</option>
+                        <option value="summary">{t('filter.summaries') || 'Résumés'}</option>
                     </select>
                 </div>
 
