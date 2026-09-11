@@ -13,8 +13,7 @@ import {
     Sliders,
     FileDown,
     MoreHorizontal,
-    X,
-    RotateCcw
+    X
 } from 'lucide-react';
 
 interface ItemMobileToolbarProps {
@@ -276,8 +275,8 @@ export function ItemMobileToolbar({
                         onClick={() => setIsConfirmDeleteOpen(false)}
                     />
                     <div className="relative w-full max-w-sm bg-card rounded-2xl p-6 shadow-2xl border animate-in zoom-in-95 duration-200 space-y-4">
-                        <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
-                            <RotateCcw className="h-6 w-6" />
+                        <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+                            <Trash2 className="h-6 w-6" />
                         </div>
                         <div className="text-center space-y-1">
                             <h4 className="text-lg font-bold">Déplacer vers la corbeille ?</h4>

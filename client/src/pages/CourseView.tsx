@@ -7,7 +7,7 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2, RotateCcw } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2 } from 'lucide-react'
 import { TrashModal } from '@/components/TrashModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
@@ -399,13 +399,14 @@ export function CourseView() {
                             <Plus className="h-4 w-4" />
                             <span className="whitespace-nowrap">{t('course.addContent')}</span>
                         </button>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                             <button
                                 onClick={() => setIsTrashModalOpen(true)}
-                                className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs font-medium"
                                 title="Corbeille (restaurer des documents)"
                             >
-                                <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <Trash2 className="h-4 w-4" />
+                                <span className="hidden sm:inline">Corbeille</span>
                             </button>
                             <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
                                 <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
