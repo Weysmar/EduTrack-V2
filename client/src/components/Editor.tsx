@@ -9,7 +9,7 @@ import Highlight from '@tiptap/extension-highlight'
 import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
     Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
-    Image as ImageIcon, Sigma
+    Image as ImageIcon, Sigma, Type, ChevronDown, Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -19,6 +19,7 @@ import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 import { MathematicsExtension } from '@/components/editor/MathematicsExtension'
+import { FontFamilyExtension, AVAILABLE_FONTS } from '@/components/editor/FontFamilyExtension'
 
 // Custom TipTap Image Node
 export const CustomImage = Node.create({
@@ -83,7 +84,22 @@ export function Editor({ content, onChange, editable = true, className }: Editor
     const { minecraftTheme: isMinecraft } = useTheme()
     const [showColorPicker, setShowColorPicker] = useState(false)
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
+    const [showFontPicker, setShowFontPicker] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const fontPickerRef = useRef<HTMLDivElement>(null)
+
+    // Close font picker on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (fontPickerRef.current && !fontPickerRef.current.contains(e.target as Node)) {
+                setShowFontPicker(false)
+            }
+        }
+        if (showFontPicker) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [showFontPicker])
 
     // Determine dictation language based on app language
     const dictationLang = language === 'fr' ? 'fr-FR' : 'en-US';
@@ -142,6 +158,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             }),
             Underline,
             TextStyle,
+            FontFamilyExtension,
             Color,
             Highlight.configure({
                 multicolor: true
@@ -265,6 +282,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             : "bg-muted text-foreground"
     }
 
+    const currentFontFamily = editor.getAttributes('textStyle').fontFamily || ''
+    const activeFont = AVAILABLE_FONTS.find(f =>
+        currentFontFamily && (
+            f.fontFamily.toLowerCase().includes(currentFontFamily.toLowerCase()) ||
+            currentFontFamily.toLowerCase().includes(f.name.toLowerCase()) ||
+            currentFontFamily.toLowerCase().includes(f.id.toLowerCase())
+        )
+    ) || AVAILABLE_FONTS[0]
+
     return (
         <div className={cn(
             editable ? "border border-t-0 rounded-b-xl bg-card relative shadow-xs" : "bg-card rounded-xl border shadow-sm",
@@ -313,6 +339,82 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     >
                         <Heading3 className="h-4 w-4" />
                     </button>
+
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
+
+                    {/* Font Family Dropdown */}
+                    <div className="relative" ref={fontPickerRef}>
+                        <button
+                            type="button"
+                            onClick={() => setShowFontPicker(!showFontPicker)}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/70 hover:bg-muted/80 text-xs font-medium transition-all shadow-2xs max-w-[150px]",
+                                showFontPicker && "bg-muted border-primary/50 ring-1 ring-primary/20",
+                                mcBtn
+                            )}
+                            title={language === 'fr' ? "Changer la police d'écriture" : "Change font family"}
+                        >
+                            <Type className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate flex-1 text-left" style={{ fontFamily: activeFont.fontFamily }}>
+                                {activeFont.name}
+                            </span>
+                            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 opacity-70" />
+                        </button>
+
+                        {showFontPicker && (
+                            <div className="absolute top-full left-0 mt-1.5 w-64 max-h-80 overflow-y-auto bg-popover text-popover-foreground border rounded-xl shadow-xl p-1.5 z-30 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b mb-1 flex items-center justify-between">
+                                    <span>{language === 'fr' ? 'Polices locales' : 'Local fonts'}</span>
+                                    <span className="text-[9px] font-normal lowercase opacity-70">100% hors-ligne</span>
+                                </div>
+                                {AVAILABLE_FONTS.map(font => {
+                                    const isSelected = activeFont.id === font.id
+                                    return (
+                                        <button
+                                            key={font.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (font.id === 'inter') {
+                                                    editor.chain().focus().unsetFontFamily().run()
+                                                } else {
+                                                    editor.chain().focus().setFontFamily(font.fontFamily).run()
+                                                }
+                                                setShowFontPicker(false)
+                                            }}
+                                            className={cn(
+                                                "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors group cursor-pointer",
+                                                isSelected
+                                                    ? "bg-primary/10 text-primary font-semibold"
+                                                    : "hover:bg-muted text-foreground"
+                                            )}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div
+                                                    className="text-[13px] truncate leading-tight font-medium"
+                                                    style={{ fontFamily: font.fontFamily }}
+                                                >
+                                                    {font.name}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                                    <span className="px-1 py-0.2 rounded bg-muted/80 text-[9px] font-medium shrink-0">
+                                                        {language === 'fr' ? font.categoryLabelFr : font.categoryLabelEn}
+                                                    </span>
+                                                    {font.descriptionFr && (
+                                                        <span className="truncate opacity-80">
+                                                            {language === 'fr' ? font.descriptionFr : font.descriptionEn}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {isSelected && (
+                                                <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-1.5" />
+                                            )}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
 
                     <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
