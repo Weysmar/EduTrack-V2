@@ -17,6 +17,7 @@ import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { exportNoteToPdf } from '@/lib/exportNotePdf'
+import { getOfflineItem, getOfflineCourse } from '@/lib/offlineManager'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -46,13 +47,31 @@ export function ItemView() {
 
     const { data: item, isLoading: isItemLoading } = useQuery({
         queryKey: ['items', id],
-        queryFn: () => itemQueries.getOne(id),
+        queryFn: async () => {
+            try {
+                return await itemQueries.getOne(id);
+            } catch (err) {
+                const offline = await getOfflineItem(id);
+                if (offline) return offline;
+                throw err;
+            }
+        },
         enabled: !!id
     })
 
     const { data: course } = useQuery({
         queryKey: ['courses', courseId],
-        queryFn: () => courseQueries.getOne(courseId!),
+        queryFn: async () => {
+            try {
+                return await courseQueries.getOne(courseId!);
+            } catch (err) {
+                if (courseId) {
+                    const offline = await getOfflineCourse(courseId);
+                    if (offline?.course) return offline.course;
+                }
+                throw err;
+            }
+        },
         enabled: !!courseId
     })
 

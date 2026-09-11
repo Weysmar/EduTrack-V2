@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
 import { AdminUserManagement } from "@/components/settings/AdminUserManagement"
-import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users, Calendar, Globe } from "lucide-react"
+import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users, Calendar, Globe, Smartphone, Bell, HardDriveDownload, Download, Trash2, CheckCircle2, AlertTriangle, Send } from "lucide-react"
 import { useTheme } from '@/components/theme-provider'
 import { useLanguage } from '@/components/language-provider'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
@@ -11,9 +11,24 @@ import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
 import { useAuthStore } from '@/store/authStore'
 import { changelogs } from '@/data/changelog'
+import { toast } from 'sonner'
+import { usePWAInstall } from '@/hooks/usePWAInstall'
+import {
+    getNotificationPermission,
+    requestNotificationPermission,
+    isNotificationEnabled,
+    setNotificationSetting,
+    sendNativeNotification
+} from '@/lib/deadlineNotificationService'
+import {
+    getOfflineStorageUsage,
+    clearAllOfflineData,
+    getOfflineCourses,
+    OfflineCourseData
+} from '@/lib/offlineManager'
 
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users' | 'calendars'>('calendars')
+    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users' | 'calendars' | 'mobile'>('calendars')
     const { theme, setTheme, themeColor, setThemeColor, minecraftTheme, setMinecraftTheme } = useTheme()
     const { t, language, setLanguage } = useLanguage()
     const { feeds } = useCalendarStore()
@@ -21,11 +36,31 @@ export function SettingsPage() {
     const { activeProfile, updateProfile } = useProfileStore()
     const { user } = useAuthStore()
 
+    const { isInstallable, isInstalled, promptInstall } = usePWAInstall()
+    const [notifPermission, setNotifPermission] = useState(getNotificationPermission())
+    const [notifEnabled, setNotifEnabled] = useState(isNotificationEnabled())
+    const [offlineStats, setOfflineStats] = useState({ coursesCount: 0, itemsCount: 0, estimatedSizeKb: 0 })
+    const [offlineCoursesList, setOfflineCoursesList] = useState<OfflineCourseData[]>([])
+
+    const reloadOfflineStats = () => {
+        getOfflineStorageUsage().then(setOfflineStats)
+        getOfflineCourses().then(setOfflineCoursesList)
+    }
+
+    useEffect(() => {
+        if (activeTab === 'mobile') {
+            reloadOfflineStats()
+            setNotifPermission(getNotificationPermission())
+            setNotifEnabled(isNotificationEnabled())
+        }
+    }, [activeTab])
+
     const isAdmin = !!user?.isAdmin || user?.email?.toLowerCase() === 'intelli.vince@gmail.com'
 
     const tabs = [
         ...(isAdmin ? [{ id: 'users', label: language === 'fr' ? 'Utilisateurs' : 'Users', icon: Users }] : []),
         { id: 'calendars', label: language === 'fr' ? 'Agendas' : 'Calendars', icon: Calendar },
+        { id: 'mobile', label: language === 'fr' ? 'Mobile & Hors-ligne' : 'Mobile & Offline', icon: Smartphone },
         { id: 'appearance', label: language === 'fr' ? 'Apparence & Langue' : 'Appearance & Language', icon: Sun },
         { id: 'api', label: t('settings.tabs.api'), icon: Key },
         { id: 'raccourcis', label: t('settings.tabs.shortcuts'), icon: Keyboard },
@@ -329,6 +364,192 @@ export function SettingsPage() {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'mobile' && (
+                            <div className="space-y-8">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">
+                                        {language === 'fr' ? "Expérience Mobile, PWA & Mode Hors-Ligne" : "Mobile, PWA & Offline Experience"}
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground mb-6">
+                                        {language === 'fr'
+                                            ? "Installez l'application sur votre smartphone ou PC, recevez des rappels pour vos devoirs et révisez sans connexion."
+                                            : "Install the app on your mobile or desktop, receive deadline reminders and study offline."}
+                                    </p>
+                                </div>
+
+                                {/* 1. PWA Section */}
+                                <div className="p-6 rounded-2xl bg-muted/30 border space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                <Smartphone className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-base leading-tight">
+                                                    {language === 'fr' ? "Application Progressive (PWA)" : "Progressive Web App (PWA)"}
+                                                </h3>
+                                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                    {isInstalled
+                                                        ? (language === 'fr' ? "L'application est installée sur cet appareil en mode autonome." : "The app is installed on this device in standalone mode.")
+                                                        : (language === 'fr' ? "Installez EduTrack sur votre écran d'accueil pour une expérience plein écran ultra-rapide." : "Install EduTrack on your home screen for an ultra-fast fullscreen experience.")}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {isInstalled ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 text-green-600 text-xs font-semibold shrink-0">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                <span>{language === 'fr' ? "Installée" : "Installed"}</span>
+                                            </div>
+                                        ) : isInstallable ? (
+                                            <button
+                                                onClick={() => promptInstall()}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-xs transition-all active:scale-95 shrink-0"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                <span>{language === 'fr' ? "Installer l'application" : "Install App"}</span>
+                                            </button>
+                                        ) : (
+                                            <div className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-lg shrink-0">
+                                                {language === 'fr' ? "Accessible sur mobile & Chrome/Edge" : "Available on mobile & Chrome/Edge"}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 2. Notification Reminders Section */}
+                                <div className="p-6 rounded-2xl bg-muted/30 border space-y-5">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+                                            <Bell className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-base leading-tight">
+                                                {language === 'fr' ? "Rappels automatiques d'échéances" : "Automatic Deadline Reminders"}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                {language === 'fr'
+                                                    ? "Recevez une alerte système J-1 (24 heures avant) et H-2 (2 heures avant) la date limite de vos devoirs, partiels et examens."
+                                                    : "Receive a system alert 24h and 2h before the deadline of your assignments and exams."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-muted-foreground">
+                                                {language === 'fr' ? "Statut des autorisations :" : "Permission status:"}
+                                            </span>
+                                            <span className={cn(
+                                                "text-xs px-2.5 py-0.5 rounded-full font-semibold",
+                                                notifPermission === 'granted'
+                                                    ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                                                    : notifPermission === 'denied'
+                                                    ? "bg-red-500/10 text-red-600 border border-red-500/20"
+                                                    : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                            )}>
+                                                {notifPermission === 'granted'
+                                                    ? (language === 'fr' ? "Autorisées" : "Granted")
+                                                    : notifPermission === 'denied'
+                                                    ? (language === 'fr' ? "Bloquées (navigateur)" : "Blocked")
+                                                    : (language === 'fr' ? "Non configuré" : "Not configured")}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {notifPermission !== 'granted' ? (
+                                                <button
+                                                    onClick={async () => {
+                                                        const p = await requestNotificationPermission()
+                                                        setNotifPermission(p)
+                                                        if (p === 'granted') {
+                                                            toast.success("Notifications activées avec succès !")
+                                                        } else {
+                                                            toast.error("Veuillez autoriser les notifications dans les paramètres du navigateur.")
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-xs"
+                                                >
+                                                    {language === 'fr' ? "Activer les notifications" : "Enable notifications"}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={async () => {
+                                                        const sent = await sendNativeNotification("🔔 Test EduTrack", {
+                                                            body: "Les notifications de rappels d'échéances fonctionnent parfaitement !"
+                                                        })
+                                                        if (sent) toast.success("Notification de test envoyée !")
+                                                        else toast.error("Échec de l'envoi de test.")
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-medium rounded-lg border transition-colors"
+                                                >
+                                                    <Send className="h-3.5 w-3.5" />
+                                                    <span>{language === 'fr' ? "Tester la notification" : "Test Notification"}</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. Offline Courses & Storage Section */}
+                                <div className="p-6 rounded-2xl bg-muted/30 border space-y-5">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 shrink-0">
+                                            <HardDriveDownload className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-base leading-tight">
+                                                {language === 'fr' ? "Stockage Hors-Ligne (IndexedDB)" : "Offline Storage (IndexedDB)"}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                {language === 'fr'
+                                                    ? "Les cours marqués comme « Disponible hors-ligne » sont stockés localement sur cet appareil avec toutes leurs notes."
+                                                    : "Courses marked as 'Offline ready' are stored locally on this device with all their notes."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Storage metrics */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t">
+                                        <div className="p-3 bg-card rounded-xl border text-center">
+                                            <div className="text-2xl font-bold text-primary">{offlineStats.coursesCount}</div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">Cours sauvegardés</div>
+                                        </div>
+                                        <div className="p-3 bg-card rounded-xl border text-center">
+                                            <div className="text-2xl font-bold text-foreground">{offlineStats.itemsCount}</div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">Notes & documents</div>
+                                        </div>
+                                        <div className="p-3 bg-card rounded-xl border text-center">
+                                            <div className="text-2xl font-bold text-foreground">
+                                                {offlineStats.estimatedSizeKb > 1024
+                                                    ? `${(offlineStats.estimatedSizeKb / 1024).toFixed(1)} Mo`
+                                                    : `${offlineStats.estimatedSizeKb} Ko`}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">Espace local utilisé</div>
+                                        </div>
+                                    </div>
+
+                                    {offlineStats.coursesCount > 0 && (
+                                        <div className="pt-2 flex justify-end">
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm("Voulez-vous vraiment vider tout le stockage hors-ligne ? Vos cours sur le serveur ne seront pas affectés.")) {
+                                                        await clearAllOfflineData()
+                                                        reloadOfflineStats()
+                                                        toast.success("Stockage local hors-ligne vidé avec succès.")
+                                                    }
+                                                }}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition-colors font-medium border border-destructive/20 cursor-pointer"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                                <span>Vider le cache hors-ligne</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

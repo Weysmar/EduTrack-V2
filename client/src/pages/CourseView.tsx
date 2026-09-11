@@ -7,7 +7,7 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2 } from 'lucide-react'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -15,6 +15,7 @@ import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { useSummary } from '@/hooks/useSummary'
 import { DEFAULT_SUMMARY_OPTIONS, SummaryOptions } from '@/lib/summary/types'
 import { courseQueries, studyPlanQueries, itemQueries } from '@/lib/api/queries'
+import { saveCourseForOffline, removeCourseFromOffline, isCourseSavedOffline } from '@/lib/offlineManager'
 import { API_URL } from '@/config'
 import { extractText } from '@/lib/extractText'
 
@@ -94,6 +95,45 @@ export function CourseView() {
         const cId = t.course?.id || t.courseId || t.plan?.course?.id || t.plan?.courseId
         return cId === id && !t.isCompleted
     }).length
+
+    // Offline Mode State
+    const [isSavedOffline, setIsSavedOffline] = useState(false)
+    const [isOfflineSaving, setIsOfflineSaving] = useState(false)
+
+    useEffect(() => {
+        if (id) {
+            isCourseSavedOffline(id).then(setIsSavedOffline)
+        }
+    }, [id])
+
+    const handleToggleOffline = async () => {
+        if (!course) return
+        if (isSavedOffline) {
+            const shouldRemove = confirm("Ce cours est actuellement disponible hors-ligne. Voulez-vous le retirer du stockage local pour libérer de l'espace ? (Annuler = actualiser le contenu sauvegardé)")
+            if (shouldRemove) {
+                await removeCourseFromOffline(id)
+                setIsSavedOffline(false)
+                toast.success("Cours retiré du stockage hors-ligne")
+                return
+            }
+        }
+
+        setIsOfflineSaving(true)
+        const toastId = toast.loading("Sauvegarde du cours et des notes en cours...")
+        try {
+            await saveCourseForOffline(course, activeCourseItems, courseTasks)
+            setIsSavedOffline(true)
+            toast.success("Cours prêt pour accès hors-ligne !", {
+                id: toastId,
+                description: `${activeCourseItems.length} éléments sauvegardés pour réviser sans connexion.`
+            })
+        } catch (err: any) {
+            console.error("Offline save error:", err)
+            toast.error("Erreur lors de la sauvegarde hors-ligne", { id: toastId })
+        } finally {
+            setIsOfflineSaving(false)
+        }
+    }
 
     // View Options preserved in local state/storage 
     const [showThumbnails, setShowThumbnails] = useState(() => {
@@ -326,6 +366,28 @@ export function CourseView() {
                                     {coursePendingTasksCount}
                                 </span>
                             )}
+                        </button>
+                        <button
+                            onClick={handleToggleOffline}
+                            disabled={isOfflineSaving}
+                            className={cn(
+                                "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all active:scale-95 shadow-xs border cursor-pointer",
+                                isSavedOffline
+                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-400"
+                                    : "bg-secondary hover:bg-secondary/80 text-secondary-foreground border-border"
+                            )}
+                            title={isSavedOffline ? "Cours sauvegardé hors-ligne (cliquer pour options)" : "Enregistrer ce cours pour réviser hors-ligne"}
+                        >
+                            {isOfflineSaving ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            ) : isSavedOffline ? (
+                                <Check className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                                <HardDriveDownload className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="whitespace-nowrap">
+                                {isSavedOffline ? 'Hors-ligne ✓' : (language === 'fr' ? 'Hors-ligne' : 'Offline')}
+                            </span>
                         </button>
                         <button
                             onClick={() => setIsAddModalOpen(true)}

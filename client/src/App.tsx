@@ -93,13 +93,22 @@ const LazyPage = ({ children }: { children: React.ReactNode }) => (
 
 import { MetaManager } from '@/components/MetaManager';
 import { Outlet } from 'react-router-dom';
+import { OfflineStatusBar } from '@/components/pwa/OfflineStatusBar';
+import { PWAInstallBanner } from '@/components/pwa/PWAInstallBanner';
+import { useDeadlineReminders } from '@/hooks/useDeadlineReminders';
 
-const RootLayout = () => (
-    <>
-        <MetaManager />
-        <Outlet />
-    </>
-);
+const RootLayout = () => {
+    useDeadlineReminders();
+
+    return (
+        <>
+            <MetaManager />
+            <OfflineStatusBar />
+            <PWAInstallBanner />
+            <Outlet />
+        </>
+    );
+};
 
 const router = createBrowserRouter([
     {

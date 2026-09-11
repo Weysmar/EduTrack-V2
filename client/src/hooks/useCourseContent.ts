@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { courseQueries, itemQueries, mindmapQueries, flashcardQueries, quizQueries, summaryQueries } from '@/lib/api/queries'
+import { getOfflineCourse } from '@/lib/offlineManager'
 
 export interface CourseContentHook {
     course: any;
@@ -13,17 +14,39 @@ export interface CourseContentHook {
 }
 
 export function useCourseContent(courseId: string, itemPage = 1, itemLimit = 20): CourseContentHook {
-    // 1. Fetch Course Metadata
+    // 1. Fetch Course Metadata with Offline Fallback
     const { data: course, isLoading: isCourseLoading } = useQuery({
         queryKey: ['courses', courseId],
-        queryFn: () => courseQueries.getOne(courseId),
+        queryFn: async () => {
+            try {
+                return await courseQueries.getOne(courseId);
+            } catch (err) {
+                const offline = await getOfflineCourse(courseId);
+                if (offline?.course) return offline.course;
+                throw err;
+            }
+        },
         enabled: !!courseId
     })
 
-    // 2. Fetch All Content Types
+    // 2. Fetch All Content Types with Offline Fallback
     const { data: itemData, refetch: refetchItems } = useQuery({
         queryKey: ['items', courseId, itemPage],
-        queryFn: () => itemQueries.getByCourse(courseId, itemPage, itemLimit),
+        queryFn: async () => {
+            try {
+                return await itemQueries.getByCourse(courseId, itemPage, itemLimit);
+            } catch (err) {
+                const offline = await getOfflineCourse(courseId);
+                if (offline?.items) {
+                    return {
+                        items: offline.items,
+                        total: offline.items.length,
+                        totalPages: 1
+                    };
+                }
+                throw err;
+            }
+        },
         enabled: !!courseId
     })
 

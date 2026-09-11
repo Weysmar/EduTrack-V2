@@ -1,12 +1,15 @@
 {
-  "name": "HubTrack",
-  "short_name": "HubTrack",
+  "id": "/",
+  "name": "EduTrack - HubTrack",
+  "short_name": "EduTrack",
   "description": "Hub central pour gérer vos études (EduTrack) et vos finances (FinanceTrack)",
-  "start_url": "/",
+  "start_url": "/edu/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
+  "lang": "fr",
   "icons": [
     {
       "src": "/app-icon.svg",
@@ -37,6 +40,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mon Agenda",
+      "short_name": "Agenda",
+      "description": "Consulter mon emploi du temps et mes devoirs",
+      "url": "/edu/calendar",
+      "icons": [{ "src": "/app-icon.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Mes Cours",
+      "short_name": "Cours",
+      "description": "Accéder à mes cours et notes",
+      "url": "/edu/dashboard",
+      "icons": [{ "src": "/app-icon.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Flashcards",
+      "short_name": "Flashcards",
+      "description": "Session de révision par répétition espacée",
+      "url": "/edu/flashcards",
+      "icons": [{ "src": "/app-icon.png", "sizes": "512x512" }]
     }
   ],
   "categories": ["education", "finance", "productivity"]
