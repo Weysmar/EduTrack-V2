@@ -894,6 +894,8 @@ const translations: Translations = {
         "changelog.v057.pins": "Added colored pushpins to all nodes (Red: Topics, Yellow: Courses, Blue: Documents).",
         "changelog.v057.documents_fix": "Fixed documents filter rendering bug.",
         "changelog.v057.reset_view": "Reset view now centers intelligently on content.",
+        "editor.insertImage": "Insert image (or drag & drop / Ctrl+V)",
+        "editor.insertMath": "Insert math equation ($$...$$)",
     },
     fr: {
         "app.title": "EduTrack",
@@ -2374,6 +2376,8 @@ const translations: Translations = {
         "finance.status.unknown": "Unknown Block",
         "finance.status.payment": "Trade",
         "finance.status.transfer": "Inventory Moving",
+        "editor.insertImage": "Insérer une image (ou glisser-déposer / Ctrl+V)",
+        "editor.insertMath": "Insérer une formule mathématique ($$...$$)",
     },
 }
 

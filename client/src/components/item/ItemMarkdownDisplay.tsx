@@ -1,7 +1,10 @@
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import { formatSummaryMarkdown } from '@/lib/summary/formatSummary';
+import { renderMathInHtml, KATEX_PURIFY_CONFIG } from '@/lib/renderMath';
 
 interface ItemMarkdownDisplayProps {
     content: string;
@@ -50,10 +53,9 @@ export function ItemMarkdownDisplay({ content, isSummary = false, className }: I
     if (isHtml) {
         // Replace empty paragraphs <p></p> with <p><br></p> so browsers do not collapse them
         const contentWithBreaks = formattedContent.replace(/<p>\s*<\/p>/gi, '<p><br></p>');
-        const sanitizedHtml = DOMPurify.sanitize(contentWithBreaks, {
-            ADD_TAGS: ['mark', 'img'],
-            ADD_ATTR: ['target', 'src', 'alt', 'title', 'class', 'style', 'width', 'height']
-        });
+        // Pre-process math equations inside HTML text nodes
+        const contentWithMath = renderMathInHtml(contentWithBreaks);
+        const sanitizedHtml = DOMPurify.sanitize(contentWithMath, KATEX_PURIFY_CONFIG);
 
         return (
             <div
@@ -65,7 +67,11 @@ export function ItemMarkdownDisplay({ content, isSummary = false, className }: I
 
     return (
         <div className={cn(defaultClasses, className)}>
-            <ReactMarkdown components={isSummary ? summaryComponents : noteComponents}>
+            <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={isSummary ? summaryComponents : noteComponents}
+            >
                 {formattedContent}
             </ReactMarkdown>
         </div>

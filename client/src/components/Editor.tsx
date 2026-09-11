@@ -9,7 +9,7 @@ import Highlight from '@tiptap/extension-highlight'
 import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
     Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
-    Image as ImageIcon
+    Image as ImageIcon, Sigma
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -18,6 +18,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
+import { MathematicsExtension } from '@/components/editor/MathematicsExtension'
 
 // Custom TipTap Image Node
 export const CustomImage = Node.create({
@@ -145,7 +146,8 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             Highlight.configure({
                 multicolor: true
             }),
-            CustomImage
+            CustomImage,
+            MathematicsExtension
         ],
         content,
         editable,
@@ -512,6 +514,21 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                         title={t('editor.insertImage') || "Insérer une image (ou glisser-déposer / Ctrl+V)"}
                     >
                         <ImageIcon className="h-4 w-4" />
+                    </button>
+
+                    {/* Insert Math Formula Button */}
+                    <button
+                        onClick={() => {
+                            editor.chain().focus().insertContent(' $$ \\text{formule} $$ ').run();
+                        }}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors",
+                            mcBtn
+                        )}
+                        type="button"
+                        title={t('editor.insertMath') || "Insérer une formule mathématique ($$...$$)"}
+                    >
+                        <Sigma className="h-4 w-4" />
                     </button>
 
                     {/* Speech to Text Button */}

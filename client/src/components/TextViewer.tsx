@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Copy, Check, FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { cn } from '@/lib/utils'
 import { useLanguage } from './language-provider'
 
@@ -108,7 +110,7 @@ export function TextViewer({ url, fileName, isMarkdown = false, className }: Tex
             <div className="p-6 overflow-auto max-h-[80vh]">
                 {isMarkdown ? (
                     <div className="prose prose-sm sm:prose dark:prose-invert max-w-none">
-                        <ReactMarkdown>{content}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{content}</ReactMarkdown>
                     </div>
                 ) : (
                     <pre className="text-sm font-mono whitespace-pre-wrap break-words leading-relaxed text-foreground">

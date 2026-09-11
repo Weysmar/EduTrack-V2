@@ -2,6 +2,8 @@ import React, { useMemo } from 'react'
 import { CheckCircle, XCircle, HelpCircle } from 'lucide-react'
 import { cn } from '../lib/utils'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 
 interface QuizQuestionProps {
     question: any
@@ -44,6 +46,8 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                     <div className="min-w-0 flex-1">
                         <div className="text-xl md:text-2xl font-semibold leading-relaxed font-heading text-foreground">
                             <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
                                 components={{
                                     p: ({ children }) => <span className="inline">{children}</span>,
                                     strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>,
@@ -109,6 +113,8 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                                         variant === 'default' && "text-foreground"
                                     )}>
                                         <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
                                             components={{
                                                 p: ({ children }) => <span className="inline">{children}</span>,
                                                 strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>
@@ -158,6 +164,8 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                                 </p>
                                 <div className="text-foreground/90 leading-relaxed font-normal">
                                     <ReactMarkdown
+                                        remarkPlugins={[remarkMath]}
+                                        rehypePlugins={[rehypeKatex]}
                                         components={{
                                             p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
                                             strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>,

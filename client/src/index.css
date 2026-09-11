@@ -317,3 +317,51 @@
         display: inline-block !important;
     }
 }
+
+/* KaTeX Math Equations Styling */
+.katex-display-wrapper {
+    display: block !important;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0;
+    margin: 0.75rem 0;
+    text-align: center;
+}
+.katex-display-wrapper > .katex-display {
+    margin: 0 !important;
+    text-align: center;
+}
+.katex {
+    font-size: 1.08em;
+    text-rendering: auto;
+}
+.dark .katex {
+    color: inherit;
+}
+.tiptap-math-hidden {
+    display: none !important;
+}
+.tiptap-math-editing {
+    display: inline-block !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85em;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.375rem;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: rgb(29, 78, 216);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.dark .tiptap-math-editing {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: rgb(147, 197, 253);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+.tiptap-math-block {
+    display: block !important;
+    width: 100%;
+}
+.tiptap-math-inline {
+    display: inline-block !important;
+    vertical-align: middle;
+}

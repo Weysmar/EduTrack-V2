@@ -4,6 +4,8 @@ import { Copy, RefreshCw, Settings, Check, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { useLanguage } from '@/components/language-provider'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { formatSummaryMarkdown } from '@/lib/summary/formatSummary'
 
 interface SummaryPanelProps {
@@ -148,7 +150,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
             <div className="p-4 font-sans text-sm leading-relaxed">
                 {typeof summary.content === 'string' ? (
                     <div className="prose dark:prose-invert prose-sm max-w-none prose-headings:font-bold prose-headings:text-sm prose-p:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ul_ul]:list-[circle] [&_ul_ul]:pl-5 [&_li]:my-1">
-                        <ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                             {formatSummaryMarkdown(summary.content)}
                         </ReactMarkdown>
                     </div>

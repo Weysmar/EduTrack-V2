@@ -2,6 +2,8 @@ import { SummaryResult } from '@/lib/summary/types'
 import { Download, FileText, Copy, Check, ArrowLeft, Trash2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import html2pdf from 'html2pdf.js'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
 import { saveAs } from 'file-saver'
@@ -285,6 +287,8 @@ export function SummaryResultModal({ summary, isOpen, onClose, onDelete }: Summa
                         {/* React Markdown for proper formatting */}
                         {typeof summary.content === 'string' ? (
                             <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex]}
                                 components={{
                                     // Custom components if needed, e.g. for code blocks
                                 }}

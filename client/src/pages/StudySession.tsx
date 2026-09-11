@@ -6,6 +6,8 @@ import { calculateNextReview, ReviewGrade } from '@/lib/flashcards/spaced-repeti
 import { ArrowLeft, CheckCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 // import { AnalyticsService } from '@/lib/analytics/tracker' // Temporary disabled/Adapt to API
 
 // Helper to format flashcard content for clean spacing & lists
@@ -217,6 +219,8 @@ export function StudySession() {
                         <div className="absolute inset-0 backface-hidden bg-card flex flex-col items-center justify-center p-6 md:p-10 border rounded-2xl overflow-y-auto">
                             <div className="max-w-none text-center select-none text-xl sm:text-2xl md:text-3xl font-bold leading-snug text-foreground">
                                 <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
                                     components={{
                                         p: ({ children }) => <p className="mb-0 inline">{children}</p>,
                                         strong: ({ children }) => <strong className="font-extrabold text-amber-400 dark:text-amber-300">{children}</strong>,
@@ -236,6 +240,8 @@ export function StudySession() {
                         >
                             <div className="w-full text-left select-none text-base sm:text-lg md:text-xl font-normal leading-relaxed text-foreground">
                                 <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
                                     components={{
                                         p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed text-foreground">{children}</p>,
                                         strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>,
