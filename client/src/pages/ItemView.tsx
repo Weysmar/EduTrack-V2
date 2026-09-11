@@ -431,17 +431,32 @@ export function ItemView() {
             return;
         }
 
-        if (confirm(t('item.delete.confirm'))) {
+        if (confirm(t('item.delete.confirm') || "Voulez-vous déplacer cet élément dans la corbeille ?")) {
             setIsDeleting(true);
             if (item && item.id) {
+                const deletedItemId = item.id;
                 try {
-                    await itemQueries.delete(item.id);
-                    // Prefetch/Wait slightly to ensure backend consistency if needed, but navigate should handle it
+                    await itemQueries.delete(deletedItemId);
+                    toast.success("Élément déplacé dans la corbeille", {
+                        description: "Le fichier n'est pas perdu et peut être restauré.",
+                        action: {
+                            label: "Annuler / Restaurer",
+                            onClick: async () => {
+                                try {
+                                    await itemQueries.restore(deletedItemId);
+                                    toast.success("Élément restauré avec succès !");
+                                } catch (err) {
+                                    toast.error("Échec de la restauration");
+                                }
+                            }
+                        },
+                        duration: 8000
+                    });
                     navigate(`/edu/course/${courseId}`);
                 } catch (error) {
                     console.error("Deletion failed", error);
                     setIsDeleting(false);
-                    alert("Erreur lors de la suppression");
+                    toast.error("Erreur lors de la suppression");
                 }
             }
         }

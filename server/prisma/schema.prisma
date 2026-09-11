@@ -73,6 +73,7 @@ model Course {
   folderId    String?
   isFavorite  Boolean  @default(false)
   createdAt   DateTime @default(now())
+  deletedAt   DateTime?
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   folder  Folder? @relation(fields: [folderId], references: [id])
@@ -123,12 +124,14 @@ model Item {
   extractedContent String?  @db.Text
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
   
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   tasks   StudyTask[]
 
   @@index([profileId])
+  @@index([profileId, deletedAt])
   @@index([courseId])
   @@index([type])
   @@index([dueDate])

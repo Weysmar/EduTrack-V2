@@ -78,10 +78,27 @@ export const itemQueries = {
         return res;
     },
     delete: async (id: string) => {
-        await apiClient.delete(`/items/${id}`);
+        const { data } = await apiClient.delete(`/items/${id}`);
+        return data;
     },
     bulkDelete: async (itemIds: string[]) => {
         const { data } = await apiClient.post('/items/bulk/delete', { itemIds });
+        return data;
+    },
+    getTrash: async () => {
+        const { data } = await apiClient.get('/items/trash');
+        return data?.items || [];
+    },
+    restore: async (id: string) => {
+        const { data } = await apiClient.post(`/items/${id}/restore`);
+        return data;
+    },
+    permanentDelete: async (id: string) => {
+        const { data } = await apiClient.delete(`/items/${id}/permanent`);
+        return data;
+    },
+    emptyTrash: async () => {
+        const { data } = await apiClient.post('/items/trash/empty');
         return data;
     }
 };

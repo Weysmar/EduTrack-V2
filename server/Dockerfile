@@ -24,6 +24,9 @@ RUN npx prisma generate
 # Build TypeScript
 RUN npm run build
 
+# Persist uploads directory across container recreations
+VOLUME ["/app/uploads"]
+
 # Expose port
 EXPOSE 3000
 

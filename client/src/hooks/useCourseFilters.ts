@@ -28,22 +28,32 @@ export function useCourseFilters(items: any[]) {
     }, [])
 
     const filteredItems = useMemo(() => {
+        const query = (searchQuery || '').trim().toLowerCase()
         let result = items.filter((item: any) => {
+            if (!item) return false
             const matchesTab = activeFilters.includes('all') || activeFilters.includes(item.type as FilterTab)
-            const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase())
-            return matchesTab && matchesSearch
+            if (!matchesTab) return false
+
+            if (!query) return true
+            const titleStr = (item.title || item.fileName || '').toLowerCase()
+            const descStr = (item.description || '').toLowerCase()
+            return titleStr.includes(query) || descStr.includes(query)
         })
 
         // Sort logic
         result.sort((a: any, b: any) => {
             if (sortOption === 'alpha') {
-                return (a.title || '').localeCompare(b.title || '')
+                const titleA = (a.title || a.fileName || '').trim()
+                const titleB = (b.title || b.fileName || '').trim()
+                return titleA.localeCompare(titleB)
             } else if (sortOption === 'last_opened') {
-                const dateA = new Date(a.updatedAt || a.createdAt).getTime();
-                const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
                 return dateB - dateA;
             } else {
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+                const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+                return dateB - dateA;
             }
         })
 

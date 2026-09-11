@@ -275,7 +275,7 @@ export function ItemDesktopToolbar({
             <button
                 onClick={handleDelete}
                 className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex-shrink-0"
-                title={t('action.delete')}
+                title={t('action.moveToTrash') || "Mettre à la corbeille"}
             >
                 <Trash2 className="h-4 w-4" />
             </button>

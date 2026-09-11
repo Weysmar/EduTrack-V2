@@ -18,7 +18,8 @@ export const getItems = async (req: AuthRequest, res: Response) => {
         const skip = (pageNum - 1) * limitNum;
 
         const where: any = {
-            profileId: req.user!.id
+            profileId: req.user!.id,
+            deletedAt: null
         };
         if (courseId) {
             where.courseId = String(courseId);
@@ -291,7 +292,7 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// DELETE /api/items/:id
+// DELETE /api/items/:id (Soft delete)
 export const deleteItem = async (req: AuthRequest, res: Response) => {
     try {
         const item = await prisma.item.findFirst({
@@ -300,60 +301,25 @@ export const deleteItem = async (req: AuthRequest, res: Response) => {
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
 
-        if (item.storageKey) {
-            await storageService.deleteFile(item.storageKey);
-        }
-
         if (item.type === 'exercise') {
             await removeExerciseAgendaTask(item.id, req.user!.id).catch(() => {});
         }
 
-        // Cascade delete summaries linked to this item (both as source itemId and as generatedItemId)
-        const linkedSummaries = await prisma.summary.findMany({
-            where: {
-                OR: [
-                    { itemId: item.id },
-                    { generatedItemId: item.id }
-                ]
-            }
+        // Soft delete: keep the physical file and mark deletedAt
+        const updated = await prisma.item.update({
+            where: { id: item.id },
+            data: { deletedAt: new Date() }
         });
-
-        // Also delete any standalone items that were generated for these summaries
-        const generatedItemIdsToDelete = linkedSummaries
-            .map(s => s.generatedItemId)
-            .filter((gid): gid is string => !!gid && gid !== item.id);
-
-        if (generatedItemIdsToDelete.length > 0) {
-            await prisma.item.deleteMany({
-                where: { id: { in: generatedItemIdsToDelete } }
-            }).catch(e => console.warn("Failed to delete generated items linked to summary", e));
-        }
-
-        await prisma.summary.deleteMany({
-            where: {
-                OR: [
-                    { itemId: item.id },
-                    { generatedItemId: item.id }
-                ]
-            }
-        });
-
-        // Also clean up FlashcardSets linked to this item
-        await prisma.flashcardSet.deleteMany({
-            where: { itemId: item.id }
-        }).catch(() => {});
-
-        await prisma.item.delete({ where: { id: item.id } });
 
         socketService.emitToProfile(req.user!.id, 'item:deleted', { id: item.id, courseId: item.courseId });
 
-        res.json({ message: 'Item deleted' });
+        res.json({ message: 'Item moved to trash', item: updated });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting item', error });
     }
 };
 
-// POST /api/items/bulk/delete
+// POST /api/items/bulk/delete (Bulk soft delete)
 export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
     try {
         const { itemIds } = req.body;
@@ -362,7 +328,7 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ message: 'No items provided' });
         }
 
-        // 1. Find items to verify ownership and get storage keys
+        // 1. Find items to verify ownership
         const items = await prisma.item.findMany({
             where: {
                 id: { in: itemIds },
@@ -371,79 +337,155 @@ export const bulkDeleteItems = async (req: AuthRequest, res: Response) => {
         });
 
         if (items.length === 0) {
-            console.log("Bulk delete: Items not found in DB, assuming already deleted.");
-            // Return success to allow frontend to update/invalidate cache
             return res.json({ message: 'Items already deleted', count: 0 });
         }
 
         const validIds = items.map(i => i.id);
 
-        // 2. Delete files from storage
-        const deletePromises = items
-            .filter(item => item.storageKey)
-            .map(item => storageService.deleteFile(item.storageKey!));
-
-        await Promise.allSettled(deletePromises);
-
-        // 3. Cascade delete summaries
-        // A. Delete summaries where this item was the GENERATED item (e.g. deleting a Note/Summary)
-        await prisma.summary.deleteMany({
+        // 2. Soft delete items (files remain safe on disk)
+        await prisma.item.updateMany({
             where: {
-                generatedItemId: { in: validIds }
-            }
+                id: { in: validIds },
+                profileId: req.user!.id
+            },
+            data: { deletedAt: new Date() }
         });
 
-        // B. Delete summaries where this item was the SOURCE item (e.g. deleting a PDF)
-        await prisma.summary.deleteMany({
-            where: {
-                itemId: { in: validIds }
+        // 3. Remove exercises from agenda
+        for (const item of items) {
+            if (item.type === 'exercise') {
+                await removeExerciseAgendaTask(item.id, req.user!.id).catch(() => {});
             }
-        });
-
-        // C. Delete FlashcardSets linked to this item
-        await prisma.flashcardSet.deleteMany({
-            where: {
-                itemId: { in: validIds }
-            }
-        });
-
-        // 4. Delete from DB with Fallback Strategy
-        try {
-            await prisma.item.deleteMany({
-                where: {
-                    id: { in: validIds }
-                }
-            });
-        } catch (error) {
-            console.error("Bulk deleteMany failed, switching to sequential deletion:", error);
-            // Fallback: Delete one by one to isolate the problematic item
-            let deletedCount = 0;
-            const errors = [];
-
-            for (const id of validIds) {
-                try {
-                    await prisma.item.delete({ where: { id } });
-                    deletedCount++;
-                } catch (e: any) {
-                    console.error('Failed to delete item %s: %s', String(id), e.message);
-                    errors.push({ id, error: e.message });
-                }
-            }
-
-            if (deletedCount === 0) {
-                throw new Error(`Failed to delete items. Errors: ${JSON.stringify(errors)}`);
-            }
-            console.log(`Sequential delete finished. Deleted: ${deletedCount}/${validIds.length}`);
         }
 
         // 4. Notify client
         socketService.emitToProfile(req.user!.id, 'items:bulk-deleted', { ids: validIds });
 
-        console.log(`Bulk deleted ${validIds.length} items`);
-        res.json({ message: 'Items deleted successfully', count: validIds.length });
+        res.json({ message: 'Items moved to trash', count: validIds.length });
     } catch (error) {
-        console.error('Error bulk deleting items:', error);
         res.status(500).json({ message: 'Error deleting items', error });
+    }
+};
+
+// POST /api/items/:id/restore
+export const restoreItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        const restored = await prisma.item.update({
+            where: { id: item.id },
+            data: { deletedAt: null }
+        });
+
+        if (restored.type === 'exercise' && restored.dueDate) {
+            await addOrUpdateExerciseAgendaTask({
+                profileId: req.user!.id,
+                description: `Exercice : ${restored.title}`,
+                date: restored.dueDate,
+                courseId: restored.courseId,
+                itemId: restored.id
+            }).catch(() => {});
+        }
+
+        socketService.emitToProfile(req.user!.id, 'item:created', restored);
+
+        res.json({ message: 'Item restored successfully', item: restored });
+    } catch (error) {
+        res.status(500).json({ message: 'Error restoring item', error });
+    }
+};
+
+// GET /api/items/trash
+export const getTrashItems = async (req: AuthRequest, res: Response) => {
+    try {
+        const items = await prisma.item.findMany({
+            where: {
+                profileId: req.user!.id,
+                deletedAt: { not: null }
+            },
+            include: {
+                course: {
+                    select: { id: true, title: true, color: true, icon: true }
+                }
+            },
+            orderBy: { deletedAt: 'desc' }
+        });
+
+        res.json({ items });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching trash items', error });
+    }
+};
+
+// DELETE /api/items/:id/permanent
+export const permanentDeleteItem = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        if (item.storageKey) {
+            await storageService.deleteFile(item.storageKey).catch(err => {
+                console.warn('Error deleting physical file:', err);
+            });
+        }
+
+        if (item.type === 'exercise') {
+            await removeExerciseAgendaTask(item.id, req.user!.id).catch(() => {});
+        }
+
+        // Clean up linked summaries and flashcard sets
+        await prisma.summary.deleteMany({
+            where: {
+                OR: [
+                    { itemId: item.id },
+                    { generatedItemId: item.id }
+                ]
+            }
+        }).catch(() => {});
+
+        await prisma.flashcardSet.deleteMany({
+            where: { itemId: item.id }
+        }).catch(() => {});
+
+        await prisma.item.delete({ where: { id: item.id } });
+
+        res.json({ message: 'Item permanently deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error permanently deleting item', error });
+    }
+};
+
+// POST /api/items/trash/empty
+export const emptyTrash = async (req: AuthRequest, res: Response) => {
+    try {
+        const trashedItems = await prisma.item.findMany({
+            where: {
+                profileId: req.user!.id,
+                deletedAt: { not: null }
+            }
+        });
+
+        for (const item of trashedItems) {
+            if (item.storageKey) {
+                await storageService.deleteFile(item.storageKey).catch(() => {});
+            }
+        }
+
+        const ids = trashedItems.map(i => i.id);
+        await prisma.item.deleteMany({
+            where: { id: { in: ids } }
+        });
+
+        res.json({ message: 'Trash emptied', count: trashedItems.length });
+    } catch (error) {
+        res.status(500).json({ message: 'Error emptying trash', error });
     }
 };
 

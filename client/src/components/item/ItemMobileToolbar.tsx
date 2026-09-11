@@ -1,5 +1,21 @@
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Check, Pencil, Edit, Loader2, Sparkles, Trash2, Layers, CheckSquare, BrainCircuit, FileText, Sliders, FileDown } from 'lucide-react';
+import {
+    Check,
+    Pencil,
+    Edit,
+    Loader2,
+    Sparkles,
+    Trash2,
+    Layers,
+    CheckSquare,
+    FileText,
+    Sliders,
+    FileDown,
+    MoreHorizontal,
+    X,
+    RotateCcw
+} from 'lucide-react';
 
 interface ItemMobileToolbarProps {
     itemType: string;
@@ -36,6 +52,9 @@ export function ItemMobileToolbar({
     isExportingNotePdf,
     t
 }: ItemMobileToolbarProps) {
+    const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+
     return (
         <>
             {/* FIXED MOBILE BOTTOM BAR */}
@@ -77,7 +96,7 @@ export function ItemMobileToolbar({
                         </button>
                     )}
 
-                    {/* 2. MAIN ACTION: AI (Center, Prominent) */}
+                    {/* 3. MAIN ACTION: AI (Center, Prominent) */}
                     <div className="flex items-center justify-center">
                         <button
                             onClick={() => setIsAIMenuOpen(true)}
@@ -93,15 +112,14 @@ export function ItemMobileToolbar({
                         </button>
                     </div>
 
-                    {/* 3. More Actions (Sheet) */}
+                    {/* 4. SAFE MORE OPTIONS (Replaces raw destructive delete) */}
                     <button
-                        onClick={() => {
-                            if (confirm(t('item.delete.confirm'))) handleDelete()
-                        }}
-                        className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-destructive touch-manipulation"
+                        onClick={() => setIsActionsMenuOpen(true)}
+                        className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
+                        title="Options supplémentaires"
                     >
-                        <Trash2 className="h-6 w-6" />
-                        <span className="text-[10px] font-medium">Supprimer</span>
+                        <MoreHorizontal className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">Options</span>
                     </button>
                 </div>
             </div>
@@ -123,8 +141,8 @@ export function ItemMobileToolbar({
                         <div className="grid grid-cols-1 gap-3">
                             <button
                                 onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    handleOpenExercise('flashcards')
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('flashcards');
                                 }}
                                 className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
@@ -139,8 +157,8 @@ export function ItemMobileToolbar({
 
                             <button
                                 onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    handleOpenExercise('quiz')
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('quiz');
                                 }}
                                 className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
@@ -155,9 +173,9 @@ export function ItemMobileToolbar({
 
                             <button
                                 onClick={() => {
-                                    setIsAIMenuOpen(false)
-                                    if (hasSummary) setShowSummary(true)
-                                    else setIsSummaryOptionsOpen(true)
+                                    setIsAIMenuOpen(false);
+                                    if (hasSummary) setShowSummary(true);
+                                    else setIsSummaryOptionsOpen(true);
                                 }}
                                 className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
@@ -173,8 +191,8 @@ export function ItemMobileToolbar({
                             {hasSummary && (
                                 <button
                                     onClick={() => {
-                                        setIsAIMenuOpen(false)
-                                        setIsSummaryOptionsOpen(true)
+                                        setIsAIMenuOpen(false);
+                                        setIsSummaryOptionsOpen(true);
                                     }}
                                     className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                                 >
@@ -191,10 +209,100 @@ export function ItemMobileToolbar({
 
                         <button
                             onClick={() => setIsAIMenuOpen(false)}
-                            className="w-full py-3 mt-4 text-center font-medium text-muted-foreground hover:text-foreground"
+                            className="w-full py-3 mt-4 text-center font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* MOBILE SAFE ACTIONS BOTTOM SHEET */}
+            {isActionsMenuOpen && (
+                <div className="md:hidden fixed inset-0 z-[60] flex items-end justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in"
+                        onClick={() => setIsActionsMenuOpen(false)}
+                    />
+                    <div className="relative w-full bg-card rounded-t-2xl shadow-2xl p-6 animate-in slide-in-from-bottom duration-300 pb-safe space-y-4">
+                        <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-2 opacity-50" />
+                        <h3 className="text-base font-bold text-center">Options du document</h3>
+
+                        <div className="space-y-2 pt-2">
+                            <button
+                                onClick={() => {
+                                    setIsActionsMenuOpen(false);
+                                    setIsEditModalOpen(true);
+                                }}
+                                className="flex items-center gap-3 w-full p-3.5 rounded-xl bg-muted/40 hover:bg-muted active:scale-98 transition-all text-sm font-medium"
+                            >
+                                <Edit className="h-5 w-5 text-muted-foreground" />
+                                <span>Modifier les informations</span>
+                            </button>
+
+                            {/* Safe Trash Action */}
+                            <button
+                                onClick={() => {
+                                    setIsActionsMenuOpen(false);
+                                    setIsConfirmDeleteOpen(true);
+                                }}
+                                className="flex items-center justify-between w-full p-3.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-98 transition-all text-sm font-medium border border-destructive/20"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Trash2 className="h-5 w-5" />
+                                    <div className="text-left">
+                                        <div>Mettre à la corbeille</div>
+                                        <div className="text-[11px] text-muted-foreground font-normal">Restauration possible à tout moment</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setIsActionsMenuOpen(false)}
+                            className="w-full py-3 mt-2 text-center font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                             Annuler
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* SAFE CONFIRMATION MODAL FOR MOVING TO TRASH */}
+            {isConfirmDeleteOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in"
+                        onClick={() => setIsConfirmDeleteOpen(false)}
+                    />
+                    <div className="relative w-full max-w-sm bg-card rounded-2xl p-6 shadow-2xl border animate-in zoom-in-95 duration-200 space-y-4">
+                        <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                            <RotateCcw className="h-6 w-6" />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <h4 className="text-lg font-bold">Déplacer vers la corbeille ?</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                Ce document sera retiré de la liste du cours. Le fichier reste conservé sur le serveur et pourra être restauré en 1 clic depuis la corbeille.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button
+                                onClick={() => setIsConfirmDeleteOpen(false)}
+                                className="px-4 py-2.5 rounded-xl border bg-secondary hover:bg-secondary/80 text-secondary-foreground text-sm font-medium transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsConfirmDeleteOpen(false);
+                                    handleDelete();
+                                }}
+                                className="px-4 py-2.5 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm font-medium transition-all shadow-sm"
+                            >
+                                Mettre à la corbeille
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

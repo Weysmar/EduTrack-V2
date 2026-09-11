@@ -6,8 +6,8 @@ import { CreateItemModal } from '@/components/CreateItemModal'
 import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
-import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2 } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2, RotateCcw } from 'lucide-react'
+import { TrashModal } from '@/components/TrashModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
@@ -85,6 +85,7 @@ export function CourseView() {
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [showSummary, setShowSummary] = useState(false)
     const [isTasksModalOpen, setIsTasksModalOpen] = useState(false)
+    const [isTrashModalOpen, setIsTrashModalOpen] = useState(false)
 
     // Course Tasks Query
     const { data: courseTasks = [] } = useQuery({
@@ -398,6 +399,13 @@ export function CourseView() {
                             <span className="whitespace-nowrap">{t('course.addContent')}</span>
                         </button>
                         <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setIsTrashModalOpen(true)}
+                                className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                                title="Corbeille (restaurer des documents)"
+                            >
+                                <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </button>
                             <button onClick={() => setIsEditModalOpen(true)} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors" title={t('course.edit')}>
                                 <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
                             </button>
@@ -500,6 +508,12 @@ export function CourseView() {
                 courseId={id}
                 courseTitle={course?.title || ''}
                 courseColor={course?.color || '#3b82f6'}
+            />
+
+            <TrashModal
+                isOpen={isTrashModalOpen}
+                onClose={() => setIsTrashModalOpen(false)}
+                currentCourseId={id}
             />
         </div>
     )
