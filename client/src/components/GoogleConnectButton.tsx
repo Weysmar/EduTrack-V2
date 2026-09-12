@@ -189,7 +189,7 @@ export function GoogleConnectButton({ className, variant = 'default' }: GoogleCo
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className={cn(
-                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold border transition-colors shadow-xs",
+                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold border transition-colors shadow-xs shrink-0",
                         isConnected
                             ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                             : "border-border bg-background hover:bg-muted text-foreground",

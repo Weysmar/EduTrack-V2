@@ -98,7 +98,7 @@ export function EduLayout() {
                 <EduSidebar />
             </aside>
 
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300">
+            <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden transition-all duration-300">
                 <header className="flex h-14 items-center gap-2 md:gap-4 border-b bg-card px-3 md:px-4 lg:px-6 justify-between shrink-0">
                     <div className="flex items-center gap-1 sm:gap-2">
                         <button
@@ -159,12 +159,12 @@ export function EduLayout() {
                 </header>
 
                 <main className={cn(
-                    "flex-1 flex flex-col min-h-0",
+                    "flex-1 flex flex-col min-h-0 w-full max-w-full overflow-x-hidden",
                     location.pathname.includes('/study/')
                         ? "p-0 overflow-y-auto"
                         : location.pathname.includes('/item/')
                             ? "p-0 overflow-hidden"
-                            : "overflow-auto p-0 md:p-4 lg:p-6"
+                            : "overflow-y-auto p-0 md:p-4 lg:p-6"
                 )}>
                     <Outlet />
                 </main>

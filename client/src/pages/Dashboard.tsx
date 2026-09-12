@@ -224,7 +224,7 @@ export function Dashboard() {
     ]
 
     return (
-        <div className="p-3 md:p-4 lg:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-4 md:space-y-6">
+        <div className="p-3 md:p-4 lg:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-4 md:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
 
             {/* HERO SECTION */}
             <section className={cn(
@@ -243,12 +243,12 @@ export function Dashboard() {
                         />
                     </div>
                 ) : (
-                    <div className="absolute top-0 right-0 p-12 opacity-10">
+                    <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
                         <Sparkles className="w-64 h-64 text-primary dark:text-white" />
                     </div>
                 )}
 
-                <div className="relative z-10 p-6 md:p-8 lg:p-10 flex flex-col gap-6">
+                <div className="relative z-10 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col gap-4 sm:gap-6 min-w-0 max-w-full">
                     <div className="space-y-3 md:space-y-4 max-w-2xl">
                         <div className="flex flex-wrap items-center gap-2">
                             <span className={cn(
@@ -294,13 +294,13 @@ export function Dashboard() {
                                 <Link
                                     to={`/edu/course/${lastActiveCourse.id}`}
                                     className={cn(
-                                        "inline-flex items-center justify-center gap-2 font-bold text-sm transition-all shadow-sm w-full sm:w-auto",
+                                        "inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition-all shadow-sm w-full sm:w-auto px-4 py-2.5 sm:px-6 sm:py-3",
                                         minecraftTheme
-                                            ? "rounded-none border-2 border-[#74c69d] bg-[#3a7d44] hover:bg-[#469d53] text-white px-5 py-2.5 shadow-[3px_3px_0px_0px_#081c15] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                                            : "rounded-xl bg-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 hover:bg-primary/90 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
+                                            ? "rounded-none border-2 border-[#74c69d] bg-[#3a7d44] hover:bg-[#469d53] text-white shadow-[3px_3px_0px_0px_#081c15] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                                            : "rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
                                     )}
                                 >
-                                    <Zap className={cn("w-4 h-4", minecraftTheme ? "fill-yellow-300 text-yellow-300" : "fill-primary-foreground dark:fill-slate-900")} />
+                                    <Zap className={cn("w-4 h-4 shrink-0", minecraftTheme ? "fill-yellow-300 text-yellow-300" : "fill-primary-foreground dark:fill-slate-900")} />
                                     <span className="truncate">
                                         {language === 'fr' ? `Reprendre ${lastActiveCourse.title}` : `Resume ${lastActiveCourse.title}`}
                                     </span>
@@ -310,25 +310,25 @@ export function Dashboard() {
                     </div>
 
                     {/* DOCK (Quick Actions) - Grid 4 cols on mobile, flex on desktop */}
-                    <div className="grid grid-cols-4 sm:flex gap-2 sm:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                    <div className="grid grid-cols-4 sm:flex gap-1.5 sm:gap-4 w-full sm:w-auto mt-2 sm:mt-0 min-w-0 max-w-full">
                         {quickActions.map((action, idx) => (
                             action.link ? (
                                 <Link
                                     key={idx}
                                     to={action.link}
-                                    className="group flex flex-col items-center gap-1 sm:gap-1.5"
+                                    className="group flex flex-col items-center gap-1 sm:gap-1.5 min-w-0"
                                 >
                                     <div className={cn(
-                                        "w-12 h-12 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95",
+                                        "w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95 shrink-0",
                                         minecraftTheme 
                                             ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
                                             : "rounded-2xl",
                                         action.color
                                     )}>
-                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
                                     </div>
                                     <span className={cn(
-                                        "text-[11px] sm:text-xs font-medium transition-colors text-center truncate max-w-[70px] sm:max-w-none",
+                                        "text-[10px] sm:text-xs font-medium transition-colors text-center truncate w-full max-w-full block px-0.5",
                                         minecraftTheme 
                                             ? "text-emerald-100/80 group-hover:text-white" 
                                             : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
@@ -340,19 +340,19 @@ export function Dashboard() {
                                 <button
                                     key={idx}
                                     onClick={action.action}
-                                    className="group flex flex-col items-center gap-1 sm:gap-1.5"
+                                    className="group flex flex-col items-center gap-1 sm:gap-1.5 min-w-0"
                                 >
                                     <div className={cn(
-                                        "w-12 h-12 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95",
+                                        "w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95 shrink-0",
                                         minecraftTheme 
                                             ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
                                             : "rounded-2xl",
                                         action.color
                                     )}>
-                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
                                     </div>
                                     <span className={cn(
-                                        "text-[11px] sm:text-xs font-medium transition-colors text-center truncate max-w-[70px] sm:max-w-none",
+                                        "text-[10px] sm:text-xs font-medium transition-colors text-center truncate w-full max-w-full block px-0.5",
                                         minecraftTheme 
                                             ? "text-emerald-100/80 group-hover:text-white" 
                                             : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
@@ -370,7 +370,7 @@ export function Dashboard() {
             <RevisionProgramModal isOpen={isRevisionModalOpen} onClose={() => setIsRevisionModalOpen(false)} />
 
             {/* BENTO GRID LAYOUT */}
-            <div className="space-y-6">
+            <div className="space-y-6 w-full min-w-0 max-w-full">
 
                 {/* CALENDAR (Moved up as requested) */}
                 <div className="w-full min-w-0 max-w-full overflow-hidden">
@@ -380,13 +380,11 @@ export function Dashboard() {
                 </div>
 
                 {/* BOTTOM ROW: CONTENT (Stats + Recents + Activity) */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <div className="md:col-span-12 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 w-full min-w-0">
+                    <div className="md:col-span-12 space-y-6 w-full min-w-0">
 
                         {/* STATS ROW */}
-
-                        {/* STATS ROW */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 w-full min-w-0">
                             <StatCardVariant
                                 title={t('dashboard.stats.courses')}
                                 value={courseCount}

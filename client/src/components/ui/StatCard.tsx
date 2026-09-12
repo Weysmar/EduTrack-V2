@@ -35,26 +35,14 @@ export function StatCard({ title, value, icon, color, className, iconClassName }
     // <div className={cn("p-3 rounded-full bg-muted/50", color ? `bg-${color.split('-')[1]}-500/10` : '')}>
 
     return (
-        <div className={cn("bg-card/50 backdrop-blur-sm border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:border-primary/50 transition-all hover:bg-card", className)}>
-            <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-                <h2 className={cn("text-2xl font-bold mt-1", color)}>{value}</h2>
+        <div className={cn("bg-card/50 backdrop-blur-sm border rounded-2xl p-3 sm:p-5 flex items-center justify-between gap-2 shadow-sm hover:border-primary/50 transition-all hover:bg-card min-w-0 w-full", className)}>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+                <h2 className={cn("text-lg sm:text-2xl font-bold mt-0.5 sm:mt-1 truncate", color)}>{value}</h2>
             </div>
 
             {/* Icon Container */}
-            {/* 
-                We need to ensure the BG color matches the icon color softly.
-                Since Tailwind cannot predict dynamic classes, we might need a mapping or force the user to pass 'bg-purple-500/10' 
-                BUT FinanceDashboard uses inline logic: `color ? bg-${color.split('-')[1]}-500/10 : ''` which implies `color` is `text-red-500`.
-                
-                Let's use a simpler approach: The icon container usually has a fixed style in Dashboard vs FinanceDashboard.
-                
-                Dashboard: p-3 bg-blue-500/10 rounded-xl text-blue-500
-                FinanceDashboard: p-3 rounded-full bg-muted/50 [dynamic bg optional]
-                
-                We will harmonize to: Rounded-xl square-ish look (Modern Bento style).
-             */}
-            <div className={cn("p-3 rounded-xl flex items-center justify-center shrink-0", bgTint, iconClassName)}>
+            <div className={cn("p-2 sm:p-3 rounded-xl flex items-center justify-center shrink-0", bgTint, iconClassName)}>
                 {icon}
             </div>
         </div>
@@ -82,13 +70,13 @@ export function StatCardVariant({ title, value, icon, variant, className }: {
     const style = variants[variant] || variants.default;
 
     return (
-        <div className={cn("bg-card border rounded-2xl p-5 flex items-center gap-4 hover:border-primary/50 transition-all shadow-sm", className)}>
-            <div className={cn("p-3 rounded-xl shrink-0", style.bg, style.text)}>
+        <div className={cn("bg-card border rounded-2xl p-3 sm:p-5 flex items-center gap-2.5 sm:gap-4 hover:border-primary/50 transition-all shadow-sm min-w-0 w-full", className)}>
+            <div className={cn("p-2 sm:p-3 rounded-xl shrink-0", style.bg, style.text)}>
                 {icon}
             </div>
-            <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-                <h2 className="text-2xl font-bold">{value}</h2>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+                <h2 className="text-lg sm:text-2xl font-bold truncate">{value}</h2>
             </div>
         </div>
     )

@@ -381,11 +381,11 @@ export function CalendarWidget() {
     };
 
     return (
-        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
+        <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[550px] sm:min-h-[600px] w-full min-w-0 max-w-full">
             {/* Header */}
-            <div className="p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/30">
-                <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base md:text-lg capitalize">
+            <div className="p-2.5 sm:p-3 md:p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/30 w-full min-w-0">
+                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto min-w-0">
+                    <h3 className="font-bold text-sm sm:text-base md:text-lg capitalize truncate">
                         <span className="hidden sm:inline">{format(weekStart, 'd MMM', { locale })} - {format(weekEnd, 'd MMM yyyy', { locale })}</span>
                         <span className="sm:hidden">
                             {mobileDaysCount === 1
@@ -393,16 +393,16 @@ export function CalendarWidget() {
                                 : `${format(days[0], 'd MMM', { locale })} - ${format(days[days.length - 1], 'd MMM yyyy', { locale })}`}
                         </span>
                     </h3>
-                    {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto justify-between sm:justify-end min-w-0">
                     {/* Course Filter Dropdown */}
                     {courses.length > 0 && (
                         <select
                             value={filterCourseId}
                             onChange={(e) => setFilterCourseId(e.target.value)}
-                            className="text-xs font-semibold px-2 py-1 rounded-md border border-border bg-background hover:bg-muted text-foreground transition-colors max-w-[150px] truncate focus:ring-1 focus:ring-primary shadow-xs"
+                            className="text-xs font-semibold px-2 py-1 rounded-md border border-border bg-background hover:bg-muted text-foreground transition-colors max-w-[120px] sm:max-w-[150px] truncate focus:ring-1 focus:ring-primary shadow-xs shrink-0"
                             title={language === 'fr' ? "Filtrer par cours" : "Filter by course"}
                         >
                             <option value="all">📚 {language === 'fr' ? 'Tous les cours' : 'All courses'}</option>
@@ -415,11 +415,11 @@ export function CalendarWidget() {
                     )}
 
                     {/* Display & Time Range settings dropdown */}
-                    <div className="relative">
+                    <div className="relative shrink-0">
                         <button
                             onClick={() => setIsDisplaySettingsOpen(!isDisplaySettingsOpen)}
                             className={cn(
-                                "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border transition-colors shadow-xs",
+                                "flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border transition-colors shadow-xs shrink-0",
                                 isDisplaySettingsOpen || autoFitHours
                                     ? "border-primary/40 bg-primary/10 text-primary font-semibold"
                                     : "border-border bg-background hover:bg-muted text-foreground"
@@ -440,7 +440,7 @@ export function CalendarWidget() {
                                     className="fixed inset-0 z-40"
                                     onClick={() => setIsDisplaySettingsOpen(false)}
                                 />
-                                <div className="absolute right-0 top-full mt-1.5 z-50 w-72 p-3.5 rounded-xl border bg-card text-card-foreground shadow-xl space-y-3 animate-in fade-in zoom-in-95">
+                                <div className="absolute right-0 top-full mt-1.5 z-50 w-72 max-w-[calc(100vw-24px)] p-3.5 rounded-xl border bg-card text-card-foreground shadow-xl space-y-3 animate-in fade-in zoom-in-95">
                                     <div className="flex items-center justify-between border-b pb-2">
                                         <span className="font-semibold text-xs flex items-center gap-1.5 text-foreground">
                                             <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
@@ -610,7 +610,7 @@ export function CalendarWidget() {
                     <div className="h-4 w-px bg-border mx-0.5 hidden sm:block" />
 
                     {/* Mobile 1j / 3j view toggle */}
-                    <div className="flex sm:hidden items-center rounded-md border border-border bg-background p-0.5 shadow-2xs text-xs font-medium mr-0.5">
+                    <div className="flex sm:hidden items-center rounded-md border border-border bg-background p-0.5 shadow-2xs text-xs font-medium mr-0.5 shrink-0">
                         <button
                             type="button"
                             onClick={() => setMobileDaysCount(1)}
@@ -634,24 +634,24 @@ export function CalendarWidget() {
                     </div>
 
                     {/* Refresh button */}
-                    <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground" title={t('action.refresh')}>
+                    <button onClick={loadEvents} className="p-1.5 hover:bg-muted rounded text-muted-foreground shrink-0" title={t('action.refresh')}>
                         <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                     </button>
 
                     {/* Navigation buttons */}
                     <button
                         onClick={() => setCurrentDate(isMobile ? subDays(currentDate, mobileDaysCount) : subWeeks(currentDate, 1))}
-                        className="p-1.5 hover:bg-muted rounded"
+                        className="p-1.5 hover:bg-muted rounded shrink-0"
                         aria-label={isMobile ? `${mobileDaysCount} jour(s) précédent(s)` : "Semaine précédente"}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block">
+                    <button onClick={() => setCurrentDate(new Date())} className="text-xs font-medium px-2 py-1 hover:bg-muted rounded hidden sm:block shrink-0">
                         {t('calendar.today') || 'Auj.'}
                     </button>
                     <button
                         onClick={() => setCurrentDate(isMobile ? addDays(currentDate, mobileDaysCount) : addWeeks(currentDate, 1))}
-                        className="p-1.5 hover:bg-muted rounded"
+                        className="p-1.5 hover:bg-muted rounded shrink-0"
                         aria-label={isMobile ? `${mobileDaysCount} jour(s) suivant(s)` : "Semaine suivante"}
                     >
                         <ChevronRight className="h-4 w-4" />
@@ -661,7 +661,7 @@ export function CalendarWidget() {
 
             {/* Multi-feed Pills Bar */}
             {feeds && feeds.length > 0 && (
-                <div className="px-3 md:px-4 py-1.5 border-b bg-muted/10 flex items-center gap-1.5 flex-wrap text-xs">
+                <div className="px-3 md:px-4 py-1.5 border-b bg-muted/10 flex items-center gap-1.5 flex-wrap text-xs max-w-full overflow-hidden">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mr-1 shrink-0">
                         {language === 'fr' ? 'Agendas :' : 'Calendars:'}
                     </span>
@@ -768,23 +768,23 @@ export function CalendarWidget() {
             )}
 
             {/* Day Columns Header & All-Day Header */}
-            <div className="border-b border-border bg-card sticky top-0 z-30 shadow-2xs">
+            <div className="border-b border-border bg-card sticky top-0 z-30 shadow-2xs w-full min-w-0">
                 {/* 1. Day Titles Header */}
-                <div className="flex border-b border-border/40">
+                <div className="flex border-b border-border/40 w-full min-w-0">
                     {/* Time Gutter Header spacer */}
-                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 flex items-center justify-center p-1 sm:p-2 text-[10px] text-muted-foreground font-mono">
+                    <div className="w-10 sm:w-16 shrink-0 border-r border-border/40 flex items-center justify-center p-1 sm:p-2 text-[10px] text-muted-foreground font-mono">
                         <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
                     </div>
 
                     {/* Day Headers */}
-                    <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                    <div className="flex-1 grid min-w-0 w-full" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
                         {days.map((day) => {
                             const today = isToday(day);
                             return (
                                 <div
                                     key={`header-${day.toISOString()}`}
                                     className={cn(
-                                        "p-1.5 sm:p-2 text-center border-r border-border/30 last:border-r-0 flex items-center justify-between gap-1 transition-colors",
+                                        "p-1.5 sm:p-2 text-center border-r border-border/30 last:border-r-0 flex items-center justify-between gap-1 transition-colors min-w-0",
                                         today ? "bg-primary/5" : "bg-card"
                                     )}
                                 >
@@ -821,15 +821,15 @@ export function CalendarWidget() {
                 </div>
 
                 {/* 2. All-Day / Untimed Section */}
-                <div className="flex min-h-[38px] max-h-[120px] overflow-y-auto border-b border-border/60 bg-muted/15">
+                <div className="flex min-h-[38px] max-h-[120px] overflow-y-auto border-b border-border/60 bg-muted/15 w-full min-w-0">
                     {/* Time Gutter Label */}
-                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 p-1 flex items-center justify-center text-[10px] font-medium text-muted-foreground uppercase text-center leading-tight">
+                    <div className="w-10 sm:w-16 shrink-0 border-r border-border/40 p-1 flex items-center justify-center text-[10px] font-medium text-muted-foreground uppercase text-center leading-tight">
                         <span className="hidden sm:inline">{language === 'fr' ? 'Journée' : 'All day'}</span>
                         <span className="sm:hidden">24h</span>
                     </div>
 
                     {/* Day All-Day Cells */}
-                    <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                    <div className="flex-1 grid min-w-0 w-full" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
                         {days.map((day) => {
                             // Filter all-day and multi-day events
                             const dayAllDayEvents = events.filter(e => {
@@ -977,12 +977,12 @@ export function CalendarWidget() {
             {/* 3. Main Scrollable Vertical Time Grid */}
             <div
                 ref={gridContainerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden sm:overflow-x-auto relative select-none"
+                className="flex-1 overflow-y-auto overflow-x-hidden sm:overflow-x-auto relative select-none w-full min-w-0 max-w-full"
                 style={{ height: 'calc(100% - 130px)' }}
             >
-                <div className="flex w-full min-w-full sm:min-w-[650px] relative" style={{ height: `${displayedHours.length * hourHeight}px` }}>
+                <div className="flex w-full min-w-0 sm:min-w-[650px] relative" style={{ height: `${displayedHours.length * hourHeight}px` }}>
                     {/* Time Gutter Column */}
-                    <div className="w-11 sm:w-16 shrink-0 border-r border-border/40 bg-card/60 sticky left-0 z-20 select-none">
+                    <div className="w-10 sm:w-16 shrink-0 border-r border-border/40 bg-card/60 sticky left-0 z-20 select-none">
                         {displayedHours.map(hour => (
                             <div
                                 key={`gutter-${hour}`}
@@ -997,7 +997,7 @@ export function CalendarWidget() {
                     </div>
 
                     {/* Day Columns */}
-                    <div className="flex-1 grid relative" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                    <div className="flex-1 grid relative min-w-0 w-full" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
                         {days.map((day) => {
                             const today = isToday(day);
 
