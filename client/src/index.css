@@ -465,7 +465,78 @@
         margin: 0 !important;
         display: inline-block !important;
     }
+
+    /* Note & Editor Dark Mode Contrast Safeguards:
+       Prevents black or near-black inline styled text from becoming invisible in dark mode */
+    .dark .ProseMirror [style*="color: rgb(0, 0, 0)"],
+    .dark .ProseMirror [style*="color: rgb(0,0,0)"],
+    .dark .ProseMirror [style*="color: #000000"],
+    .dark .ProseMirror [style*="color: #000"],
+    .dark .ProseMirror [style*="color: black"],
+    .dark .ProseMirror [style*="color:#000000"],
+    .dark .ProseMirror [style*="color:#000"],
+    .dark .ProseMirror [style*="color:black"],
+    .dark .ProseMirror [style*="color: #0f172a"],
+    .dark .ProseMirror [style*="color: #111827"],
+    .dark .ProseMirror [style*="color: #1e293b"],
+    .dark .ProseMirror [style*="color: #18181b"],
+    .dark .ProseMirror [style*="color: #27272a"],
+    .dark .ProseMirror [style*="color: rgb(15, 23, 42)"],
+    .dark .ProseMirror [style*="color: rgb(17, 24, 39)"],
+    .dark .ProseMirror [style*="color: rgb(30, 41, 59)"],
+    .dark .prose [style*="color: rgb(0, 0, 0)"],
+    .dark .prose [style*="color: rgb(0,0,0)"],
+    .dark .prose [style*="color: #000000"],
+    .dark .prose [style*="color: #000"],
+    .dark .prose [style*="color: black"],
+    .dark .prose [style*="color:#000000"],
+    .dark .prose [style*="color:#000"],
+    .dark .prose [style*="color:black"],
+    .dark .prose [style*="color: #0f172a"],
+    .dark .prose [style*="color: #111827"],
+    .dark .prose [style*="color: #1e293b"],
+    .dark .prose [style*="color: #18181b"],
+    .dark .prose [style*="color: #27272a"],
+    .dark .prose [style*="color: rgb(15, 23, 42)"],
+    .dark .prose [style*="color: rgb(17, 24, 39)"],
+    .dark .prose [style*="color: rgb(30, 41, 59)"] {
+        color: hsl(var(--foreground)) !important;
+    }
+
+    /* Light Theme Contrast Safeguard: prevent white or near-white text from being invisible in light mode */
+    .light .ProseMirror [style*="color: rgb(255, 255, 255)"],
+    .light .ProseMirror [style*="color: rgb(255,255,255)"],
+    .light .ProseMirror [style*="color: #ffffff"],
+    .light .ProseMirror [style*="color: #fff"],
+    .light .ProseMirror [style*="color: white"],
+    :not(.dark) .ProseMirror [style*="color: rgb(255, 255, 255)"],
+    :not(.dark) .ProseMirror [style*="color: rgb(255,255,255)"],
+    :not(.dark) .ProseMirror [style*="color: #ffffff"],
+    :not(.dark) .ProseMirror [style*="color: #fff"],
+    :not(.dark) .ProseMirror [style*="color: white"],
+    .light .prose [style*="color: rgb(255, 255, 255)"],
+    .light .prose [style*="color: rgb(255,255,255)"],
+    .light .prose [style*="color: #ffffff"],
+    .light .prose [style*="color: #fff"],
+    .light .prose [style*="color: white"],
+    :not(.dark) .prose [style*="color: rgb(255, 255, 255)"],
+    :not(.dark) .prose [style*="color: rgb(255,255,255)"],
+    :not(.dark) .prose [style*="color: #ffffff"],
+    :not(.dark) .prose [style*="color: #fff"],
+    :not(.dark) .prose [style*="color: white"] {
+        color: hsl(var(--foreground)) !important;
+    }
+
+    /* Ensure highlights are always legible with high-contrast text */
+    mark {
+        border-radius: 0.25rem;
+        padding: 0.1em 0.3em;
+    }
+    .dark mark {
+        color: #0f172a !important;
+    }
 }
+
 
 /* KaTeX Math Equations Styling */
 .katex-display-wrapper {

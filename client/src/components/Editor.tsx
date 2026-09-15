@@ -197,6 +197,12 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             onChange?.(editor.getHTML())
         },
         editorProps: {
+            transformPastedHTML: (html) => {
+                // Strip hardcoded dark/black inline styles from pasted web/Word content so it adapts seamlessly to dark/light theme
+                return html
+                    .replace(/(style="[^"]*?)color:\s*(?:#000000|#000|rgb\(0,\s*0,\s*0\)|black|windowtext|#0f172a|#111827|#1e293b|#18181b);?/gi, '$1')
+                    .replace(/style="\s*"/gi, '')
+            },
             handlePaste: (view, event) => {
                 const items = Array.from(event.clipboardData?.items || [])
                 const imageItem = items.find(item => item.type.startsWith('image/'))
@@ -240,7 +246,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             },
             attributes: {
                 class: cn(
-                    'prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px]',
+                    'prose prose-sm dark:prose-invert text-foreground focus:outline-none max-w-none min-h-[150px]',
                     editable ? 'px-3 py-2' : 'px-4 md:px-8 py-6',
                     // Preserve empty paragraph line breaks
                     '[&_p:empty]:min-h-[1.5em] [&_p:empty]:before:content-["\\00a0"]',
@@ -304,8 +310,28 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     if (!editor) return null
 
-    const textColors = ['#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899']
-    const highlightColors = ['#FEF3C7', '#FEE2E2', '#DBEAFE', '#D1FAE5', '#E9D5FF', '#FCE7F3']
+    const textColors = [
+        { color: '#FFFFFF', labelFr: 'Blanc', labelEn: 'White' },
+        { color: '#000000', labelFr: 'Noir', labelEn: 'Black' },
+        { color: '#64748B', labelFr: 'Gris ardoise', labelEn: 'Slate gray' },
+        { color: '#EF4444', labelFr: 'Rouge', labelEn: 'Red' },
+        { color: '#F97316', labelFr: 'Orange', labelEn: 'Orange' },
+        { color: '#F59E0B', labelFr: 'Jaune ambre', labelEn: 'Amber yellow' },
+        { color: '#10B981', labelFr: 'Vert émeraude', labelEn: 'Emerald green' },
+        { color: '#06B6D4', labelFr: 'Cyan', labelEn: 'Cyan' },
+        { color: '#3B82F6', labelFr: 'Bleu', labelEn: 'Blue' },
+        { color: '#8B5CF6', labelFr: 'Violet', labelEn: 'Purple' },
+        { color: '#EC4899', labelFr: 'Rose', labelEn: 'Pink' },
+        { color: '#A855F7', labelFr: 'Pourpre', labelEn: 'Purple shade' },
+    ]
+    const highlightColors = [
+        { color: '#FEF08A', labelFr: 'Jaune fluo', labelEn: 'Bright yellow' },
+        { color: '#FED7AA', labelFr: 'Pêche', labelEn: 'Peach' },
+        { color: '#FECDD3', labelFr: 'Rose doux', labelEn: 'Soft pink' },
+        { color: '#BBF7D0', labelFr: 'Menthe', labelEn: 'Mint' },
+        { color: '#BAE6FD', labelFr: 'Bleu ciel', labelEn: 'Sky blue' },
+        { color: '#DDD6FE', labelFr: 'Lavande', labelEn: 'Lavender' },
+    ]
 
     const mcBtn = isMinecraft
         ? "rounded-none text-[#4a3520] dark:text-stone-300 hover:bg-[#dfd0b5] hover:text-[#2c1d11] dark:hover:bg-stone-700 dark:hover:text-stone-100"
@@ -328,7 +354,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     return (
         <div className={cn(
-            editable ? "border border-t-0 rounded-b-xl bg-card relative shadow-xs" : "bg-card rounded-xl border shadow-sm",
+            editable ? "border border-t-0 rounded-b-xl bg-card text-card-foreground relative shadow-xs" : "bg-card text-card-foreground rounded-xl border shadow-sm",
             isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>
@@ -514,24 +540,57 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                                 mcBtn
                             )}
                             type="button"
-                            title="Text Color"
+                            title={language === 'fr' ? "Couleur du texte" : "Text Color"}
                         >
                             <Palette className="h-4 w-4" />
                         </button>
                         {showColorPicker && (
-                            <div className="absolute top-full left-0 mt-1 bg-popover border shadow-md rounded-md p-2 flex gap-1 z-10">
-                                {textColors.map(color => (
+                            <div className="absolute top-full left-0 mt-1 bg-popover text-popover-foreground border rounded-xl shadow-xl p-2.5 z-30 min-w-[220px] space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="flex items-center justify-between border-b pb-1.5 px-0.5">
+                                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        {language === 'fr' ? 'Couleur texte' : 'Text color'}
+                                    </span>
                                     <button
-                                        key={color}
+                                        type="button"
                                         onClick={() => {
-                                            editor.chain().focus().setColor(color).run()
+                                            editor.chain().focus().unsetColor().run()
                                             setShowColorPicker(false)
                                         }}
-                                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        type="button"
-                                    />
-                                ))}
+                                        className="text-[10px] text-primary hover:underline font-medium cursor-pointer"
+                                        title={language === 'fr' ? "Rétablir la couleur automatique du thème" : "Reset to automatic theme color"}
+                                    >
+                                        {language === 'fr' ? 'Automatique' : 'Automatic'}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-6 gap-1.5">
+                                    {textColors.map(item => {
+                                        const isSelected = editor.isActive('textStyle', { color: item.color })
+                                        return (
+                                            <button
+                                                key={item.color}
+                                                type="button"
+                                                onClick={() => {
+                                                    editor.chain().focus().setColor(item.color).run()
+                                                    setShowColorPicker(false)
+                                                }}
+                                                className={cn(
+                                                    "w-7 h-7 rounded-lg transition-transform relative flex items-center justify-center hover:scale-110 shadow-2xs cursor-pointer",
+                                                    item.color === '#FFFFFF' ? "border-2 border-slate-300 dark:border-slate-600" : "border border-border/40",
+                                                    isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                                )}
+                                                style={{ backgroundColor: item.color }}
+                                                title={language === 'fr' ? item.labelFr : item.labelEn}
+                                            >
+                                                {isSelected && (
+                                                    <Check className={cn(
+                                                        "h-3.5 w-3.5",
+                                                        item.color === '#FFFFFF' || item.color === '#F59E0B' || item.color === '#FEF08A' ? "text-slate-900" : "text-white"
+                                                    )} />
+                                                )}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -544,24 +603,53 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                                 mcBtn
                             )}
                             type="button"
-                            title="Highlight"
+                            title={language === 'fr' ? "Surligner" : "Highlight"}
                         >
                             <Highlighter className="h-4 w-4" />
                         </button>
                         {showHighlightPicker && (
-                            <div className="absolute top-full left-0 mt-1 bg-popover border shadow-md rounded-md p-2 flex gap-1 z-10">
-                                {highlightColors.map(color => (
+                            <div className="absolute top-full left-0 mt-1 bg-popover text-popover-foreground border rounded-xl shadow-xl p-2.5 z-30 min-w-[200px] space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                                <div className="flex items-center justify-between border-b pb-1.5 px-0.5">
+                                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        {language === 'fr' ? 'Surlignage' : 'Highlight'}
+                                    </span>
                                     <button
-                                        key={color}
+                                        type="button"
                                         onClick={() => {
-                                            editor.chain().focus().setHighlight({ color }).run()
+                                            editor.chain().focus().unsetHighlight().run()
                                             setShowHighlightPicker(false)
                                         }}
-                                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        type="button"
-                                    />
-                                ))}
+                                        className="text-[10px] text-destructive hover:underline font-medium cursor-pointer"
+                                        title={language === 'fr' ? "Supprimer le surlignage" : "Remove highlight"}
+                                    >
+                                        {language === 'fr' ? 'Effacer' : 'Clear'}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-6 gap-1.5">
+                                    {highlightColors.map(item => {
+                                        const isSelected = editor.isActive('highlight', { color: item.color })
+                                        return (
+                                            <button
+                                                key={item.color}
+                                                type="button"
+                                                onClick={() => {
+                                                    editor.chain().focus().setHighlight({ color: item.color }).run()
+                                                    setShowHighlightPicker(false)
+                                                }}
+                                                className={cn(
+                                                    "w-7 h-7 rounded-lg transition-transform relative flex items-center justify-center hover:scale-110 shadow-2xs border border-border/40 cursor-pointer",
+                                                    isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                                )}
+                                                style={{ backgroundColor: item.color }}
+                                                title={language === 'fr' ? item.labelFr : item.labelEn}
+                                            >
+                                                {isSelected && (
+                                                    <Check className="h-3.5 w-3.5 text-slate-900" />
+                                                )}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
