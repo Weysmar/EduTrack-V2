@@ -4,6 +4,7 @@ import { socketService } from '../services/socketService';
 import { addOrUpdateExerciseAgendaTask, removeExerciseAgendaTask } from '../services/agendaService';
 
 import { prisma } from '../lib/prisma';
+import { Prisma } from '@prisma/client';
 interface AuthRequest extends Request {
     user?: { id: string };
     file?: Express.Multer.File;
@@ -305,7 +306,7 @@ export const updateItemAnnotations = async (req: AuthRequest, res: Response) => 
 
         const updated = await prisma.item.update({
             where: { id: item.id },
-            data: { annotations: annotations !== undefined ? annotations : null }
+            data: { annotations: (annotations !== undefined ? annotations : Prisma.JsonNull) as Prisma.InputJsonValue }
         });
 
         socketService.emitToProfile(req.user!.id, 'item:annotated', {
