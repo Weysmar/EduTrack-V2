@@ -1,21 +1,62 @@
-import { ZoomIn, ZoomOut, RotateCw, Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ZoomIn, ZoomOut, RotateCw, Loader2, Pencil } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLanguage } from './language-provider'
 import heic2any from 'heic2any'
+import { cn } from '@/lib/utils'
+import { useAnnotations } from '@/hooks/useAnnotations'
+import { AnnotationToolbar } from '@/components/annotations/AnnotationToolbar'
+import { AnnotationOverlay } from '@/components/annotations/AnnotationOverlay'
 
 interface ImageViewerProps {
     url: string
+    itemId?: string
+    initialAnnotations?: any
     alt?: string
     className?: string
 }
 
-export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerProps) {
+export function ImageViewer({
+    url,
+    itemId,
+    initialAnnotations,
+    alt = "Image",
+    className = ""
+}: ImageViewerProps) {
     const { t } = useLanguage()
     const [scale, setScale] = useState(1)
     const [rotation, setRotation] = useState(0)
     const [displayUrl, setDisplayUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    // --- Annotations State & Hook ---
+    const [isAnnotating, setIsAnnotating] = useState(false)
+    const {
+        annotations,
+        activeTool,
+        setActiveTool,
+        activeColor,
+        setActiveColor,
+        strokeWidth,
+        setStrokeWidth,
+        isVisible: isAnnotationsVisible,
+        toggleVisibility: toggleAnnotationsVisibility,
+        isSaving: isAnnotationsSaving,
+        lastSaved: annotationsLastSaved,
+        addAnnotation,
+        updateAnnotation,
+        deleteAnnotation,
+        clearPage: clearCurrentPage,
+        undo,
+        redo,
+        canUndo,
+        canRedo
+    } = useAnnotations({ itemId: itemId || '', initialAnnotations })
+
+    const totalAnnotationsCount = useMemo(() => {
+        if (!annotations?.pages) return 0;
+        return Object.values(annotations.pages).reduce((acc, list) => acc + (list?.length || 0), 0);
+    }, [annotations]);
 
     const zoomIn = () => setScale(s => Math.min(s + 0.25, 3))
     const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5))
@@ -96,9 +137,32 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
 
     return (
         <div className={`w-full bg-slate-900 rounded-lg overflow-hidden border shadow-sm relative flex flex-col ${className}`}>
-            {/* Toolbar */}
-            <div className="flex items-center justify-end p-2 bg-slate-800/50 absolute top-0 right-0 z-10 w-full backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
-                <div className="flex bg-slate-900/80 rounded-lg p-1 gap-1">
+            {/* Top Toolbar */}
+            <div className="flex items-center justify-between p-2 bg-slate-800/90 sticky top-0 z-30 w-full backdrop-blur-sm border-b border-white/10">
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsAnnotating(prev => !prev)}
+                        className={cn(
+                            "px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs",
+                            isAnnotating
+                                ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                                : "bg-slate-700/80 hover:bg-slate-700 text-white border border-white/10"
+                        )}
+                        title={isAnnotating ? "Fermer les annotations" : "Annoter l'image (surligner, dessiner, notes)"}
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>{isAnnotating ? "Annoter ✓" : "Annoter"}</span>
+                        {totalAnnotationsCount > 0 && !isAnnotating && (
+                            <span className="ml-0.5 px-1.5 py-0.2 bg-white/20 text-white rounded-full text-[10px] font-bold">
+                                {totalAnnotationsCount}
+                            </span>
+                        )}
+                    </button>
+                    <span className="text-xs text-slate-300 font-medium hidden sm:inline">Image</span>
+                </div>
+
+                <div className="flex bg-slate-900/80 rounded-lg p-1 gap-1 border border-white/10">
                     <button onClick={zoomOut} className="p-1.5 hover:bg-white/20 rounded text-white" title={t('action.zoomOut')}>
                         <ZoomOut className="h-4 w-4" />
                     </button>
@@ -112,8 +176,33 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
                 </div>
             </div>
 
+            {/* Floating Annotation Toolbar */}
+            {isAnnotating && (
+                <div className="sticky top-12 z-40 flex justify-center px-2 py-1.5 pointer-events-none">
+                    <AnnotationToolbar
+                        activeTool={activeTool}
+                        onSelectTool={setActiveTool}
+                        activeColor={activeColor}
+                        onSelectColor={setActiveColor}
+                        strokeWidth={strokeWidth}
+                        onSelectStrokeWidth={setStrokeWidth}
+                        isVisible={isAnnotationsVisible}
+                        onToggleVisibility={toggleAnnotationsVisibility}
+                        canUndo={canUndo}
+                        onUndo={undo}
+                        canRedo={canRedo}
+                        onRedo={redo}
+                        onClearPage={() => clearCurrentPage("1")}
+                        isSaving={isAnnotationsSaving}
+                        lastSaved={annotationsLastSaved}
+                        onClose={() => setIsAnnotating(false)}
+                        className="pointer-events-auto shadow-2xl max-w-full overflow-x-auto"
+                    />
+                </div>
+            )}
+
             <div
-                className="flex-1 overflow-auto flex items-center justify-center p-4"
+                className="flex-1 overflow-auto flex items-center justify-center p-4 relative"
                 style={{
                     backgroundImage: `
                         conic-gradient(#E5E7EB 90deg, #F3F4F6 90deg 180deg, #E5E7EB 180deg 270deg, #F3F4F6 270deg)
@@ -122,21 +211,36 @@ export function ImageViewer({ url, alt = "Image", className = "" }: ImageViewerP
                     backgroundPosition: '0 0, 10px 10px'
                 }}
             >
-                <img
-                    src={
-                        // DOM-XSS: Only allow blob:, https:, http:, and /api/ relative URLs
-                        (displayUrl && /^(blob:|https?:|\/api\/)/.test(displayUrl))
-                            ? displayUrl
-                            : ''
-                    }
-                    alt={alt}
+                <div
+                    className="relative inline-block shadow-lg max-w-full max-h-full"
                     style={{
                         transform: `scale(${Number.isFinite(scale) ? scale : 1}) rotate(${Number.isFinite(rotation) ? rotation : 0}deg)`,
                         transition: 'transform 0.2s ease-out'
                     }}
-                    className="max-w-full max-h-full object-contain shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                />
+                >
+                    <img
+                        src={
+                            // DOM-XSS: Only allow blob:, https:, http:, and /api/ relative URLs
+                            (displayUrl && /^(blob:|https?:|\/api\/)/.test(displayUrl))
+                                ? displayUrl
+                                : ''
+                        }
+                        alt={alt}
+                        className="max-w-full max-h-full object-contain block select-none"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <AnnotationOverlay
+                        pageNumber="1"
+                        annotations={annotations.pages["1"] || []}
+                        activeTool={isAnnotating ? activeTool : 'pointer'}
+                        activeColor={activeColor}
+                        strokeWidth={strokeWidth}
+                        isVisible={isAnnotationsVisible}
+                        onAddAnnotation={addAnnotation}
+                        onUpdateAnnotation={updateAnnotation}
+                        onDeleteAnnotation={deleteAnnotation}
+                    />
+                </div>
             </div>
         </div>
     )

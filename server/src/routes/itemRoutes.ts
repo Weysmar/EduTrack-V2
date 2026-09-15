@@ -11,7 +11,8 @@ import {
     restoreItem,
     getTrashItems,
     permanentDeleteItem,
-    emptyTrash
+    emptyTrash,
+    updateItemAnnotations
 } from '../controllers/itemController';
 import { authenticate } from '../middleware/auth';
 
@@ -25,6 +26,9 @@ router.get('/trash', getTrashItems);
 router.post('/trash/empty', emptyTrash);
 router.post('/:id/restore', restoreItem);
 router.delete('/:id/permanent', permanentDeleteItem);
+
+// Annotation route
+router.put('/:id/annotations', updateItemAnnotations);
 
 // Standard item CRUD
 router.get('/', getItems);

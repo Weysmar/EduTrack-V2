@@ -122,6 +122,7 @@ model Item {
   dueDate          DateTime?
   tags             String[]
   extractedContent String?  @db.Text
+  annotations      Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   deletedAt        DateTime?

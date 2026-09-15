@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
-import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink, Pencil } from 'lucide-react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useLanguage } from './language-provider'
 import { cn } from '@/lib/utils'
+import { useAnnotations } from '@/hooks/useAnnotations'
+import { AnnotationToolbar } from '@/components/annotations/AnnotationToolbar'
+import { AnnotationOverlay } from '@/components/annotations/AnnotationOverlay'
+import { AnnotationItem, AnnotationTool } from '@/types/annotations'
 
 // Ensure workerSrc is always explicitly pointing to the same-origin worker
 if (typeof window !== 'undefined') {
@@ -13,6 +17,8 @@ if (typeof window !== 'undefined') {
 
 interface PDFViewerProps {
     url: string
+    itemId?: string
+    initialAnnotations?: any
     className?: string
     isFocusMode?: boolean
     onToggleFocusMode?: () => void
@@ -32,9 +38,31 @@ interface LazyPageProps {
     pageNumber: number
     width: number | undefined
     devicePixelRatio: number
+    annotations: AnnotationItem[]
+    activeTool: AnnotationTool
+    activeColor: string
+    strokeWidth: number
+    isAnnotationsVisible: boolean
+    isAnnotating: boolean
+    onAddAnnotation: (pageNumber: string | number, item: AnnotationItem) => void
+    onUpdateAnnotation: (pageNumber: string | number, item: AnnotationItem) => void
+    onDeleteAnnotation: (pageNumber: string | number, id: string) => void
 }
 
-function LazyPage({ pageNumber, width, devicePixelRatio }: LazyPageProps) {
+function LazyPage({
+    pageNumber,
+    width,
+    devicePixelRatio,
+    annotations = [],
+    activeTool,
+    activeColor,
+    strokeWidth,
+    isAnnotationsVisible,
+    isAnnotating,
+    onAddAnnotation,
+    onUpdateAnnotation,
+    onDeleteAnnotation
+}: LazyPageProps) {
     // Render first 2 pages immediately, others when scrolled near view
     const [isVisible, setIsVisible] = useState(pageNumber <= 2)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -61,19 +89,32 @@ function LazyPage({ pageNumber, width, devicePixelRatio }: LazyPageProps) {
     return (
         <div ref={containerRef} className="w-full flex justify-center min-h-[300px]">
             {isVisible ? (
-                <Page
-                    pageNumber={pageNumber}
-                    width={width}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    className="shadow-lg bg-white"
-                    devicePixelRatio={devicePixelRatio}
-                    loading={
-                        <div className="h-[600px] w-full bg-white animate-pulse rounded shadow-lg flex items-center justify-center text-xs text-muted-foreground">
-                            Chargement page {pageNumber}...
-                        </div>
-                    }
-                />
+                <div className="relative inline-block shadow-lg bg-white overflow-hidden rounded-xs">
+                    <Page
+                        pageNumber={pageNumber}
+                        width={width}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                        className="bg-white"
+                        devicePixelRatio={devicePixelRatio}
+                        loading={
+                            <div className="h-[600px] w-full bg-white animate-pulse rounded shadow-lg flex items-center justify-center text-xs text-muted-foreground">
+                                Chargement page {pageNumber}...
+                            </div>
+                        }
+                    />
+                    <AnnotationOverlay
+                        pageNumber={pageNumber}
+                        annotations={annotations}
+                        activeTool={isAnnotating ? activeTool : 'pointer'}
+                        activeColor={activeColor}
+                        strokeWidth={strokeWidth}
+                        isVisible={isAnnotationsVisible}
+                        onAddAnnotation={onAddAnnotation}
+                        onUpdateAnnotation={onUpdateAnnotation}
+                        onDeleteAnnotation={onDeleteAnnotation}
+                    />
+                </div>
             ) : (
                 <div className="h-[600px] w-full bg-slate-200/40 dark:bg-slate-800/40 rounded flex items-center justify-center text-xs text-muted-foreground border border-dashed border-border/40">
                     Page {pageNumber}
@@ -93,6 +134,8 @@ const getTargetDpr = (scale: number) => {
 
 export function PDFViewer({
     url,
+    itemId,
+    initialAnnotations,
     className = "",
     isFocusMode,
     onToggleFocusMode,
@@ -119,6 +162,35 @@ export function PDFViewer({
     const [internalFocus, setInternalFocus] = useState(false)
     const [key, setKey] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
+
+    // --- Annotations State & Hook ---
+    const [isAnnotating, setIsAnnotating] = useState(false)
+    const {
+        annotations,
+        activeTool,
+        setActiveTool,
+        activeColor,
+        setActiveColor,
+        strokeWidth,
+        setStrokeWidth,
+        isVisible: isAnnotationsVisible,
+        toggleVisibility: toggleAnnotationsVisibility,
+        isSaving: isAnnotationsSaving,
+        lastSaved: annotationsLastSaved,
+        addAnnotation,
+        updateAnnotation,
+        deleteAnnotation,
+        clearPage: clearCurrentPage,
+        undo,
+        redo,
+        canUndo,
+        canRedo
+    } = useAnnotations({ itemId: itemId || '', initialAnnotations })
+
+    const totalAnnotationsCount = useMemo(() => {
+        if (!annotations?.pages) return 0;
+        return Object.values(annotations.pages).reduce((acc, list) => acc + (list?.length || 0), 0);
+    }, [annotations]);
 
     // Clear debounce timer on unmount
     useEffect(() => {
@@ -159,17 +231,31 @@ export function PDFViewer({
         }
     }
 
-    // Handle Escape key to exit focus mode
+    // Handle Escape key to exit focus mode or annotation mode
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && activeFocus) {
-                if (onExitFocusMode) onExitFocusMode()
-                else setInternalFocus(false)
+            if (e.key === 'Escape') {
+                if (isAnnotating) {
+                    setIsAnnotating(false)
+                } else if (activeFocus) {
+                    if (onExitFocusMode) onExitFocusMode()
+                    else setInternalFocus(false)
+                }
+            }
+            // Undo shortcut Ctrl+Z
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && isAnnotating) {
+                e.preventDefault()
+                undo()
+            }
+            // Redo shortcut Ctrl+Y or Ctrl+Shift+Z
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && isAnnotating) {
+                e.preventDefault()
+                redo()
             }
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [activeFocus, onExitFocusMode])
+    }, [activeFocus, onExitFocusMode, isAnnotating, undo, redo])
 
     useEffect(() => {
         if (!containerRef.current) return
@@ -233,6 +319,35 @@ export function PDFViewer({
                                 <Maximize className="h-3.5 w-3.5 text-primary" />
                                 <span>Plein écran</span>
                             </>
+                        )}
+                    </button>
+
+                    {/* Annotations Toggle Button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIsAnnotating(prev => {
+                                const next = !prev;
+                                if (next && useNativeEmbed) {
+                                    setUseNativeEmbed(false);
+                                }
+                                return next;
+                            });
+                        }}
+                        className={cn(
+                            "px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0",
+                            isAnnotating
+                                ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                                : "bg-card hover:bg-muted text-foreground border"
+                        )}
+                        title={isAnnotating ? "Fermer les annotations" : "Annoter le document (surligner, dessiner, notes)"}
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>{isAnnotating ? "Annoter ✓" : "Annoter"}</span>
+                        {totalAnnotationsCount > 0 && !isAnnotating && (
+                            <span className="ml-0.5 px-1.5 py-0.2 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
+                                {totalAnnotationsCount}
+                            </span>
                         )}
                     </button>
 
@@ -339,6 +454,32 @@ export function PDFViewer({
                 </div>
             )}
 
+            {/* Floating Annotation Toolbar */}
+            {isAnnotating && (
+                <div className="sticky top-12 sm:top-14 z-30 flex justify-center px-2 py-1.5 pointer-events-none">
+                    <AnnotationToolbar
+                        activeTool={activeTool}
+                        onSelectTool={setActiveTool}
+                        activeColor={activeColor}
+                        onSelectColor={setActiveColor}
+                        strokeWidth={strokeWidth}
+                        onSelectStrokeWidth={setStrokeWidth}
+                        isVisible={isAnnotationsVisible}
+                        onToggleVisibility={toggleAnnotationsVisibility}
+                        canUndo={canUndo}
+                        onUndo={undo}
+                        canRedo={canRedo}
+                        onRedo={redo}
+                        onClearPage={() => clearCurrentPage(1)}
+                        isSaving={isAnnotationsSaving}
+                        lastSaved={annotationsLastSaved}
+                        onClose={() => setIsAnnotating(false)}
+                        totalPages={numPages || undefined}
+                        className="pointer-events-auto shadow-2xl max-w-full overflow-x-auto"
+                    />
+                </div>
+            )}
+
             {/* PDF Document - Scrollable Area */}
             <div className={cn(
                 "flex-1 overflow-auto bg-slate-50 dark:bg-slate-950",
@@ -368,7 +509,10 @@ export function PDFViewer({
                             limitToBounds={true}
                             wheel={{ disabled: true }}
                             pinch={{ disabled: false, step: 5 }}
-                            panning={{ disabled: false, velocityDisabled: false }}
+                            panning={{
+                                disabled: isAnnotating && ['pen', 'highlighter', 'rect', 'arrow', 'text'].includes(activeTool),
+                                velocityDisabled: false
+                            }}
                             doubleClick={{ mode: 'toggle', step: 1.5 }}
                             onTransformed={handleTransformed}
                         >
@@ -430,6 +574,15 @@ export function PDFViewer({
                                             pageNumber={index + 1}
                                             width={pageWidth || undefined}
                                             devicePixelRatio={renderDpr}
+                                            annotations={annotations.pages[String(index + 1)] || []}
+                                            activeTool={activeTool}
+                                            activeColor={activeColor}
+                                            strokeWidth={strokeWidth}
+                                            isAnnotationsVisible={isAnnotationsVisible}
+                                            isAnnotating={isAnnotating}
+                                            onAddAnnotation={addAnnotation}
+                                            onUpdateAnnotation={updateAnnotation}
+                                            onDeleteAnnotation={deleteAnnotation}
                                         />
                                     ))}
                                 </Document>

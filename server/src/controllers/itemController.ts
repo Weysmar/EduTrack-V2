@@ -292,6 +292,34 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// PUT /api/items/:id/annotations
+export const updateItemAnnotations = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        const { annotations } = req.body;
+
+        const updated = await prisma.item.update({
+            where: { id: item.id },
+            data: { annotations: annotations !== undefined ? annotations : null }
+        });
+
+        socketService.emitToProfile(req.user!.id, 'item:annotated', {
+            id: item.id,
+            annotations: updated.annotations
+        });
+
+        res.json({ message: 'Annotations saved successfully', annotations: updated.annotations });
+    } catch (error) {
+        console.error('Error saving item annotations:', error);
+        res.status(500).json({ message: 'Error saving annotations', error });
+    }
+};
+
 // DELETE /api/items/:id (Soft delete)
 export const deleteItem = async (req: AuthRequest, res: Response) => {
     try {

@@ -906,7 +906,15 @@ export function ItemView() {
 
                                             if (isImage) {
                                                 if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                                return <ImageViewer url={pdfUrl} alt={item.title} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
+                                                return (
+                                                    <ImageViewer
+                                                        url={pdfUrl}
+                                                        itemId={item.id}
+                                                        initialAnnotations={item.annotations}
+                                                        alt={item.title}
+                                                        className={isFocusMode ? "h-full" : "h-[80vh]"}
+                                                    />
+                                                );
                                             }
 
                                             if (isOffice) {
@@ -943,10 +951,12 @@ export function ItemView() {
                                             if (isPdf) {
                                                 return (
                                                     <>
-                                                        {/* Unified PDF Viewer with Native Iframe and Focus Mode */}
+                                                        {/* Unified PDF Viewer with Native Iframe, Annotations and Focus Mode */}
                                                         {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : (
                                                             <PDFViewer
                                                                 url={pdfUrl}
+                                                                itemId={item.id}
+                                                                initialAnnotations={item.annotations}
                                                                 className={isFocusMode ? "h-full" : "h-[75vh] md:h-[80vh]"}
                                                                 isFocusMode={isFocusMode}
                                                                 onToggleFocusMode={() => setIsFocusMode(prev => !prev)}

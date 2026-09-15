@@ -93,6 +93,10 @@ export const itemQueries = {
         const { data } = await apiClient.post(`/items/${id}/restore`);
         return data;
     },
+    saveAnnotations: async (id: string, annotations: any) => {
+        const { data } = await apiClient.put(`/items/${id}/annotations`, { annotations });
+        return data;
+    },
     permanentDelete: async (id: string) => {
         const { data } = await apiClient.delete(`/items/${id}/permanent`);
         return data;
