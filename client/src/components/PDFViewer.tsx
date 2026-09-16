@@ -300,13 +300,13 @@ export function PDFViewer({
                 : `rounded-lg border shadow-sm ${className}`
         )}>
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-2 md:p-3 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10 gap-2 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center justify-between p-1.5 sm:p-2 border-b bg-slate-200 dark:bg-slate-800 sticky top-0 z-10 gap-1.5 sm:gap-2 shrink-0 overflow-x-auto scrollbar-none">
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     {/* Focus / Plein écran Toggle Button */}
                     <button
                         onClick={handleToggleFocus}
                         className={cn(
-                            "px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-sm shrink-0",
+                            "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0 cursor-pointer",
                             activeFocus
                                 ? "bg-primary text-primary-foreground hover:opacity-90"
                                 : "bg-card hover:bg-muted text-foreground border"
@@ -316,12 +316,12 @@ export function PDFViewer({
                         {activeFocus ? (
                             <>
                                 <Minimize className="h-3.5 w-3.5" />
-                                <span>Quitter</span>
+                                <span className={cn("hidden", isSideBySide ? "xl:inline" : "sm:inline")}>Quitter</span>
                             </>
                         ) : (
                             <>
                                 <Maximize className="h-3.5 w-3.5 text-primary" />
-                                <span>Plein écran</span>
+                                <span className={cn("hidden", isSideBySide ? "xl:inline" : "sm:inline")}>Plein écran</span>
                             </>
                         )}
                     </button>
@@ -339,7 +339,7 @@ export function PDFViewer({
                             });
                         }}
                         className={cn(
-                            "px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0",
+                            "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0 cursor-pointer",
                             isAnnotating
                                 ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
                                 : "bg-card hover:bg-muted text-foreground border"
@@ -347,7 +347,9 @@ export function PDFViewer({
                         title={isAnnotating ? "Fermer les annotations" : "Annoter le document (surligner, dessiner, notes)"}
                     >
                         <Pencil className="h-3.5 w-3.5" />
-                        <span>{isAnnotating ? "Annoter ✓" : "Annoter"}</span>
+                        <span className={cn("hidden", isSideBySide ? "xl:inline" : "sm:inline")}>
+                            {isAnnotating ? "Annoter ✓" : "Annoter"}
+                        </span>
                         {totalAnnotationsCount > 0 && !isAnnotating && (
                             <span className="ml-0.5 px-1.5 py-0.2 bg-primary/10 text-primary rounded-full text-[10px] font-bold">
                                 {totalAnnotationsCount}
@@ -361,42 +363,38 @@ export function PDFViewer({
                             type="button"
                             onClick={onOpenSideBySide}
                             className={cn(
-                                "px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0 cursor-pointer",
+                                "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0 cursor-pointer",
                                 isSideBySide
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-card hover:bg-muted text-foreground border"
                             )}
                             title={isSideBySide 
-                                ? (language === 'fr' ? "Mode côte à côte actif" : "Split view active") 
+                                ? (language === 'fr' ? "Quitter le mode côte à côte" : "Exit split view") 
                                 : (language === 'fr' ? "Afficher un second document côte à côte" : "Display a second document side-by-side")}
                         >
                             <Columns className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">
-                                {isSideBySide 
-                                    ? (language === 'fr' ? "Côte à côte ✓" : "Split view ✓") 
-                                    : (language === 'fr' ? "Côte à côte" : "Side-by-side")}
-                            </span>
+                            {!isSideBySide && (
+                                <span className="hidden sm:inline">
+                                    {language === 'fr' ? "Côte à côte" : "Side-by-side"}
+                                </span>
+                            )}
                         </button>
                     )}
-
-                    <span className="text-xs font-medium px-1 text-muted-foreground truncate hidden sm:inline">
-                        Visionneuse PDF
-                    </span>
                 </div>
 
-                <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
                     {numPages && (
-                        <span className="text-[11px] sm:text-xs font-medium text-muted-foreground px-1 hidden sm:inline">
-                            {numPages} {numPages > 1 ? 'pages' : 'page'}
+                        <span className="text-[11px] sm:text-xs font-medium text-muted-foreground px-1 shrink-0 whitespace-nowrap">
+                            {numPages} {numPages > 1 ? (isSideBySide ? 'p.' : 'pages') : (isSideBySide ? 'p.' : 'page')}
                         </span>
                     )}
 
                     {!useNativeEmbed && (
-                        <div className="flex items-center gap-0.5 sm:gap-1 bg-background/80 border rounded-lg p-0.5 shadow-xs">
+                        <div className="flex items-center gap-0.5 bg-background/80 border rounded-lg p-0.5 shadow-xs shrink-0">
                             <button
                                 type="button"
                                 onClick={() => transformRef.current?.zoomOut(0.25)}
-                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors"
+                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors cursor-pointer"
                                 title={t('action.zoomOut')}
                             >
                                 <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -404,7 +402,7 @@ export function PDFViewer({
                             <button
                                 type="button"
                                 onClick={() => transformRef.current?.resetTransform()}
-                                className="text-[11px] sm:text-xs font-semibold px-1 py-0.5 rounded hover:bg-muted min-w-[3.5ch] text-center text-foreground transition-colors"
+                                className="text-[10px] sm:text-xs font-semibold px-1 py-0.5 rounded hover:bg-muted min-w-[3ch] text-center text-foreground transition-colors cursor-pointer"
                                 title="Réinitialiser le zoom (100%)"
                             >
                                 {zoomScale}%
@@ -412,7 +410,7 @@ export function PDFViewer({
                             <button
                                 type="button"
                                 onClick={() => transformRef.current?.zoomIn(0.25)}
-                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors"
+                                className="p-1 sm:p-1.5 hover:bg-muted rounded text-foreground transition-colors cursor-pointer"
                                 title={t('action.zoomIn')}
                             >
                                 <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -426,7 +424,7 @@ export function PDFViewer({
                             type="button"
                             onClick={() => setUseNativeEmbed(false)}
                             className={cn(
-                                "px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1",
+                                "px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer",
                                 !useNativeEmbed
                                     ? "bg-primary text-primary-foreground shadow-xs"
                                     : "text-muted-foreground hover:text-foreground"
@@ -439,7 +437,7 @@ export function PDFViewer({
                             type="button"
                             onClick={() => setUseNativeEmbed(true)}
                             className={cn(
-                                "px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1",
+                                "px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer",
                                 useNativeEmbed
                                     ? "bg-primary text-primary-foreground shadow-xs"
                                     : "text-muted-foreground hover:text-foreground"
