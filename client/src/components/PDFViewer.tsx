@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { pdfjs, Document, Page } from 'react-pdf'
-import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink, Pencil } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCw, AlertCircle, Minimize, Maximize, ExternalLink, Pencil, Columns } from 'lucide-react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useLanguage } from './language-provider'
 import { cn } from '@/lib/utils'
@@ -23,6 +23,8 @@ interface PDFViewerProps {
     isFocusMode?: boolean
     onToggleFocusMode?: () => void
     onExitFocusMode?: () => void
+    onOpenSideBySide?: () => void
+    isSideBySide?: boolean
 }
 
 const isMobileDevice = () => {
@@ -139,9 +141,11 @@ export function PDFViewer({
     className = "",
     isFocusMode,
     onToggleFocusMode,
-    onExitFocusMode
+    onExitFocusMode,
+    onOpenSideBySide,
+    isSideBySide
 }: PDFViewerProps) {
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const isMobile = useMemo(() => isMobileDevice(), [])
     const [numPages, setNumPages] = useState<number | null>(null)
     const [loading, setLoading] = useState(true)
@@ -350,6 +354,30 @@ export function PDFViewer({
                             </span>
                         )}
                     </button>
+
+                    {/* Side-by-Side Split View Button */}
+                    {onOpenSideBySide && (
+                        <button
+                            type="button"
+                            onClick={onOpenSideBySide}
+                            className={cn(
+                                "px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold shadow-xs shrink-0 cursor-pointer",
+                                isSideBySide
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-card hover:bg-muted text-foreground border"
+                            )}
+                            title={isSideBySide 
+                                ? (language === 'fr' ? "Mode côte à côte actif" : "Split view active") 
+                                : (language === 'fr' ? "Afficher un second document côte à côte" : "Display a second document side-by-side")}
+                        >
+                            <Columns className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">
+                                {isSideBySide 
+                                    ? (language === 'fr' ? "Côte à côte ✓" : "Split view ✓") 
+                                    : (language === 'fr' ? "Côte à côte" : "Side-by-side")}
+                            </span>
+                        </button>
+                    )}
 
                     <span className="text-xs font-medium px-1 text-muted-foreground truncate hidden sm:inline">
                         Visionneuse PDF

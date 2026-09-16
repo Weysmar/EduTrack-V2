@@ -11,9 +11,10 @@ import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar, ArrowLeftRight, RefreshCw, X as CloseIcon } from 'lucide-react'
 import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
 import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
+import { SideBySidePickerModal } from '@/components/item/SideBySidePickerModal'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { exportNoteToPdf } from '@/lib/exportNotePdf'
@@ -98,6 +99,10 @@ export function ItemView() {
     const [isAIMenuOpen, setIsAIMenuOpen] = useState(false) // Manual control for mobile compatibility
     const [mobileTab, setMobileTab] = useState<'pdf' | 'summary'>('pdf')
 
+    // Side-by-Side (Split View) Mode
+    const [sideBySideItem, setSideBySideItem] = useState<any | null>(null)
+    const [isSideBySidePickerOpen, setIsSideBySidePickerOpen] = useState(false)
+    const [isSwapped, setIsSwapped] = useState(false)
 
     // Inline Edit Mode
     const [isEditMode, setIsEditMode] = useState(searchParams.get('edit') === 'true')
@@ -237,6 +242,18 @@ export function ItemView() {
 
         return null
     }, [item?.fileUrl, item?.storageKey, token])
+
+    // Side-by-Side Secondary PDF URL
+    const sideBySidePdfUrl = useMemo(() => {
+        if (!sideBySideItem) return null
+        if (sideBySideItem.storageKey) {
+            return `${API_URL}/storage/proxy/${sideBySideItem.storageKey}?token=${token}`
+        }
+        if (sideBySideItem.fileUrl) {
+            return sideBySideItem.fileUrl
+        }
+        return null
+    }, [sideBySideItem, token])
 
 
     // Handle Escape key to exit focus mode and image fullscreen
@@ -820,6 +837,15 @@ export function ItemView() {
                     setShowSummary={setShowSummary}
                     setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
                     handleDelete={handleDelete}
+                    onOpenSideBySide={() => {
+                        if (sideBySideItem) {
+                            setSideBySideItem(null)
+                            setIsSwapped(false)
+                        } else {
+                            setIsSideBySidePickerOpen(true)
+                        }
+                    }}
+                    isSideBySide={!!sideBySideItem}
                     t={t}
                 />
             </div>
@@ -839,6 +865,15 @@ export function ItemView() {
                 setIsSummaryOptionsOpen={setIsSummaryOptionsOpen}
                 handleExportNotePdf={handleExportNotePdf}
                 isExportingNotePdf={isExportingNotePdf}
+                onOpenSideBySide={() => {
+                    if (sideBySideItem) {
+                        setSideBySideItem(null)
+                        setIsSwapped(false)
+                    } else {
+                        setIsSideBySidePickerOpen(true)
+                    }
+                }}
+                isSideBySide={!!sideBySideItem}
                 t={t}
             />
             {/* Main Content Area */}
@@ -876,7 +911,7 @@ export function ItemView() {
                     {/* Content Logic: Summary VS Original Content */}
                     <div className={cn(
                         "w-full transition-all",
-                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : "max-w-5xl mx-auto"
+                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : (sideBySideItem ? "w-full max-w-[98vw] mx-auto" : "max-w-5xl mx-auto")
                     )}>
                         <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden" : "block")}>
 
@@ -887,108 +922,198 @@ export function ItemView() {
                                 ((!showSummary && !isFocusMode) || (isFocusMode && mobileTab === 'pdf')) ? "block" : "hidden",
                                 isFocusMode 
                                     ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" 
-                                    : (item.type === 'note'
+                                    : (sideBySideItem
                                         ? "p-0 min-h-[50vh]"
-                                        : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm")
+                                        : (item.type === 'note'
+                                            ? "p-0 min-h-[50vh]"
+                                            : "bg-card border-0 md:border md:rounded-xl p-0 min-h-[50vh] shadow-none md:shadow-sm"))
                             )}>
 
-                                {/* PDF VIEWER Integration */}
                                 {pdfUrl ? (
-                                    <div className={cn(
-                                        "border-0 rounded-none overflow-hidden bg-card shadow-none relative w-full",
-                                        isFocusMode ? "h-full shadow-sm md:rounded-lg border" : "md:border md:rounded-lg md:shadow-sm"
-                                    )}>
+                                    (() => {
+                                        const renderDocumentViewer = (targetItem: any, targetPdfUrl: string | null, isSecondary = false) => {
+                                        if (!targetItem || !targetPdfUrl) return null;
+                                        if (/^\s*(javascript|vbscript):/i.test(targetPdfUrl)) return null;
 
-                                        {/* ===== DISPLAY LOGIC BASED ON FILE EXTENSION ===== */}
-                                        {(() => {
-                                            // Variables are now defined at component scope (lines ~100)
-                                            // console.log("Detected file type:", { ext, isImage, isOffice, filename }); 
+                                        const targetFilename = targetItem.fileName || targetItem.fileUrl || '';
+                                        const targetExt = targetFilename.split('.').pop()?.toLowerCase();
+                                        const targetIsImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'heic'].includes(targetExt || '') || Boolean(targetItem.fileType?.startsWith('image/'));
+                                        const targetIsPdf = targetExt === 'pdf' || targetItem.fileType === 'application/pdf';
+                                        const targetIsOffice = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'odt'].includes(targetExt || '');
+                                        const targetIsText = ['txt', 'csv', 'json', 'log', 'rtf'].includes(targetExt || '');
+                                        const targetIsMarkdown = ['md', 'markdown'].includes(targetExt || '');
+                                        const targetIsBpmn = targetExt === 'bpmn' || (targetItem.tags && targetItem.tags.includes('bpmn'));
 
-                                            if (isImage) {
-                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                                return (
-                                                    <ImageViewer
-                                                        url={pdfUrl}
-                                                        itemId={item.id}
-                                                        initialAnnotations={item.annotations}
-                                                        alt={item.title}
-                                                        className={isFocusMode ? "h-full" : "h-[80vh]"}
-                                                    />
-                                                );
-                                            }
+                                        const viewerHeight = isFocusMode ? "h-full" : (sideBySideItem ? "h-[75vh] md:h-[82vh]" : "h-[75vh] md:h-[80vh]");
 
-                                            if (isOffice) {
-                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                                return (
-                                                    <OfficeViewer
-                                                        url={pdfUrl}
-                                                        storageKey={item.storageKey}
-                                                        className={isFocusMode ? "h-full" : "h-[60vh] md:h-[80vh]"}
-                                                        engine={officeEngine}
-                                                        onEngineChange={setOfficeEngine}
-                                                        onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
-                                                    />
-                                                );
-                                            }
-                                            // Office logic ends here, continue to next check
+                                        if (targetIsImage) {
+                                            return (
+                                                <ImageViewer
+                                                    url={targetPdfUrl}
+                                                    itemId={targetItem.id}
+                                                    initialAnnotations={targetItem.annotations}
+                                                    alt={targetItem.title}
+                                                    className={viewerHeight}
+                                                />
+                                            );
+                                        }
 
-                                            // Text/Markdown files
-                                            if (isText || isMarkdown) {
-                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                                return (
-                                                    <TextViewer
-                                                        url={pdfUrl}
-                                                        fileName={item.fileName}
-                                                        isMarkdown={isMarkdown}
-                                                        className="min-h-full"
-                                                    />
-                                                );
-                                            }
+                                        if (targetIsOffice) {
+                                            return (
+                                                <OfficeViewer
+                                                    url={targetPdfUrl}
+                                                    storageKey={targetItem.storageKey}
+                                                    className={viewerHeight}
+                                                    engine={officeEngine}
+                                                    onEngineChange={setOfficeEngine}
+                                                    onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
+                                                />
+                                            );
+                                        }
 
-                                            // Explicitly check for PDF
-                                            const isPdf = ext === 'pdf';
+                                        if (targetIsText || targetIsMarkdown) {
+                                            return (
+                                                <TextViewer
+                                                    url={targetPdfUrl}
+                                                    fileName={targetItem.fileName}
+                                                    isMarkdown={targetIsMarkdown}
+                                                    className="min-h-full"
+                                                />
+                                            );
+                                        }
 
-                                            if (isPdf) {
-                                                return (
-                                                    <>
-                                                        {/* Unified PDF Viewer with Native Iframe, Annotations and Focus Mode */}
-                                                        {/^\s*(javascript|vbscript):/i.test(pdfUrl) ? null : (
-                                                            <PDFViewer
-                                                                url={pdfUrl}
-                                                                itemId={item.id}
-                                                                initialAnnotations={item.annotations}
-                                                                className={isFocusMode ? "h-full" : "h-[75vh] md:h-[80vh]"}
-                                                                isFocusMode={isFocusMode}
-                                                                onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
-                                                                onExitFocusMode={() => setIsFocusMode(false)}
-                                                            />
-                                                        )}
-                                                    </>
-                                                );
-                                            }
+                                        if (targetIsPdf) {
+                                            return (
+                                                <PDFViewer
+                                                    url={targetPdfUrl}
+                                                    itemId={targetItem.id}
+                                                    initialAnnotations={targetItem.annotations}
+                                                    className={viewerHeight}
+                                                    isFocusMode={isFocusMode}
+                                                    onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+                                                    onExitFocusMode={() => setIsFocusMode(false)}
+                                                    onOpenSideBySide={isSecondary ? undefined : () => {
+                                                        if (sideBySideItem) {
+                                                            setSideBySideItem(null)
+                                                            setIsSwapped(false)
+                                                        } else {
+                                                            setIsSideBySidePickerOpen(true)
+                                                        }
+                                                    }}
+                                                    isSideBySide={!!sideBySideItem}
+                                                />
+                                            );
+                                        }
 
-                                            // BPMN 2.0 Diagrams
-                                            if (isBpmn) {
-                                                if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                                return (
-                                                    <BPMNViewer
-                                                        url={pdfUrl}
-                                                        fileName={item.fileName || item.title || "process.bpmn"}
-                                                        className={isFocusMode ? "h-full" : "h-[75vh] md:h-[80vh]"}
-                                                        isFocusMode={isFocusMode}
-                                                        onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
-                                                        onExitFocusMode={() => setIsFocusMode(false)}
-                                                    />
-                                                );
-                                            }
+                                        if (targetIsBpmn) {
+                                            return (
+                                                <BPMNViewer
+                                                    url={targetPdfUrl}
+                                                    fileName={targetItem.fileName || targetItem.title || "process.bpmn"}
+                                                    className={viewerHeight}
+                                                    isFocusMode={isFocusMode}
+                                                    onToggleFocusMode={() => setIsFocusMode(prev => !prev)}
+                                                    onExitFocusMode={() => setIsFocusMode(false)}
+                                                />
+                                            );
+                                        }
 
-                                            // Fallback for Unknown Types
-                                            if (/^\s*(javascript|vbscript):/i.test(pdfUrl)) return null;
-                                            return <GenericFileViewer url={pdfUrl} filename={item.fileName} className={isFocusMode ? "h-full" : "h-[80vh]"} />;
-                                        })()}
-                                    </div>
+                                        return <GenericFileViewer url={targetPdfUrl} filename={targetItem.fileName} className={viewerHeight} />;
+                                    };
 
-                                ) : (item.content || isEditMode) ? (
+                                    if (pdfUrl) {
+                                        if (sideBySideItem) {
+                                            return (
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full h-full">
+                                                    {/* Left Pane */}
+                                                    <div className="flex flex-col border rounded-xl overflow-hidden bg-card shadow-sm h-full">
+                                                        <div className="px-3.5 py-2 border-b bg-muted/30 flex items-center justify-between gap-2 shrink-0">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+                                                                    {isSwapped ? (language === 'fr' ? 'Secondaire' : 'Secondary') : (language === 'fr' ? 'Principal' : 'Primary')}
+                                                                </span>
+                                                                <span className="text-xs sm:text-sm font-semibold truncate text-foreground">
+                                                                    {(isSwapped ? sideBySideItem : item)?.title || (isSwapped ? sideBySideItem : item)?.fileName}
+                                                                </span>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setIsSwapped(prev => !prev)}
+                                                                className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 cursor-pointer shrink-0"
+                                                                title={language === 'fr' ? "Inverser les deux documents (Gauche ⇄ Droite)" : "Swap left and right documents"}
+                                                            >
+                                                                <ArrowLeftRight className="h-3.5 w-3.5" />
+                                                                <span className="hidden sm:inline">{language === 'fr' ? 'Inverser' : 'Swap'}</span>
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex-1 min-h-0 relative">
+                                                            {renderDocumentViewer(
+                                                                isSwapped ? sideBySideItem : item,
+                                                                isSwapped ? sideBySidePdfUrl : pdfUrl,
+                                                                isSwapped
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right Pane */}
+                                                    <div className="flex flex-col border rounded-xl overflow-hidden bg-card shadow-sm h-full">
+                                                        <div className="px-3.5 py-2 border-b bg-muted/30 flex items-center justify-between gap-2 shrink-0">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                                                                    {isSwapped ? (language === 'fr' ? 'Principal' : 'Primary') : (language === 'fr' ? 'Comparé' : 'Compared')}
+                                                                </span>
+                                                                <span className="text-xs sm:text-sm font-semibold truncate text-foreground">
+                                                                    {(isSwapped ? item : sideBySideItem)?.title || (isSwapped ? item : sideBySideItem)?.fileName}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setIsSideBySidePickerOpen(true)}
+                                                                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors text-xs flex items-center gap-1 cursor-pointer"
+                                                                    title={language === 'fr' ? "Changer de document comparé" : "Change compared document"}
+                                                                >
+                                                                    <RefreshCw className="h-3.5 w-3.5" />
+                                                                    <span className="hidden sm:inline">{language === 'fr' ? 'Changer' : 'Change'}</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSideBySideItem(null)
+                                                                        setIsSwapped(false)
+                                                                    }}
+                                                                    className="p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors cursor-pointer"
+                                                                    title={language === 'fr' ? "Fermer le mode côte à côte" : "Close split view"}
+                                                                >
+                                                                    <CloseIcon className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex-1 min-h-0 relative">
+                                                            {renderDocumentViewer(
+                                                                isSwapped ? item : sideBySideItem,
+                                                                isSwapped ? pdfUrl : sideBySidePdfUrl,
+                                                                !isSwapped
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className={cn(
+                                                "border-0 rounded-none overflow-hidden bg-card shadow-none relative w-full",
+                                                isFocusMode ? "h-full shadow-sm md:rounded-lg border" : "md:border md:rounded-lg md:shadow-sm"
+                                            )}>
+                                                {renderDocumentViewer(item, pdfUrl, false)}
+                                            </div>
+                                        );
+                                    }
+
+                                    return null;
+                                })()
+                            ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">
                                         {item.type === 'note' ? (
                                             <Editor
@@ -1189,6 +1314,17 @@ export function ItemView() {
                 onClose={() => setIsEditModalOpen(false)}
                 item={item}
                 courseId={courseId || ""}
+            />
+
+            <SideBySidePickerModal
+                isOpen={isSideBySidePickerOpen}
+                onClose={() => setIsSideBySidePickerOpen(false)}
+                currentCourseId={courseId}
+                currentItemId={item.id}
+                onSelectItem={(selected) => {
+                    setSideBySideItem(selected)
+                    setIsSwapped(false)
+                }}
             />
         </div>
     )

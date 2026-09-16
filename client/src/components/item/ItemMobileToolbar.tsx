@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLanguage } from '@/components/language-provider';
 import { cn } from '@/lib/utils';
 import {
     Check,
@@ -13,7 +14,8 @@ import {
     Sliders,
     FileDown,
     MoreHorizontal,
-    X
+    X,
+    Columns
 } from 'lucide-react';
 
 interface ItemMobileToolbarProps {
@@ -31,6 +33,8 @@ interface ItemMobileToolbarProps {
     setIsSummaryOptionsOpen: (val: boolean) => void;
     handleExportNotePdf?: () => void;
     isExportingNotePdf?: boolean;
+    onOpenSideBySide?: () => void;
+    isSideBySide?: boolean;
     t: any;
 }
 
@@ -49,8 +53,11 @@ export function ItemMobileToolbar({
     setIsSummaryOptionsOpen,
     handleExportNotePdf,
     isExportingNotePdf,
+    onOpenSideBySide,
+    isSideBySide,
     t
 }: ItemMobileToolbarProps) {
+    const { language } = useLanguage();
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
@@ -228,6 +235,30 @@ export function ItemMobileToolbar({
                         <h3 className="text-base font-bold text-center">Options du document</h3>
 
                         <div className="space-y-2 pt-2">
+                            {onOpenSideBySide && (
+                                <button
+                                    onClick={() => {
+                                        setIsActionsMenuOpen(false);
+                                        onOpenSideBySide();
+                                    }}
+                                    className="flex items-center gap-3 w-full p-3.5 rounded-xl bg-muted/40 hover:bg-muted active:scale-98 transition-all text-sm font-medium"
+                                >
+                                    <Columns className="h-5 w-5 text-primary" />
+                                    <div className="text-left">
+                                        <div>
+                                            {isSideBySide 
+                                                ? (language === 'fr' ? "Quitter le mode côte à côte" : "Exit split view") 
+                                                : (language === 'fr' ? "Afficher côte à côte" : "Display side-by-side")}
+                                        </div>
+                                        <div className="text-[11px] text-muted-foreground font-normal">
+                                            {isSideBySide 
+                                                ? (language === 'fr' ? "Fermer le deuxième document" : "Close the second document") 
+                                                : (language === 'fr' ? "Comparer avec un autre document" : "Compare with another document")}
+                                        </div>
+                                    </div>
+                                </button>
+                            )}
+
                             <button
                                 onClick={() => {
                                     setIsActionsMenuOpen(false);

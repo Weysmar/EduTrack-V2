@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/language-provider';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown, Columns } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -32,6 +33,8 @@ interface ItemDesktopToolbarProps {
     setShowSummary: (val: boolean) => void;
     setIsSummaryOptionsOpen: (val: boolean) => void;
     handleDelete: () => void;
+    onOpenSideBySide?: () => void;
+    isSideBySide?: boolean;
     t: any;
 }
 
@@ -40,8 +43,10 @@ export function ItemDesktopToolbar({
     handleSyncDrive, isSyncingDrive, handleExportNotePdf, isExportingNotePdf,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
-    hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete, t
+    hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete,
+    onOpenSideBySide, isSideBySide, t
 }: ItemDesktopToolbarProps) {
+    const { language } = useLanguage();
     return (
         <div className="hidden md:flex items-center gap-1.5 justify-end flex-shrink-0">
             {/* TTS Controls */}
@@ -150,6 +155,29 @@ export function ItemDesktopToolbar({
                     title={t('action.fullscreen') || "Plein écran"}
                 >
                     <Maximize className="h-4 w-4" aria-hidden="true" />
+                </button>
+            )}
+
+            {/* Universal Side-by-side Button - Available for all items with files */}
+            {pdfUrl && onOpenSideBySide && (
+                <button
+                    onClick={onOpenSideBySide}
+                    className={cn(
+                        "p-1.5 rounded-lg transition-colors flex-shrink-0 flex items-center gap-1.5 text-xs font-medium cursor-pointer",
+                        isSideBySide
+                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                    )}
+                    title={isSideBySide 
+                        ? (language === 'fr' ? "Mode côte à côte actif" : "Split view active") 
+                        : (language === 'fr' ? "Afficher un second document côte à côte" : "Display a second document side-by-side")}
+                >
+                    <Columns className="h-4 w-4" aria-hidden="true" />
+                    <span className="hidden xl:inline">
+                        {isSideBySide 
+                            ? (language === 'fr' ? "Scindé ✓" : "Split ✓") 
+                            : (language === 'fr' ? "Côte à côte" : "Side-by-side")}
+                    </span>
                 </button>
             )}
 
