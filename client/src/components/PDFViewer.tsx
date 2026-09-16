@@ -525,7 +525,7 @@ export function PDFViewer({
                         onClose={() => setIsAnnotating(false)}
                         currentPage={currentPage}
                         totalPages={numPages || undefined}
-                        className="pointer-events-auto shadow-2xl max-w-full overflow-x-auto"
+                        className="pointer-events-auto shadow-2xl max-w-full"
                     />
                 </div>
             )}

@@ -198,7 +198,7 @@ export function ImageViewer({
                         isSaving={isAnnotationsSaving}
                         lastSaved={annotationsLastSaved}
                         onClose={() => setIsAnnotating(false)}
-                        className="pointer-events-auto shadow-2xl max-w-full overflow-x-auto"
+                        className="pointer-events-auto shadow-2xl max-w-full"
                     />
                 </div>
             )}
