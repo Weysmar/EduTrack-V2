@@ -96,6 +96,29 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
         }, 1200);
     }, [itemId, onSaveSuccess]);
 
+    // Immediate Backend Save (used for explicit actions like Clear)
+    const saveImmediately = useCallback(async (dataToSave: DocumentAnnotations) => {
+        if (!itemId) return;
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+        }
+
+        setIsSaving(true);
+        try {
+            await itemQueries.saveAnnotations(itemId, dataToSave);
+            setIsSaving(false);
+            setLastSaved(new Date());
+            if (onSaveSuccess) onSaveSuccess();
+        } catch (err: any) {
+            console.error('Failed to save annotations immediately:', err);
+            setIsSaving(false);
+            toast.error("Erreur d'enregistrement", {
+                description: "Les modifications sont conservées localement."
+            });
+        }
+    }, [itemId, onSaveSuccess]);
+
     // Add an annotation to a specific page
     const addAnnotation = useCallback((pageNumber: string | number, item: AnnotationItem) => {
         const pageKey = String(pageNumber);
@@ -157,7 +180,8 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
     const clearPage = useCallback((pageNumber: string | number) => {
         const pageKey = String(pageNumber);
         setAnnotations(prev => {
-            if (!prev.pages[pageKey] || prev.pages[pageKey].length === 0) return prev;
+            const currentList = prev.pages[pageKey];
+            if (!currentList || currentList.length === 0) return prev;
             const nextAnnotations: DocumentAnnotations = {
                 ...prev,
                 pages: {
@@ -167,10 +191,26 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
                 lastModified: new Date().toISOString()
             };
             pushHistory(nextAnnotations);
-            triggerAutoSave(nextAnnotations);
+            saveImmediately(nextAnnotations);
             return nextAnnotations;
         });
-    }, [pushHistory, triggerAutoSave]);
+    }, [pushHistory, saveImmediately]);
+
+    // Clear ALL annotations across all pages of the document
+    const clearAll = useCallback(() => {
+        setAnnotations(prev => {
+            const hasAny = Object.values(prev.pages || {}).some(list => Array.isArray(list) && list.length > 0);
+            if (!hasAny) return prev;
+            const nextAnnotations: DocumentAnnotations = {
+                ...prev,
+                pages: {},
+                lastModified: new Date().toISOString()
+            };
+            pushHistory(nextAnnotations);
+            saveImmediately(nextAnnotations);
+            return nextAnnotations;
+        });
+    }, [pushHistory, saveImmediately]);
 
     // Undo
     const canUndo = historyIndex > 0;
@@ -224,6 +264,7 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
         updateAnnotation,
         deleteAnnotation,
         clearPage,
+        clearAll,
         undo,
         redo,
         canUndo,

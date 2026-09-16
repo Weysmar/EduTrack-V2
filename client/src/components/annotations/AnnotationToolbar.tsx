@@ -15,8 +15,10 @@ import {
     Check,
     Loader2,
     ChevronDown,
-    X
+    X,
+    FileText
 } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 import { cn } from '@/lib/utils';
 import {
     AnnotationTool,
@@ -38,6 +40,7 @@ interface AnnotationToolbarProps {
     canRedo: boolean;
     onRedo: () => void;
     onClearPage?: () => void;
+    onClearAll?: () => void;
     isSaving: boolean;
     lastSaved: Date | null;
     onClose?: () => void;
@@ -60,6 +63,7 @@ export function AnnotationToolbar({
     canRedo,
     onRedo,
     onClearPage,
+    onClearAll,
     isSaving,
     lastSaved,
     onClose,
@@ -67,8 +71,10 @@ export function AnnotationToolbar({
     totalPages,
     className
 }: AnnotationToolbarProps) {
+    const { language } = useLanguage();
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const [isWidthPickerOpen, setIsWidthPickerOpen] = useState(false);
+    const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
 
     const tools: Array<{ id: AnnotationTool; label: string; icon: any }> = [
         { id: 'pointer', label: 'Curseur / Navigation (défiler, zoomer)', icon: MousePointer },
@@ -262,20 +268,96 @@ export function AnnotationToolbar({
                 {isVisible ? <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
             </button>
 
-            {/* 6. Clear Page */}
-            {onClearPage && (
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (confirm("Effacer toutes les annotations de cette page ?")) {
-                            onClearPage();
-                        }
-                    }}
-                    className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    title="Effacer la page courante"
-                >
-                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
+            {/* 6. Clear Page & Clear All */}
+            {(onClearPage || onClearAll) && (
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (totalPages && totalPages > 1 && onClearPage && onClearAll) {
+                                setIsClearMenuOpen(prev => !prev);
+                                setIsColorPickerOpen(false);
+                                setIsWidthPickerOpen(false);
+                            } else if (onClearAll) {
+                                if (confirm(language === 'fr' 
+                                    ? "Effacer toutes les annotations de ce document ?" 
+                                    : "Clear all annotations on this document?")) {
+                                    onClearAll();
+                                }
+                            } else if (onClearPage) {
+                                if (confirm(language === 'fr' 
+                                    ? "Effacer toutes les annotations de cette page ?" 
+                                    : "Clear all annotations on this page?")) {
+                                    onClearPage();
+                                }
+                            }
+                        }}
+                        className="p-1.5 sm:p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        title={totalPages && totalPages > 1 
+                            ? (language === 'fr' ? "Effacer les annotations..." : "Clear annotations...") 
+                            : (language === 'fr' ? "Effacer les annotations" : "Clear annotations")}
+                    >
+                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </button>
+
+                    {isClearMenuOpen && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsClearMenuOpen(false)}
+                            />
+                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-0 z-50 p-1.5 bg-popover/95 backdrop-blur-md border rounded-xl shadow-2xl flex flex-col gap-1 min-w-[210px] animate-in fade-in zoom-in-95">
+                                <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground border-b mb-0.5">
+                                    {language === 'fr' ? "Effacer les annotations" : "Clear annotations"}
+                                </div>
+                                {onClearPage && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsClearMenuOpen(false);
+                                            if (confirm(language === 'fr' 
+                                                ? `Effacer les annotations de la page ${currentPage || 1} uniquement ?` 
+                                                : `Clear annotations on page ${currentPage || 1} only?`)) {
+                                                onClearPage();
+                                            }
+                                        }}
+                                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium hover:bg-accent text-foreground hover:text-accent-foreground transition-colors text-left cursor-pointer"
+                                    >
+                                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="flex flex-col">
+                                            <span>{language === 'fr' ? "Cette page uniquement" : "This page only"}</span>
+                                            <span className="text-[10px] text-muted-foreground font-normal">
+                                                {language === 'fr' ? `Page ${currentPage || 1}` : `Page ${currentPage || 1}`}
+                                            </span>
+                                        </div>
+                                    </button>
+                                )}
+                                {onClearAll && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsClearMenuOpen(false);
+                                            if (confirm(language === 'fr' 
+                                                ? "Effacer TOUTES les annotations de l'ensemble du document ?" 
+                                                : "Clear ALL annotations across the entire document?")) {
+                                                onClearAll();
+                                            }
+                                        }}
+                                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors text-left cursor-pointer"
+                                    >
+                                        <Trash2 className="h-4 w-4 shrink-0" />
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold">{language === 'fr' ? "Tout le document" : "Entire document"}</span>
+                                            <span className="text-[10px] text-muted-foreground font-normal">
+                                                {language === 'fr' ? "Toutes les pages" : "All pages"}
+                                            </span>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
             )}
 
             {/* 7. Save Status & Page info */}

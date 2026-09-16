@@ -47,6 +47,7 @@ export function ImageViewer({
         updateAnnotation,
         deleteAnnotation,
         clearPage: clearCurrentPage,
+        clearAll: clearAllAnnotations,
         undo,
         redo,
         canUndo,
@@ -193,6 +194,7 @@ export function ImageViewer({
                         canRedo={canRedo}
                         onRedo={redo}
                         onClearPage={() => clearCurrentPage("1")}
+                        onClearAll={clearAllAnnotations}
                         isSaving={isAnnotationsSaving}
                         lastSaved={annotationsLastSaved}
                         onClose={() => setIsAnnotating(false)}

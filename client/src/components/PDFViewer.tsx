@@ -49,6 +49,7 @@ interface LazyPageProps {
     onAddAnnotation: (pageNumber: string | number, item: AnnotationItem) => void
     onUpdateAnnotation: (pageNumber: string | number, item: AnnotationItem) => void
     onDeleteAnnotation: (pageNumber: string | number, id: string) => void
+    onPageVisible?: (pageNumber: number) => void
 }
 
 function LazyPage({
@@ -63,7 +64,8 @@ function LazyPage({
     isAnnotating,
     onAddAnnotation,
     onUpdateAnnotation,
-    onDeleteAnnotation
+    onDeleteAnnotation,
+    onPageVisible
 }: LazyPageProps) {
     // Render first 2 pages immediately, others when scrolled near view
     const [isVisible, setIsVisible] = useState(pageNumber <= 2)
@@ -87,6 +89,24 @@ function LazyPage({
         observer.observe(el)
         return () => observer.disconnect()
     }, [isVisible])
+
+    // Track active page number for toolbar page indicator and clear page action
+    useEffect(() => {
+        const el = containerRef.current
+        if (!el || !onPageVisible) return
+
+        const activeObserver = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    onPageVisible(pageNumber)
+                }
+            },
+            { threshold: 0.3 }
+        )
+
+        activeObserver.observe(el)
+        return () => activeObserver.disconnect()
+    }, [pageNumber, onPageVisible])
 
     return (
         <div ref={containerRef} className="w-full flex justify-center min-h-[300px]">
@@ -169,6 +189,7 @@ export function PDFViewer({
 
     // --- Annotations State & Hook ---
     const [isAnnotating, setIsAnnotating] = useState(false)
+    const [currentPage, setCurrentPage] = useState<number>(1)
     const {
         annotations,
         activeTool,
@@ -185,6 +206,7 @@ export function PDFViewer({
         updateAnnotation,
         deleteAnnotation,
         clearPage: clearCurrentPage,
+        clearAll: clearAllAnnotations,
         undo,
         redo,
         canUndo,
@@ -496,10 +518,12 @@ export function PDFViewer({
                         onUndo={undo}
                         canRedo={canRedo}
                         onRedo={redo}
-                        onClearPage={() => clearCurrentPage(1)}
+                        onClearPage={() => clearCurrentPage(currentPage)}
+                        onClearAll={clearAllAnnotations}
                         isSaving={isAnnotationsSaving}
                         lastSaved={annotationsLastSaved}
                         onClose={() => setIsAnnotating(false)}
+                        currentPage={currentPage}
                         totalPages={numPages || undefined}
                         className="pointer-events-auto shadow-2xl max-w-full overflow-x-auto"
                     />
@@ -609,6 +633,7 @@ export function PDFViewer({
                                             onAddAnnotation={addAnnotation}
                                             onUpdateAnnotation={updateAnnotation}
                                             onDeleteAnnotation={deleteAnnotation}
+                                            onPageVisible={setCurrentPage}
                                         />
                                     ))}
                                 </Document>
