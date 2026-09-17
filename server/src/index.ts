@@ -79,7 +79,8 @@ async function initializeApp() {
 
         console.log('[Init] Loading socketService module...');
         const { socketService } = await import('./services/socketService');
-        console.log('[Init] SocketService module loaded');
+        socketService.init(io);
+        console.log('[Init] SocketService initialized with io');
 
         console.log('[Init] Mounting /api routes...');
         app.use('/api', routes.default);
@@ -89,9 +90,6 @@ async function initializeApp() {
         console.log('[Init] Configuring Socket.IO...');
         io.on('connection', (socket) => {
             console.log('Client connected:', socket.id);
-
-            // Initialize the socket service singleton
-            socketService.init(io);
 
             socket.on('join-profile', (profileId: string) => {
                 socket.join(`profile:${profileId}`);
