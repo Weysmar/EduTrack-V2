@@ -9,7 +9,8 @@ import Highlight from '@tiptap/extension-highlight'
 import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
     Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
-    Image as ImageIcon, Sigma, Type, ChevronDown, Check, Table as TableIcon, Trash2
+    Image as ImageIcon, Sigma, Type, ChevronDown, Check, Table as TableIcon, Trash2,
+    AlignLeft, AlignCenter, AlignRight, AlignJustify
 } from 'lucide-react'
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
@@ -24,6 +25,7 @@ import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
 import { MathematicsExtension } from '@/components/editor/MathematicsExtension'
 import { FontFamilyExtension, AVAILABLE_FONTS } from '@/components/editor/FontFamilyExtension'
+import { TextAlignExtension } from '@/components/editor/TextAlignExtension'
 
 // Custom TipTap Image Node
 export const CustomImage = Node.create({
@@ -81,9 +83,10 @@ interface EditorProps {
     onChange?: (content: string) => void
     editable?: boolean
     className?: string
+    variant?: 'default' | 'document'
 }
 
-export function Editor({ content, onChange, editable = true, className }: EditorProps) {
+export function Editor({ content, onChange, editable = true, className, variant = 'default' }: EditorProps) {
     const { language, t } = useLanguage()
     const { minecraftTheme: isMinecraft } = useTheme()
     const [showColorPicker, setShowColorPicker] = useState(false)
@@ -171,6 +174,7 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     levels: [1, 2, 3]
                 }
             }),
+            TextAlignExtension,
             Placeholder.configure({
                 placeholder: 'Écrivez vos notes ici... (Collez vos images avec Ctrl+V)',
             }),
@@ -246,8 +250,10 @@ export function Editor({ content, onChange, editable = true, className }: Editor
             },
             attributes: {
                 class: cn(
-                    'prose prose-sm dark:prose-invert text-foreground focus:outline-none max-w-none min-h-[150px]',
-                    editable ? 'px-3 py-2' : 'px-4 md:px-8 py-6',
+                    variant === 'document'
+                        ? 'prose prose-base text-slate-900 focus:outline-none max-w-none min-h-[25cm] [&_p]:text-slate-900 [&_h1]:text-slate-900 [&_h2]:text-slate-900 [&_h3]:text-slate-900 [&_li]:text-slate-900 [&_strong]:text-slate-950 [&_blockquote]:text-slate-900 [&_td]:text-slate-900 [&_th]:text-slate-950'
+                        : 'prose prose-sm dark:prose-invert text-foreground focus:outline-none max-w-none min-h-[150px]',
+                    editable ? (variant === 'document' ? 'px-0 py-2' : 'px-3 py-2') : 'px-4 md:px-8 py-6',
                     // Preserve empty paragraph line breaks
                     '[&_p:empty]:min-h-[1.5em] [&_p:empty]:before:content-["\\00a0"]',
                     // Default styling adjustments
@@ -335,12 +341,13 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     const mcBtn = isMinecraft
         ? "rounded-none text-[#4a3520] dark:text-stone-300 hover:bg-[#dfd0b5] hover:text-[#2c1d11] dark:hover:bg-stone-700 dark:hover:text-stone-100"
-        : ""
+        : (variant === 'document' ? "text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700" : "text-foreground/80 hover:text-foreground")
+
     const mcActive = (isActive: boolean) => {
         if (!isActive) return ""
-        return isMinecraft
-            ? "bg-[#c8b393] text-[#1e140a] dark:bg-stone-700 dark:text-stone-100 font-bold"
-            : "bg-muted text-foreground"
+        if (isMinecraft) return "bg-[#c8b393] text-[#1e140a] dark:bg-stone-700 dark:text-stone-100 font-bold"
+        if (variant === 'document') return "bg-primary/20 text-primary font-bold ring-1 ring-primary/40"
+        return "bg-primary/15 text-primary font-semibold"
     }
 
     const currentFontFamily = editor.getAttributes('textStyle').fontFamily || ''
@@ -354,13 +361,18 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
     return (
         <div className={cn(
-            editable ? "border border-t-0 rounded-b-xl bg-card text-card-foreground relative shadow-xs" : "bg-card text-card-foreground rounded-xl border shadow-sm",
+            variant === 'document'
+                ? "bg-transparent text-slate-900 border-none shadow-none rounded-none w-full"
+                : (editable ? "border border-t-0 rounded-b-xl bg-card text-card-foreground relative shadow-xs" : "bg-card text-card-foreground rounded-xl border shadow-sm"),
             isMinecraft && "border-4 rounded-none border-[#c8b393] bg-[#fbf7ed] text-[#2c1d11] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 shadow-sm",
             className
         )}>
             {editable && (
                 <div className={cn(
-                    "sticky top-0 z-20 border-b bg-card/95 backdrop-blur-md p-1.5 flex flex-wrap items-center gap-1 shadow-xs",
+                    "sticky top-0 z-20 border-b p-1.5 flex flex-wrap items-center gap-1 shadow-xs transition-colors shrink-0",
+                    variant === 'document'
+                        ? "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 backdrop-blur-md"
+                        : "bg-card/95 backdrop-blur-md text-foreground",
                     isMinecraft && "bg-[#eee3ce]/95 border-b-2 border-[#c8b393] text-[#4a3520] dark:bg-stone-800/95 dark:border-stone-600 dark:text-stone-300"
                 )}>
                     {/* Headings */}
@@ -684,6 +696,60 @@ export function Editor({ content, onChange, editable = true, className }: Editor
 
                     <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
 
+                    {/* Text Alignment */}
+                    <div className="flex items-center gap-0.5">
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors",
+                                mcActive(editor.isActive({ textAlign: 'left' })),
+                                mcBtn
+                            )}
+                            type="button"
+                            title={language === 'fr' ? "Aligner à gauche" : "Align Left"}
+                        >
+                            <AlignLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors",
+                                mcActive(editor.isActive({ textAlign: 'center' })),
+                                mcBtn
+                            )}
+                            type="button"
+                            title={language === 'fr' ? "Centrer" : "Align Center"}
+                        >
+                            <AlignCenter className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors",
+                                mcActive(editor.isActive({ textAlign: 'right' })),
+                                mcBtn
+                            )}
+                            type="button"
+                            title={language === 'fr' ? "Aligner à droite" : "Align Right"}
+                        >
+                            <AlignRight className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                            className={cn(
+                                "p-2 rounded hover:bg-muted transition-colors",
+                                mcActive(editor.isActive({ textAlign: 'justify' })),
+                                mcBtn
+                            )}
+                            type="button"
+                            title={language === 'fr' ? "Justifier" : "Justify"}
+                        >
+                            <AlignJustify className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    <div className={cn("w-px h-6 my-auto mx-1", isMinecraft ? "bg-[#c8b393] dark:bg-stone-600" : "bg-border")} />
+
                     {/* Quote, Code, Separator */}
                     <button
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
@@ -924,7 +990,15 @@ export function Editor({ content, onChange, editable = true, className }: Editor
                     </button>
                 </div>
             )}
-            <EditorContent editor={editor} className="min-h-[150px]" />
+            {variant === 'document' ? (
+                <div className="w-full flex-1 flex justify-center p-4 sm:p-8 bg-slate-200/60 dark:bg-slate-950 overflow-y-auto scrollbar-thin">
+                    <div className="w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-xs border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all">
+                        <EditorContent editor={editor} className="min-h-[25cm] bg-white text-slate-900 focus:outline-none" />
+                    </div>
+                </div>
+            ) : (
+                <EditorContent editor={editor} className="min-h-[150px]" />
+            )}
         </div>
     )
 }

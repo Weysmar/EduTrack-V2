@@ -10,8 +10,24 @@ import {
     TableRow,
     TableCell,
     WidthType,
-    UnderlineType
+    UnderlineType,
+    AlignmentType
 } from 'docx';
+
+function getAlignment(el: HTMLElement): (typeof AlignmentType)[keyof typeof AlignmentType] | undefined {
+    let align = (el.style?.textAlign || el.getAttribute?.('align') || '').toLowerCase();
+    if (!align && el.classList) {
+        if (el.classList.contains('text-center')) align = 'center';
+        else if (el.classList.contains('text-right')) align = 'right';
+        else if (el.classList.contains('text-justify')) align = 'justify';
+        else if (el.classList.contains('text-left')) align = 'left';
+    }
+    if (align === 'center') return AlignmentType.CENTER;
+    if (align === 'right') return AlignmentType.RIGHT;
+    if (align === 'justify') return AlignmentType.JUSTIFIED;
+    if (align === 'left') return AlignmentType.LEFT;
+    return undefined;
+}
 
 /**
  * Convert a DOCX file ArrayBuffer into rich, semantic HTML using Mammoth.
@@ -145,6 +161,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
             case 'h1':
                 docxChildren.push(new Paragraph({
                     heading: HeadingLevel.HEADING_1,
+                    alignment: getAlignment(el),
                     children: parseInlineElements(el),
                     spacing: { before: 360, after: 160 }
                 }));
@@ -153,6 +170,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
             case 'h2':
                 docxChildren.push(new Paragraph({
                     heading: HeadingLevel.HEADING_2,
+                    alignment: getAlignment(el),
                     children: parseInlineElements(el),
                     spacing: { before: 280, after: 140 }
                 }));
@@ -161,6 +179,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
             case 'h3':
                 docxChildren.push(new Paragraph({
                     heading: HeadingLevel.HEADING_3,
+                    alignment: getAlignment(el),
                     children: parseInlineElements(el),
                     spacing: { before: 200, after: 100 }
                 }));
@@ -170,6 +189,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
                 Array.from(el.querySelectorAll(':scope > li')).forEach(li => {
                     docxChildren.push(new Paragraph({
                         bullet: { level: 0 },
+                        alignment: getAlignment(li as HTMLElement),
                         children: parseInlineElements(li as HTMLElement),
                         spacing: { after: 80 }
                     }));
@@ -179,6 +199,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
             case 'ol':
                 Array.from(el.querySelectorAll(':scope > li')).forEach((li, idx) => {
                     docxChildren.push(new Paragraph({
+                        alignment: getAlignment(li as HTMLElement),
                         children: [
                             new TextRun({ text: `${idx + 1}. `, bold: true, font: 'Calibri', size: 24 }),
                             ...parseInlineElements(li as HTMLElement)
@@ -202,6 +223,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
                                 width: { size: cellWidthDxa, type: WidthType.DXA },
                                 children: [
                                     new Paragraph({
+                                        alignment: getAlignment(cell as HTMLElement),
                                         children: parseInlineElements(cell as HTMLElement, isHeader)
                                     })
                                 ]
@@ -223,6 +245,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
             case 'blockquote':
                 docxChildren.push(new Paragraph({
                     children: parseInlineElements(el, false, true),
+                    alignment: getAlignment(el),
                     indent: { left: 720 },
                     spacing: { before: 120, after: 120 }
                 }));
@@ -233,6 +256,7 @@ export async function convertHtmlToDocxBlob(html: string, title: string = 'Docum
                 if (runs.length > 0) {
                     docxChildren.push(new Paragraph({
                         children: runs,
+                        alignment: getAlignment(el),
                         spacing: { after: 120 }
                     }));
                 }

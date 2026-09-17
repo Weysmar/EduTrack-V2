@@ -283,26 +283,25 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                 </div>
             </div>
 
-            {/* Editor Container with A4 Paper Canvas */}
-            <div className="flex-1 overflow-y-auto px-2 sm:px-6 py-6 scrollbar-thin">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                            Conversion du document Word pour l’édition en cours...
-                        </p>
-                    </div>
-                ) : (
-                    <div className="max-w-[21.5cm] min-h-[29.7cm] mx-auto bg-white text-slate-900 shadow-xl rounded-md p-6 sm:p-12 border border-slate-200 dark:border-slate-800 transition-all">
-                        <Editor
-                            content={content}
-                            onChange={handleContentChange}
-                            editable={true}
-                            className="min-h-[25cm] text-slate-900"
-                        />
-                    </div>
-                )}
-            </div>
+            {/* Editor Container */}
+            {isLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                        Conversion du document Word pour l’édition en cours...
+                    </p>
+                </div>
+            ) : (
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <Editor
+                        content={content}
+                        onChange={handleContentChange}
+                        editable={true}
+                        variant="document"
+                        className="flex-1 flex flex-col overflow-hidden"
+                    />
+                </div>
+            )}
         </div>
     );
 }
