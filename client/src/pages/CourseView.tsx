@@ -4,8 +4,8 @@ import { toast } from 'sonner'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { CreateItemModal } from '@/components/CreateItemModal'
 import { EditCourseModal } from '@/components/EditCourseModal'
-import { BulkActionBar } from '@/components/BulkActionBar'
-import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
+import { BulkActionBar, BulkGenerateMode } from '@/components/BulkActionBar'
+import { GenerateExerciseModal, RevisionGenerationMode } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
 import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2 } from 'lucide-react'
 import { TrashModal } from '@/components/TrashModal'
@@ -148,7 +148,7 @@ export function CourseView() {
 
     // Generation State
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
-    const [generationMode, setGenerationMode] = useState<'flashcards' | 'quiz'>('flashcards')
+    const [generationMode, setGenerationMode] = useState<RevisionGenerationMode>('flashcards')
     const [isGenerationMenuOpen, setIsGenerationMenuOpen] = useState(false)
     const [aggregatedContent, setAggregatedContent] = useState('')
     const generationMenuRef = useRef<HTMLDivElement>(null)
@@ -260,7 +260,7 @@ export function CourseView() {
         generateSummary(options, content)
     }
 
-    const handleBulkGeneration = async (mode: 'flashcards' | 'quiz' | 'summary') => {
+    const handleBulkGeneration = async (mode: BulkGenerateMode) => {
         if (selectedItems.size === 0) return
         const selectedItemIds = Array.from(selectedItems)
         const content = await getAggregatedContent(selectedItemIds)

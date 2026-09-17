@@ -1,13 +1,16 @@
-import { Trash2, X, CheckSquare, Loader2, Brain, ChevronDown, FileText } from 'lucide-react'
+import { Trash2, X, CheckSquare, Loader2, Brain, ChevronDown, FileText, Scale, FileEdit, BookOpen, BrainCircuit, Layers } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { createPortal } from 'react-dom'
 import { useState, useRef, useEffect } from 'react'
+import { RevisionGenerationMode } from '@/components/GenerateExerciseModal'
+
+export type BulkGenerateMode = RevisionGenerationMode | 'summary'
 
 interface BulkActionBarProps {
     selectedCount: number
     onClearSelection: () => void
     onDelete: () => void
-    onGenerate?: (mode: 'flashcards' | 'quiz' | 'summary') => void
+    onGenerate?: (mode: BulkGenerateMode) => void
     isDeleting?: boolean
 }
 
@@ -28,7 +31,7 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
 
     if (selectedCount === 0) return null
 
-    const handleGenerateClick = (mode: 'flashcards' | 'quiz' | 'summary') => {
+    const handleGenerateClick = (mode: BulkGenerateMode) => {
         setIsGenerateMenuOpen(false)
         onGenerate?.(mode)
     }
@@ -55,36 +58,65 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
                             className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary hover:text-primary-foreground rounded-md transition-colors text-sm font-medium"
                         >
                             <Brain className="h-4 w-4" aria-hidden="true" />
-                            {t('bulk.generate')}
+                            {t('bulk.generate') || "Réviser / IA"}
                             <ChevronDown className={`h-3 w-3 transition-transform ${isGenerateMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                         </button>
 
                         {isGenerateMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 bg-card text-card-foreground border rounded-lg shadow-xl min-w-[200px] overflow-hidden animate-in slide-in-from-bottom-2 duration-150">
-                                <button
-                                    onClick={() => handleGenerateClick('flashcards')}
-                                    aria-label={t('bulk.generate.flashcards')}
-                                    className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
-                                >
-                                    <CheckSquare className="h-4 w-4" aria-hidden="true" />
-                                    {t('bulk.generate.flashcards')}
-                                </button>
-                                <button
-                                    onClick={() => handleGenerateClick('quiz')}
-                                    aria-label={t('bulk.generate.quiz')}
-                                    className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
-                                >
-                                    <Brain className="h-4 w-4" aria-hidden="true" />
-                                    {t('bulk.generate.quiz')}
-                                </button>
-                                <button
-                                    onClick={() => handleGenerateClick('summary')}
-                                    aria-label={t('bulk.generate.summary')}
-                                    className="w-full px-4 py-2.5 text-left hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"
-                                >
-                                    <FileText className="h-4 w-4" aria-hidden="true" />
-                                    {t('bulk.generate.summary')}
-                                </button>
+                            <div className="absolute bottom-full mb-2 left-0 bg-card text-card-foreground border rounded-xl shadow-2xl min-w-[220px] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 divide-y divide-border/60">
+                                <div className="p-1">
+                                    <button
+                                        onClick={() => handleGenerateClick('sheet')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <BookOpen className="h-4 w-4 text-purple-500" aria-hidden="true" />
+                                        Fiche de révision
+                                    </button>
+                                    <button
+                                        onClick={() => handleGenerateClick('cloze')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <FileEdit className="h-4 w-4 text-teal-500" aria-hidden="true" />
+                                        Exercices à trous
+                                    </button>
+                                    <button
+                                        onClick={() => handleGenerateClick('true_false')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <Scale className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+                                        Questions Vrai / Faux
+                                    </button>
+                                    <button
+                                        onClick={() => handleGenerateClick('mindmap')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <BrainCircuit className="h-4 w-4 text-pink-500" aria-hidden="true" />
+                                        Mind Map IA
+                                    </button>
+                                </div>
+                                <div className="p-1">
+                                    <button
+                                        onClick={() => handleGenerateClick('flashcards')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <Layers className="h-4 w-4 text-orange-500" aria-hidden="true" />
+                                        {t('bulk.generate.flashcards') || "Flashcards"}
+                                    </button>
+                                    <button
+                                        onClick={() => handleGenerateClick('quiz')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <CheckSquare className="h-4 w-4 text-green-500" aria-hidden="true" />
+                                        {t('bulk.generate.quiz') || "QCM"}
+                                    </button>
+                                    <button
+                                        onClick={() => handleGenerateClick('summary')}
+                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                    >
+                                        <FileText className="h-4 w-4 text-cyan-500" aria-hidden="true" />
+                                        {t('bulk.generate.summary') || "Résumé de cours"}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

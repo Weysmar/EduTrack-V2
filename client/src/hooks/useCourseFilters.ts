@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 
-export type FilterTab = 'all' | 'exercise' | 'note' | 'resource' | 'flashcards' | 'quiz' | 'mindmap' | 'summary';
+export type FilterTab = 'all' | 'exercise' | 'note' | 'resource' | 'flashcards' | 'quiz' | 'mindmap' | 'summary' | 'sheet' | 'cloze';
 export type SortOption = 'alpha' | 'date' | 'last_opened';
 
 export function useCourseFilters(items: any[]) {

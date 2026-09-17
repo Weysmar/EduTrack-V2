@@ -54,6 +54,8 @@ export function CourseToolbar({
                         <option value="resource">{t('filter.resources') || 'Ressources'}</option>
                         <option value="exercise">{t('filter.exercises') || 'Exercices'}</option>
                         <option value="note">{t('filter.notes') || 'Notes'}</option>
+                        <option value="sheet">{t('filter.sheets') || 'Fiches de révision'}</option>
+                        <option value="cloze">{t('filter.cloze') || 'Exercices à trous'}</option>
                         <option value="flashcards">{t('filter.flashcards') || 'Flashcards'}</option>
                         <option value="quiz">{t('filter.quiz') || 'Quiz / QCM'}</option>
                         <option value="mindmap">{t('filter.mindmaps') || 'Cartes Mentales'}</option>

@@ -40,8 +40,8 @@ const _legacyExtractTextFromFile = async (buffer: Buffer, mimetype: string): Pro
 
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
-        // Updated to remove 'files' for direct upload
-        const { noteIds = [], fileItemIds = [], name, apiKey, model = 'gemini-3.7-flash', provider: explicitProvider, courseId } = req.body;
+        // Updated to support direct content, or noteIds/fileItemIds
+        const { noteIds = [], fileItemIds = [], content, name, apiKey, model = 'gemini-3.7-flash', provider: explicitProvider, courseId } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {
@@ -68,88 +68,91 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
         });
         const effectiveApiKey = apiConfig.apiKey;
 
-        if (!noteIds.length && !fileItemIds.length) {
-            return res.status(400).json({ error: 'At least one note or file is required' });
-        }
-
-        // Extract content from notes
         let combinedContent = '';
         const noteNames: string[] = [];
-
-        if (noteIds.length > 0) {
-            const notes = await prisma.item.findMany({
-                where: {
-                    id: { in: noteIds },
-                    profileId,
-                    type: 'note'
-                }
-            });
-
-            for (const note of notes) {
-                combinedContent += `\n\n=== ${note.title} ===\n${note.content || ''}`;
-                noteNames.push(note.title);
-            }
-        }
-
         const fileNames: string[] = [];
 
-        // Extract content from existing file items (PDF, DOCX) using robust service
-        if (fileItemIds.length > 0) {
-            const fileItems = await prisma.item.findMany({
-                where: {
-                    id: { in: fileItemIds },
-                    profileId
+        if (typeof content === 'string' && content.trim()) {
+            combinedContent = content.trim();
+        } else {
+            if (!noteIds.length && !fileItemIds.length) {
+                return res.status(400).json({ error: 'Content or at least one note/file is required' });
+            }
+
+            // Extract content from notes
+            if (noteIds.length > 0) {
+                const notes = await prisma.item.findMany({
+                    where: {
+                        id: { in: noteIds },
+                        profileId,
+                        type: 'note'
+                    }
+                });
+
+                for (const note of notes) {
+                    combinedContent += `\n\n=== ${note.title} ===\n${note.content || ''}`;
+                    noteNames.push(note.title);
                 }
-            });
+            }
 
-            const extractionResults: Array<{ filename: string; text: string; warnings: string[] }> = [];
+            // Extract content from existing file items (PDF, DOCX) using robust service
+            if (fileItemIds.length > 0) {
+                const fileItems = await prisma.item.findMany({
+                    where: {
+                        id: { in: fileItemIds },
+                        profileId
+                    }
+                });
 
-            for (const item of fileItems) {
-                if (!item.storageKey) {
-                    console.warn(`File item ${item.id} has no storageKey`);
-                    continue;
-                }
+                const extractionResults: Array<{ filename: string; text: string; warnings: string[] }> = [];
 
-                try {
-                    const buffer = await storageService.getFileContent(item.storageKey);
-                    if (!buffer || buffer.length === 0) {
-                        console.warn(`Empty buffer for file: ${item.fileName}`);
+                for (const item of fileItems) {
+                    if (!item.storageKey) {
+                        console.warn(`File item ${item.id} has no storageKey`);
                         continue;
                     }
 
-                    const filename = item.fileName || 'unknown';
-                    
-                    // Use robust content extraction service
-                    const result = await contentExtractionService.extractTextFromBuffer(
-                        buffer, 
-                        filename,
-                        { maxLength: 20000 } // Limit per file
-                    );
+                    try {
+                        const buffer = await storageService.getFileContent(item.storageKey);
+                        if (!buffer || buffer.length === 0) {
+                            console.warn(`Empty buffer for file: ${item.fileName}`);
+                            continue;
+                        }
 
-                    console.log(`[MindMap] Extracted ${result.stats.words} words from ${filename}`);
+                        const filename = item.fileName || 'unknown';
+                        
+                        // Use robust content extraction service
+                        const result = await contentExtractionService.extractTextFromBuffer(
+                            buffer, 
+                            filename,
+                            { maxLength: 20000 } // Limit per file
+                        );
 
-                    combinedContent += `\n\n=== ${filename} ===\n${result.text}`;
-                    fileNames.push(filename);
-                    extractionResults.push({
-                        filename,
-                        text: result.text,
-                        warnings: result.warnings
-                    });
+                        console.log(`[MindMap] Extracted ${result.stats.words} words from ${filename}`);
 
-                    // Log any warnings
-                    result.warnings.forEach(w => console.warn(`[MindMap] ${filename}: ${w}`));
+                        combinedContent += `\n\n=== ${filename} ===\n${result.text}`;
+                        fileNames.push(filename);
+                        extractionResults.push({
+                            filename,
+                            text: result.text,
+                            warnings: result.warnings
+                        });
 
-                } catch (error: any) {
-                    console.error(`[MindMap] Failed to extract ${item.fileName}:`, error);
-                    // Continue with other files, don't fail completely
+                        // Log any warnings
+                        result.warnings.forEach(w => console.warn(`[MindMap] ${filename}: ${w}`));
+
+                    } catch (error: any) {
+                        console.error(`[MindMap] Failed to extract ${item.fileName}:`, error);
+                        // Continue with other files, don't fail completely
+                    }
                 }
-            }
 
-            if (fileItemIds.length > 0 && fileNames.length === 0) {
-                return res.status(400).json({ 
-                    error: 'No content could be extracted from selected files',
-                    details: 'All files failed to extract. Check file formats and try again.'
-                });
+                if (fileItemIds.length > 0 && fileNames.length === 0) {
+                    return res.status(400).json({ 
+                        error: 'No content could be extracted from selected files',
+                        details: 'All files failed to extract. Check file formats and try again.'
+                    });
+                }
             }
         }
 

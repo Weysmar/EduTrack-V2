@@ -19,7 +19,10 @@ import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
 import { exportNoteToPdf } from '@/lib/exportNotePdf'
 import { getOfflineItem, getOfflineCourse } from '@/lib/offlineManager'
-import { GenerateExerciseModal } from '@/components/GenerateExerciseModal'
+import { GenerateExerciseModal, RevisionGenerationMode } from '@/components/GenerateExerciseModal'
+import { RevisionSheetViewer } from '@/components/revision/RevisionSheetViewer'
+import { ClozeExerciseViewer } from '@/components/revision/ClozeExerciseViewer'
+import { MindMapViewer } from '@/components/MindMapViewer'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { PDFViewer } from '@/components/PDFViewer'
@@ -87,7 +90,7 @@ export function ItemView() {
     const [isSummaryOptionsOpen, setIsSummaryOptionsOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
     const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false)
-    const [exerciseMode, setExerciseMode] = useState<'flashcards' | 'quiz'>('flashcards')
+    const [exerciseMode, setExerciseMode] = useState<RevisionGenerationMode>('flashcards')
     const [exerciseContent, setExerciseContent] = useState('')
     const [isDeleting, setIsDeleting] = useState(false) // Re-added correctly
     const [showSummary, setShowSummary] = useState(false) // Default to content view
@@ -539,7 +542,7 @@ export function ItemView() {
         }
     }
 
-    const handleOpenExercise = async (mode: 'flashcards' | 'quiz') => {
+    const handleOpenExercise = async (mode: RevisionGenerationMode) => {
         // Ensure text is extracted if it's a file
         let effectiveContent = exerciseContent || item.extractedContent || item.content || '';
 
@@ -1113,6 +1116,18 @@ export function ItemView() {
 
                                     return null;
                                 })()
+                            ) : (item.type === 'sheet') ? (
+                                <div className="w-full h-full">
+                                    <RevisionSheetViewer item={item} />
+                                </div>
+                            ) : (item.type === 'cloze') ? (
+                                <div className="w-full h-full">
+                                    <ClozeExerciseViewer item={item} />
+                                </div>
+                            ) : (item.type === 'mindmap') ? (
+                                <div className="w-full h-[75vh] min-h-[600px] border rounded-xl overflow-hidden bg-card">
+                                    <MindMapViewer content={item.content || ''} />
+                                </div>
                             ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">
                                         {item.type === 'note' ? (
@@ -1325,6 +1340,17 @@ export function ItemView() {
                     setSideBySideItem(selected)
                     setIsSwapped(false)
                 }}
+            />
+
+            <GenerateExerciseModal
+                isOpen={isExerciseModalOpen}
+                onClose={() => setIsExerciseModalOpen(false)}
+                sourceContent={exerciseContent}
+                courseId={courseId}
+                itemId={item?.id}
+                sourceTitle={item?.title || item?.fileName || 'Document'}
+                initialMode={exerciseMode}
+                fileCategory={itemFileCategory}
             />
         </div>
     )

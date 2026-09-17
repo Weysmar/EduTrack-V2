@@ -199,12 +199,12 @@ export function QuizStudy() {
             // Ignore typing in input fields
             if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
 
-            // 1-4, NumPad1-4, AZERTY & é " '
+            // 1-4, NumPad1-4, AZERTY & é " ', and V / F for True/False
             if (!isSubmitted) {
-                if (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '&' || e.code === 'KeyA') {
+                if (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '&' || e.code === 'KeyA' || e.key === 'v' || e.key === 'V') {
                     e.preventDefault()
                     handleSelectOption(0)
-                } else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2' || e.key === 'é' || e.code === 'KeyB') {
+                } else if (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2' || e.key === 'é' || e.code === 'KeyB' || e.key === 'f' || e.key === 'F') {
                     e.preventDefault()
                     handleSelectOption(1)
                 } else if (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3' || e.key === '"' || e.code === 'KeyC') {

@@ -32,6 +32,12 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
         })
     }, [question?.id, question?.stem, question?.options])
 
+    const isTrueFalse = useMemo(() => {
+        if (!optionsList || optionsList.length !== 2) return false
+        const texts = optionsList.map((o: any) => o.text.trim().toLowerCase())
+        return (texts.includes('vrai') && texts.includes('faux')) || (texts.includes('true') && texts.includes('false'))
+    }, [optionsList])
+
     const isAnswerCorrect = selectedOption !== null && Number(selectedOption) === Number(question.correctAnswer)
     const isSkipped = selectedOption === -1
 
@@ -44,6 +50,13 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                         <HelpCircle className="h-6 w-6 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
+                        {isTrueFalse && (
+                            <div className="mb-2">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                    ⚖️ Question Vrai / Faux
+                                </span>
+                            </div>
+                        )}
                         <div className="text-xl md:text-2xl font-semibold leading-relaxed font-heading text-foreground">
                             <ReactMarkdown
                                 remarkPlugins={[remarkMath]}
@@ -61,81 +74,142 @@ export function QuizQuestion({ question, selectedOption, isSubmitted, onSelectOp
                 </div>
 
                 {/* Options List */}
-                <div className="space-y-3">
-                    {optionsList.map((optionObj: any, index: number) => {
-                        const isSelected = selectedOption !== null && Number(selectedOption) === Number(optionObj.originalIndex)
-                        const isCorrect = Number(optionObj.originalIndex) === Number(question.correctAnswer)
-                        const letter = LETTERS[index] || `${index + 1}`
+                {isTrueFalse ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {optionsList.map((optionObj: any, index: number) => {
+                            const isSelected = selectedOption !== null && Number(selectedOption) === Number(optionObj.originalIndex)
+                            const isCorrect = Number(optionObj.originalIndex) === Number(question.correctAnswer)
+                            const isVrai = optionObj.text.toLowerCase().includes('vrai') || optionObj.text.toLowerCase().includes('true')
+                            const shortcutKey = isVrai ? 'V' : 'F'
 
-                        let variant = "default"
-                        if (isSubmitted) {
-                            if (isCorrect) variant = "correct"
-                            else if (isSelected) variant = "incorrect"
-                            else variant = "dimmed"
-                        } else {
-                            if (isSelected) variant = "selected"
-                        }
+                            let variant = "default"
+                            if (isSubmitted) {
+                                if (isCorrect) variant = "correct"
+                                else if (isSelected) variant = "incorrect"
+                                else variant = "dimmed"
+                            } else {
+                                if (isSelected) variant = "selected"
+                            }
 
-                        return (
-                            <button
-                                key={index}
-                                type="button"
-                                onClick={() => !isSubmitted && onSelectOption(optionObj.originalIndex)}
-                                disabled={isSubmitted}
-                                className={cn(
-                                    "w-full text-left p-4 rounded-xl border-2 transition-all relative overflow-hidden group flex items-center justify-between gap-4 cursor-pointer",
-                                    variant === 'default' && "border-border/80 hover:border-primary/50 hover:bg-muted/40",
-                                    variant === 'selected' && "border-primary bg-primary/10 ring-2 ring-primary/20",
-                                    variant === 'correct' && "border-green-500 bg-green-500/10 dark:bg-green-950/20",
-                                    variant === 'incorrect' && "border-red-500 bg-red-500/10 dark:bg-red-950/20",
-                                    variant === 'dimmed' && "border-border/40 opacity-40 cursor-not-allowed"
-                                )}
-                            >
-                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                    {/* Choice Badge A, B, C, D */}
-                                    <span className={cn(
-                                        "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors",
-                                        variant === 'default' && "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary",
-                                        variant === 'selected' && "bg-primary text-primary-foreground",
-                                        variant === 'correct' && "bg-green-500 text-white font-black",
-                                        variant === 'incorrect' && "bg-red-500 text-white font-black",
-                                        variant === 'dimmed' && "bg-muted/50 text-muted-foreground"
-                                    )}>
-                                        {letter}
+                            return (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => !isSubmitted && onSelectOption(optionObj.originalIndex)}
+                                    disabled={isSubmitted}
+                                    className={cn(
+                                        "p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 cursor-pointer relative group text-center select-none shadow-xs",
+                                        variant === 'default' && (
+                                            isVrai 
+                                                ? "border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/10 text-foreground" 
+                                                : "border-rose-500/30 hover:border-rose-500 hover:bg-rose-500/10 text-foreground"
+                                        ),
+                                        variant === 'selected' && (
+                                            isVrai 
+                                                ? "border-emerald-500 bg-emerald-500/20 ring-4 ring-emerald-500/20" 
+                                                : "border-rose-500 bg-rose-500/20 ring-4 ring-rose-500/20"
+                                        ),
+                                        variant === 'correct' && "border-green-500 bg-green-500/20 text-green-800 dark:text-green-300 font-bold",
+                                        variant === 'incorrect' && "border-red-500 bg-red-500/20 text-red-800 dark:text-red-300 font-bold",
+                                        variant === 'dimmed' && "opacity-40 border-border/40 cursor-not-allowed"
+                                    )}
+                                >
+                                    {/* Keyboard hint badge */}
+                                    <span className="absolute top-3 right-3 text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
+                                        {shortcutKey}
                                     </span>
 
-                                    {/* Option Text */}
-                                    <span className={cn(
-                                        "font-medium text-base leading-snug break-words flex-1",
-                                        variant === 'correct' && "text-green-800 dark:text-green-300 font-semibold",
-                                        variant === 'incorrect' && "text-red-800 dark:text-red-300 line-through decoration-red-500/60",
-                                        variant === 'selected' && "text-primary font-semibold",
-                                        variant === 'default' && "text-foreground"
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-transform group-hover:scale-110",
+                                        isVrai ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30" : "bg-rose-500 text-white shadow-md shadow-rose-500/30"
                                     )}>
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                            components={{
-                                                p: ({ children }) => <span className="inline">{children}</span>,
-                                                strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>
-                                            }}
-                                        >
-                                            {optionObj.text}
-                                        </ReactMarkdown>
-                                    </span>
-                                </div>
+                                        {isVrai ? <CheckCircle className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
+                                    </div>
 
-                                {/* Status Icon */}
-                                {isSubmitted && isCorrect && (
-                                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 animate-in zoom-in-75 duration-300" />
-                                )}
-                                {isSubmitted && isSelected && !isCorrect && (
-                                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 animate-in zoom-in-75 duration-300" />
-                                )}
-                            </button>
-                        )
-                    })}
-                </div>
+                                    <span className="text-xl font-bold uppercase tracking-wider">
+                                        {optionObj.text}
+                                    </span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {optionsList.map((optionObj: any, index: number) => {
+                            const isSelected = selectedOption !== null && Number(selectedOption) === Number(optionObj.originalIndex)
+                            const isCorrect = Number(optionObj.originalIndex) === Number(question.correctAnswer)
+                            const letter = LETTERS[index] || `${index + 1}`
+
+                            let variant = "default"
+                            if (isSubmitted) {
+                                if (isCorrect) variant = "correct"
+                                else if (isSelected) variant = "incorrect"
+                                else variant = "dimmed"
+                            } else {
+                                if (isSelected) variant = "selected"
+                            }
+
+                            return (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => !isSubmitted && onSelectOption(optionObj.originalIndex)}
+                                    disabled={isSubmitted}
+                                    className={cn(
+                                        "w-full text-left p-4 rounded-xl border-2 transition-all relative overflow-hidden group flex items-center justify-between gap-4 cursor-pointer",
+                                        variant === 'default' && "border-border/80 hover:border-primary/50 hover:bg-muted/40",
+                                        variant === 'selected' && "border-primary bg-primary/10 ring-2 ring-primary/20",
+                                        variant === 'correct' && "border-green-500 bg-green-500/10 dark:bg-green-950/20",
+                                        variant === 'incorrect' && "border-red-500 bg-red-500/10 dark:bg-red-950/20",
+                                        variant === 'dimmed' && "border-border/40 opacity-40 cursor-not-allowed"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                        {/* Choice Badge A, B, C, D */}
+                                        <span className={cn(
+                                            "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors",
+                                            variant === 'default' && "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary",
+                                            variant === 'selected' && "bg-primary text-primary-foreground",
+                                            variant === 'correct' && "bg-green-500 text-white font-black",
+                                            variant === 'incorrect' && "bg-red-500 text-white font-black",
+                                            variant === 'dimmed' && "bg-muted/50 text-muted-foreground"
+                                        )}>
+                                            {letter}
+                                        </span>
+
+                                        {/* Option Text */}
+                                        <span className={cn(
+                                            "font-medium text-base leading-snug break-words flex-1",
+                                            variant === 'correct' && "text-green-800 dark:text-green-300 font-semibold",
+                                            variant === 'incorrect' && "text-red-800 dark:text-red-300 line-through decoration-red-500/60",
+                                            variant === 'selected' && "text-primary font-semibold",
+                                            variant === 'default' && "text-foreground"
+                                        )}>
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkMath]}
+                                                rehypePlugins={[rehypeKatex]}
+                                                components={{
+                                                    p: ({ children }) => <span className="inline">{children}</span>,
+                                                    strong: ({ children }) => <strong className="font-bold text-amber-400 dark:text-amber-300">{children}</strong>
+                                                }}
+                                            >
+                                                {optionObj.text}
+                                            </ReactMarkdown>
+                                        </span>
+                                    </div>
+
+                                    {/* Status Icon */}
+                                    {isSubmitted && isCorrect && (
+                                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 animate-in zoom-in-75 duration-300" />
+                                    )}
+                                    {isSubmitted && isSelected && !isCorrect && (
+                                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 animate-in zoom-in-75 duration-300" />
+                                    )}
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
 
                 {/* Explanation Card */}
                 {isSubmitted && (

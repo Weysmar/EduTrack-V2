@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { FolderOpen, Dumbbell, FileText, Layers, CheckSquare, Brain } from 'lucide-react'
+import { FolderOpen, Dumbbell, FileText, Layers, CheckSquare, Brain, BookOpen, FileEdit } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { FilterTab } from '@/hooks/useCourseFilters'
 
@@ -16,6 +16,8 @@ export function CourseFilters({ activeFilters, onToggle }: CourseFiltersProps) {
         { id: 'resource', label: t('filter.resources') || 'Ressources', icon: FolderOpen },
         { id: 'exercise', label: t('filter.exercises') || 'Exercices', icon: Dumbbell },
         { id: 'note', label: t('filter.notes') || 'Notes', icon: FileText },
+        { id: 'sheet', label: t('filter.sheets') || 'Fiches', icon: BookOpen },
+        { id: 'cloze', label: t('filter.cloze') || 'Textes à trous', icon: FileEdit },
         { id: 'flashcards', label: t('filter.flashcards') || 'Flashcards', icon: Layers },
         { id: 'quiz', label: t('filter.quiz') || 'QCM', icon: CheckSquare },
         { id: 'mindmap', label: t('filter.mindmaps') || 'Cartes Mentales', icon: Brain },

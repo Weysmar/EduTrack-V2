@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/components/language-provider';
+import { RevisionGenerationMode } from '@/components/GenerateExerciseModal';
 import { cn } from '@/lib/utils';
 import {
     Check,
@@ -15,7 +16,11 @@ import {
     FileDown,
     MoreHorizontal,
     X,
-    Columns
+    Columns,
+    BookOpen,
+    FileEdit,
+    Scale,
+    Network
 } from 'lucide-react';
 
 interface ItemMobileToolbarProps {
@@ -27,7 +32,7 @@ interface ItemMobileToolbarProps {
     isAIMenuOpen: boolean;
     setIsAIMenuOpen: (val: boolean) => void;
     handleDelete: () => void;
-    handleOpenExercise: (mode: 'flashcards' | 'quiz') => void;
+    handleOpenExercise: (mode: RevisionGenerationMode) => void;
     hasSummary: boolean;
     setShowSummary: (val: boolean) => void;
     setIsSummaryOptionsOpen: (val: boolean) => void;
@@ -140,19 +145,35 @@ export function ItemMobileToolbar({
                     />
 
                     {/* Bottom Sheet Content */}
-                    <div className="relative w-full bg-card rounded-t-2xl shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom duration-300 pb-safe space-y-4">
+                    <div className="relative w-full max-h-[90vh] overflow-y-auto bg-card rounded-t-2xl shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom duration-300 pb-safe space-y-4">
                         <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-2 opacity-50" />
                         <h3 className="text-lg font-bold text-center mb-4">Que voulez-vous générer ?</h3>
 
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-2.5">
+                            <button
+                                onClick={() => {
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('sheet');
+                                }}
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                    <BookOpen className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Fiche de révision</div>
+                                    <div className="text-xs text-muted-foreground">Synthèse structurée, formules, pièges & checklist</div>
+                                </div>
+                            </button>
+
                             <button
                                 onClick={() => {
                                     setIsAIMenuOpen(false);
                                     handleOpenExercise('flashcards');
                                 }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 flex-shrink-0">
                                     <Layers className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -166,14 +187,62 @@ export function ItemMobileToolbar({
                                     setIsAIMenuOpen(false);
                                     handleOpenExercise('quiz');
                                 }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 flex-shrink-0">
                                     <CheckSquare className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
-                                    <div className="font-semibold">QCM</div>
-                                    <div className="text-xs text-muted-foreground">Testez vos connaissances</div>
+                                    <div className="font-semibold">QCM interactif</div>
+                                    <div className="text-xs text-muted-foreground">Testez vos connaissances en choix multiple</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('true_false');
+                                }}
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 flex-shrink-0">
+                                    <Scale className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Questions Vrai / Faux</div>
+                                    <div className="text-xs text-muted-foreground">Démêlez le vrai du faux sur le cours</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('cloze');
+                                }}
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                                    <FileEdit className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Exercice à trous</div>
+                                    <div className="text-xs text-muted-foreground">Complétez le texte avec la banque de mots</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsAIMenuOpen(false);
+                                    handleOpenExercise('mindmap');
+                                }}
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 flex-shrink-0">
+                                    <Network className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Mind Map IA</div>
+                                    <div className="text-xs text-muted-foreground">Visualisez la carte mentale interactive</div>
                                 </div>
                             </button>
 
@@ -183,9 +252,9 @@ export function ItemMobileToolbar({
                                     if (hasSummary) setShowSummary(true);
                                     else setIsSummaryOptionsOpen(true);
                                 }}
-                                className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                                <div className="h-10 w-10 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-sky-600 flex-shrink-0">
                                     <FileText className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -200,9 +269,9 @@ export function ItemMobileToolbar({
                                         setIsAIMenuOpen(false);
                                         setIsSummaryOptionsOpen(true);
                                     }}
-                                    className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                                 >
-                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 flex-shrink-0">
                                         <Sliders className="h-5 w-5" />
                                     </div>
                                     <div className="text-left">

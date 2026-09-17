@@ -1,5 +1,6 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BrainCircuit, Search, Plus, Trash2, Calendar, FileText, LayoutGrid, List as ListIcon, Loader2, X } from 'lucide-react';
 import { format } from 'date-fns';
@@ -15,6 +16,9 @@ export function MindMapsPage() {
     const { t } = useLanguage();
     const { activeProfile } = useProfileStore();
     const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
+    const targetId = searchParams.get('id');
+
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
@@ -25,6 +29,15 @@ export function MindMapsPage() {
         queryFn: () => mindmapQueries.getAll(),
         enabled: !!activeProfile
     });
+
+    useEffect(() => {
+        if (targetId && mindMaps?.length) {
+            const found = mindMaps.find((m: any) => m.id === targetId);
+            if (found) {
+                setSelectedMindMap(found);
+            }
+        }
+    }, [targetId, mindMaps]);
 
     const deleteMutation = useMutation({
         mutationFn: mindmapQueries.delete,
