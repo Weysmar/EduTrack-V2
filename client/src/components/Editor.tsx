@@ -264,7 +264,7 @@ export function Editor({ content, onChange, editable = true, className, variant 
                     '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 [&_ul]:space-y-1',
                     '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-3 [&_ol]:space-y-1',
                     '[&_li]:my-1 [&_li]:leading-relaxed',
-                    '[&_li>p]:my-0 [&_li>p]:inline-block',
+                    '[&_li>p]:my-0 [&_li>p]:inline',
                     '[&_ul_ul]:list-circle [&_ul_ul]:pl-5 [&_ul_ul]:my-1',
                     '[&_ul_ul_ul]:list-square [&_ul_ul_ul]:pl-5 [&_ul_ul_ul]:my-1',
                     // Minecraft "Voxel Texture Pack" Styles
@@ -992,8 +992,8 @@ export function Editor({ content, onChange, editable = true, className, variant 
             )}
             {variant === 'document' ? (
                 <div className="w-full flex-1 flex justify-center p-4 sm:p-8 bg-slate-200/60 dark:bg-slate-950 overflow-y-auto scrollbar-thin">
-                    <div className="w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-xs border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all">
-                        <EditorContent editor={editor} className="min-h-[25cm] bg-white text-slate-900 focus:outline-none" />
+                    <div className="w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-sm border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all box-border overflow-hidden relative">
+                        <EditorContent editor={editor} className="min-h-[25cm] w-full max-w-full focus:outline-none" />
                     </div>
                 </div>
             ) : (

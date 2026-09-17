@@ -463,7 +463,19 @@
     .prose li > p,
     .ProseMirror li > p {
         margin: 0 !important;
-        display: inline-block !important;
+        display: inline !important;
+    }
+
+    .ProseMirror {
+        max-width: 100%;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .ProseMirror .tableWrapper {
+        max-width: 100%;
+        overflow-x: auto;
+        margin: 1rem 0;
     }
 
     /* Note & Editor Dark Mode Contrast Safeguards:
