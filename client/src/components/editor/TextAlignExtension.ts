@@ -20,7 +20,7 @@ export const TextAlignExtension = Extension.create<TextAlignOptions>({
 
     addOptions() {
         return {
-            types: ['heading', 'paragraph'],
+            types: ['heading', 'paragraph', 'blockquote'],
             alignments: ['left', 'center', 'right', 'justify'],
             defaultAlignment: 'left',
         };
@@ -34,7 +34,13 @@ export const TextAlignExtension = Extension.create<TextAlignOptions>({
                     textAlign: {
                         default: this.options.defaultAlignment,
                         parseHTML: element => {
-                            const align = element.style.textAlign || element.getAttribute('align');
+                            let align = element.style?.textAlign || element.getAttribute?.('align');
+                            if (!align && element.classList) {
+                                if (element.classList.contains('text-center')) align = 'center';
+                                else if (element.classList.contains('text-right')) align = 'right';
+                                else if (element.classList.contains('text-justify')) align = 'justify';
+                                else if (element.classList.contains('text-left')) align = 'left';
+                            }
                             return align || this.options.defaultAlignment;
                         },
                         renderHTML: attributes => {

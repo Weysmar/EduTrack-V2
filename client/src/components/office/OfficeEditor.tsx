@@ -44,20 +44,17 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
         let isMounted = true;
 
         async function loadDocument() {
-            if (item?.content && item.content.trim().length > 0) {
-                setContent(item.content);
-                setIsLoading(false);
-                return;
-            }
-
             if (!fileUrl) {
+                if (item?.content) {
+                    setContent(item.content);
+                }
                 setIsLoading(false);
                 return;
             }
 
             try {
                 setIsLoading(true);
-                const response = await fetch(fileUrl);
+                const response = await fetch(fileUrl, { cache: 'no-cache' });
                 if (!response.ok) {
                     throw new Error(`Erreur de téléchargement du fichier (${response.status})`);
                 }
@@ -78,9 +75,13 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
             } catch (error) {
                 console.error('Failed to load & convert Office document:', error);
                 if (isMounted) {
-                    toast.error('Impossible de convertir le document pour édition', {
-                        description: error instanceof Error ? error.message : 'Format non supporté'
-                    });
+                    if (item?.content) {
+                        setContent(item.content);
+                    } else {
+                        toast.error('Impossible de convertir le document pour édition', {
+                            description: error instanceof Error ? error.message : 'Format non supporté'
+                        });
+                    }
                     setIsLoading(false);
                 }
             }

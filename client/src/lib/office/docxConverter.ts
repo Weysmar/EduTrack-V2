@@ -29,39 +29,212 @@ function getAlignment(el: HTMLElement): (typeof AlignmentType)[keyof typeof Alig
     return undefined;
 }
 
+function normalizeAlignmentValue(val?: string | null): string | undefined {
+    if (!val) return undefined;
+    const v = val.toLowerCase().trim();
+    if (v === 'center') return 'center';
+    if (v === 'right' || v === 'end') return 'right';
+    if (v === 'both' || v === 'distribute' || v === 'justify') return 'justify';
+    if (v === 'left' || v === 'start') return 'left';
+    return undefined;
+}
+
+interface DocxParagraphAlignment {
+    text: string;
+    align?: string;
+}
+
+async function extractDocxParagraphAlignments(arrayBuffer: ArrayBuffer): Promise<DocxParagraphAlignment[]> {
+    try {
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const docFile = zip.file('word/document.xml');
+        if (!docFile) return [];
+
+        // 1. Parse styles.xml if available
+        const stylesMap = new Map<string, string>();
+        const stylesFile = zip.file('word/styles.xml');
+        if (stylesFile) {
+            try {
+                const stylesXml = await stylesFile.async('text');
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(stylesXml, 'application/xml');
+                const styleElements = Array.from(doc.getElementsByTagNameNS('*', 'style'));
+                const basedOnMap = new Map<string, string>();
+
+                styleElements.forEach(style => {
+                    const styleId = style.getAttribute('w:styleId') || style.getAttribute('styleId');
+                    if (!styleId) return;
+
+                    const basedOnEl = style.getElementsByTagNameNS('*', 'basedOn')[0];
+                    if (basedOnEl) {
+                        const basedOnId = basedOnEl.getAttribute('w:val') || basedOnEl.getAttribute('val');
+                        if (basedOnId) basedOnMap.set(styleId, basedOnId);
+                    }
+
+                    const jcEl = style.getElementsByTagNameNS('*', 'jc')[0];
+                    if (jcEl) {
+                        const val = jcEl.getAttribute('w:val') || jcEl.getAttribute('val');
+                        const norm = normalizeAlignmentValue(val);
+                        if (norm) stylesMap.set(styleId, norm);
+                    }
+                });
+
+                // Resolve basedOn inheritance (e.g. Title based on Normal)
+                for (let round = 0; round < 5; round++) {
+                    basedOnMap.forEach((parent, child) => {
+                        if (!stylesMap.has(child) && stylesMap.has(parent)) {
+                            stylesMap.set(child, stylesMap.get(parent)!);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Could not parse styles.xml for alignments:', e);
+            }
+        }
+
+        // 2. Parse document.xml for all <w:p>
+        const docXml = await docFile.async('text');
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(docXml, 'application/xml');
+        const pElements = Array.from(xmlDoc.getElementsByTagNameNS('*', 'p'));
+
+        return pElements.map(p => {
+            let align: string | undefined;
+
+            const pPr = p.getElementsByTagNameNS('*', 'pPr')[0];
+            if (pPr) {
+                const jc = pPr.getElementsByTagNameNS('*', 'jc')[0];
+                if (jc) {
+                    const val = jc.getAttribute('w:val') || jc.getAttribute('val');
+                    align = normalizeAlignmentValue(val);
+                }
+
+                if (!align) {
+                    const pStyle = pPr.getElementsByTagNameNS('*', 'pStyle')[0];
+                    if (pStyle) {
+                        const styleId = pStyle.getAttribute('w:val') || pStyle.getAttribute('val');
+                        if (styleId && stylesMap.has(styleId)) {
+                            align = stylesMap.get(styleId);
+                        }
+                    }
+                }
+            }
+
+            const tNodes = Array.from(p.getElementsByTagNameNS('*', 't'));
+            const text = tNodes.map(t => t.textContent || '').join('').replace(/\s+/g, ' ').trim();
+
+            return { text, align };
+        });
+    } catch (e) {
+        console.warn('Error extracting docx alignments:', e);
+        return [];
+    }
+}
+
+function applyAlignmentsToHtml(html: string, docxParagraphs: DocxParagraphAlignment[]): string {
+    if (!html || !docxParagraphs || docxParagraphs.length === 0) return html;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const selector = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, td, th';
+    const allBlocks = Array.from(doc.body.querySelectorAll(selector)) as HTMLElement[];
+    const leafBlocks = allBlocks.filter(el => !el.querySelector(selector));
+
+    const nonEmptyDocx = docxParagraphs.filter(p => p.text.length > 0);
+    let docxIdx = 0;
+
+    for (const block of leafBlocks) {
+        const text = (block.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text) continue;
+
+        let matchedIdx = -1;
+
+        // Search forward from docxIdx
+        for (let i = docxIdx; i < nonEmptyDocx.length; i++) {
+            const target = nonEmptyDocx[i];
+            if (
+                target.text === text ||
+                target.text.startsWith(text) ||
+                text.startsWith(target.text) ||
+                (text.length > 8 && target.text.includes(text)) ||
+                (target.text.length > 8 && text.includes(target.text))
+            ) {
+                matchedIdx = i;
+                break;
+            }
+        }
+
+        // If not found forward, search anywhere
+        if (matchedIdx === -1) {
+            for (let i = 0; i < nonEmptyDocx.length; i++) {
+                const target = nonEmptyDocx[i];
+                if (target.text === text) {
+                    matchedIdx = i;
+                    break;
+                }
+            }
+        }
+
+        if (matchedIdx !== -1) {
+            const match = nonEmptyDocx[matchedIdx];
+            if (match.align && match.align !== 'left') {
+                block.style.textAlign = match.align;
+                block.setAttribute('align', match.align);
+                block.classList.add(`text-${match.align}`);
+            }
+            docxIdx = matchedIdx + 1;
+        }
+    }
+
+    return doc.body.innerHTML;
+}
+
 /**
- * Convert a DOCX file ArrayBuffer into rich, semantic HTML using Mammoth.
+ * Convert a DOCX file ArrayBuffer into rich, semantic HTML using Mammoth,
+ * preserving original paragraph and heading alignments (center, right, justify).
  */
 export async function convertDocxToHtml(arrayBuffer: ArrayBuffer): Promise<string> {
     try {
-        // @ts-ignore
-        const lib = mammoth.default || mammoth;
-        const options = {
-            styleMap: [
-                "p[style-name='Title'] => h1:fresh",
-                "p[style-name='Subtitle'] => h2:fresh",
-                "p[style-name='Heading 1'] => h1:fresh",
-                "p[style-name='Heading 2'] => h2:fresh",
-                "p[style-name='Heading 3'] => h3:fresh",
-                "r[style-name='Strong'] => strong",
-                "r[style-name='Emphasis'] => em"
-            ]
-        };
+        // Run alignment extraction and Mammoth HTML conversion in parallel
+        const [mammothResult, docxParagraphs] = await Promise.all([
+            (async () => {
+                // @ts-ignore
+                const lib = mammoth.default || mammoth;
+                const options = {
+                    styleMap: [
+                        "p[style-name='Title'] => h1:fresh",
+                        "p[style-name='Subtitle'] => h2:fresh",
+                        "p[style-name='Heading 1'] => h1:fresh",
+                        "p[style-name='Heading 2'] => h2:fresh",
+                        "p[style-name='Heading 3'] => h3:fresh",
+                        "r[style-name='Strong'] => strong",
+                        "r[style-name='Emphasis'] => em"
+                    ]
+                };
+                return await lib.convertToHtml({ arrayBuffer }, options);
+            })(),
+            extractDocxParagraphAlignments(arrayBuffer)
+        ]);
 
-        const result = await lib.convertToHtml({ arrayBuffer }, options);
-        if (result.value && result.value.trim().length > 0) {
-            return result.value.trim();
+        let rawHtml = '';
+        if (mammothResult.value && mammothResult.value.trim().length > 0) {
+            rawHtml = mammothResult.value.trim();
+        } else {
+            // @ts-ignore
+            const lib = mammoth.default || mammoth;
+            const rawResult = await lib.extractRawText({ arrayBuffer });
+            rawHtml = (rawResult.value || '')
+                .split('\n')
+                .filter((p: string) => p.trim().length > 0)
+                .map((p: string) => `<p>${escapeHtml(p)}</p>`)
+                .join('');
         }
 
-        // Fallback to raw text if HTML is empty
-        const rawResult = await lib.extractRawText({ arrayBuffer });
-        const paragraphs = (rawResult.value || '')
-            .split('\n')
-            .filter((p: string) => p.trim().length > 0)
-            .map((p: string) => `<p>${escapeHtml(p)}</p>`)
-            .join('');
+        if (!rawHtml) return '<p></p>';
 
-        return paragraphs || '<p></p>';
+        // Enrich HTML elements with the extracted Word text alignments
+        return applyAlignmentsToHtml(rawHtml, docxParagraphs);
     } catch (error) {
         console.error('Error converting DOCX to HTML:', error);
         throw new Error('Impossible de convertir le fichier Word en document éditable.');
@@ -83,6 +256,20 @@ export async function convertOdtToHtml(arrayBuffer: ArrayBuffer): Promise<string
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(contentXml, 'application/xml');
 
+        // Extract style alignments in ODT
+        const odtStylesAlignMap = new Map<string, string>();
+        const styleElements = Array.from(xmlDoc.querySelectorAll('style\\:style, style'));
+        styleElements.forEach(style => {
+            const name = style.getAttribute('style:name') || style.getAttribute('name');
+            if (!name) return;
+            const pProps = style.querySelector('style\\:paragraph-properties, paragraph-properties');
+            if (pProps) {
+                const align = pProps.getAttribute('fo:text-align') || pProps.getAttribute('text-align');
+                const norm = normalizeAlignmentValue(align);
+                if (norm) odtStylesAlignMap.set(name, norm);
+            }
+        });
+
         const body = xmlDoc.getElementsByTagNameNS('*', 'body')[0] || xmlDoc.documentElement;
         const nodes = body.querySelectorAll('p, h, text\\:p, text\\:h, table\\:table, text\\:list');
         const htmlParts: string[] = [];
@@ -92,10 +279,14 @@ export async function convertOdtToHtml(arrayBuffer: ArrayBuffer): Promise<string
             const textContent = escapeHtml(node.textContent?.trim() || '');
             if (!textContent && tagName !== 'table') return;
 
+            const styleName = node.getAttribute('text:style-name') || node.getAttribute('style-name');
+            const align = styleName ? odtStylesAlignMap.get(styleName) : undefined;
+            const alignAttr = align && align !== 'left' ? ` style="text-align: ${align}" align="${align}" class="text-${align}"` : '';
+
             if (tagName === 'h') {
                 const outlineLevel = node.getAttribute('text:outline-level') || '1';
                 const level = Math.min(Math.max(parseInt(outlineLevel, 10) || 1, 1), 3);
-                htmlParts.push(`<h${level}>${textContent}</h${level}>`);
+                htmlParts.push(`<h${level}${alignAttr}>${textContent}</h${level}>`);
             } else if (tagName === 'list') {
                 const items = Array.from(node.querySelectorAll('text\\:list-item, list-item'));
                 const listHtml = items
@@ -111,7 +302,7 @@ export async function convertOdtToHtml(arrayBuffer: ArrayBuffer): Promise<string
                 }).join('');
                 htmlParts.push(`<table border="1"><tbody>${rowsHtml}</tbody></table>`);
             } else {
-                htmlParts.push(`<p>${textContent}</p>`);
+                htmlParts.push(`<p${alignAttr}>${textContent}</p>`);
             }
         });
 
