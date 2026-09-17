@@ -265,12 +265,8 @@ export function CourseView() {
         const selectedItemIds = Array.from(selectedItems)
         const content = await getAggregatedContent(selectedItemIds)
         setAggregatedContent(content)
-        if (mode === 'summary') {
-            setIsSummaryOptionsOpen(true)
-        } else {
-            setGenerationMode(mode)
-            setIsGenerateModalOpen(true)
-        }
+        setGenerationMode(mode as RevisionGenerationMode)
+        setIsGenerateModalOpen(true)
     }
 
     const handleDrag = (e: React.DragEvent) => {
@@ -496,6 +492,11 @@ export function CourseView() {
                 sourceTitle={`${selectedItems.size} ${selectedItems.size > 1 ? t('bulk.selected_plural') : t('bulk.selected_singular')}`}
                 courseId={id}
                 initialMode={generationMode}
+                onSuccess={(genMode) => {
+                    if (genMode === 'summary') {
+                        setShowSummary(true)
+                    }
+                }}
             />
 
             {showSummary && (

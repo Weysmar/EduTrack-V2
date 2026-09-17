@@ -246,19 +246,8 @@ export function ItemDesktopToolbar({
                             className="fixed inset-0 z-40"
                             onClick={() => setIsAIMenuOpen(false)}
                         />
-                        <div className="absolute right-0 top-full mt-1.5 w-56 origin-top-right rounded-lg bg-card shadow-lg ring-1 ring-black/10 border z-50 divide-y divide-border animate-in fade-in zoom-in-95">
+                        <div className="absolute right-0 top-full mt-1.5 w-56 origin-top-right rounded-lg bg-card shadow-lg ring-1 ring-black/10 border z-50 animate-in fade-in zoom-in-95">
                             <div className="p-1 space-y-0.5">
-                                <button
-                                    onClick={() => {
-                                        setIsAIMenuOpen(false)
-                                        handleOpenExercise('sheet')
-                                    }}
-                                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
-                                >
-                                    <BookOpen className="h-3.5 w-3.5 text-blue-500" />
-                                    Fiche de révision
-                                </button>
-
                                 <button
                                     onClick={() => {
                                         setIsAIMenuOpen(false)
@@ -266,7 +255,7 @@ export function ItemDesktopToolbar({
                                     }}
                                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                 >
-                                    <BrainCircuit className="h-3.5 w-3.5 text-purple-500" />
+                                    <Layers className="h-3.5 w-3.5 text-orange-500" />
                                     Flashcards
                                 </button>
 
@@ -288,7 +277,7 @@ export function ItemDesktopToolbar({
                                     }}
                                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                 >
-                                    <Scale className="h-3.5 w-3.5 text-amber-500" />
+                                    <Scale className="h-3.5 w-3.5 text-indigo-500" />
                                     Questions Vrai / Faux
                                 </button>
 
@@ -299,8 +288,19 @@ export function ItemDesktopToolbar({
                                     }}
                                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                 >
-                                    <FileEdit className="h-3.5 w-3.5 text-emerald-500" />
+                                    <FileEdit className="h-3.5 w-3.5 text-teal-500" />
                                     Exercice à trous
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setIsAIMenuOpen(false)
+                                        handleOpenExercise('sheet')
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                >
+                                    <BookOpen className="h-3.5 w-3.5 text-purple-500" />
+                                    Fiche de révision
                                 </button>
 
                                 <button
@@ -313,31 +313,28 @@ export function ItemDesktopToolbar({
                                     <Network className="h-3.5 w-3.5 text-pink-500" />
                                     Mind Map IA
                                 </button>
-                            </div>
 
-                            <div className="p-1 space-y-0.5">
                                 <button
                                     onClick={() => {
                                         setIsAIMenuOpen(false)
-                                        if (hasSummary) setShowSummary(true)
-                                        else setIsSummaryOptionsOpen(true)
+                                        handleOpenExercise('summary')
                                     }}
                                     className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
                                 >
-                                    <FileText className="h-3.5 w-3.5 text-sky-500" />
-                                    {hasSummary ? "Voir le résumé" : "Générer un résumé"}
+                                    <FileText className="h-3.5 w-3.5 text-cyan-500" />
+                                    Résumé de cours
                                 </button>
 
                                 {hasSummary && (
                                     <button
                                         onClick={() => {
                                             setIsAIMenuOpen(false)
-                                            setIsSummaryOptionsOpen(true)
+                                            setShowSummary(true)
                                         }}
-                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-colors"
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-muted-foreground transition-colors border-t mt-1 pt-1.5"
                                     >
-                                        <Sliders className="h-3.5 w-3.5 text-purple-500" />
-                                        Changer de modèle / Régénérer
+                                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                                        Voir le résumé existant
                                     </button>
                                 )}
                             </div>

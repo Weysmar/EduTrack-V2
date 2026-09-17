@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale } from 'lucide-react';
 import { FilePreview } from '@/components/FilePreview';
 import { useLanguage } from '@/components/language-provider';
 import { API_URL } from '@/config';
@@ -20,6 +20,14 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
     const { courseId } = useParams();
     const { t } = useLanguage();
     const token = useAuthStore(state => state.token);
+
+    const isTrueFalse = item.type === 'quiz' && (
+        item.quizType === 'true_false' ||
+        (item.tags && item.tags.includes('true_false')) ||
+        (item.title && (item.title.includes('Vrai / Faux') || item.title.includes('Vrai/Faux'))) ||
+        (item.name && (item.name.includes('Vrai / Faux') || item.name.includes('Vrai/Faux'))) ||
+        (item.description && (item.description.includes('Vrai/Faux') || item.description.includes('Vrai / Faux')))
+    );
 
     const typeKey = {
         note: 'item.create.type.note',
@@ -101,16 +109,18 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                             "w-full h-full flex flex-col items-center justify-center relative",
                             item.type === 'note' && "bg-yellow-50/70 dark:bg-yellow-950/20 text-yellow-600 dark:text-yellow-500",
                             item.type === 'exercise' && "bg-green-50/70 dark:bg-green-950/20 text-green-600 dark:text-green-500",
-                            item.type === 'quiz' && "bg-purple-50/70 dark:bg-purple-950/20 text-purple-600 dark:text-purple-500",
+                            (item.type === 'quiz' && !isTrueFalse) && "bg-green-50/70 dark:bg-green-950/20 text-green-600 dark:text-green-500",
+                            (item.type === 'quiz' && isTrueFalse) && "bg-violet-50/70 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400",
                             item.type === 'flashcards' && "bg-orange-50/70 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500",
                             item.type === 'summary' && "bg-cyan-50/70 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500",
-                            item.type === 'sheet' && "bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400",
+                            item.type === 'sheet' && "bg-purple-50/70 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400",
                             item.type === 'cloze' && "bg-teal-50/70 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400",
                             item.type === 'mindmap' && "bg-pink-50/70 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400"
                         )}>
                             {item.type === 'note' && <FileText className="h-10 w-10 opacity-70" />}
                             {item.type === 'exercise' && <Dumbbell className="h-10 w-10 opacity-70" />}
-                            {item.type === 'quiz' && <CheckSquare className="h-10 w-10 opacity-70" />}
+                            {(item.type === 'quiz' && !isTrueFalse) && <CheckSquare className="h-10 w-10 opacity-70" />}
+                            {(item.type === 'quiz' && isTrueFalse) && <Scale className="h-10 w-10 opacity-70" />}
                             {item.type === 'flashcards' && <Layers className="h-10 w-10 opacity-70" />}
                             {item.type === 'summary' && <FileCheck className="h-10 w-10 opacity-70" />}
                             {item.type === 'sheet' && <BookOpen className="h-10 w-10 opacity-70" />}
@@ -128,14 +138,15 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         item.type === 'resource' && "bg-blue-500/90 text-white",
                         item.type === 'note' && "bg-yellow-500/90 text-white",
                         item.type === 'exercise' && "bg-green-500/90 text-white",
-                        item.type === 'quiz' && "bg-purple-500/90 text-white",
+                        (item.type === 'quiz' && !isTrueFalse) && "bg-green-600/90 text-white",
+                        (item.type === 'quiz' && isTrueFalse) && "bg-violet-600/90 text-white",
                         item.type === 'flashcards' && "bg-orange-500/90 text-white",
                         item.type === 'summary' && "bg-cyan-500/90 text-white",
-                        item.type === 'sheet' && "bg-indigo-600/90 text-white",
+                        item.type === 'sheet' && "bg-purple-600/90 text-white",
                         item.type === 'cloze' && "bg-teal-600/90 text-white",
                         item.type === 'mindmap' && "bg-pink-600/90 text-white"
                     )}>
-                        {t(typeKey)}
+                        {isTrueFalse ? "Vrai / Faux" : t(typeKey)}
                     </span>
                 </div>
 

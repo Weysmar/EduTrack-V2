@@ -8,7 +8,7 @@ import { generateClozeExercises } from '@/lib/revision/clozeGenerator'
 import { generateRevisionSheet } from '@/lib/revision/sheetGenerator'
 import { 
     Loader2, Brain, AlertCircle, CheckSquare, Layers, 
-    Scale, FileEdit, BookOpen, BrainCircuit, Sparkles 
+    Scale, FileEdit, BookOpen, BrainCircuit, Sparkles, FileText 
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,7 +21,7 @@ import { useLanguage } from '@/components/language-provider'
 
 import type { FileCategory } from '@/config/aiModels'
 
-export type RevisionGenerationMode = 'flashcards' | 'quiz' | 'true_false' | 'cloze' | 'sheet' | 'mindmap'
+export type RevisionGenerationMode = 'flashcards' | 'quiz' | 'true_false' | 'cloze' | 'sheet' | 'mindmap' | 'summary'
 
 interface GenerateExerciseModalProps {
     isOpen: boolean
@@ -32,6 +32,7 @@ interface GenerateExerciseModalProps {
     sourceTitle: string
     initialMode?: RevisionGenerationMode
     fileCategory?: FileCategory
+    onSuccess?: (mode: RevisionGenerationMode) => void
 }
 
 export function GenerateExerciseModal({
@@ -42,7 +43,8 @@ export function GenerateExerciseModal({
     itemId,
     sourceTitle,
     initialMode = 'flashcards',
-    fileCategory
+    fileCategory,
+    onSuccess
 }: GenerateExerciseModalProps) {
     const { t } = useLanguage()
     const navigate = useNavigate()
@@ -203,6 +205,8 @@ export function GenerateExerciseModal({
                     createdAt: now,
                     generatedBy: ai.provider,
                     attemptsCount: 0,
+                    tags: ['true_false'],
+                    quizType: 'true_false',
                     questions: tfQuestions.map(q => ({
                         stem: q.stem || '?',
                         options: q.options || ['Vrai', 'Faux'],
@@ -305,7 +309,61 @@ export function GenerateExerciseModal({
 
                 toast.success("Mind Map générée avec succès !")
                 onClose()
+                onSuccess?.('mindmap')
                 navigate(`/edu/mindmaps?id=${mindMap.id}`)
+            }
+            // 7. RÉSUMÉ DE COURS
+            else if (mode === 'summary') {
+                const { AIServiceFactory } = await import('@/lib/ai/factory')
+                const { formatSummaryMarkdown } = await import('@/lib/summary/formatSummary')
+                const { summaryQueries } = await import('@/lib/api/queries')
+                const { v4: uuidv4 } = await import('uuid')
+
+                const summaryText = await AIServiceFactory.generateSummary(sourceContent, {
+                    provider: ai.provider,
+                    model: ai.model,
+                    compression: 0.5,
+                    format: 'structured',
+                    useWebSearch: false
+                })
+
+                if (!summaryText) throw new Error("Échec de la génération du résumé.")
+
+                const cleanedContent = formatSummaryMarkdown(summaryText)
+
+                const summaryPayload = {
+                    id: uuidv4(),
+                    itemId: itemId ? String(itemId) : (courseId ? String(courseId) : 'course'),
+                    itemType: itemId ? 'note' : 'course',
+                    courseId: courseId || null,
+                    content: cleanedContent,
+                    stats: {
+                        originalWordCount: sourceContent.split(/\s+/).filter(Boolean).length,
+                        summaryWordCount: cleanedContent.split(/\s+/).filter(Boolean).length,
+                        compressionRatio: cleanedContent.length / (sourceContent.length || 1),
+                        processingTimeMs: 0
+                    },
+                    options: {
+                        provider: ai.provider,
+                        model: ai.model,
+                        compression: 0.5,
+                        format: 'structured',
+                        useWebSearch: false
+                    },
+                    createdAt: Date.now()
+                }
+
+                await summaryQueries.save(summaryPayload)
+
+                queryClient.invalidateQueries({ queryKey: ['summaries'] })
+                if (courseId) {
+                    queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                }
+
+                toast.success("Résumé généré avec succès !")
+                onClose()
+                onSuccess?.('summary')
             }
 
         } catch (e: any) {
@@ -363,7 +421,7 @@ export function GenerateExerciseModal({
                                         <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
                                             Format Pédagogique Souhaité
                                         </label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                                             {/* Flashcards */}
                                             <button
                                                 type="button"
@@ -459,6 +517,22 @@ export function GenerateExerciseModal({
                                                 <span className="font-bold text-xs sm:text-sm">Mind Map IA</span>
                                                 <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">Carte mentale visuelle</span>
                                             </button>
+
+                                            {/* Résumé de cours */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('summary')}
+                                                className={cn(
+                                                    "flex flex-col items-start p-3.5 rounded-xl border-2 transition-all text-left",
+                                                    mode === 'summary'
+                                                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20 shadow-xs"
+                                                        : "border-border hover:border-primary/50 hover:bg-muted/40 text-foreground"
+                                                )}
+                                            >
+                                                <FileText className="h-5 w-5 mb-2 text-cyan-500" />
+                                                <span className="font-bold text-xs sm:text-sm">Résumé</span>
+                                                <span className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">Synthèse de cours</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -490,8 +564,8 @@ export function GenerateExerciseModal({
                                         />
                                     </div>
 
-                                    {/* Count / Paragraphs Options (Not needed for MindMap or Sheet) */}
-                                    {mode !== 'mindmap' && mode !== 'sheet' && (
+                                    {/* Count / Paragraphs Options (Not needed for MindMap, Sheet, or Summary) */}
+                                    {mode !== 'mindmap' && mode !== 'sheet' && mode !== 'summary' && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1.5">
                                                 {mode === 'flashcards' && 'Nombre de cartes'}
@@ -520,7 +594,7 @@ export function GenerateExerciseModal({
                                     )}
 
                                     {/* Difficulty (Applicable to quiz, tf, flashcards, cloze, sheet) */}
-                                    {mode !== 'mindmap' && (
+                                    {mode !== 'mindmap' && mode !== 'summary' && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1.5">Difficulté Cible</label>
                                             <select
@@ -590,7 +664,8 @@ export function GenerateExerciseModal({
                                             : mode === 'true_false' ? 'Générer les Vrai/Faux'
                                             : mode === 'cloze' ? 'Générer l\'Exercice à trous'
                                             : mode === 'sheet' ? 'Générer la Fiche'
-                                            : 'Générer la Mind Map'}
+                                            : mode === 'mindmap' ? 'Générer la Mind Map'
+                                            : 'Générer le Résumé'}
                                     </button>
                                 </div>
                             </Dialog.Panel>

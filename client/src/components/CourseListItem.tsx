@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 
 // Helper to get styling for List View Icons (copied from CourseView / FilePreview)
@@ -47,6 +47,14 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
     const navigate = useNavigate();
     const { courseId } = useParams();
     const { t } = useLanguage();
+
+    const isTrueFalse = item.type === 'quiz' && (
+        item.quizType === 'true_false' ||
+        (item.tags && item.tags.includes('true_false')) ||
+        (item.title && (item.title.includes('Vrai / Faux') || item.title.includes('Vrai/Faux'))) ||
+        (item.name && (item.name.includes('Vrai / Faux') || item.name.includes('Vrai/Faux'))) ||
+        (item.description && (item.description.includes('Vrai/Faux') || item.description.includes('Vrai / Faux')))
+    );
 
     const typeKey = {
         note: 'item.create.type.note',
@@ -96,17 +104,19 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                 <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-inner relative overflow-hidden",
                     item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
                     item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
-                    item.type === 'quiz' && "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400",
+                    (item.type === 'quiz' && !isTrueFalse) && "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
+                    (item.type === 'quiz' && isTrueFalse) && "bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400",
                     item.type === 'flashcards' && "bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400",
                     item.type === 'mindmap' && "bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400",
                     item.type === 'summary' && "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400",
-                    item.type === 'sheet' && "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400",
+                    item.type === 'sheet' && "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400",
                     item.type === 'cloze' && "bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400",
                     item.type === 'resource' && (fileStyle?.bg || "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400")
                 )}>
                     {item.type === 'note' && <FileText className="h-6 w-6" />}
                     {item.type === 'exercise' && <Dumbbell className="h-6 w-6" />}
-                    {item.type === 'quiz' && <CheckSquare className="h-6 w-6" />}
+                    {(item.type === 'quiz' && !isTrueFalse) && <CheckSquare className="h-6 w-6" />}
+                    {(item.type === 'quiz' && isTrueFalse) && <Scale className="h-6 w-6" />}
                     {item.type === 'flashcards' && <Layers className="h-6 w-6" />}
                     {item.type === 'mindmap' && <BrainCircuit className="h-6 w-6" />}
                     {item.type === 'summary' && <FileCheck className="h-6 w-6" />}
@@ -127,7 +137,9 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                 <div className="flex flex-col min-w-0 flex-1 px-1">
                     <span className="font-medium truncate text-sm sm:text-base">{item.title}</span>
                     <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground mt-1">
-                        <span className="uppercase tracking-wider font-bold text-primary/80">{t(typeKey)}</span>
+                        <span className="uppercase tracking-wider font-bold text-primary/80">
+                            {isTrueFalse ? "Vrai / Faux" : t(typeKey)}
+                        </span>
                         <span>•</span>
                         <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                         {item.type === 'exercise' && item.dueDate && (

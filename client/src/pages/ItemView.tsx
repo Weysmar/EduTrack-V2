@@ -658,11 +658,17 @@ export function ItemView() {
                 isOpen={isExerciseModalOpen}
                 onClose={() => setIsExerciseModalOpen(false)}
                 sourceContent={exerciseContent || item.extractedContent || item.content || ''}
-                sourceTitle={item.title}
-                courseId={String(course?.id || '')}
-                itemId={String(item.id || '')}
+                sourceTitle={item?.title || item?.fileName || 'Document'}
+                courseId={String(course?.id || courseId || '')}
+                itemId={String(item?.id || '')}
                 initialMode={exerciseMode}
                 fileCategory={itemFileCategory}
+                onSuccess={(mode) => {
+                    if (mode === 'summary') {
+                        setShowSummary(true);
+                        setMobileTab('summary');
+                    }
+                }}
             />
 
             {/* Header */}
@@ -1342,16 +1348,6 @@ export function ItemView() {
                 }}
             />
 
-            <GenerateExerciseModal
-                isOpen={isExerciseModalOpen}
-                onClose={() => setIsExerciseModalOpen(false)}
-                sourceContent={exerciseContent}
-                courseId={courseId}
-                itemId={item?.id}
-                sourceTitle={item?.title || item?.fileName || 'Document'}
-                initialMode={exerciseMode}
-                fileCategory={itemFileCategory}
-            />
         </div>
     )
 }

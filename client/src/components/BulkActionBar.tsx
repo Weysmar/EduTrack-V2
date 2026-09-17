@@ -63,60 +63,56 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
                         </button>
 
                         {isGenerateMenuOpen && (
-                            <div className="absolute bottom-full mb-2 left-0 bg-card text-card-foreground border rounded-xl shadow-2xl min-w-[220px] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 divide-y divide-border/60">
-                                <div className="p-1">
-                                    <button
-                                        onClick={() => handleGenerateClick('sheet')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <BookOpen className="h-4 w-4 text-purple-500" aria-hidden="true" />
-                                        Fiche de révision
-                                    </button>
-                                    <button
-                                        onClick={() => handleGenerateClick('cloze')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <FileEdit className="h-4 w-4 text-teal-500" aria-hidden="true" />
-                                        Exercices à trous
-                                    </button>
-                                    <button
-                                        onClick={() => handleGenerateClick('true_false')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <Scale className="h-4 w-4 text-indigo-500" aria-hidden="true" />
-                                        Questions Vrai / Faux
-                                    </button>
-                                    <button
-                                        onClick={() => handleGenerateClick('mindmap')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <BrainCircuit className="h-4 w-4 text-pink-500" aria-hidden="true" />
-                                        Mind Map IA
-                                    </button>
-                                </div>
-                                <div className="p-1">
-                                    <button
-                                        onClick={() => handleGenerateClick('flashcards')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <Layers className="h-4 w-4 text-orange-500" aria-hidden="true" />
-                                        {t('bulk.generate.flashcards') || "Flashcards"}
-                                    </button>
-                                    <button
-                                        onClick={() => handleGenerateClick('quiz')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <CheckSquare className="h-4 w-4 text-green-500" aria-hidden="true" />
-                                        {t('bulk.generate.quiz') || "QCM"}
-                                    </button>
-                                    <button
-                                        onClick={() => handleGenerateClick('summary')}
-                                        className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
-                                    >
-                                        <FileText className="h-4 w-4 text-cyan-500" aria-hidden="true" />
-                                        {t('bulk.generate.summary') || "Résumé de cours"}
-                                    </button>
-                                </div>
+                            <div className="absolute bottom-full mb-2 left-0 bg-card text-card-foreground border rounded-xl shadow-2xl min-w-[220px] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 p-1 space-y-0.5">
+                                <button
+                                    onClick={() => handleGenerateClick('flashcards')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <Layers className="h-4 w-4 text-orange-500" aria-hidden="true" />
+                                    {t('bulk.generate.flashcards') || "Flashcards"}
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('quiz')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <CheckSquare className="h-4 w-4 text-green-500" aria-hidden="true" />
+                                    {t('bulk.generate.quiz') || "QCM"}
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('true_false')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <Scale className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+                                    Questions Vrai / Faux
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('cloze')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <FileEdit className="h-4 w-4 text-teal-500" aria-hidden="true" />
+                                    Exercices à trous
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('sheet')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <BookOpen className="h-4 w-4 text-purple-500" aria-hidden="true" />
+                                    Fiche de révision
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('mindmap')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <BrainCircuit className="h-4 w-4 text-pink-500" aria-hidden="true" />
+                                    Mind Map IA
+                                </button>
+                                <button
+                                    onClick={() => handleGenerateClick('summary')}
+                                    className="w-full px-3 py-2 text-left hover:bg-accent transition-colors text-xs font-semibold flex items-center gap-2.5 rounded-lg"
+                                >
+                                    <FileText className="h-4 w-4 text-cyan-500" aria-hidden="true" />
+                                    {t('bulk.generate.summary') || "Résumé de cours"}
+                                </button>
                             </div>
                         )}
                     </div>

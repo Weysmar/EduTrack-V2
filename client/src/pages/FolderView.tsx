@@ -409,6 +409,11 @@ export function FolderView() {
                 onClose={() => setIsGenerateModalOpen(false)}
                 sourceContent={aggregatedContent}
                 sourceTitle={folder.name}
+                onSuccess={(mode) => {
+                    if (mode === 'summary') {
+                        setShowSummaryModal(true)
+                    }
+                }}
             />
 
             <SummaryOptionsModal

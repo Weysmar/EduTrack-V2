@@ -153,27 +153,11 @@ export function ItemMobileToolbar({
                             <button
                                 onClick={() => {
                                     setIsAIMenuOpen(false);
-                                    handleOpenExercise('sheet');
-                                }}
-                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 flex-shrink-0">
-                                    <BookOpen className="h-5 w-5" />
-                                </div>
-                                <div className="text-left">
-                                    <div className="font-semibold">Fiche de révision</div>
-                                    <div className="text-xs text-muted-foreground">Synthèse structurée, formules, pièges & checklist</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setIsAIMenuOpen(false);
                                     handleOpenExercise('flashcards');
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 flex-shrink-0">
                                     <Layers className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -189,7 +173,7 @@ export function ItemMobileToolbar({
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 flex-shrink-0">
                                     <CheckSquare className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -205,7 +189,7 @@ export function ItemMobileToolbar({
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 flex-shrink-0">
                                     <Scale className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -221,7 +205,7 @@ export function ItemMobileToolbar({
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 flex-shrink-0">
                                     <FileEdit className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -233,11 +217,27 @@ export function ItemMobileToolbar({
                             <button
                                 onClick={() => {
                                     setIsAIMenuOpen(false);
+                                    handleOpenExercise('sheet');
+                                }}
+                                className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 flex-shrink-0">
+                                    <BookOpen className="h-5 w-5" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="font-semibold">Fiche de révision</div>
+                                    <div className="text-xs text-muted-foreground">Synthèse structurée, formules, pièges & checklist</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsAIMenuOpen(false);
                                     handleOpenExercise('mindmap');
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-400 flex-shrink-0">
                                     <Network className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
@@ -249,17 +249,16 @@ export function ItemMobileToolbar({
                             <button
                                 onClick={() => {
                                     setIsAIMenuOpen(false);
-                                    if (hasSummary) setShowSummary(true);
-                                    else setIsSummaryOptionsOpen(true);
+                                    handleOpenExercise('summary');
                                 }}
                                 className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
                             >
-                                <div className="h-10 w-10 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-sky-600 flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 flex-shrink-0">
                                     <FileText className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
-                                    <div className="font-semibold">Résumé</div>
-                                    <div className="text-xs text-muted-foreground">{hasSummary ? "Voir le résumé existant" : "Synthèse du document"}</div>
+                                    <div className="font-semibold">Résumé de cours</div>
+                                    <div className="text-xs text-muted-foreground">Synthèse du document</div>
                                 </div>
                             </button>
 
@@ -267,16 +266,16 @@ export function ItemMobileToolbar({
                                 <button
                                     onClick={() => {
                                         setIsAIMenuOpen(false);
-                                        setIsSummaryOptionsOpen(true);
+                                        setShowSummary(true);
                                     }}
-                                    className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50 hover:bg-muted active:scale-98 transition-all border"
+                                    className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/30 hover:bg-muted active:scale-98 transition-all border border-dashed"
                                 >
-                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 flex-shrink-0">
-                                        <Sliders className="h-5 w-5" />
+                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0">
+                                        <FileText className="h-5 w-5" />
                                     </div>
                                     <div className="text-left">
-                                        <div className="font-semibold">Changer de modèle</div>
-                                        <div className="text-xs text-muted-foreground">Régénérer avec d'autres options</div>
+                                        <div className="font-semibold text-muted-foreground">Voir le résumé existant</div>
+                                        <div className="text-xs text-muted-foreground">Consulter la synthèse déjà générée</div>
                                     </div>
                                 </button>
                             )}
