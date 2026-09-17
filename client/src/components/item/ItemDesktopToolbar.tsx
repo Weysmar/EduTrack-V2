@@ -209,6 +209,26 @@ export function ItemDesktopToolbar({
                         <Pencil className="h-4 w-4" />
                     </button>
                 )
+            ) : isOffice ? (
+                isEditMode ? (
+                    <button
+                        onClick={() => setIsEditMode(false)}
+                        className="px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold flex-shrink-0 shadow-xs"
+                        title="Fermer l'éditeur Word"
+                    >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>{t('common.done') || "Terminer"}</span>
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => setIsEditMode(true)}
+                        className="px-2.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold flex-shrink-0 shadow-xs"
+                        title="Modifier le document Word dans EduTrack"
+                    >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>Modifier</span>
+                    </button>
+                )
             ) : (
                 <button
                     onClick={() => setIsEditModalOpen(true)}

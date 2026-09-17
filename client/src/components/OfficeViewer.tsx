@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Download, RefreshCw, Laptop, Minimize } from 'lucide-react';
+import { FileText, Download, RefreshCw, Laptop, Minimize, Pencil } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
 import { OdtViewer } from './OdtViewer';
 import { useLanguage } from './language-provider';
@@ -12,9 +12,10 @@ interface OfficeViewerProps {
     engine?: 'google' | 'microsoft' | 'local';
     onEngineChange?: (engine: 'google' | 'microsoft' | 'local') => void;
     onExitFocusMode?: () => void;
+    onEdit?: () => void;
 }
 
-export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange, onExitFocusMode }: OfficeViewerProps) {
+export function OfficeViewer({ url: initialUrl, storageKey, className = "", engine: controlledEngine, onEngineChange, onExitFocusMode, onEdit }: OfficeViewerProps) {
     const { t } = useLanguage()
 
     // Determine file type
@@ -82,7 +83,17 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                             </button>
                         </div>
                         <div className="flex gap-2">
-                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 transition-opacity">
+                            {onEdit && (
+                                <button
+                                    onClick={onEdit}
+                                    className="flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                                    title="Modifier le document dans EduTrack"
+                                >
+                                    <Pencil className="h-3 w-3" />
+                                    <span>Modifier</span>
+                                </button>
+                            )}
+                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-muted hover:bg-muted/80 text-foreground border rounded text-xs transition-opacity">
                                 <Download className="h-3 w-3" /> Télécharger
                             </a>
                             {onExitFocusMode && (
@@ -123,7 +134,17 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                             </button>
                         </div>
                         <div className="flex gap-2">
-                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:opacity-90 transition-opacity">
+                            {onEdit && (
+                                <button
+                                    onClick={onEdit}
+                                    className="flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs"
+                                    title="Modifier le document dans EduTrack"
+                                >
+                                    <Pencil className="h-3 w-3" />
+                                    <span>Modifier</span>
+                                </button>
+                            )}
+                            <a href={viewerUrl} download className="flex items-center gap-2 px-3 py-1 bg-muted hover:bg-muted/80 text-foreground border rounded text-xs transition-opacity">
                                 <Download className="h-3 w-3" /> Télécharger
                             </a>
                             {onExitFocusMode && (
@@ -229,6 +250,16 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {onEdit && (isDocx || isOdt) && (
+                        <button
+                            onClick={onEdit}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90 transition-opacity shadow-xs mr-1"
+                            title="Modifier le document dans EduTrack"
+                        >
+                            <Pencil className="h-3 w-3" />
+                            <span>Modifier</span>
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             if (isOdt) {

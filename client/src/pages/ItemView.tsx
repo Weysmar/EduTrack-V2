@@ -27,6 +27,7 @@ import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { PDFViewer } from '@/components/PDFViewer'
 import { OfficeViewer } from '@/components/OfficeViewer'
+import { OfficeEditor } from '@/components/office/OfficeEditor'
 import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
@@ -158,7 +159,7 @@ export function ItemView() {
 
     // Real-time dynamic auto-save (Google Docs style, 800ms debounce)
     useEffect(() => {
-        if (!isEditMode) return
+        if (!isEditMode || item?.type !== 'note') return
         if (editedContent === item?.content) return
 
         // Immediately signal saving as soon as typing happens
@@ -169,12 +170,12 @@ export function ItemView() {
         }, 800) // 800ms debounce
 
         return () => clearTimeout(timer)
-    }, [editedContent, isEditMode, item?.content])
+    }, [editedContent, isEditMode, item?.content, item?.type])
 
     // Immediate flush on page leave
     useEffect(() => {
         const handleBeforeUnload = () => {
-            if (isEditMode && pendingContentRef.current && pendingContentRef.current !== item?.content) {
+            if (isEditMode && item?.type === 'note' && pendingContentRef.current && pendingContentRef.current !== item?.content) {
                 const formData = new FormData()
                 formData.append('content', pendingContentRef.current)
                 itemQueries.update(String(item.id), formData)
@@ -182,7 +183,7 @@ export function ItemView() {
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [isEditMode, item?.content, item?.id])
+    }, [isEditMode, item?.content, item?.id, item?.type])
 
     // Handle Google Drive Re-sync
     const handleSyncDrive = async () => {
@@ -861,6 +862,7 @@ export function ItemView() {
 
             <ItemMobileToolbar
                 itemType={item.type || 'note'}
+                isOffice={!!isOffice}
                 isEditMode={isEditMode}
                 setIsEditMode={setIsEditMode}
                 setIsEditModalOpen={setIsEditModalOpen}
@@ -968,6 +970,16 @@ export function ItemView() {
                                         }
 
                                         if (targetIsOffice) {
+                                            if (isEditMode) {
+                                                return (
+                                                    <OfficeEditor
+                                                        item={targetItem}
+                                                        fileUrl={targetPdfUrl}
+                                                        onClose={() => setIsEditMode(false)}
+                                                        className={viewerHeight}
+                                                    />
+                                                );
+                                            }
                                             return (
                                                 <OfficeViewer
                                                     url={targetPdfUrl}
@@ -976,6 +988,7 @@ export function ItemView() {
                                                     engine={officeEngine}
                                                     onEngineChange={setOfficeEngine}
                                                     onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
+                                                    onEdit={() => setIsEditMode(true)}
                                                 />
                                             );
                                         }

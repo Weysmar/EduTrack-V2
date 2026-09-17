@@ -25,6 +25,7 @@ import {
 
 interface ItemMobileToolbarProps {
     itemType: string;
+    isOffice?: boolean;
     isEditMode: boolean;
     setIsEditMode: (val: boolean) => void;
     setIsEditModalOpen: (val: boolean) => void;
@@ -45,6 +46,7 @@ interface ItemMobileToolbarProps {
 
 export function ItemMobileToolbar({
     itemType,
+    isOffice,
     isEditMode,
     setIsEditMode,
     setIsEditModalOpen,
@@ -72,13 +74,13 @@ export function ItemMobileToolbar({
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t pb-safe">
                 <div className="flex items-center justify-around p-2 h-16">
                     {/* 1. Edit / Tools */}
-                    {itemType === 'note' ? (
+                    {(itemType === 'note' || isOffice) ? (
                         <button
                             onClick={() => isEditMode ? setIsEditMode(false) : setIsEditMode(true)}
                             className="flex flex-col items-center gap-1 p-2 text-muted-foreground active:text-foreground touch-manipulation"
                         >
-                            {isEditMode ? <Check className="h-6 w-6 text-emerald-500" /> : <Pencil className="h-6 w-6" />}
-                            <span className="text-[10px] font-medium">{isEditMode ? (t('common.done') || 'Terminer') : (t('item.edit') || 'Éditer')}</span>
+                            {isEditMode ? <Check className="h-6 w-6 text-emerald-500" /> : <Pencil className="h-6 w-6 text-blue-500" />}
+                            <span className="text-[10px] font-medium">{isEditMode ? (t('common.done') || 'Terminer') : (t('item.edit') || 'Modifier')}</span>
                         </button>
                     ) : (
                         <button
