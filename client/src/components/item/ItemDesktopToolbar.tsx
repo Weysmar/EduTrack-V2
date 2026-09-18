@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { RevisionGenerationMode } from '@/components/GenerateExerciseModal';
+import { TTSControls } from '@/components/TTSControls';
 import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown, Columns, BookOpen, FileEdit, Scale, Layers, Network } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
