@@ -35,6 +35,10 @@ export const itemQueries = {
         const { data } = await apiClient.post('/items/preview-url', { url });
         return data;
     },
+    downloadSnapshot: async (id: string) => {
+        const { data } = await apiClient.post(`/items/${id}/snapshot`);
+        return data;
+    },
     getByCourse: async (courseId: any, pageArg: any = 1, limitArg: any = 20) => {
         // Handle React Query sending context object as first arg
         const id = typeof courseId === 'string' ? courseId : courseId?.queryKey?.[1];

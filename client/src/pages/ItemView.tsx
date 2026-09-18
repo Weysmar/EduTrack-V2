@@ -97,6 +97,7 @@ export function ItemView() {
     const [showSummary, setShowSummary] = useState(false) // Default to content view
     const [isExtracting, setIsExtracting] = useState(false)
     const [officeEngine, setOfficeEngine] = useState<'google' | 'microsoft' | 'local'>('microsoft') // Lifted state
+    const [isRefreshingSnapshot, setIsRefreshingSnapshot] = useState(false)
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
@@ -377,13 +378,20 @@ export function ItemView() {
 
     // ... Handlers ...
     const handleDownload = async () => {
-        if (pdfUrl) {
+        const downloadUrl = (item?.type === 'link' && item?.storageKey)
+            ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}`
+            : pdfUrl;
+
+        if (downloadUrl) {
             try {
-                const response = await fetch(pdfUrl);
+                const response = await fetch(downloadUrl);
                 if (!response.ok) throw new Error("Download failed");
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
-                triggerDownload(url, item.fileName || 'downloaded-file.pdf');
+                const rawName = item?.type === 'link'
+                    ? `${(item.title || item.fileName || 'page_internet').replace(/[<>:"/\\|?*]/g, '_')}.html`
+                    : (item.fileName || 'downloaded-file.pdf');
+                triggerDownload(url, rawName);
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             } catch (e) {
                 console.error("Download error:", e);
@@ -391,6 +399,22 @@ export function ItemView() {
             }
         }
     }
+
+    const handleRefreshSnapshot = async () => {
+        if (!item?.id) return;
+        setIsRefreshingSnapshot(true);
+        try {
+            await itemQueries.downloadSnapshot(String(item.id));
+            queryClient.invalidateQueries({ queryKey: ['items', item.id] });
+            queryClient.invalidateQueries({ queryKey: ['items'] });
+            toast.success(language === 'fr' ? "Page HTML enregistrée avec succès" : "HTML page snapshot saved successfully");
+        } catch (err) {
+            console.error("Snapshot download error:", err);
+            toast.error(language === 'fr' ? "Impossible de télécharger la page HTML" : "Failed to download HTML page");
+        } finally {
+            setIsRefreshingSnapshot(false);
+        }
+    };
 
     const triggerDownload = (url: string, name: string) => {
         if (!url) return;
@@ -1185,61 +1209,180 @@ export function ItemView() {
                                     <MindMapViewer content={item.content || ''} />
                                 </div>
                             ) : (item.type === 'link') ? (
-                                <div className="w-full flex flex-col items-center justify-center p-6 md:p-12 space-y-6 animate-in fade-in-50 duration-200">
-                                    <div className="w-full max-w-2xl bg-card border rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-16 h-16 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 overflow-hidden relative shadow-inner">
-                                                {item.thumbnailUrl ? (
-                                                    <img 
-                                                        src={item.thumbnailUrl.startsWith('http') ? item.thumbnailUrl : `${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`} 
-                                                        alt={item.title}
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLElement).style.display = 'none';
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <Globe className="h-8 w-8 text-cyan-500" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0 space-y-1">
-                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                                                    <Globe className="h-3 w-3" />
-                                                    <span>Site Internet</span>
+                                item.storageKey ? (
+                                    <div className="w-full h-full flex flex-col space-y-3 animate-in fade-in duration-200">
+                                        {/* Lecteur Intégré : Barre d'actions */}
+                                        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-card border rounded-xl shadow-xs">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                                                    {item.thumbnailUrl ? (
+                                                        <img
+                                                            src={item.thumbnailUrl.startsWith('http') ? item.thumbnailUrl : `${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`}
+                                                            alt={item.title}
+                                                            className="w-5 h-5 object-cover rounded-sm"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLElement).style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <Globe className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                                                    )}
                                                 </div>
-                                                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                                                    {item.title}
-                                                </h2>
-                                                {item.fileName && (
-                                                    <p className="text-sm text-muted-foreground font-mono">
-                                                        {item.fileName}
-                                                    </p>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                                                            {language === 'fr' ? "Lecture intégrée EduTrack" : "EduTrack Embedded Reader"}
+                                                        </span>
+                                                        {item.fileName && (
+                                                            <span className="text-xs text-muted-foreground font-mono truncate hidden sm:inline">
+                                                                {item.fileName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h3 className="text-sm font-semibold text-foreground truncate max-w-md" title={item.title}>
+                                                        {item.title}
+                                                    </h3>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {/* Bouton Télécharger HTML pour lecture hors ligne */}
+                                                <button
+                                                    onClick={handleDownload}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                                                    title={language === 'fr' ? "Télécharger le fichier HTML complet pour lecture hors ligne sur votre ordinateur" : "Download complete HTML file for offline reading"}
+                                                >
+                                                    <Download className="h-3.5 w-3.5" />
+                                                    <span>{language === 'fr' ? "Télécharger HTML (Hors ligne)" : "Download HTML (Offline)"}</span>
+                                                </button>
+
+                                                {/* Bouton Site original */}
+                                                {item.fileUrl && (
+                                                    <a
+                                                        href={item.fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold border transition-colors"
+                                                        title={language === 'fr' ? "Ouvrir le site original" : "Open original website"}
+                                                    >
+                                                        <ExternalLink className="h-3.5 w-3.5" />
+                                                        <span className="hidden sm:inline">{language === 'fr' ? "Site original" : "Original site"}</span>
+                                                    </a>
                                                 )}
+
+                                                {/* Bouton Re-télécharger / Actualiser */}
+                                                <button
+                                                    onClick={handleRefreshSnapshot}
+                                                    disabled={isRefreshingSnapshot}
+                                                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border transition-colors disabled:opacity-50"
+                                                    title={language === 'fr' ? "Re-télécharger la page HTML depuis le web" : "Re-download HTML page snapshot"}
+                                                >
+                                                    <RefreshCw className={cn("h-3.5 w-3.5", isRefreshingSnapshot && "animate-spin text-primary")} />
+                                                </button>
+
+                                                {/* Bouton Plein écran */}
+                                                <button
+                                                    onClick={() => setIsFocusMode(!isFocusMode)}
+                                                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border transition-colors hidden sm:inline-flex"
+                                                    title={isFocusMode ? (language === 'fr' ? "Quitter le plein écran" : "Exit focus") : (language === 'fr' ? "Plein écran" : "Focus mode")}
+                                                >
+                                                    {isFocusMode ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
+                                                </button>
                                             </div>
                                         </div>
 
-                                        {item.content && (
-                                            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-xl border">
-                                                {item.content}
-                                            </p>
-                                        )}
-
-                                        <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t pt-4">
-                                            <a
-                                                href={item.fileUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg hover:opacity-95 transition-all text-sm group"
-                                            >
-                                                <span>Accéder au site internet</span>
-                                                <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                                            </a>
-                                            <span className="text-xs text-muted-foreground font-mono truncate max-w-xs" title={item.fileUrl}>
-                                                {item.fileUrl}
-                                            </span>
+                                        {/* Document HTML intégré */}
+                                        <div className={cn(
+                                            "w-full bg-card rounded-xl border overflow-hidden shadow-sm relative",
+                                            isFocusMode ? "h-[calc(100vh-170px)]" : "h-[75vh] md:h-[82vh]"
+                                        )}>
+                                            <iframe
+                                                src={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : undefined}
+                                                srcDoc={(item as any).htmlSnapshot || undefined}
+                                                title={item.title}
+                                                className="w-full h-full border-0 bg-white"
+                                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                                            />
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="w-full flex flex-col items-center justify-center p-6 md:p-12 space-y-6 animate-in fade-in-50 duration-200">
+                                        <div className="w-full max-w-2xl bg-card border rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-16 h-16 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 overflow-hidden relative shadow-inner">
+                                                    {item.thumbnailUrl ? (
+                                                        <img 
+                                                            src={item.thumbnailUrl.startsWith('http') ? item.thumbnailUrl : `${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`} 
+                                                            alt={item.title}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLElement).style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <Globe className="h-8 w-8 text-cyan-500" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 space-y-1">
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                                                        <Globe className="h-3 w-3" />
+                                                        <span>Site Internet</span>
+                                                    </div>
+                                                    <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                                                        {item.title}
+                                                    </h2>
+                                                    {item.fileName && (
+                                                        <p className="text-sm text-muted-foreground font-mono">
+                                                            {item.fileName}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 rounded-xl bg-muted/40 border border-dashed text-sm text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-4">
+                                                <div>
+                                                    <p className="font-semibold text-foreground">
+                                                        {language === 'fr' ? "Lecture intégrée disponible après téléchargement" : "Integrated reading available after download"}
+                                                    </p>
+                                                    <p className="text-xs">
+                                                        {language === 'fr' 
+                                                            ? "Téléchargez la page HTML pour pouvoir la lire directement dans EduTrack et la consulter hors ligne." 
+                                                            : "Download the HTML page to read it directly within EduTrack and keep it offline."}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={handleRefreshSnapshot}
+                                                    disabled={isRefreshingSnapshot}
+                                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 shrink-0 disabled:opacity-50 transition-colors"
+                                                >
+                                                    {isRefreshingSnapshot ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                                                    <span>{language === 'fr' ? "Télécharger la page HTML" : "Download HTML Page"}</span>
+                                                </button>
+                                            </div>
+
+                                            {item.content && (
+                                                <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-xl border">
+                                                    {item.content}
+                                                </p>
+                                            )}
+
+                                            <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t pt-4">
+                                                <a
+                                                    href={item.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg hover:opacity-95 transition-all text-sm group"
+                                                >
+                                                    <span>{language === 'fr' ? "Accéder au site internet" : "Open Website"}</span>
+                                                    <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                                </a>
+                                                <span className="text-xs text-muted-foreground font-mono truncate max-w-xs" title={item.fileUrl}>
+                                                    {item.fileUrl}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
                             ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">
                                         {item.type === 'note' ? (

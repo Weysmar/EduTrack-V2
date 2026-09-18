@@ -4,6 +4,9 @@
  * locally so students can study without internet connection.
  */
 
+import { API_URL } from '@/config'
+import { useAuthStore } from '@/store/authStore'
+
 const DB_NAME = 'edutrack_offline_db'
 const DB_VERSION = 1
 
@@ -28,6 +31,10 @@ export interface OfflineItemData {
     title: string
     content?: string
     extractedContent?: string
+    fileUrl?: string
+    storageKey?: string
+    fileName?: string
+    htmlSnapshot?: string
     updatedAt?: string | Date
     savedAt: string
 }
@@ -106,7 +113,20 @@ export async function saveCourseForOffline(
         courseStore.put(courseRecord)
 
         // 2. Save Full Items
-        items.forEach(item => {
+        items.forEach(async (item) => {
+            let htmlSnapshot: string | undefined = undefined
+            if (item.type === 'link' && item.storageKey) {
+                try {
+                    const token = useAuthStore.getState().token
+                    const res = await fetch(`${API_URL}/storage/proxy/${item.storageKey}?token=${token}`)
+                    if (res.ok) {
+                        htmlSnapshot = await res.text()
+                    }
+                } catch (e) {
+                    console.warn("Could not cache htmlSnapshot offline", e)
+                }
+            }
+
             const itemRecord: OfflineItemData = {
                 id: String(item.id),
                 courseId,
@@ -114,6 +134,10 @@ export async function saveCourseForOffline(
                 title: item.title,
                 content: item.content || '',
                 extractedContent: item.extractedContent || '',
+                fileUrl: item.fileUrl,
+                storageKey: item.storageKey,
+                fileName: item.fileName,
+                htmlSnapshot,
                 updatedAt: item.updatedAt,
                 savedAt: now
             }

@@ -13,7 +13,8 @@ import {
     permanentDeleteItem,
     emptyTrash,
     updateItemAnnotations,
-    getUrlPreview
+    getUrlPreview,
+    downloadItemSnapshot
 } from '../controllers/itemController';
 import { authenticate } from '../middleware/auth';
 
@@ -33,6 +34,7 @@ router.put('/:id/annotations', updateItemAnnotations);
 
 // URL preview route (must come before /:id)
 router.post('/preview-url', getUrlPreview);
+router.post('/:id/snapshot', downloadItemSnapshot);
 
 // Standard item CRUD
 router.get('/', getItems);

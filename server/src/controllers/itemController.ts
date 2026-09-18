@@ -116,6 +116,89 @@ export const getItem = async (req: AuthRequest, res: Response) => {
     }
 };
 
+
+function extractTextFromHtml(html: string): string {
+    try {
+        let text = html
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+            .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
+            .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, ' ')
+            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
+            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
+            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .replace(/&#39;/g, "'")
+            .replace(/&rsquo;/g, "'")
+            .replace(/\s+/g, ' ')
+            .trim();
+        return text.substring(0, 100000);
+    } catch {
+        return '';
+    }
+}
+
+async function downloadAndProcessHtmlPage(targetUrl: string, domain: string): Promise<{ storageKey: string; fileSize: number; extractedContent: string } | null> {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+        const response = await fetch(targetUrl, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            console.warn(`[itemController] Failed to download HTML page for ${targetUrl}: HTTP ${response.status}`);
+            return null;
+        }
+
+        let html = await response.text();
+        const extractedContent = extractTextFromHtml(html);
+
+        // Inject <meta charset="utf-8"> if missing
+        if (!/<meta[^>]*charset/i.test(html)) {
+            html = html.replace(/<head[^>]*>/i, (match) => match + '\n<meta charset="utf-8">');
+        }
+
+        // Inject <base href="..."> into <head> so that relative assets (CSS, images, fonts) resolve properly
+        if (!/<base\b/i.test(html)) {
+            html = html.replace(/<head[^>]*>/i, (match) => match + '\n<base href="' + targetUrl + '">');
+        }
+
+        const cleanDomain = domain.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const htmlFileName = `${cleanDomain}-${Date.now()}.html`;
+        const buffer = Buffer.from(html, 'utf-8');
+
+        const uploadResult = await storageService.uploadFile({
+            buffer,
+            originalname: htmlFileName,
+            mimetype: 'text/html',
+            size: buffer.length
+        } as Express.Multer.File);
+
+        return {
+            storageKey: uploadResult.key,
+            fileSize: buffer.length,
+            extractedContent
+        };
+    } catch (err: any) {
+        console.warn(`[itemController] Error downloading HTML page for ${targetUrl}:`, err?.message);
+        return null;
+    }
+}
+
 // POST /api/items
 export const createItem = async (req: AuthRequest, res: Response) => {
     try {
@@ -129,15 +212,33 @@ export const createItem = async (req: AuthRequest, res: Response) => {
         let thumbnailUrl = req.body.thumbnailUrl || null;
         let fileType = req.body.fileType || (type === 'link' ? 'text/html' : null);
 
+        let extractedContent: string | null = null;
+
         if (!req.file && type === 'link' && fileUrl) {
             try {
-                const parsed = new URL(fileUrl.startsWith('http') ? fileUrl : `https://${fileUrl}`);
+                let targetUrl = fileUrl.trim();
+                if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                    targetUrl = 'https://' + targetUrl;
+                    fileUrl = targetUrl;
+                }
+                const parsed = new URL(targetUrl);
                 const domain = parsed.hostname.replace(/^www\./, '');
                 if (!fileName) fileName = domain;
                 if (!thumbnailUrl) {
                     thumbnailUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
                 }
-            } catch {}
+
+                // Automatically download HTML page for integrated reader & offline download
+                const snapshot = await downloadAndProcessHtmlPage(targetUrl, domain);
+                if (snapshot) {
+                    storageKey = snapshot.storageKey;
+                    fileSize = snapshot.fileSize;
+                    fileType = 'text/html';
+                    extractedContent = snapshot.extractedContent;
+                }
+            } catch (err: any) {
+                console.warn('[itemController] Link handling error:', err?.message);
+            }
         }
 
         if (req.file) {
@@ -181,7 +282,8 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 fileName,
                 fileType,
                 fileSize: fileSize ? parseInt(String(fileSize)) : null,
-                thumbnailUrl
+                thumbnailUrl,
+                extractedContent
             }
         });
 
@@ -677,5 +779,53 @@ export const getUrlPreview = async (req: AuthRequest, res: Response) => {
     } catch (err: any) {
         console.error('[itemController] Error in getUrlPreview:', err);
         return res.status(500).json({ message: 'Error previewing URL', error: (err as any)?.message });
+    }
+};
+
+
+// POST /api/items/:id/snapshot
+export const downloadItemSnapshot = async (req: AuthRequest, res: Response) => {
+    try {
+        const item = await prisma.item.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+        if (item.type !== 'link' || !item.fileUrl) {
+            return res.status(400).json({ message: 'Item is not a link or has no URL' });
+        }
+
+        let targetUrl = item.fileUrl.trim();
+        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+            targetUrl = 'https://' + targetUrl;
+        }
+        const parsed = new URL(targetUrl);
+        const domain = parsed.hostname.replace(/^www\./, '');
+
+        const snapshot = await downloadAndProcessHtmlPage(targetUrl, domain);
+        if (!snapshot) {
+            return res.status(500).json({ message: 'Failed to download HTML page' });
+        }
+
+        // Delete old file if existed
+        if (item.storageKey && item.storageKey !== snapshot.storageKey) {
+            await storageService.deleteFile(item.storageKey).catch(() => {});
+        }
+
+        const updatedItem = await prisma.item.update({
+            where: { id: item.id },
+            data: {
+                storageKey: snapshot.storageKey,
+                fileType: 'text/html',
+                fileSize: snapshot.fileSize,
+                extractedContent: snapshot.extractedContent || item.extractedContent
+            }
+        });
+
+        socketService.emitToProfile(req.user!.id, 'item:updated', updatedItem);
+        return res.json(updatedItem);
+    } catch (err: any) {
+        console.error('Error in downloadItemSnapshot:', err);
+        return res.status(500).json({ message: 'Error downloading snapshot', error: err?.message });
     }
 };

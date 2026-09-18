@@ -2,8 +2,10 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink, Download } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
+import { API_URL } from '@/config';
+import { useAuthStore } from '@/store/authStore';
 
 // Helper to get styling for List View Icons (copied from CourseView / FilePreview)
 const getFileIconStyle = (fileName: string | undefined) => {
@@ -182,18 +184,44 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                     </div>
                 </div>
             </div>
-            {item.type === 'link' && item.fileUrl && (
+            {item.type === 'link' && (
                 <div className="flex items-center gap-1 pl-2">
-                    <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 rounded-lg transition-colors"
-                        title={item.fileUrl}
-                    >
-                        <ExternalLink className="h-4 w-4" />
-                    </a>
+                    {item.storageKey && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const token = useAuthStore.getState().token;
+                                const downloadUrl = `${API_URL}/storage/proxy/${item.storageKey}?token=${token}`;
+                                fetch(downloadUrl)
+                                    .then(r => r.blob())
+                                    .then(blob => {
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${(item.title || item.fileName || 'page').replace(/[<>:"/\\|?*]/g, '_')}.html`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                    });
+                            }}
+                            className="p-2 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            title="Télécharger la page HTML pour lecture hors ligne"
+                        >
+                            <Download className="h-4 w-4" />
+                        </button>
+                    )}
+                    {item.fileUrl && (
+                        <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                            title={item.fileUrl}
+                        >
+                            <ExternalLink className="h-4 w-4" />
+                        </a>
+                    )}
                 </div>
             )}
         </div>

@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink, Download } from 'lucide-react';
 import { FilePreview } from '@/components/FilePreview';
 import { useLanguage } from '@/components/language-provider';
 import { API_URL } from '@/config';
@@ -164,19 +164,43 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         <p className="text-white/80 text-xs italic mb-1 line-clamp-1">{item.fileName}</p>
                     )}
                     {item.type === 'link' ? (
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-1.5 mt-2">
+                            {item.storageKey && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const downloadUrl = `${API_URL}/storage/proxy/${item.storageKey}?token=${token}`;
+                                        fetch(downloadUrl)
+                                            .then(r => r.blob())
+                                            .then(blob => {
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `${(item.title || item.fileName || 'page').replace(/[<>:"/\\|?*]/g, '_')}.html`;
+                                                a.click();
+                                                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                            });
+                                    }}
+                                    className="pointer-events-auto px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30 flex items-center gap-1 transition-colors shadow-sm"
+                                    title="Télécharger la page HTML (Hors ligne)"
+                                >
+                                    <Download className="h-3 w-3" />
+                                    <span>HTML</span>
+                                </button>
+                            )}
                             <a
                                 href={item.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="pointer-events-auto px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30 flex items-center gap-1 transition-colors shadow-sm"
+                                className="pointer-events-auto px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30 flex items-center gap-1 transition-colors shadow-sm"
                             >
-                                <span>Ouvrir</span>
+                                <span>Site</span>
                                 <ExternalLink className="h-3 w-3" />
                             </a>
-                            <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
-                                {t('action.preview') || 'Aperçu'}
+                            <div className="px-2.5 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
+                                {t('action.preview') || 'Lire'}
                             </div>
                         </div>
                     ) : (

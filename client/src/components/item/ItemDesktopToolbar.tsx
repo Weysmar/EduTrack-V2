@@ -82,11 +82,13 @@ export function ItemDesktopToolbar({
             )}
 
             {/* Universal View / Open in New Tab & Download Buttons */}
-            {(item.fileData || item.type === 'resource' || pdfUrl) && (
+            {(item.fileData || item.type === 'resource' || (item.type === 'link' && item.storageKey) || pdfUrl) && (
                 (() => {
                     // Construct Public URL
                     let targetUrl = pdfUrl || '';
-                    if (item.storageKey) {
+                    if (item.type === 'link' && item.fileUrl) {
+                        targetUrl = item.fileUrl;
+                    } else if (item.storageKey) {
                         const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
                         const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
                         const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
