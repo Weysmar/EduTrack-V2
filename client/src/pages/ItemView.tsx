@@ -100,6 +100,42 @@ export function ItemView() {
     const [isRefreshingSnapshot, setIsRefreshingSnapshot] = useState(false)
     const [showSummaryModal, setShowSummaryModal] = useState(false)
     const [isFocusMode, setIsFocusMode] = useState(false)
+
+    const toggleFocusMode = () => {
+        if (!isFocusMode) {
+            setIsFocusMode(true)
+            try {
+                if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {})
+                }
+            } catch {}
+        } else {
+            setIsFocusMode(false)
+            try {
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {})
+                }
+            } catch {}
+        }
+    }
+
+    useEffect(() => {
+        const onFullscreenChange = () => {
+            if (!document.fullscreenElement && isFocusMode) {
+                setIsFocusMode(false)
+            }
+        }
+        document.addEventListener('fullscreenchange', onFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+    }, [isFocusMode])
+
+    useEffect(() => {
+        if (!isFocusMode && typeof document !== 'undefined' && document.fullscreenElement) {
+            try {
+                document.exitFullscreen().catch(() => {})
+            } catch {}
+        }
+    }, [isFocusMode])
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
     const [isAIMenuOpen, setIsAIMenuOpen] = useState(false) // Manual control for mobile compatibility
     const [mobileTab, setMobileTab] = useState<'pdf' | 'summary'>('pdf')
@@ -951,13 +987,13 @@ export function ItemView() {
             {/* Main Content Area */}
             <div className={cn(
                 "flex-1 overflow-auto bg-muted/5 flex flex-col",
-                item.type === 'resource' 
+                (item.type === 'resource' || item.type === 'link')
                     ? "p-0 md:p-3 pb-20 md:pb-3" 
                     : "px-0 md:px-8 pt-0 pb-24 md:pb-8"
             )}>
                 <div className={cn(
                     "w-full h-full",
-                    showSummary ? "" : (item.type === 'resource' ? "max-w-none" : "max-w-5xl mx-auto")
+                    showSummary ? "" : ((item.type === 'resource' || (item.type === 'link' && item.storageKey)) ? "max-w-none" : "max-w-5xl mx-auto")
                 )}>
 
                     {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
@@ -983,9 +1019,13 @@ export function ItemView() {
                     {/* Content Logic: Summary VS Original Content */}
                     <div className={cn(
                         "w-full transition-all",
-                        isFocusMode ? "fixed inset-0 z-50 bg-background flex flex-col h-screen" : (sideBySideItem ? "w-full max-w-[98vw] mx-auto" : "max-w-5xl mx-auto")
+                        isFocusMode 
+                            ? "fixed inset-0 z-50 bg-background flex flex-col h-screen w-screen p-1.5 sm:p-2.5 pb-1 sm:pb-2" 
+                            : (sideBySideItem 
+                                ? "w-full max-w-[98vw] mx-auto" 
+                                : ((item.type === 'resource' || (item.type === 'link' && item.storageKey)) ? "w-full max-w-none" : "max-w-5xl mx-auto"))
                     )}>
-                        <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden" : "block")}>
+                        <div className={cn("flex-1 min-h-0 relative", isFocusMode ? "h-full overflow-hidden flex flex-col" : "block")}>
 
                             {/* ===== ORIGINAL CONTENT VIEW ===== */}
                             <div className={cn(
@@ -993,7 +1033,7 @@ export function ItemView() {
                                 // Logic: Show if (Standard Mode AND !ShowSummary) OR (FocusMode AND Tab == 'pdf')
                                 ((!showSummary && !isFocusMode) || (isFocusMode && mobileTab === 'pdf')) ? "block" : "hidden",
                                 isFocusMode 
-                                    ? "h-full overflow-y-auto border-r bg-muted/5 p-0 md:p-4" 
+                                    ? "h-full overflow-hidden border-0 bg-background p-0 flex flex-col flex-1 min-h-0" 
                                     : (sideBySideItem
                                         ? "p-0 min-h-[50vh]"
                                         : (item.type === 'note'
@@ -1210,9 +1250,12 @@ export function ItemView() {
                                 </div>
                             ) : (item.type === 'link') ? (
                                 item.storageKey ? (
-                                    <div className="w-full h-full flex flex-col space-y-3 animate-in fade-in duration-200">
+                                    <div className={cn(
+                                        "w-full flex flex-col space-y-2 animate-in fade-in duration-200",
+                                        isFocusMode ? "h-full flex-1 min-h-0" : ""
+                                    )}>
                                         {/* Lecteur Intégré : Barre d'actions */}
-                                        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-card border rounded-xl shadow-xs">
+                                        <div className="flex flex-wrap items-center justify-between gap-2.5 p-2 sm:p-2.5 bg-card border rounded-xl shadow-xs flex-shrink-0">
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
                                                     {item.thumbnailUrl ? (
@@ -1282,7 +1325,7 @@ export function ItemView() {
 
                                                 {/* Bouton Plein écran */}
                                                 <button
-                                                    onClick={() => setIsFocusMode(!isFocusMode)}
+                                                    onClick={toggleFocusMode}
                                                     className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground border transition-colors hidden sm:inline-flex"
                                                     title={isFocusMode ? (language === 'fr' ? "Quitter le plein écran" : "Exit focus") : (language === 'fr' ? "Plein écran" : "Focus mode")}
                                                 >
@@ -1294,7 +1337,7 @@ export function ItemView() {
                                         {/* Document HTML intégré */}
                                         <div className={cn(
                                             "w-full bg-card rounded-xl border overflow-hidden shadow-sm relative",
-                                            isFocusMode ? "h-[calc(100vh-170px)]" : "h-[75vh] md:h-[82vh]"
+                                            isFocusMode ? "flex-1 min-h-0 h-full" : "h-[75vh] md:h-[82vh]"
                                         )}>
                                             <iframe
                                                 src={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : undefined}
