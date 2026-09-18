@@ -11,7 +11,7 @@ import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { extractText } from '@/lib/extractText'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
-import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar, ArrowLeftRight, RefreshCw, X as CloseIcon } from 'lucide-react'
+import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar, ArrowLeftRight, RefreshCw, X as CloseIcon, Globe } from 'lucide-react'
 import { ItemDesktopToolbar } from '@/components/item/ItemDesktopToolbar'
 import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { SideBySidePickerModal } from '@/components/item/SideBySidePickerModal'
@@ -234,6 +234,7 @@ export function ItemView() {
 
     // PDF Blob URL Management - Support Local Blob OR Remote URL (Proxy/S3)
     const pdfUrl = useMemo(() => {
+        if (item?.type === 'link') return null;
         // Use Backend Proxy if storageKey is available (Bypasses CORS/IP blocking)
         if (item?.storageKey) {
             return `${API_URL}/storage/proxy/${item.storageKey}?token=${token}`;
@@ -245,7 +246,7 @@ export function ItemView() {
         }
 
         return null
-    }, [item?.fileUrl, item?.storageKey, token])
+    }, [item?.fileUrl, item?.storageKey, item?.type, token])
 
     // Side-by-Side Secondary PDF URL
     const sideBySidePdfUrl = useMemo(() => {
@@ -687,10 +688,12 @@ export function ItemView() {
                         item.type === 'exercise' && "bg-green-100 text-green-600 dark:bg-green-900/20",
                         item.type === 'note' && "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20",
                         item.type === 'resource' && (isBpmn ? "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20" : isImage ? "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20" : "bg-green-100 text-green-600 dark:bg-green-900/20"),
+                        item.type === 'link' && "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/20",
                     )}>
                         {item.type === 'exercise' && <Dumbbell className="h-4 w-4" />}
                         {item.type === 'note' && <FileText className="h-4 w-4" />}
                         {item.type === 'resource' && (isBpmn ? <Workflow className="h-4 w-4" /> : isImage ? <ImageIcon className="h-4 w-4" /> : <FolderOpen className="h-4 w-4" />)}
+                        {item.type === 'link' && <Globe className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -716,6 +719,29 @@ export function ItemView() {
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
                             {course && <span className="truncate">{course.title}</span>}
+                            {item.type === 'link' && (
+                                <>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                                        <Globe className="h-2.5 w-2.5" />
+                                        Internet
+                                    </span>
+                                    {item.fileName && (
+                                        <span className="opacity-75 truncate max-w-[200px] font-mono">{item.fileName}</span>
+                                    )}
+                                    {item.createdAt && (
+                                        <>
+                                            <span className="opacity-50 hidden sm:inline">•</span>
+                                            <span className="opacity-75 hidden sm:inline">
+                                                {new Date(item.createdAt).toLocaleDateString('fr-FR', {
+                                                    day: '2-digit',
+                                                    month: '2-digit',
+                                                    year: 'numeric'
+                                                })}
+                                            </span>
+                                        </>
+                                    )}
+                                </>
+                            )}
                             {item.type === 'resource' && (
                                 <>
                                     {course && <span>•</span>}
@@ -803,6 +829,17 @@ export function ItemView() {
                         </div>
                     )}
 
+                    {item.type === 'link' && item.fileUrl && (
+                        <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity flex-shrink-0 mr-1"
+                        >
+                            <span>Ouvrir le site</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                    )}
                     {/* Mobile quick Open in new tab button */}
                     {item.type === 'resource' && pdfUrl && (
                         <a
@@ -1146,6 +1183,62 @@ export function ItemView() {
                             ) : (item.type === 'mindmap') ? (
                                 <div className="w-full h-[75vh] min-h-[600px] border rounded-xl overflow-hidden bg-card">
                                     <MindMapViewer content={item.content || ''} />
+                                </div>
+                            ) : (item.type === 'link') ? (
+                                <div className="w-full flex flex-col items-center justify-center p-6 md:p-12 space-y-6 animate-in fade-in-50 duration-200">
+                                    <div className="w-full max-w-2xl bg-card border rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-16 h-16 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 overflow-hidden relative shadow-inner">
+                                                {item.thumbnailUrl ? (
+                                                    <img 
+                                                        src={item.thumbnailUrl.startsWith('http') ? item.thumbnailUrl : `${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`} 
+                                                        alt={item.title}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Globe className="h-8 w-8 text-cyan-500" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0 space-y-1">
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                                                    <Globe className="h-3 w-3" />
+                                                    <span>Site Internet</span>
+                                                </div>
+                                                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                                                    {item.title}
+                                                </h2>
+                                                {item.fileName && (
+                                                    <p className="text-sm text-muted-foreground font-mono">
+                                                        {item.fileName}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {item.content && (
+                                            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-xl border">
+                                                {item.content}
+                                            </p>
+                                        )}
+
+                                        <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t pt-4">
+                                            <a
+                                                href={item.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg hover:opacity-95 transition-all text-sm group"
+                                            >
+                                                <span>Accéder au site internet</span>
+                                                <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                            </a>
+                                            <span className="text-xs text-muted-foreground font-mono truncate max-w-xs" title={item.fileUrl}>
+                                                {item.fileUrl}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (item.content || isEditMode) ? (
                                     <div className="w-full h-full">

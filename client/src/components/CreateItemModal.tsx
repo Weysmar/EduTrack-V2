@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight, Calendar as CalendarIcon } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight, Calendar as CalendarIcon, Globe, ExternalLink, Sparkles, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Editor } from './Editor'
@@ -12,7 +12,7 @@ import { itemQueries } from '@/lib/api/queries'
 import imageCompression from 'browser-image-compression';
 import { GoogleDrivePickerButton } from '@/components/drive/GoogleDrivePickerButton';
 
-type ItemType = 'note' | 'exercise' | 'resource';
+type ItemType = 'note' | 'exercise' | 'resource' | 'link';
 
 interface CreateItemModalProps {
     isOpen: boolean
@@ -32,10 +32,36 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const [dueDate, setDueDate] = useState('') // For exercise deadline
     const [hasDueDate, setHasDueDate] = useState(false) // For exercise deadline toggle
     const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []) // For resource/exercise
+    const [linkUrl, setLinkUrl] = useState('')
+    const [linkPreview, setLinkPreview] = useState<{ url: string; domain: string; title: string; description: string; image: string; favicon: string } | null>(null)
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false)
     const { t, language } = useLanguage()
     const queryClient = useQueryClient()
+
+    const fetchUrlPreview = async (rawUrl?: string) => {
+        let urlToFetch = (rawUrl !== undefined ? rawUrl : linkUrl).trim()
+        if (!urlToFetch) return
+        if (!urlToFetch.startsWith('http://') && !urlToFetch.startsWith('https://')) {
+            urlToFetch = 'https://' + urlToFetch
+        }
+        setIsLoadingPreview(true)
+        try {
+            const preview = await itemQueries.previewUrl(urlToFetch)
+            setLinkPreview(preview)
+            if (!title.trim() || title === linkUrl || (linkPreview && title === linkPreview.title)) {
+                if (preview.title) setTitle(preview.title)
+            }
+            if (!content.trim() && preview.description) {
+                setContent(preview.description)
+            }
+        } catch (err) {
+            console.warn('Failed to preview URL', err)
+        } finally {
+            setIsLoadingPreview(false)
+        }
+    }
 
     const createItemMutation = useMutation({
         mutationFn: (data: any) => itemQueries.create(data, {
@@ -55,6 +81,9 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
             setDueDate('')
             setHasDueDate(false)
             setFiles([])
+            setLinkUrl('')
+            setLinkPreview(null)
+            setIsLoadingPreview(false)
             setUploadProgress(0)
 
             if (itemType === 'note' && newId) {
@@ -80,6 +109,47 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!title.trim() && (type === 'note' || type === 'exercise')) return
+
+        if (type === 'link') {
+            let finalUrl = linkUrl.trim()
+            if (!finalUrl) {
+                toast.error(language === 'fr' ? "Veuillez entrer une adresse de site web" : "Please enter a website URL")
+                return
+            }
+            if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                finalUrl = 'https://' + finalUrl
+            }
+
+            let domain = linkPreview?.domain || ''
+            try {
+                if (!domain) domain = new URL(finalUrl).hostname.replace(/^www\./, '')
+            } catch {
+                domain = finalUrl
+            }
+
+            const finalTitle = title.trim() || linkPreview?.title || domain || finalUrl
+            const thumbnail = linkPreview?.image || `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+
+            try {
+                setIsUploading(true)
+                await createItemMutation.mutateAsync({
+                    courseId,
+                    type: 'link',
+                    title: finalTitle,
+                    content: content.trim() || linkPreview?.description || '',
+                    fileUrl: finalUrl,
+                    thumbnailUrl: thumbnail,
+                    fileName: domain,
+                    profileId: activeProfile?.id
+                })
+            } catch (error) {
+                console.error(error)
+                toast.error(language === 'fr' ? "Erreur lors de l'ajout du site" : "Failed to add website")
+            } finally {
+                setIsUploading(false)
+            }
+            return
+        }
 
         setIsUploading(true)
         setUploadProgress(0)
@@ -205,7 +275,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                 </div>
 
                 <div className="flex border-b">
-                    {(['note', 'exercise', 'resource'] as const).map(tType => (
+                    {(['note', 'exercise', 'resource', 'link'] as const).map(tType => (
                         <button
                             key={tType}
                             type="button"
@@ -218,13 +288,14 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                             {tType === 'note' && <FileText className="h-4 w-4" />}
                             {tType === 'exercise' && <Dumbbell className="h-4 w-4" />}
                             {tType === 'resource' && <FolderOpen className="h-4 w-4" />}
-                            {t(`item.create.type.${tType}`)}
+                            {tType === 'link' && <Globe className="h-4 w-4" />}
+                            {t(`item.create.type.${tType}`) || (tType === 'link' ? "Internet" : tType)}
                         </button>
                     ))}
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
-                    {type !== 'resource' && (
+                    {type !== 'resource' && type !== 'link' && (
                         <div className="space-y-2">
                             <label className="text-sm font-medium">{t('item.form.title')}</label>
                             <input
@@ -369,6 +440,160 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                         </div>
                     )}
 
+                    {type === 'link' && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center justify-between">
+                                    <span>{language === 'fr' ? "Adresse du site internet (URL)" : "Website URL"}</span>
+                                    <span className="text-xs text-muted-foreground font-normal">
+                                        {language === 'fr' ? "La vignette et le titre seront détectés automatiquement" : "Thumbnail and title detected automatically"}
+                                    </span>
+                                </label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <input
+                                            type="url"
+                                            value={linkUrl}
+                                            onChange={e => setLinkUrl(e.target.value)}
+                                            onBlur={() => {
+                                                if (linkUrl.trim() && !linkPreview) fetchUrlPreview()
+                                            }}
+                                            onPaste={e => {
+                                                const pasted = e.clipboardData.getData('text')
+                                                if (pasted && (pasted.startsWith('http') || pasted.includes('.'))) {
+                                                    fetchUrlPreview(pasted)
+                                                }
+                                            }}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault()
+                                                    fetchUrlPreview()
+                                                }
+                                            }}
+                                            className="w-full pl-9 pr-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-mono"
+                                            placeholder="https://fr.wikipedia.org/wiki/... ou https://..."
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => fetchUrlPreview()}
+                                        disabled={isLoadingPreview || !linkUrl.trim()}
+                                        className="px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-md border flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                        title={language === 'fr' ? "Récupérer la vignette et le titre" : "Fetch preview"}
+                                    >
+                                        {isLoadingPreview ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        )}
+                                        <span>{language === 'fr' ? "Détecter" : "Fetch"}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Live Website Preview Card */}
+                            {(linkPreview || isLoadingPreview) && (
+                                <div className="p-3.5 rounded-xl border bg-card/60 backdrop-blur-sm space-y-3 transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground font-medium pb-2 border-b">
+                                        <span className="flex items-center gap-1.5 text-primary font-semibold">
+                                            <Sparkles className="h-3.5 w-3.5" />
+                                            <span>{language === 'fr' ? "Aperçu de la vignette et informations" : "Website preview"}</span>
+                                        </span>
+                                        {linkPreview?.domain && (
+                                            <span className="font-mono text-[11px] bg-muted px-2 py-0.5 rounded">
+                                                {linkPreview.domain}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {isLoadingPreview ? (
+                                        <div className="py-6 flex flex-col items-center justify-center gap-2 text-muted-foreground text-xs">
+                                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                            <span>{language === 'fr' ? "Chargement de la vignette du site..." : "Loading website thumbnail..."}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-4 items-start">
+                                            <div className="w-24 h-20 sm:w-28 sm:h-20 rounded-lg overflow-hidden border bg-muted flex-shrink-0 flex items-center justify-center relative shadow-sm">
+                                                {linkPreview?.image ? (
+                                                    <img
+                                                        src={linkPreview.image}
+                                                        alt={linkPreview.title}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Globe className="h-8 w-8 text-cyan-500 opacity-60" />
+                                                )}
+                                                <div className="absolute bottom-1 right-1">
+                                                    <img
+                                                        src={linkPreview?.favicon}
+                                                        alt="favicon"
+                                                        className="w-4 h-4 rounded-sm bg-white/90 p-0.5 shadow-sm"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0 space-y-1">
+                                                <h4 className="font-semibold text-sm leading-snug line-clamp-2 text-foreground">
+                                                    {linkPreview?.title || title || linkPreview?.domain}
+                                                </h4>
+                                                {linkPreview?.description && (
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        {linkPreview.description}
+                                                    </p>
+                                                )}
+                                                {linkPreview?.url && (
+                                                    <a
+                                                        href={linkPreview.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-mono pt-1"
+                                                    >
+                                                        <span>{linkPreview.url}</span>
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Title Field (Editable) */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">{t('item.form.title')}</label>
+                                <input
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                                    placeholder={language === 'fr' ? "Titre affiché pour ce contenu" : "Title displayed for this item"}
+                                    required
+                                />
+                            </div>
+
+                            {/* Optional Description / Notes */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    <span>{t('item.form.desc')}</span>
+                                    <span className="text-xs text-muted-foreground font-normal ml-1.5">({t('common.optional')})</span>
+                                </label>
+                                <textarea
+                                    value={content}
+                                    onChange={e => setContent(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md bg-background min-h-[70px] text-sm"
+                                    placeholder={language === 'fr' ? "Description ou remarques personnelles sur ce site..." : "Description or notes about this website..."}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {type === 'resource' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -442,7 +667,7 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
                                     <ArrowRight className="h-4 w-4" />
                                 </>
                             ) : (
-                                <span>{isUploading ? (t('common.uploading') || "Upload...") : t(`item.form.submit.${type}`)}</span>
+                                <span>{isUploading ? (t('common.uploading') || "Upload...") : (type === 'link' ? (language === 'fr' ? "Ajouter le site" : "Add Website") : t(`item.form.submit.${type}`))}</span>
                             )}
                         </button>
                     </div>

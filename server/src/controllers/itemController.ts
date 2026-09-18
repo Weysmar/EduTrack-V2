@@ -121,13 +121,24 @@ export const createItem = async (req: AuthRequest, res: Response) => {
     try {
         console.log('Creating item with body:', req.body);
         const { courseId, type, title, content, status, difficulty, tags, dueDate } = req.body;
-        let fileUrl = null;
+        let fileUrl = req.body.fileUrl || null;
         let storageKey = null;
-        let fileName = null;
+        let fileName = req.body.fileName || null;
         let fileSize = null;
 
-        let thumbnailUrl = null;
-        let fileType = null;
+        let thumbnailUrl = req.body.thumbnailUrl || null;
+        let fileType = req.body.fileType || (type === 'link' ? 'text/html' : null);
+
+        if (!req.file && type === 'link' && fileUrl) {
+            try {
+                const parsed = new URL(fileUrl.startsWith('http') ? fileUrl : `https://${fileUrl}`);
+                const domain = parsed.hostname.replace(/^www\./, '');
+                if (!fileName) fileName = domain;
+                if (!thumbnailUrl) {
+                    thumbnailUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                }
+            } catch {}
+        }
 
         if (req.file) {
             const uploadResult = await storageService.uploadFile(req.file);
@@ -164,7 +175,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 status,
                 difficulty,
                 dueDate: (parsedDueDate && !isNaN(parsedDueDate.getTime())) ? parsedDueDate : null,
-                tags: tags ? JSON.parse(tags) : [],
+                tags: tags ? (typeof tags === 'string' ? (tags.startsWith('[') ? JSON.parse(tags) : [tags]) : tags) : [],
                 fileUrl,
                 storageKey,
                 fileName,
@@ -550,5 +561,121 @@ export const uploadItemFile = async (req: AuthRequest, res: Response) => {
         res.json(updatedItem);
     } catch (error) {
         res.status(500).json({ message: 'Error uploading file', error });
+    }
+};
+
+// POST /api/items/preview-url
+export const getUrlPreview = async (req: AuthRequest, res: Response) => {
+    try {
+        let { url } = req.body;
+        if (!url || typeof url !== 'string') {
+            return res.status(400).json({ message: 'URL is required' });
+        }
+        url = url.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        let domain = '';
+        let origin = '';
+        try {
+            const parsedUrl = new URL(url);
+            domain = parsedUrl.hostname.replace(/^www\./, '');
+            origin = parsedUrl.origin;
+        } catch {
+            return res.status(400).json({ message: 'Invalid URL format' });
+        }
+
+        let title = domain;
+        let description = '';
+        let image = '';
+        const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4500);
+
+            const response = await fetch(url, {
+                signal: controller.signal,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+                }
+            });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
+                    const html = await response.text();
+
+                    // OpenGraph & standard title
+                    const ogTitle = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+                                  html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i) ||
+                                  html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i);
+                    const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+                    if (ogTitle && ogTitle[1]) {
+                        title = ogTitle[1].trim();
+                    } else if (titleTag && titleTag[1]) {
+                        title = titleTag[1].trim();
+                    }
+
+                    // OpenGraph description
+                    const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i) ||
+                                 html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i) ||
+                                 html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+                                 html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+                    if (ogDesc && ogDesc[1]) {
+                        description = ogDesc[1].trim();
+                    }
+
+                    // OpenGraph / Twitter image
+                    const ogImg = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+                                html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i) ||
+                                html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+                    if (ogImg && ogImg[1]) {
+                        let imgUrl = ogImg[1].trim();
+                        if (imgUrl.startsWith('//')) {
+                            imgUrl = 'https:' + imgUrl;
+                        } else if (imgUrl.startsWith('/')) {
+                            imgUrl = origin + imgUrl;
+                        } else if (!imgUrl.startsWith('http')) {
+                            imgUrl = origin + '/' + imgUrl;
+                        }
+                        image = imgUrl;
+                    }
+                }
+            }
+        } catch (fetchErr: any) {
+            console.warn('[itemController] Preview fetch failed for:', url, (fetchErr as any)?.message || fetchErr);
+        }
+
+        const decodeEntities = (text: string): string => {
+            return text
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/&#39;/g, "'")
+                .replace(/&rsquo;/g, "'")
+                .replace(/&nbsp;/g, ' ');
+        };
+
+        title = decodeEntities(title);
+        description = decodeEntities(description);
+
+        return res.json({
+            url,
+            domain,
+            title,
+            description,
+            image: image || favicon,
+            favicon
+        });
+    } catch (err: any) {
+        console.error('[itemController] Error in getUrlPreview:', err);
+        return res.status(500).json({ message: 'Error previewing URL', error: (err as any)?.message });
     }
 };

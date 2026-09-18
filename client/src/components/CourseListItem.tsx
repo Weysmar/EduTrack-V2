@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, FolderOpen, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 
 // Helper to get styling for List View Icons (copied from CourseView / FilePreview)
@@ -60,6 +60,7 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
         note: 'item.create.type.note',
         exercise: 'item.create.type.exercise',
         resource: 'item.create.type.resource',
+        link: 'item.create.type.link',
         quiz: 'filter.quiz',
         flashcards: 'filter.flashcards',
         mindmap: 'filter.mindmaps',
@@ -111,7 +112,8 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                     item.type === 'summary' && "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400",
                     item.type === 'sheet' && "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400",
                     item.type === 'cloze' && "bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400",
-                    item.type === 'resource' && (fileStyle?.bg || "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400")
+                    item.type === 'resource' && (fileStyle?.bg || "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"),
+                    item.type === 'link' && "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400"
                 )}>
                     {item.type === 'note' && <FileText className="h-6 w-6" />}
                     {item.type === 'exercise' && <Dumbbell className="h-6 w-6" />}
@@ -132,13 +134,27 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                             <FolderOpen className="h-6 w-6" />
                         )
                     )}
+                    {item.type === 'link' && (
+                        item.thumbnailUrl ? (
+                            <img
+                                src={item.thumbnailUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <Globe className="h-6 w-6" />
+                        )
+                    )}
                 </div>
 
                 <div className="flex flex-col min-w-0 flex-1 px-1">
                     <span className="font-medium truncate text-sm sm:text-base">{item.title}</span>
                     <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground mt-1">
                         <span className="uppercase tracking-wider font-bold text-primary/80">
-                            {isTrueFalse ? "Vrai / Faux" : t(typeKey)}
+                            {item.type === 'link' ? "INTERNET" : (isTrueFalse ? "Vrai / Faux" : t(typeKey))}
                         </span>
                         <span>•</span>
                         <span>{new Date(item.createdAt).toLocaleDateString()}</span>
@@ -166,6 +182,20 @@ export const CourseListItem = memo(({ item, isSelected, onToggleSelection }: Cou
                     </div>
                 </div>
             </div>
+            {item.type === 'link' && item.fileUrl && (
+                <div className="flex items-center gap-1 pl-2">
+                    <a
+                        href={item.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                        title={item.fileUrl}
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                    </a>
+                </div>
+            )}
         </div>
     );
 });

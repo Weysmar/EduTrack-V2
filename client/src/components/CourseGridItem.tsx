@@ -2,7 +2,7 @@
 import { memo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale } from 'lucide-react';
+import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink } from 'lucide-react';
 import { FilePreview } from '@/components/FilePreview';
 import { useLanguage } from '@/components/language-provider';
 import { API_URL } from '@/config';
@@ -33,6 +33,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
         note: 'item.create.type.note',
         exercise: 'item.create.type.exercise',
         resource: 'item.create.type.resource',
+        link: 'item.create.type.link',
         quiz: 'filter.quiz',
         flashcards: 'filter.flashcards',
         mindmap: 'filter.mindmaps',
@@ -89,11 +90,14 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                     {(item.thumbnailUrl || item.fileName) ? (
                         item.thumbnailUrl ? (
                             <img
-                                src={`${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`}
-                                alt={item.fileName}
+                                src={item.thumbnailUrl.startsWith('http') ? item.thumbnailUrl : `${API_URL}/storage/proxy/${item.thumbnailUrl.split('/').pop()}?token=${token}`}
+                                alt={item.fileName || item.title}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 decoding="async"
+                                onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                }}
                             />
                         ) : (
                             <FilePreview
@@ -115,7 +119,8 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                             item.type === 'summary' && "bg-cyan-50/70 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-500",
                             item.type === 'sheet' && "bg-purple-50/70 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400",
                             item.type === 'cloze' && "bg-teal-50/70 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400",
-                            item.type === 'mindmap' && "bg-pink-50/70 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400"
+                            item.type === 'mindmap' && "bg-pink-50/70 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400",
+                            item.type === 'link' && "bg-cyan-50/70 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400"
                         )}>
                             {item.type === 'note' && <FileText className="h-10 w-10 opacity-70" />}
                             {item.type === 'exercise' && <Dumbbell className="h-10 w-10 opacity-70" />}
@@ -126,6 +131,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                             {item.type === 'sheet' && <BookOpen className="h-10 w-10 opacity-70" />}
                             {item.type === 'cloze' && <FileEdit className="h-10 w-10 opacity-70" />}
                             {item.type === 'mindmap' && <BrainCircuit className="h-10 w-10 opacity-70" />}
+                            {item.type === 'link' && <Globe className="h-10 w-10 opacity-70" />}
                             <div className="absolute top-0 right-0 w-8 h-8 bg-black/5 dark:bg-white/5 rounded-bl-xl" />
                         </div>
                     )}
@@ -144,9 +150,10 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         item.type === 'summary' && "bg-cyan-500/90 text-white",
                         item.type === 'sheet' && "bg-purple-600/90 text-white",
                         item.type === 'cloze' && "bg-teal-600/90 text-white",
-                        item.type === 'mindmap' && "bg-pink-600/90 text-white"
+                        item.type === 'mindmap' && "bg-pink-600/90 text-white",
+                        item.type === 'link' && "bg-cyan-600/90 text-white"
                     )}>
-                        {isTrueFalse ? "Vrai / Faux" : t(typeKey)}
+                        {item.type === 'link' ? "INTERNET" : (isTrueFalse ? "Vrai / Faux" : t(typeKey))}
                     </span>
                 </div>
 
@@ -156,9 +163,27 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                     {item.fileName && (
                         <p className="text-white/80 text-xs italic mb-1 line-clamp-1">{item.fileName}</p>
                     )}
-                    <div className="mt-2 px-3 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
-                        {t('action.preview') || 'Aperçu'}
-                    </div>
+                    {item.type === 'link' ? (
+                        <div className="flex items-center gap-2 mt-2">
+                            <a
+                                href={item.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="pointer-events-auto px-3 py-1 bg-cyan-600 hover:bg-cyan-500 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30 flex items-center gap-1 transition-colors shadow-sm"
+                            >
+                                <span>Ouvrir</span>
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
+                                {t('action.preview') || 'Aperçu'}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-2 px-3 py-1 bg-white/20 rounded-full text-[10px] text-white uppercase tracking-wider font-bold border border-white/30">
+                            {t('action.preview') || 'Aperçu'}
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -12,7 +12,8 @@ import {
     getTrashItems,
     permanentDeleteItem,
     emptyTrash,
-    updateItemAnnotations
+    updateItemAnnotations,
+    getUrlPreview
 } from '../controllers/itemController';
 import { authenticate } from '../middleware/auth';
 
@@ -29,6 +30,9 @@ router.delete('/:id/permanent', permanentDeleteItem);
 
 // Annotation route
 router.put('/:id/annotations', updateItemAnnotations);
+
+// URL preview route (must come before /:id)
+router.post('/preview-url', getUrlPreview);
 
 // Standard item CRUD
 router.get('/', getItems);

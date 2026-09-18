@@ -52,6 +52,7 @@ export function CourseToolbar({
                     >
                         <option value="all">{t('filter.all') || 'Tout'}</option>
                         <option value="resource">{t('filter.resources') || 'Ressources'}</option>
+                        <option value="link">{t('filter.links') || 'Sites Internet'}</option>
                         <option value="exercise">{t('filter.exercises') || 'Exercices'}</option>
                         <option value="note">{t('filter.notes') || 'Notes'}</option>
                         <option value="sheet">{t('filter.sheets') || 'Fiches de révision'}</option>

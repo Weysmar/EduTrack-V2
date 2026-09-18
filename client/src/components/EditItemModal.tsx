@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Dumbbell, FileText, FolderOpen, Calendar as CalendarIcon } from 'lucide-react'
+import { X, Dumbbell, FileText, FolderOpen, Calendar as CalendarIcon, Globe } from 'lucide-react'
 import { format } from 'date-fns'
 import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
@@ -38,6 +38,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
     const [hasDueDate, setHasDueDate] = useState(!!item.dueDate)
     const [dueDate, setDueDate] = useState(parseDueDate(item.dueDate))
     const [file, setFile] = useState<File | null>(null)
+    const [linkUrl, setLinkUrl] = useState(item.type === 'link' ? (item.fileUrl || '') : '')
     const { t, language } = useLanguage()
     const queryClient = useQueryClient()
 
@@ -51,6 +52,7 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
             setHasDueDate(!!item.dueDate)
             setDueDate(parseDueDate(item.dueDate))
             setFile(null)
+            if (item.type === 'link') setLinkUrl(item.fileUrl || '')
         }
     }, [isOpen, item])
 
@@ -86,6 +88,16 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
         // Only append fields if they are relevant to the item type
         if (item.type === 'note' || item.type === 'exercise') {
             formData.append('content', content);
+        }
+
+        if (item.type === 'link') {
+            formData.append('fileUrl', linkUrl);
+            formData.append('content', content);
+            try {
+                const parsed = new URL(linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`);
+                const domain = parsed.hostname.replace(/^www\./, '');
+                formData.append('fileName', domain);
+            } catch {}
         }
 
         if (item.type === 'exercise') {
@@ -134,7 +146,8 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                     {item.type === 'note' && <FileText className="h-4 w-4" />}
                     {item.type === 'exercise' && <Dumbbell className="h-4 w-4" />}
                     {item.type === 'resource' && <FolderOpen className="h-4 w-4" />}
-                    {t(`item.create.type.${item.type}`)}
+                    {item.type === 'link' && <Globe className="h-4 w-4" />}
+                    {t(`item.create.type.${item.type}`) || (item.type === 'link' ? 'Internet' : item.type)}
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
@@ -251,6 +264,33 @@ export function EditItemModal({ isOpen, onClose, item, courseId }: EditItemModal
                                         <span>{file ? file.name : (item.fileName ? t('item.edit.keepFile') : t('item.edit.drop_file'))}</span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {item.type === 'link' && (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">{language === 'fr' ? "URL du site internet" : "Website URL"}</label>
+                                <input
+                                    type="url"
+                                    value={linkUrl}
+                                    onChange={e => setLinkUrl(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-mono"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    <span>{t('item.form.desc')}</span>
+                                    <span className="text-xs text-muted-foreground font-normal ml-1">({t('common.optional')})</span>
+                                </label>
+                                <textarea
+                                    value={content}
+                                    onChange={e => setContent(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md bg-background min-h-[80px] text-sm"
+                                    placeholder={language === 'fr' ? "Description ou remarques..." : "Description or notes..."}
+                                />
                             </div>
                         </div>
                     )}

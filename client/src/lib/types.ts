@@ -33,13 +33,14 @@ export interface Course {
 export interface Item {
     id: number | string;
     courseId: number | string;
-    type: 'note' | 'resource' | 'exercise';
+    type: 'note' | 'resource' | 'exercise' | 'link';
     title: string;
     content?: string; // HTML for notes, Description for others
 
     // Resource specifics
     fileData?: Blob; // For local storage (Dexie) - API might return URL
     fileUrl?: string; // For API
+    thumbnailUrl?: string;
     storageKey?: string; // Key in storage bucket
     fileType?: string;
     fileName?: string;
