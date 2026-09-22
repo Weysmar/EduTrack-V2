@@ -314,7 +314,7 @@ export function ItemView() {
     }, [isImageFullscreen])
 
     // Summary Hook
-    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError, remove } = useSummary(id, item?.type || 'note', undefined, courseId)
+    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating, error: summaryError, remove, setSummary, refetch: refetchSummary } = useSummary(id, item?.type || 'note', undefined, courseId)
 
     // Export Hook
     const { isExporting, handleExportPDF, handleExportDOCX, contentRef } = useSummaryExport(summary, item?.title || "Document")
@@ -725,8 +725,12 @@ export function ItemView() {
                 itemId={String(item?.id || '')}
                 initialMode={exerciseMode}
                 fileCategory={itemFileCategory}
-                onSuccess={(mode) => {
+                onSuccess={(mode, payload) => {
                     if (mode === 'summary') {
+                        if (payload) {
+                            setSummary(payload);
+                        }
+                        refetchSummary();
                         setShowSummary(true);
                         setMobileTab('summary');
                     }
@@ -1606,7 +1610,23 @@ export function ItemView() {
                                                                 </div>
                                                             </>
                                                         ) : (
-                                                            <p>{t('summary.error.display')}</p>
+                                                            <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                                                                <div className="p-3 bg-muted text-muted-foreground rounded-full">
+                                                                    <FileText className="h-6 w-6" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-medium text-foreground">Aucun résumé disponible</p>
+                                                                    <p className="text-sm text-muted-foreground mt-1">Générez une fiche de synthèse pour ce document en un clic.</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setIsSummaryOptionsOpen(true)}
+                                                                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+                                                                >
+                                                                    <Sparkles className="h-4 w-4" />
+                                                                    <span>Générer un résumé</span>
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 )}

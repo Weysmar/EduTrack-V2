@@ -32,7 +32,7 @@ interface GenerateExerciseModalProps {
     sourceTitle: string
     initialMode?: RevisionGenerationMode
     fileCategory?: FileCategory
-    onSuccess?: (mode: RevisionGenerationMode) => void
+    onSuccess?: (mode: RevisionGenerationMode, data?: any) => void
 }
 
 export function GenerateExerciseModal({
@@ -353,8 +353,12 @@ export function GenerateExerciseModal({
                     createdAt: Date.now()
                 }
 
-                await summaryQueries.save(summaryPayload)
+                const savedSummary = await summaryQueries.save(summaryPayload)
 
+                if (itemId) {
+                    queryClient.setQueryData(['summary', String(itemId)], savedSummary || summaryPayload)
+                    queryClient.invalidateQueries({ queryKey: ['summary', String(itemId)] })
+                }
                 queryClient.invalidateQueries({ queryKey: ['summaries'] })
                 if (courseId) {
                     queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
@@ -363,7 +367,7 @@ export function GenerateExerciseModal({
 
                 toast.success("Résumé généré avec succès !")
                 onClose()
-                onSuccess?.('summary')
+                onSuccess?.('summary', savedSummary || summaryPayload)
             }
 
         } catch (e: any) {

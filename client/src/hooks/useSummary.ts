@@ -1,127 +1,138 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { summaryQueries } from '@/lib/api/queries'
 import { SummaryOptions, SummaryResult, SummaryType, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { formatSummaryMarkdown } from '@/lib/summary/formatSummary'
 import { toast } from "sonner"
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 export function useSummary(itemId: string | number, itemType: SummaryType, initialText?: string, courseId?: string) {
-    const [summary, setSummary] = useState<SummaryResult | null>(null)
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [error, setError] = useState<string | null>(null)
     const queryClient = useQueryClient()
+    const strItemId = String(itemId || '')
 
-    // Load existing summary from API on mount
-    useEffect(() => {
-        const loadSummary = async () => {
-            if (!itemId) return;
+    const {
+        data: querySummary = null,
+        isLoading: isLoadingQuery,
+        error: queryError,
+        refetch
+    } = useQuery<SummaryResult | null>({
+        queryKey: ['summary', strItemId],
+        queryFn: async () => {
+            if (!strItemId || strItemId === '0' || strItemId === 'undefined') return null
             try {
-                // Fetch from API
-                const data = await summaryQueries.getOne(String(itemId));
-                if (data) {
-                    setSummary(data);
-                }
+                const data = await summaryQueries.getOne(strItemId)
+                return data || null
             } catch (e) {
                 console.error("Failed to load summary", e)
+                return null
             }
-        }
-        loadSummary()
-    }, [itemId, itemType])
+        },
+        enabled: !!strItemId && strItemId !== '0' && strItemId !== 'undefined',
+        staleTime: 1000 * 60 * 5, // 5 minutes cache
+    })
 
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [generationError, setGenerationError] = useState<string | null>(null)
+
+    const setSummary = useCallback((newSummary: SummaryResult | null) => {
+        if (!strItemId) return
+        queryClient.setQueryData(['summary', strItemId], newSummary)
+    }, [queryClient, strItemId])
 
     const generate = useCallback(async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS, forceText?: string) => {
         const textToProcess = forceText || initialText
         if (!textToProcess) {
-            setError("No text content to summarize")
+            setGenerationError("No text content to summarize")
             return
         }
 
         setIsGenerating(true)
-        setError(null)
+        setGenerationError(null)
         try {
-            // AI Factory Generation (Multi-Provider)
-            const { AIServiceFactory } = await import('@/lib/ai/factory');
+            const { AIServiceFactory } = await import('@/lib/ai/factory')
 
-            const generatedText = await AIServiceFactory.generateSummary(textToProcess, options);
-            const cleanedContent = formatSummaryMarkdown(generatedText);
+            const generatedText = await AIServiceFactory.generateSummary(textToProcess, options)
+            const cleanedContent = formatSummaryMarkdown(generatedText)
 
             const result: SummaryResult = {
                 id: uuidv4(),
-                itemId: String(itemId),
+                itemId: strItemId,
                 itemType: itemType,
-                courseId: courseId, // Include courseId
+                courseId: courseId || null,
                 content: cleanedContent,
                 stats: {
-                    originalWordCount: textToProcess.split(' ').length,
-                    summaryWordCount: cleanedContent.split(' ').length,
-                    compressionRatio: cleanedContent.length / textToProcess.length,
+                    originalWordCount: textToProcess.split(/\s+/).filter(Boolean).length,
+                    summaryWordCount: cleanedContent.split(/\s+/).filter(Boolean).length,
+                    compressionRatio: cleanedContent.length / (textToProcess.length || 1),
                     processingTimeMs: 0
                 },
                 options: options,
                 createdAt: Date.now()
-            };
+            }
 
-            const saved = await saveSummary(result);
-            setSummary(saved || result);
+            const saved = await saveSummary(result)
+            queryClient.setQueryData(['summary', strItemId], saved || result)
+            return saved || result
 
         } catch (e: any) {
             console.error("AI Error", e)
-            setError(e.message || "Échec de la génération du résumé par l'IA.")
+            setGenerationError(e.message || "Échec de la génération du résumé par l'IA.")
         } finally {
             setIsGenerating(false)
         }
-    }, [itemId, itemType, initialText, courseId, queryClient])
+    }, [strItemId, itemType, initialText, courseId, queryClient])
 
     const saveSummary = async (result: SummaryResult) => {
         try {
-            // CRITICAL FIX: Ensure courseId is explicitly included in the payload
-            // Axios strips undefined values, so we need to ensure it's either a string or explicitly null
             const dataToSave = {
                 ...result,
                 courseId: result.courseId || courseId || null
-            };
-
-            const savedRecord = await summaryQueries.save(dataToSave);
-
-            // Invalidate queries to refresh lists
-            queryClient.invalidateQueries({ queryKey: ['summaries'] });
-            if (courseId) {
-                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
             }
-            toast.success("Résumé sauvegardé avec succès");
-            return savedRecord;
+
+            const savedRecord = await summaryQueries.save(dataToSave)
+
+            queryClient.setQueryData(['summary', strItemId], savedRecord || dataToSave)
+            queryClient.invalidateQueries({ queryKey: ['summaries'] })
+            queryClient.invalidateQueries({ queryKey: ['summary', strItemId] })
+            if (courseId) {
+                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
+            }
+            toast.success("Résumé sauvegardé avec succès")
+            return savedRecord
         } catch (dbErr) {
             console.error("Failed to save summary", dbErr)
             toast.error("Erreur lors de la sauvegarde du résumé")
-            return null;
+            return null
         }
     }
 
     const remove = useCallback(async (customId?: string) => {
-        const targetId = customId || summary?.id || (itemId ? String(itemId) : undefined);
-        if (!targetId) return;
+        const targetId = customId || querySummary?.id || (strItemId ? strItemId : undefined)
+        if (!targetId) return
 
         try {
-            await summaryQueries.delete(targetId);
-            setSummary(null);
-            toast.success("Résumé supprimé");
-            queryClient.invalidateQueries({ queryKey: ['summaries'] });
+            await summaryQueries.delete(targetId)
+            queryClient.setQueryData(['summary', strItemId], null)
+            toast.success("Résumé supprimé")
+            queryClient.invalidateQueries({ queryKey: ['summaries'] })
+            queryClient.invalidateQueries({ queryKey: ['summary', strItemId] })
             if (courseId) {
-                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] });
+                queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
             }
-            queryClient.invalidateQueries({ queryKey: ['items'] });
+            queryClient.invalidateQueries({ queryKey: ['items'] })
         } catch (e) {
-            console.error("Failed to delete summary", e);
-            toast.error("Erreur lors de la suppression du résumé");
+            console.error("Failed to delete summary", e)
+            toast.error("Erreur lors de la suppression du résumé")
         }
-    }, [summary, itemId, courseId, queryClient]);
+    }, [querySummary, strItemId, courseId, queryClient])
 
     return {
-        summary,
+        summary: querySummary,
+        setSummary,
+        refetch,
         generate,
         remove,
-        isGenerating,
-        error
+        isGenerating: isGenerating || isLoadingQuery,
+        error: generationError || (queryError ? (queryError as any).message : null)
     }
 }
