@@ -90,7 +90,7 @@ export const aiService = {
                         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
                     ]
                 }, {
-                    timeout: 180000 // 180 seconds timeout for comprehensive summaries / exercises
+                    timeout: 240000 // 240 seconds timeout for comprehensive summaries / exercises
                 });
 
                 const MAX_ATTEMPTS = 3;
@@ -208,7 +208,7 @@ export const aiService = {
                         responseMimeType: "application/json"
                     }
                 }, {
-                    timeout: 180000 // 180s per model for large inputs and complex schemas
+                    timeout: 240000 // 240s per model for large inputs and complex schemas
                 });
 
                 const MAX_ATTEMPTS = 3;

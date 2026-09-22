@@ -92,7 +92,7 @@ INSTRUCTIONS DE CONTENU :
                 model: model,
                 apiKey: API_KEY
             }, {
-                timeout: 120000
+                timeout: 300000
             });
 
             return data.text;
@@ -105,6 +105,10 @@ INSTRUCTIONS DE CONTENU :
 
             if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
                 throw new Error("Quota Google AI dépassé. Veuillez réessayer dans quelques minutes ou changer de modèle dans les paramètres.");
+            }
+
+            if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
+                throw new Error("Le document est très volumineux et la génération a pris plus de 5 minutes. Veuillez réessayer avec une section plus courte ou un modèle plus rapide.");
             }
 
             throw new Error(errorMessage);
@@ -127,6 +131,8 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
             provider: 'google',
             model: model || 'gemini-3.7-flash',
             apiKey: API_KEY
+        }, {
+            timeout: 300000
         });
         return data.text;
     } catch (error: any) {
@@ -137,6 +143,10 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
 
         if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
             throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 3.6 Flash) ou réessayer plus tard.");
+        }
+
+        if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
+            throw new Error("Le document est très volumineux et la génération a pris plus de 5 minutes. Veuillez réessayer avec une section plus courte ou un modèle plus rapide.");
         }
 
         throw new Error(errorMessage);

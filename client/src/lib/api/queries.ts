@@ -299,7 +299,7 @@ export const mindmapQueries = {
         provider?: string;
         courseId?: string;
     }) => {
-        const { data: res } = await apiClient.post('/mindmaps/generate', data);
+        const { data: res } = await apiClient.post('/mindmaps/generate', data, { timeout: 300000 });
         return res;
     },
     getAll: async (courseId?: string) => {

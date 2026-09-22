@@ -449,7 +449,7 @@ async function extractViaBackend(file: File): Promise<ExtractionResult> {
 
         const { data } = await apiClient.post('/extract', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 120000 // 2min timeout for large files
+            timeout: 300000 // 5min timeout for large files
         });
 
         if (!data.text) {

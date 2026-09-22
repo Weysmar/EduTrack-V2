@@ -101,7 +101,7 @@ INSTRUCTIONS DE CONTENU :
             provider: 'perplexity',
             model: perplexityOptions.model || 'sonar-pro',
             apiKey: API_KEY
-        }, { timeout: 120000 });
+        }, { timeout: 300000 });
 
         return data.text;
     }
@@ -130,11 +130,16 @@ export async function generateWithPerplexity(
             // Résolution du modèle : utilise sonar-pro par défaut (l'ancien alias llama est géré par le registre serveur)
             model: model || 'sonar-pro',
             apiKey: API_KEY
+        }, {
+            timeout: 300000
         });
 
         return data.text;
     } catch (error: any) {
         const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération Perplexity";
+        if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
+            throw new Error("La génération a pris plus de 5 minutes. Veuillez réessayer avec un extrait plus concis.");
+        }
         throw new Error(errorMessage);
     }
 }
