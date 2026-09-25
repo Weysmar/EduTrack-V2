@@ -101,4 +101,21 @@ export interface DrawingData {
     elements: DrawingElement[]
 }
 
+export interface GuideLine {
+    id: string
+    type: 'vertical' | 'horizontal'
+    coord: number
+    label?: string
+    isCenter?: boolean
+}
+
+export interface SpacingGuide {
+    id: string
+    orientation: 'horizontal' | 'vertical'
+    start: number
+    end: number
+    crossCoord: number
+    gap: number
+}
+
 export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'rot'

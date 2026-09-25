@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { DrawingElement, Point, ResizeHandle, ToolType, ShapeType, LineType } from './types'
+import { DrawingElement, Point, ResizeHandle, ToolType, ShapeType, LineType, GuideLine, SpacingGuide } from './types'
 import { getShapePathData } from './shapePaths'
+
+const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val))
 
 interface DrawingCanvasProps {
     elements: DrawingElement[]
@@ -58,6 +60,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const [dragState, setDragState] = useState<DragState | null>(null)
     const [editingElementId, setEditingElementId] = useState<string | null>(null)
     const [editingText, setEditingText] = useState('')
+    const [activeGuides, setActiveGuides] = useState<GuideLine[]>([])
+    const [activeSpacingGuides, setActiveSpacingGuides] = useState<SpacingGuide[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     // Focus textarea when editing
@@ -110,7 +114,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         // Only left button
         if (e.button !== 0) return
 
-        const pos = getSvgCoordinates(e.clientX, e.clientY)
+        const rawPos = getSvgCoordinates(e.clientX, e.clientY)
+        const pos = {
+            x: clamp(rawPos.x, 0, canvasWidth),
+            y: clamp(rawPos.y, 0, canvasHeight)
+        }
 
         // Creation Mode
         if (activeTool !== 'select') {
@@ -172,8 +180,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 const newElem: DrawingElement = {
                     id: newId,
                     type: 'text',
-                    x: pos.x,
-                    y: pos.y,
+                    x: clamp(pos.x, 0, Math.max(0, canvasWidth - 160)),
+                    y: clamp(pos.y, 0, Math.max(0, canvasHeight - 50)),
                     width: 160,
                     height: 50,
                     fillColor: 'transparent',
@@ -241,7 +249,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             }
         }
 
-        const pos = getSvgCoordinates(e.clientX, e.clientY)
+        const rawPos = getSvgCoordinates(e.clientX, e.clientY)
+        const pos = {
+            x: clamp(rawPos.x, 0, canvasWidth),
+            y: clamp(rawPos.y, 0, canvasHeight)
+        }
 
         setDragState({
             type: 'move',
@@ -262,7 +274,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         const selectedEl = elements.find(el => el.id === selectedElementIds[0])
         if (!selectedEl) return
 
-        const pos = getSvgCoordinates(e.clientX, e.clientY)
+        const rawPos = getSvgCoordinates(e.clientX, e.clientY)
+        const pos = {
+            x: clamp(rawPos.x, 0, canvasWidth),
+            y: clamp(rawPos.y, 0, canvasHeight)
+        }
         const cx = selectedEl.x + selectedEl.width / 2
         const cy = selectedEl.y + selectedEl.height / 2
 
@@ -301,7 +317,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         const selectedEl = elements.find(el => el.id === selectedElementIds[0])
         if (!selectedEl || selectedEl.type !== 'line') return
 
-        const pos = getSvgCoordinates(e.clientX, e.clientY)
+        const rawPos = getSvgCoordinates(e.clientX, e.clientY)
+        const pos = {
+            x: clamp(rawPos.x, 0, canvasWidth),
+            y: clamp(rawPos.y, 0, canvasHeight)
+        }
         setDragState({
             type: 'line-point',
             startX: pos.x,
@@ -318,9 +338,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const handlePointerMove = (e: React.PointerEvent) => {
         if (!dragState) return
 
-        const pos = getSvgCoordinates(e.clientX, e.clientY)
-        const dx = pos.x - dragState.startX
-        const dy = pos.y - dragState.startY
+        const rawPos = getSvgCoordinates(e.clientX, e.clientY)
+        const pos = {
+            x: clamp(rawPos.x, 0, canvasWidth),
+            y: clamp(rawPos.y, 0, canvasHeight)
+        }
+        let dx = pos.x - dragState.startX
+        let dy = pos.y - dragState.startY
 
         if (dragState.type === 'create') {
             const initialList = dragState.initialElements || elements
@@ -338,46 +362,305 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 if (el.type === 'line') {
                     return {
                         ...el,
+                        x: clamp(el.x, 0, canvasWidth),
+                        y: clamp(el.y, 0, canvasHeight),
                         x2: pos.x,
                         y2: pos.y
                     }
                 }
 
-                // Shape creation with drag rectangle
+                // Shape creation with drag rectangle clamped inside canvas
                 const w = pos.x - dragState.startX
                 const h = pos.y - dragState.startY
-                const newX = w < 0 ? pos.x : dragState.startX
-                const newY = h < 0 ? pos.y : dragState.startY
+                const rawX = w < 0 ? pos.x : dragState.startX
+                const rawY = h < 0 ? pos.y : dragState.startY
+                const newX = clamp(rawX, 0, canvasWidth)
+                const newY = clamp(rawY, 0, canvasHeight)
+                const newW = clamp(Math.abs(w), 0, canvasWidth - newX)
+                const newH = clamp(Math.abs(h), 0, canvasHeight - newY)
                 return {
                     ...el,
                     x: newX,
                     y: newY,
-                    width: Math.abs(w),
-                    height: Math.abs(h)
+                    width: newW,
+                    height: newH
                 }
             })
             onChange(updated)
         } else if (dragState.type === 'move') {
             const initialList = dragState.initialElements || elements
             const activeIds = selectedElementIds.length > 0 ? selectedElementIds : [dragState.elementId!]
+            const movingInitialElements = initialList.filter(el => activeIds.includes(el.id))
+            const primaryEl = movingInitialElements.find(el => el.id === dragState.elementId) || movingInitialElements[0]
+
+            // 1. Calculate strictly allowable translation delta bounds so no element can cross canvas edge
+            let minAllowedDx = -Infinity
+            let maxAllowedDx = Infinity
+            let minAllowedDy = -Infinity
+            let maxAllowedDy = Infinity
+
+            movingInitialElements.forEach(el => {
+                if (el.type === 'line') {
+                    const x1 = el.x
+                    const y1 = el.y
+                    const x2 = el.x2 ?? el.x + el.width
+                    const y2 = el.y2 ?? el.y + el.height
+                    minAllowedDx = Math.max(minAllowedDx, -Math.min(x1, x2))
+                    maxAllowedDx = Math.min(maxAllowedDx, canvasWidth - Math.max(x1, x2))
+                    minAllowedDy = Math.max(minAllowedDy, -Math.min(y1, y2))
+                    maxAllowedDy = Math.min(maxAllowedDy, canvasHeight - Math.max(y1, y2))
+                } else {
+                    minAllowedDx = Math.max(minAllowedDx, -el.x)
+                    maxAllowedDx = Math.min(maxAllowedDx, canvasWidth - (el.x + el.width))
+                    minAllowedDy = Math.max(minAllowedDy, -el.y)
+                    maxAllowedDy = Math.min(maxAllowedDy, canvasHeight - (el.y + el.height))
+                }
+            })
+
+            // 2. Real-time Smart Alignment & Spacing Guides (Canva / Google Docs style)
+            const SNAP_THRESHOLD = 6
+            const newGuides: GuideLine[] = []
+            const newSpacingGuides: SpacingGuide[] = []
+
+            if (primaryEl && primaryEl.type !== 'line') {
+                const curX = primaryEl.x + dx
+                const curY = primaryEl.y + dy
+                const curW = primaryEl.width
+                const curH = primaryEl.height
+
+                const nonMoving = elements.filter(el => !activeIds.includes(el.id))
+
+                // --- Vertical alignment candidates (matching X) ---
+                interface SnapCandidateX {
+                    targetCoord: number
+                    sourceCoord: number
+                    diff: number
+                    label?: string
+                    isCenter?: boolean
+                }
+                const snapCandidatesX: SnapCandidateX[] = []
+
+                // Canvas Center (X)
+                const canvasCenterX = Math.round(canvasWidth / 2)
+                snapCandidatesX.push({
+                    targetCoord: canvasCenterX,
+                    sourceCoord: curX + curW / 2,
+                    diff: Math.abs(curX + curW / 2 - canvasCenterX),
+                    label: 'Centre',
+                    isCenter: true
+                })
+
+                // Canvas Edges (X)
+                snapCandidatesX.push({ targetCoord: 0, sourceCoord: curX, diff: Math.abs(curX) })
+                snapCandidatesX.push({ targetCoord: canvasWidth, sourceCoord: curX + curW, diff: Math.abs(curX + curW - canvasWidth) })
+
+                // Non-moving elements (X)
+                nonMoving.forEach(other => {
+                    const oL = other.x
+                    const oC = other.x + other.width / 2
+                    const oR = other.x + other.width
+
+                    // Left to Left
+                    snapCandidatesX.push({ targetCoord: oL, sourceCoord: curX, diff: Math.abs(curX - oL) })
+                    // Center to Center
+                    snapCandidatesX.push({ targetCoord: oC, sourceCoord: curX + curW / 2, diff: Math.abs(curX + curW / 2 - oC) })
+                    // Right to Right
+                    snapCandidatesX.push({ targetCoord: oR, sourceCoord: curX + curW, diff: Math.abs(curX + curW - oR) })
+                    // Left to Right
+                    snapCandidatesX.push({ targetCoord: oR, sourceCoord: curX, diff: Math.abs(curX - oR) })
+                    // Right to Left
+                    snapCandidatesX.push({ targetCoord: oL, sourceCoord: curX + curW, diff: Math.abs(curX + curW - oL) })
+                })
+
+                const validSnapsX = snapCandidatesX.filter(s => s.diff <= SNAP_THRESHOLD)
+                if (validSnapsX.length > 0) {
+                    validSnapsX.sort((a, b) => a.diff - b.diff)
+                    const bestX = validSnapsX[0]
+                    dx += (bestX.targetCoord - bestX.sourceCoord)
+                    newGuides.push({
+                        id: `v-${bestX.targetCoord}`,
+                        type: 'vertical',
+                        coord: bestX.targetCoord,
+                        label: bestX.label,
+                        isCenter: bestX.isCenter
+                    })
+                }
+
+                // --- Horizontal alignment candidates (matching Y) ---
+                interface SnapCandidateY {
+                    targetCoord: number
+                    sourceCoord: number
+                    diff: number
+                    label?: string
+                    isCenter?: boolean
+                }
+                const snapCandidatesY: SnapCandidateY[] = []
+
+                // Canvas Middle (Y)
+                const canvasCenterY = Math.round(canvasHeight / 2)
+                snapCandidatesY.push({
+                    targetCoord: canvasCenterY,
+                    sourceCoord: curY + curH / 2,
+                    diff: Math.abs(curY + curH / 2 - canvasCenterY),
+                    label: 'Milieu',
+                    isCenter: true
+                })
+
+                // Canvas Edges (Y)
+                snapCandidatesY.push({ targetCoord: 0, sourceCoord: curY, diff: Math.abs(curY) })
+                snapCandidatesY.push({ targetCoord: canvasHeight, sourceCoord: curY + curH, diff: Math.abs(curY + curH - canvasHeight) })
+
+                // Non-moving elements (Y)
+                nonMoving.forEach(other => {
+                    const oT = other.y
+                    const oM = other.y + other.height / 2
+                    const oB = other.y + other.height
+
+                    // Top to Top
+                    snapCandidatesY.push({ targetCoord: oT, sourceCoord: curY, diff: Math.abs(curY - oT) })
+                    // Middle to Middle
+                    snapCandidatesY.push({ targetCoord: oM, sourceCoord: curY + curH / 2, diff: Math.abs(curY + curH / 2 - oM) })
+                    // Bottom to Bottom
+                    snapCandidatesY.push({ targetCoord: oB, sourceCoord: curY + curH, diff: Math.abs(curY + curH - oB) })
+                    // Top to Bottom
+                    snapCandidatesY.push({ targetCoord: oB, sourceCoord: curY, diff: Math.abs(curY - oB) })
+                    // Bottom to Top
+                    snapCandidatesY.push({ targetCoord: oT, sourceCoord: curY + curH, diff: Math.abs(curY + curH - oT) })
+                })
+
+                const validSnapsY = snapCandidatesY.filter(s => s.diff <= SNAP_THRESHOLD)
+                if (validSnapsY.length > 0) {
+                    validSnapsY.sort((a, b) => a.diff - b.diff)
+                    const bestY = validSnapsY[0]
+                    dy += (bestY.targetCoord - bestY.sourceCoord)
+                    newGuides.push({
+                        id: `h-${bestY.targetCoord}`,
+                        type: 'horizontal',
+                        coord: bestY.targetCoord,
+                        label: bestY.label,
+                        isCenter: bestY.isCenter
+                    })
+                }
+
+                // --- Spacing Guides: Equal gap detection between neighboring shapes ---
+                const testX = primaryEl.x + dx
+                const testY = primaryEl.y + dy
+                const centerTestY = testY + curH / 2
+
+                // Horizontal equal spacing
+                const horizNeighbors = nonMoving.filter(o => {
+                    const oMidY = o.y + o.height / 2
+                    return Math.abs(oMidY - centerTestY) < (curH + o.height) / 1.4
+                })
+
+                if (horizNeighbors.length >= 2) {
+                    const leftOf = horizNeighbors.filter(o => o.x + o.width <= testX).sort((a, b) => (b.x + b.width) - (a.x + a.width))
+                    const rightOf = horizNeighbors.filter(o => o.x >= testX + curW).sort((a, b) => a.x - b.x)
+
+                    if (leftOf.length > 0 && rightOf.length > 0) {
+                        const leftEl = leftOf[0]
+                        const rightEl = rightOf[0]
+                        const gapLeft = testX - (leftEl.x + leftEl.width)
+                        const gapRight = rightEl.x - (testX + curW)
+
+                        if (gapLeft > 5 && gapRight > 5 && Math.abs(gapLeft - gapRight) <= SNAP_THRESHOLD * 2) {
+                            const totalSpace = rightEl.x - (leftEl.x + leftEl.width) - curW
+                            const equalGap = totalSpace / 2
+                            const targetX = leftEl.x + leftEl.width + equalGap
+                            dx = targetX - primaryEl.x
+                            const finalX = primaryEl.x + dx
+
+                            newSpacingGuides.push({
+                                id: 'sp-left',
+                                orientation: 'horizontal',
+                                start: leftEl.x + leftEl.width,
+                                end: finalX,
+                                crossCoord: centerTestY,
+                                gap: equalGap
+                            })
+                            newSpacingGuides.push({
+                                id: 'sp-right',
+                                orientation: 'horizontal',
+                                start: finalX + curW,
+                                end: rightEl.x,
+                                crossCoord: centerTestY,
+                                gap: equalGap
+                            })
+                        }
+                    }
+                }
+
+                // Vertical equal spacing
+                const centerTestX = testX + curW / 2
+                const vertNeighbors = nonMoving.filter(o => {
+                    const oMidX = o.x + o.width / 2
+                    return Math.abs(oMidX - centerTestX) < (curW + o.width) / 1.4
+                })
+
+                if (vertNeighbors.length >= 2) {
+                    const aboveOf = vertNeighbors.filter(o => o.y + o.height <= testY).sort((a, b) => (b.y + b.height) - (a.y + a.height))
+                    const belowOf = vertNeighbors.filter(o => o.y >= testY + curH).sort((a, b) => a.y - b.y)
+
+                    if (aboveOf.length > 0 && belowOf.length > 0) {
+                        const aboveEl = aboveOf[0]
+                        const belowEl = belowOf[0]
+                        const gapAbove = testY - (aboveEl.y + aboveEl.height)
+                        const gapBelow = belowEl.y - (testY + curH)
+
+                        if (gapAbove > 5 && gapBelow > 5 && Math.abs(gapAbove - gapBelow) <= SNAP_THRESHOLD * 2) {
+                            const totalSpace = belowEl.y - (aboveEl.y + aboveEl.height) - curH
+                            const equalGap = totalSpace / 2
+                            const targetY = aboveEl.y + aboveEl.height + equalGap
+                            dy = targetY - primaryEl.y
+                            const finalY = primaryEl.y + dy
+
+                            newSpacingGuides.push({
+                                id: 'sp-above',
+                                orientation: 'vertical',
+                                start: aboveEl.y + aboveEl.height,
+                                end: finalY,
+                                crossCoord: centerTestX,
+                                gap: equalGap
+                            })
+                            newSpacingGuides.push({
+                                id: 'sp-below',
+                                orientation: 'vertical',
+                                start: finalY + curH,
+                                end: belowEl.y,
+                                crossCoord: centerTestX,
+                                gap: equalGap
+                            })
+                        }
+                    }
+                }
+            }
+
+            // Strictly clamp translation delta so element CANNOT exit the drawing canvas
+            const clampedDx = clamp(dx, minAllowedDx, maxAllowedDx)
+            const clampedDy = clamp(dy, minAllowedDy, maxAllowedDy)
+
+            setActiveGuides(newGuides)
+            setActiveSpacingGuides(newSpacingGuides)
 
             const updated = initialList.map(el => {
                 if (!activeIds.includes(el.id)) return el
                 if (el.type === 'line') {
-                    const x2 = (el.x2 ?? el.x + el.width) + dx
-                    const y2 = (el.y2 ?? el.y + el.height) + dy
+                    const x2 = (el.x2 ?? el.x + el.width) + clampedDx
+                    const y2 = (el.y2 ?? el.y + el.height) + clampedDy
                     return {
                         ...el,
-                        x: el.x + dx,
-                        y: el.y + dy,
-                        x2,
-                        y2
+                        x: clamp(Math.round(el.x + clampedDx), 0, canvasWidth),
+                        y: clamp(Math.round(el.y + clampedDy), 0, canvasHeight),
+                        x2: clamp(Math.round(x2), 0, canvasWidth),
+                        y2: clamp(Math.round(y2), 0, canvasHeight)
                     }
                 }
+                const finalX = clamp(Math.round(el.x + clampedDx), 0, Math.max(0, canvasWidth - el.width))
+                const finalY = clamp(Math.round(el.y + clampedDy), 0, Math.max(0, canvasHeight - el.height))
                 return {
                     ...el,
-                    x: Math.round(el.x + dx),
-                    y: Math.round(el.y + dy)
+                    x: finalX,
+                    y: finalY
                 }
             })
             onChange(updated)
@@ -388,23 +671,45 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             let { x, y, width, height } = initialEl
             const handle = dragState.handle
 
-            // Handle horizontal resizing
+            // Strictly clamp resizing within canvas boundaries [0, canvasWidth] and [0, canvasHeight]
             if (handle.includes('e')) {
-                width = Math.max(15, initialEl.width + dx)
+                width = clamp(initialEl.width + dx, 15, canvasWidth - initialEl.x)
             } else if (handle.includes('w')) {
-                const newWidth = Math.max(15, initialEl.width - dx)
-                x = initialEl.x + (initialEl.width - newWidth)
-                width = newWidth
+                const rightEdge = initialEl.x + initialEl.width
+                x = clamp(initialEl.x + dx, 0, rightEdge - 15)
+                width = rightEdge - x
             }
 
-            // Handle vertical resizing
             if (handle.includes('s')) {
-                height = Math.max(15, initialEl.height + dy)
+                height = clamp(initialEl.height + dy, 15, canvasHeight - initialEl.y)
             } else if (handle.includes('n')) {
-                const newHeight = Math.max(15, initialEl.height - dy)
-                y = initialEl.y + (initialEl.height - newHeight)
-                height = newHeight
+                const bottomEdge = initialEl.y + initialEl.height
+                y = clamp(initialEl.y + dy, 0, bottomEdge - 15)
+                height = bottomEdge - y
             }
+
+            // Snapping to canvas center during resize
+            const resizeGuides: GuideLine[] = []
+            if (handle.includes('e') && Math.abs((x + width) - canvasWidth / 2) <= 5) {
+                width = canvasWidth / 2 - x
+                resizeGuides.push({ id: 'res-v-c', type: 'vertical', coord: canvasWidth / 2, label: 'Centre', isCenter: true })
+            } else if (handle.includes('w') && Math.abs(x - canvasWidth / 2) <= 5) {
+                const rightEdge = initialEl.x + initialEl.width
+                x = canvasWidth / 2
+                width = rightEdge - x
+                resizeGuides.push({ id: 'res-v-c', type: 'vertical', coord: canvasWidth / 2, label: 'Centre', isCenter: true })
+            }
+
+            if (handle.includes('s') && Math.abs((y + height) - canvasHeight / 2) <= 5) {
+                height = canvasHeight / 2 - y
+                resizeGuides.push({ id: 'res-h-c', type: 'horizontal', coord: canvasHeight / 2, label: 'Milieu', isCenter: true })
+            } else if (handle.includes('n') && Math.abs(y - canvasHeight / 2) <= 5) {
+                const bottomEdge = initialEl.y + initialEl.height
+                y = canvasHeight / 2
+                height = bottomEdge - y
+                resizeGuides.push({ id: 'res-h-c', type: 'horizontal', coord: canvasHeight / 2, label: 'Milieu', isCenter: true })
+            }
+            setActiveGuides(resizeGuides)
 
             const updated = elements.map(el => {
                 if (el.id === dragState.elementId) {
@@ -419,7 +724,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             const currentAngle = Math.atan2(pos.y - cy, pos.x - cx) * (180 / Math.PI)
             let newRotation = Math.round((currentAngle + (dragState.initialAngle || 0)) % 360)
 
-            // Snap to 15 degrees if shift key is pressed
             if (e.shiftKey) {
                 newRotation = Math.round(newRotation / 15) * 15
             }
@@ -432,12 +736,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             })
             onChange(updated)
         } else if (dragState.type === 'line-point' && dragState.elementId) {
+            const clampedX = clamp(pos.x, 0, canvasWidth)
+            const clampedY = clamp(pos.y, 0, canvasHeight)
+
             const updated = elements.map(el => {
                 if (el.id === dragState.elementId && el.type === 'line') {
                     if (dragState.pointTarget === 'start') {
-                        return { ...el, x: pos.x, y: pos.y }
+                        return { ...el, x: clampedX, y: clampedY }
                     } else {
-                        return { ...el, x2: pos.x, y2: pos.y }
+                        return { ...el, x2: clampedX, y2: clampedY }
                     }
                 }
                 return el
@@ -448,6 +755,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     // Pointer Up
     const handlePointerUp = () => {
+        setActiveGuides([])
+        setActiveSpacingGuides([])
         if (!dragState) return
 
         if (dragState.type === 'create') {
@@ -457,7 +766,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 if (created.type === 'shape' && (created.width < 10 || created.height < 10)) {
                     const updated = elements.map(el => {
                         if (el.id === created.id) {
-                            return { ...el, width: 120, height: 80 }
+                            const defW = 120
+                            const defH = 80
+                            return {
+                                ...el,
+                                x: clamp(el.x, 0, Math.max(0, canvasWidth - defW)),
+                                y: clamp(el.y, 0, Math.max(0, canvasHeight - defH)),
+                                width: defW,
+                                height: defH
+                            }
                         }
                         return el
                     })
@@ -468,7 +785,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                     if (Math.hypot(x2 - created.x, y2 - created.y) < 10) {
                         const updated = elements.map(el => {
                             if (el.id === created.id) {
-                                return { ...el, x2: el.x + 120, y2: el.y }
+                                return {
+                                    ...el,
+                                    x: clamp(el.x, 0, canvasWidth),
+                                    y: clamp(el.y, 0, canvasHeight),
+                                    x2: clamp(el.x + 120, 0, canvasWidth),
+                                    y2: clamp(el.y, 0, canvasHeight)
+                                }
                             }
                             return el
                         })
@@ -625,13 +948,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 >
                                     <polygon points="10 0, 0 3.5, 10 7" fill="context-stroke" />
                                 </marker>
+
+                                {/* Strict Canvas Clipping Path */}
+                                <clipPath id="drawing-canvas-clip">
+                                    <rect x="0" y="0" width={canvasWidth} height={canvasHeight} />
+                                </clipPath>
                             </defs>
 
                             {/* Canvas Background */}
                             <rect width={canvasWidth} height={canvasHeight} fill="url(#checkerboard)" />
 
-                            {/* Render Elements */}
-                            {elements.map((el) => {
+                            {/* Render Elements inside strict clip path */}
+                            <g clipPath="url(#drawing-canvas-clip)">
+                                {elements.map((el) => {
                                 const isSelected = selectedElementIds.includes(el.id)
                                 const strokeDash = el.strokeStyle === 'dashed' ? '8,4' : el.strokeStyle === 'dotted' ? '3,3' : 'none'
 
@@ -801,6 +1130,147 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                                 </text>
                                             )
                                         })()}
+                                    </g>
+                                )
+                            })}
+                            </g>
+
+                            {/* Real-time Smart Alignment Guides (Canva / Google Docs style) */}
+                            {activeGuides.map(guide => {
+                                if (guide.type === 'vertical') {
+                                    return (
+                                        <g key={guide.id} pointerEvents="none">
+                                            <line
+                                                x1={guide.coord}
+                                                y1={0}
+                                                x2={guide.coord}
+                                                y2={canvasHeight}
+                                                stroke={guide.isCenter ? '#3b82f6' : '#ec4899'}
+                                                strokeWidth="1.2"
+                                                strokeDasharray="4,3"
+                                            />
+                                            {guide.label && (
+                                                <g transform={`translate(${guide.coord}, 14)`}>
+                                                    <rect
+                                                        x="-24"
+                                                        y="-10"
+                                                        width="48"
+                                                        height="18"
+                                                        rx="4"
+                                                        fill={guide.isCenter ? '#2563eb' : '#db2777'}
+                                                        opacity="0.9"
+                                                    />
+                                                    <text
+                                                        x="0"
+                                                        y="2"
+                                                        textAnchor="middle"
+                                                        fill="#ffffff"
+                                                        fontSize="10"
+                                                        fontWeight="bold"
+                                                        fontFamily="sans-serif"
+                                                    >
+                                                        {guide.label}
+                                                    </text>
+                                                </g>
+                                            )}
+                                        </g>
+                                    )
+                                }
+                                return (
+                                    <g key={guide.id} pointerEvents="none">
+                                        <line
+                                            x1={0}
+                                            y1={guide.coord}
+                                            x2={canvasWidth}
+                                            y2={guide.coord}
+                                            stroke={guide.isCenter ? '#3b82f6' : '#ec4899'}
+                                            strokeWidth="1.2"
+                                            strokeDasharray="4,3"
+                                        />
+                                        {guide.label && (
+                                            <g transform={`translate(28, ${guide.coord})`}>
+                                                <rect
+                                                    x="-24"
+                                                    y="-9"
+                                                    width="48"
+                                                    height="18"
+                                                    rx="4"
+                                                    fill={guide.isCenter ? '#2563eb' : '#db2777'}
+                                                    opacity="0.9"
+                                                />
+                                                <text
+                                                    x="0"
+                                                    y="3"
+                                                    textAnchor="middle"
+                                                    fill="#ffffff"
+                                                    fontSize="10"
+                                                    fontWeight="bold"
+                                                    fontFamily="sans-serif"
+                                                >
+                                                    {guide.label}
+                                                </text>
+                                            </g>
+                                        )}
+                                    </g>
+                                )
+                            })}
+
+                            {/* Real-time Spacing Guides (Equal Gaps / Canva style) */}
+                            {activeSpacingGuides.map(sg => {
+                                if (sg.orientation === 'horizontal') {
+                                    const midX = (sg.start + sg.end) / 2
+                                    return (
+                                        <g key={sg.id} pointerEvents="none">
+                                            <line x1={sg.start} y1={sg.crossCoord} x2={sg.end} y2={sg.crossCoord} stroke="#ec4899" strokeWidth="1.2" />
+                                            <line x1={sg.start} y1={sg.crossCoord - 4} x2={sg.start} y2={sg.crossCoord + 4} stroke="#ec4899" strokeWidth="1.5" />
+                                            <line x1={sg.end} y1={sg.crossCoord - 4} x2={sg.end} y2={sg.crossCoord + 4} stroke="#ec4899" strokeWidth="1.5" />
+                                            <rect
+                                                x={midX - 18}
+                                                y={sg.crossCoord - 8}
+                                                width="36"
+                                                height="16"
+                                                rx="4"
+                                                fill="#ec4899"
+                                            />
+                                            <text
+                                                x={midX}
+                                                y={sg.crossCoord + 3}
+                                                textAnchor="middle"
+                                                fill="#ffffff"
+                                                fontSize="9"
+                                                fontWeight="bold"
+                                                fontFamily="sans-serif"
+                                            >
+                                                {Math.round(sg.gap)} px
+                                            </text>
+                                        </g>
+                                    )
+                                }
+                                const midY = (sg.start + sg.end) / 2
+                                return (
+                                    <g key={sg.id} pointerEvents="none">
+                                        <line x1={sg.crossCoord} y1={sg.start} x2={sg.crossCoord} y2={sg.end} stroke="#ec4899" strokeWidth="1.2" />
+                                        <line x1={sg.crossCoord - 4} y1={sg.start} x2={sg.crossCoord + 4} stroke="#ec4899" strokeWidth="1.5" />
+                                        <line x1={sg.crossCoord - 4} y1={sg.end} x2={sg.crossCoord + 4} stroke="#ec4899" strokeWidth="1.5" />
+                                        <rect
+                                            x={sg.crossCoord - 18}
+                                            y={midY - 8}
+                                            width="36"
+                                            height="16"
+                                            rx="4"
+                                            fill="#ec4899"
+                                        />
+                                        <text
+                                            x={sg.crossCoord}
+                                            y={midY + 3}
+                                            textAnchor="middle"
+                                            fill="#ffffff"
+                                            fontSize="9"
+                                            fontWeight="bold"
+                                            fontFamily="sans-serif"
+                                        >
+                                            {Math.round(sg.gap)} px
+                                        </text>
                                     </g>
                                 )
                             })}

@@ -4,7 +4,8 @@ import { DrawingCanvas } from './DrawingCanvas'
 import { DrawingToolbar } from './DrawingToolbar'
 import { generateSvgCode, svgToDataUrl, renderSvgToPng } from './exportSvg'
 import { toast } from 'sonner'
-import { X } from 'lucide-react'
+import { X, Shapes } from 'lucide-react'
+import { useLanguage } from '@/components/language-provider'
 
 interface DrawingModalProps {
     open: boolean
@@ -19,6 +20,7 @@ export const DrawingModal: React.FC<DrawingModalProps> = ({
     initialData,
     onSave,
 }) => {
+    const { language } = useLanguage()
     const [elements, setElements] = useState<DrawingElement[]>([])
     const [history, setHistory] = useState<DrawingElement[][]>([[]])
     const [historyIndex, setHistoryIndex] = useState(0)
@@ -321,26 +323,27 @@ export const DrawingModal: React.FC<DrawingModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 animate-in fade-in duration-150">
-            <div className="max-w-[96vw] w-[1140px] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden bg-background rounded-2xl shadow-2xl border border-slate-300 dark:border-slate-800 animate-in zoom-in-95 duration-150">
-                {/* Header (Google Docs style) */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 select-none">
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <span>Dessin</span>
+            <div className="max-w-[96vw] w-[1160px] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden bg-card text-card-foreground rounded-2xl shadow-2xl border border-border animate-in zoom-in-95 duration-150">
+                {/* Header matching Notes style */}
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/95 backdrop-blur-md shrink-0 select-none">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                        <Shapes className="h-5 w-5 text-primary" />
+                        <span>{language === 'fr' ? 'Dessin' : 'Drawing'}</span>
                     </h2>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                         <button
                             type="button"
                             onClick={handleSaveAndClose}
-                            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+                            className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
                         >
-                            Enregistrer et fermer
+                            {language === 'fr' ? 'Enregistrer et fermer' : 'Save and close'}
                         </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                            title="Fermer"
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                            title={language === 'fr' ? 'Fermer' : 'Close'}
                         >
                             <X className="h-5 w-5" />
                         </button>
