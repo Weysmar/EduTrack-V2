@@ -883,6 +883,8 @@ const translations: Translations = {
         "changelog.v057.documents_fix": "Fixed documents filter rendering bug.",
         "changelog.v057.reset_view": "Reset view now centers intelligently on content.",
         "editor.insertMath": "Insert math equation ($$...$$)",
+        "editor.insertDrawing": "Insert drawing (shapes, text, arrows...)",
+        "editor.editDrawing": "Edit drawing",
     },
     fr: {
         "app.title": "EduTrack",
@@ -1279,6 +1281,8 @@ const translations: Translations = {
         "editor.insertImage": "Insérer une image",
         "editor.insertImage.tooltip": "Insérer une image (ou coller / glisser-déposer avec Ctrl+V)",
         "editor.insertMath": "Insérer une formule mathématique ($$...$$)",
+        "editor.insertDrawing": "Insérer un dessin (formes, flèches, textes...)",
+        "editor.editDrawing": "Modifier le dessin",
 
         "changelog.type.new": "NOUVEAU",
         "changelog.type.improvement": "AMÉLIORÉ",
@@ -1774,6 +1778,8 @@ const translations: Translations = {
 
         // Editor
         "editor.insertMath": "Graver des runes mathématiques ($$...$$)",
+        "editor.insertDrawing": "Peindre une fresque (formes, symboles, parchemins...)",
+        "editor.editDrawing": "Retoucher la fresque",
 
         // Item Edit
         "changelog.v051.polish": "Texture Pack: 100% lore translation, fixed void-blur on modals, and optimized inventory list view.",

@@ -10,8 +10,9 @@ import {
     Bold, Italic, List, ListOrdered, Mic, MicOff, Underline as UnderlineIcon,
     Strikethrough, Code, Quote, Heading1, Heading2, Heading3, Minus, Highlighter, Palette,
     Image as ImageIcon, Sigma, Type, ChevronDown, Check, Table as TableIcon, Trash2,
-    AlignLeft, AlignCenter, AlignRight, AlignJustify
+    AlignLeft, AlignCenter, AlignRight, AlignJustify, Shapes
 } from 'lucide-react'
+import { NodeSelection } from '@tiptap/pm/state'
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
@@ -26,8 +27,10 @@ import imageCompression from 'browser-image-compression'
 import { MathematicsExtension } from '@/components/editor/MathematicsExtension'
 import { FontFamilyExtension, AVAILABLE_FONTS } from '@/components/editor/FontFamilyExtension'
 import { TextAlignExtension } from '@/components/editor/TextAlignExtension'
+import { DrawingModal } from '@/components/drawing/DrawingModal'
+import { DrawingData } from '@/components/drawing/types'
 
-// Custom TipTap Image Node
+// Custom TipTap Image Node with Drawing metadata support
 export const CustomImage = Node.create({
     name: 'image',
     group: 'block',
@@ -40,6 +43,14 @@ export const CustomImage = Node.create({
             src: { default: null },
             alt: { default: null },
             title: { default: null },
+            dataDrawing: {
+                default: null,
+                parseHTML: element => element.getAttribute('data-drawing'),
+                renderHTML: attributes => {
+                    if (!attributes.dataDrawing) return {}
+                    return { 'data-drawing': attributes.dataDrawing }
+                }
+            }
         }
     },
 
@@ -48,7 +59,13 @@ export const CustomImage = Node.create({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['img', mergeAttributes(HTMLAttributes, { class: 'rounded-xl max-w-full h-auto my-4 shadow-sm border mx-auto block' })]
+        const isDrawing = Boolean(HTMLAttributes['data-drawing'])
+        return ['img', mergeAttributes(HTMLAttributes, {
+            class: cn(
+                'rounded-xl max-w-full h-auto my-4 shadow-sm border mx-auto block',
+                isDrawing && 'cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all'
+            )
+        })]
     },
 })
 
@@ -93,6 +110,8 @@ export function Editor({ content, onChange, editable = true, className, variant 
     const [showHighlightPicker, setShowHighlightPicker] = useState(false)
     const [showFontPicker, setShowFontPicker] = useState(false)
     const [showTablePicker, setShowTablePicker] = useState(false)
+    const [showDrawingModal, setShowDrawingModal] = useState(false)
+    const [editingDrawingData, setEditingDrawingData] = useState<DrawingData | null>(null)
     const [, setSelectionCount] = useState(0)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -165,6 +184,30 @@ export function Editor({ content, onChange, editable = true, className, variant 
             toast.error("Erreur lors de l'insertion de l'image")
         }
         if (e.target) e.target.value = ''
+    }
+
+    const handleSaveDrawing = ({ dataUrl, drawingData }: { svg: string; dataUrl: string; drawingData: DrawingData }) => {
+        if (!editor) return
+        const drawingJson = JSON.stringify(drawingData)
+        if (editingDrawingData && editor.isActive('image')) {
+            editor.chain().focus().updateAttributes('image', {
+                src: dataUrl,
+                alt: 'Dessin',
+                dataDrawing: drawingJson
+            }).run()
+        } else {
+            editor.chain().focus().insertContent({
+                type: 'image',
+                attrs: {
+                    src: dataUrl,
+                    alt: 'Dessin',
+                    dataDrawing: drawingJson
+                }
+            }).run()
+        }
+        setShowDrawingModal(false)
+        setEditingDrawingData(null)
+        toast.success(language === 'fr' ? 'Dessin inséré avec succès !' : 'Drawing inserted successfully!')
     }
 
     const editor = useEditor({
@@ -244,6 +287,21 @@ export function Editor({ content, onChange, editable = true, className, variant 
                             toast.error("Erreur lors de l'ajout de l'image")
                         })
                         return true
+                    }
+                }
+                return false
+            },
+            handleDoubleClickOn: (view, pos, node) => {
+                if (node.type.name === 'image' && node.attrs.dataDrawing) {
+                    try {
+                        const raw = node.attrs.dataDrawing
+                        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+                        view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)))
+                        setEditingDrawingData(parsed)
+                        setShowDrawingModal(true)
+                        return true
+                    } catch (err) {
+                        console.error('Failed to parse drawing data:', err)
                     }
                 }
                 return false
@@ -870,6 +928,22 @@ export function Editor({ content, onChange, editable = true, className, variant 
                         )}
                     </div>
 
+                    {/* Insert Drawing Button (Google Docs style) */}
+                    <button
+                        onClick={() => {
+                            setEditingDrawingData(null)
+                            setShowDrawingModal(true)
+                        }}
+                        className={cn(
+                            "p-2 rounded hover:bg-muted transition-colors text-blue-600 dark:text-blue-400",
+                            mcBtn
+                        )}
+                        type="button"
+                        title={t('editor.insertDrawing') || "Insérer un dessin (formes, flèches, textes...)"}
+                    >
+                        <Shapes className="h-4 w-4" />
+                    </button>
+
                     {/* Speech to Text Button */}
                     {isSupported && (
                         <>
@@ -990,6 +1064,37 @@ export function Editor({ content, onChange, editable = true, className, variant 
                     </button>
                 </div>
             )}
+
+            {/* Contextual Drawing Toolbar (Active when an image with dataDrawing is selected) */}
+            {editable && editor.isActive('image') && Boolean(editor.getAttributes('image').dataDrawing) && (
+                <div className={cn(
+                    "px-3 py-1.5 bg-blue-50/90 dark:bg-blue-950/60 border-b border-blue-200 dark:border-blue-900 flex items-center justify-between text-xs select-none animate-in fade-in duration-150"
+                )}>
+                    <span className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-1.5 text-xs">
+                        <Shapes className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>{language === 'fr' ? 'Dessin sélectionné' : 'Drawing selected'}</span>
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const raw = editor.getAttributes('image').dataDrawing
+                            if (raw) {
+                                try {
+                                    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+                                    setEditingDrawingData(parsed)
+                                } catch {
+                                    setEditingDrawingData(null)
+                                }
+                            }
+                            setShowDrawingModal(true)
+                        }}
+                        className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                        <span>{t('editor.editDrawing') || (language === 'fr' ? 'Modifier le dessin' : 'Edit drawing')}</span>
+                    </button>
+                </div>
+            )}
+
             {variant === 'document' ? (
                 <div className="w-full flex-1 flex justify-center p-4 sm:p-8 bg-slate-200/60 dark:bg-slate-950 overflow-y-auto scrollbar-thin">
                     <div className="w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-sm border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all box-border overflow-hidden relative">
@@ -998,6 +1103,19 @@ export function Editor({ content, onChange, editable = true, className, variant 
                 </div>
             ) : (
                 <EditorContent editor={editor} className="min-h-[150px]" />
+            )}
+
+            {/* Drawing Modal */}
+            {showDrawingModal && (
+                <DrawingModal
+                    open={showDrawingModal}
+                    onClose={() => {
+                        setShowDrawingModal(false)
+                        setEditingDrawingData(null)
+                    }}
+                    initialData={editingDrawingData}
+                    onSave={handleSaveDrawing}
+                />
             )}
         </div>
     )
