@@ -131,13 +131,15 @@ export function generateSvgCode(
                 const lines = el.text.split('\n')
                 const lineHeight = fontSize * 1.25
                 const totalH = lines.length * lineHeight
-                const startY = (el.height - totalH) / 2 + fontSize * 0.9
+                const align = el.textAlign || 'center'
+                const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle'
+                const posX = align === 'left' ? 12 : align === 'right' ? el.width - 12 : el.width / 2
 
                 svgInner += `
         <text
-            x="${el.width / 2}"
+            x="${posX}"
             y="${startY}"
-            text-anchor="middle"
+            text-anchor="${anchor}"
             font-size="${fontSize}"
             font-family="${escapeXml(fontFamily)}"
             font-weight="${fontWeight}"
@@ -147,7 +149,7 @@ export function generateSvgCode(
         >`
                 lines.forEach((line, idx) => {
                     svgInner += `
-            <tspan x="${el.width / 2}" dy="${idx === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+            <tspan x="${posX}" dy="${idx === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
                 })
                 svgInner += `
         </text>`

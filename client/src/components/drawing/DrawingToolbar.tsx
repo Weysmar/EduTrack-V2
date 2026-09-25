@@ -926,7 +926,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                     onClick={() => handleApplyTextAlign('center')}
                     className={cn(
                         "p-1.5 rounded hover:bg-slate-200/80 dark:hover:bg-slate-800 transition-colors",
-                        primarySelected?.textAlign === 'center' && "bg-primary/20 text-primary"
+                        (primarySelected?.textAlign === 'center' || (!primarySelected?.textAlign && primarySelected?.type === 'shape')) && "bg-primary/20 text-primary"
                     )}
                     title="Centrer"
                 >

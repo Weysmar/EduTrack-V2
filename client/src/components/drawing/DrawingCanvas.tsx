@@ -766,31 +766,41 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                         )}
 
                                         {/* Text inside shape or text box (hidden while actively typing in overlay) */}
-                                        {el.text && editingElementId !== el.id && (
-                                            <text
-                                                x={el.textAlign === 'center' ? el.width / 2 : el.textAlign === 'right' ? el.width - 10 : 10}
-                                                y={el.height / 2}
-                                                dominantBaseline="middle"
-                                                textAnchor={el.textAlign === 'center' ? 'middle' : el.textAlign === 'right' ? 'end' : 'start'}
-                                                fill={el.textColor || '#1e293b'}
-                                                fontSize={el.fontSize || 16}
-                                                fontFamily={el.fontFamily || 'Inter, sans-serif'}
-                                                fontWeight={el.fontWeight || 'normal'}
-                                                fontStyle={el.fontStyle || 'normal'}
-                                                textDecoration={el.textDecoration || 'none'}
-                                                pointerEvents="none"
-                                            >
-                                                {el.text.split('\n').map((line, idx, arr) => (
-                                                    <tspan
-                                                        key={idx}
-                                                        x={el.textAlign === 'center' ? el.width / 2 : el.textAlign === 'right' ? el.width - 10 : 10}
-                                                        dy={idx === 0 ? (arr.length > 1 ? `-${(arr.length - 1) * 0.6}em` : '0') : '1.2em'}
-                                                    >
-                                                        {line}
-                                                    </tspan>
-                                                ))}
-                                            </text>
-                                        )}
+                                        {el.text && editingElementId !== el.id && (() => {
+                                            const align = el.textAlign || 'center'
+                                            const posX = align === 'left' ? 12 : align === 'right' ? el.width - 12 : el.width / 2
+                                            const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle'
+                                            const lines = el.text.split('\n')
+                                            const fontSize = el.fontSize || 16
+                                            const lineHeight = fontSize * 1.25
+                                            const totalH = lines.length * lineHeight
+                                            const startY = (el.height - totalH) / 2 + fontSize * 0.85
+
+                                            return (
+                                                <text
+                                                    x={posX}
+                                                    y={startY}
+                                                    textAnchor={anchor}
+                                                    fill={el.textColor || '#1e293b'}
+                                                    fontSize={fontSize}
+                                                    fontFamily={el.fontFamily || 'Inter, sans-serif'}
+                                                    fontWeight={el.fontWeight || 'normal'}
+                                                    fontStyle={el.fontStyle || 'normal'}
+                                                    textDecoration={el.textDecoration || 'none'}
+                                                    pointerEvents="none"
+                                                >
+                                                    {lines.map((line, idx) => (
+                                                        <tspan
+                                                            key={idx}
+                                                            x={posX}
+                                                            dy={idx === 0 ? 0 : lineHeight}
+                                                        >
+                                                            {line}
+                                                        </tspan>
+                                                    ))}
+                                                </text>
+                                            )
+                                        })()}
                                     </g>
                                 )
                             })}
@@ -895,7 +905,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                             if (!el) return null
                             return (
                                 <div
-                                    className="absolute z-20 flex items-center justify-center pointer-events-auto"
+                                    className="absolute z-20 flex items-center justify-center pointer-events-auto p-1"
                                     style={{
                                         left: el.x * zoom,
                                         top: el.y * zoom,
@@ -912,14 +922,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                         onKeyDown={(e) => {
                                             if (e.key === 'Escape') finishEditingText()
                                         }}
-                                        className="w-full h-full bg-transparent resize-none outline-none border border-blue-400 p-2 text-center"
+                                        className="w-full max-h-full bg-transparent resize-none outline-none border border-blue-400 text-center"
                                         style={{
                                             fontSize: `${(el.fontSize || 16) * zoom}px`,
                                             fontFamily: el.fontFamily || 'Inter, sans-serif',
                                             color: el.textColor || '#1e293b',
                                             fontWeight: el.fontWeight || 'normal',
-                                            textAlign: el.textAlign || 'center'
+                                            textAlign: el.textAlign || 'center',
+                                            lineHeight: 1.25
                                         }}
+                                        rows={Math.max(1, editingText.split('\n').length)}
                                     />
                                 </div>
                             )
