@@ -395,14 +395,46 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                 </button>
 
                 {showShapeMenu && (
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-1 z-40 flex animate-in fade-in zoom-in-95">
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-2xl p-0 z-50 flex animate-in fade-in zoom-in-95 overflow-hidden">
                         {/* Categories List */}
-                        <div className="w-36 py-1 border-r border-slate-200 dark:border-slate-800 space-y-0.5">
+                        <div className="w-40 shrink-0 py-1.5 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 select-none">
                             {[
-                                { id: 'basic' as const, label: 'Formes', icon: 'M3 5h18v14H3z' },
-                                { id: 'arrows' as const, label: 'Flèches', icon: 'M2 9h11V4l9 8-9 8v-5H2V9z' },
-                                { id: 'callouts' as const, label: 'Légendes', icon: 'M2 3h20v14H9l-5 5v-5H2V3z' },
-                                { id: 'equations' as const, label: 'Équation', icon: 'M10 3h4v6h6v4h-6v6h-4v-6H4V9h6V3z' }
+                                {
+                                    id: 'basic' as const,
+                                    label: 'Formes',
+                                    icon: (
+                                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <rect x="3" y="5" width="18" height="14" rx="1" />
+                                        </svg>
+                                    )
+                                },
+                                {
+                                    id: 'arrows' as const,
+                                    label: 'Flèches',
+                                    icon: (
+                                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <polygon points="2 9, 13 9, 13 5, 21 12, 13 19, 13 15, 2 15" />
+                                        </svg>
+                                    )
+                                },
+                                {
+                                    id: 'callouts' as const,
+                                    label: 'Légendes',
+                                    icon: (
+                                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <polygon points="2 3, 22 3, 22 16, 10 16, 5 21, 5 16, 2 16" />
+                                        </svg>
+                                    )
+                                },
+                                {
+                                    id: 'equations' as const,
+                                    label: 'Équation',
+                                    icon: (
+                                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <polygon points="10 3, 14 3, 14 9, 20 9, 20 13, 14 13, 14 19, 10 19, 10 13, 4 13, 4 9, 10 9" />
+                                        </svg>
+                                    )
+                                }
                             ].map(cat => (
                                 <button
                                     key={cat.id}
@@ -410,49 +442,74 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
                                     onMouseEnter={() => setActiveShapeCategory(cat.id)}
                                     onClick={() => setActiveShapeCategory(cat.id)}
                                     className={cn(
-                                        "w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors",
+                                        "w-full flex items-center justify-between px-3 py-1.5 text-xs text-left transition-colors cursor-pointer",
                                         activeShapeCategory === cat.id
-                                            ? "bg-primary/10 text-primary font-semibold"
-                                            : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                            ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-medium"
+                                            : "hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300"
                                     )}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d={cat.icon} />
-                                        </svg>
+                                    <div className="flex items-center gap-2.5">
+                                        {cat.icon}
                                         <span>{cat.label}</span>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground">▶</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">▶</span>
                                 </button>
                             ))}
                         </div>
 
-                        {/* Shape Icons Grid */}
-                        <div className="p-2 max-w-[280px]">
-                            <div className="grid grid-cols-5 gap-1">
-                                {SHAPE_DEFINITIONS.filter(s => s.category === activeShapeCategory).map((shape: ShapeDefinition) => (
-                                    <button
-                                        key={shape.id}
-                                        type="button"
-                                        onClick={() => {
-                                            onSelectShapeType(shape.id)
-                                            onSelectTool('shape')
-                                            setShowShapeMenu(false)
-                                        }}
-                                        className={cn(
-                                            "w-9 h-9 p-1 rounded-md border border-slate-200 dark:border-slate-700 flex items-center justify-center transition-all hover:scale-105 hover:bg-primary/10 hover:border-primary/50 cursor-pointer",
-                                            selectedShapeType === shape.id && activeTool === 'shape'
-                                                ? "bg-primary/20 border-primary"
-                                                : "bg-slate-50 dark:bg-slate-800"
-                                        )}
-                                        title={shape.name}
-                                    >
-                                        <svg className="w-5 h-5 text-slate-700 dark:text-slate-200" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d={shape.iconPath} />
-                                        </svg>
-                                    </button>
-                                ))}
-                            </div>
+                        {/* Shape Icons Panel (Google Docs Style with Sections) */}
+                        <div className="w-[410px] shrink-0 p-2.5 bg-white dark:bg-slate-900 select-none">
+                            {(() => {
+                                const categoryShapes = SHAPE_DEFINITIONS.filter(s => s.category === activeShapeCategory)
+                                const sections = Array.from(new Set(categoryShapes.map(s => s.section || 1))).sort((a, b) => a - b)
+
+                                return (
+                                    <div className="flex flex-col gap-1">
+                                        {sections.map((sec, secIdx) => {
+                                            const sectionItems = categoryShapes.filter(s => (s.section || 1) === sec)
+                                            return (
+                                                <React.Fragment key={sec}>
+                                                    {secIdx > 0 && (
+                                                        <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
+                                                    )}
+                                                    <div className="flex flex-wrap gap-1 items-center">
+                                                        {sectionItems.map((shape) => (
+                                                            <button
+                                                                key={shape.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    onSelectShapeType(shape.id)
+                                                                    onSelectTool('shape')
+                                                                    setShowShapeMenu(false)
+                                                                }}
+                                                                className={cn(
+                                                                    "w-7 h-7 shrink-0 flex items-center justify-center rounded transition-all cursor-pointer",
+                                                                    selectedShapeType === shape.id && activeTool === 'shape'
+                                                                        ? "bg-blue-100 dark:bg-blue-900/60 ring-1 ring-blue-500 text-blue-600 dark:text-blue-300"
+                                                                        : "hover:bg-slate-100 dark:hover:bg-slate-800 hover:ring-1 hover:ring-slate-300 dark:hover:ring-slate-600 text-slate-800 dark:text-slate-200"
+                                                                )}
+                                                                title={shape.name}
+                                                            >
+                                                                <svg
+                                                                    viewBox="0 0 24 24"
+                                                                    className="w-5 h-5 shrink-0"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="1.5"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    {shape.renderIcon()}
+                                                                </svg>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </React.Fragment>
+                                            )
+                                        })}
+                                    </div>
+                                )
+                            })()}
                         </div>
                     </div>
                 )}

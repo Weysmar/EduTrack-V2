@@ -25,6 +25,8 @@ export type ShapeType =
     | 'cube'
     | 'cylinder'
     | 'smiley'
+    | 'lightning'
+    | 'donut'
     // Flèches
     | 'arrow-right'
     | 'arrow-left'
