@@ -1278,6 +1278,7 @@ const translations: Translations = {
         // Editor
         "editor.insertImage": "Insérer une image",
         "editor.insertImage.tooltip": "Insérer une image (ou coller / glisser-déposer avec Ctrl+V)",
+        "editor.insertMath": "Insérer une formule mathématique ($$...$$)",
 
         "changelog.type.new": "NOUVEAU",
         "changelog.type.improvement": "AMÉLIORÉ",
@@ -1772,6 +1773,7 @@ const translations: Translations = {
         // STT (MC)
 
         // Editor
+        "editor.insertMath": "Graver des runes mathématiques ($$...$$)",
 
         // Item Edit
         "changelog.v051.polish": "Texture Pack: 100% lore translation, fixed void-blur on modals, and optimized inventory list view.",

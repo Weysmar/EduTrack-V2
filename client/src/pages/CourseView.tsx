@@ -289,7 +289,14 @@ export function CourseView() {
         localStorage.setItem('showThumbnails', JSON.stringify(newValue));
     }
 
-    if (isCourseLoading) return <div className="p-10 text-center">Loading...</div>
+    if (isCourseLoading) {
+        return (
+            <div className="flex items-center justify-center h-full p-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">{t('common.loading')}</span>
+            </div>
+        )
+    }
     if (!course) return <div className="flex flex-col items-center justify-center h-full text-muted-foreground"><p>{t('course.notFound')}</p></div>
 
     return (

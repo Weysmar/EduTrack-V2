@@ -17,6 +17,7 @@ import { ControlBar } from './ControlBar';
 import { FilterPanel } from './FilterPanel';
 import { useKnowledgeMapData } from '@/hooks/useKnowledgeMapData';
 import { HierarchyNode } from '@/types/knowledge-map';
+import { useLanguage } from '@/components/language-provider';
 
 const nodeTypes = {
     postIt: PostItNode
@@ -38,6 +39,7 @@ interface MapContentProps {
 }
 
 function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onToggleTopics, onToggleCourses, onToggleDocuments, onClose }: MapContentProps) {
+    const { t } = useLanguage();
     const { rootNodes, savePosition, isLoading } = useKnowledgeMapData();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -177,7 +179,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
     }, [fitView, navigate, onClose]);
 
     if (isLoading) {
-        return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">Loading Knowledge Map...</div>;
+        return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">{t('common.loading')}</div>;
     }
 
     return (

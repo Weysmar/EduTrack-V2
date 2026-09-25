@@ -385,7 +385,14 @@ export function ItemView() {
     const isMarkdown = ext === 'md';
     const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext);
 
-    if (isItemLoading) return <div className="p-8">Loading...</div>
+    if (isItemLoading) {
+        return (
+            <div className="flex items-center justify-center h-full p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">{t('common.loading')}</span>
+            </div>
+        )
+    }
     // If deleting, show loading to prevent "File not found" glitches
     if (isDeleting) {
         return (

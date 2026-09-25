@@ -59,7 +59,7 @@ export function TextViewer({ url, fileName, isMarkdown = false, className }: Tex
             <div className={cn("w-full h-full min-h-[400px] flex items-center justify-center bg-muted/30", className)}>
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <FileText className="h-8 w-8 animate-pulse" />
-                    <span className="text-sm">Loading...</span>
+                    <span className="text-sm">{t('common.loading')}</span>
                 </div>
             </div>
         )
