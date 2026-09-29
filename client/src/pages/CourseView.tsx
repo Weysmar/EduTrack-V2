@@ -7,7 +7,7 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar, BulkGenerateMode } from '@/components/BulkActionBar'
 import { GenerateExerciseModal, RevisionGenerationMode } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2 } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2, MoreHorizontal } from 'lucide-react'
 import { TrashModal } from '@/components/TrashModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
@@ -19,7 +19,6 @@ import { courseQueries, studyPlanQueries, itemQueries } from '@/lib/api/queries'
 import { saveCourseForOffline, removeCourseFromOffline, isCourseSavedOffline } from '@/lib/offlineManager'
 import { API_URL } from '@/config'
 import { extractText } from '@/lib/extractText'
-import { cn } from '@/lib/utils'
 
 // New Hooks & Components
 import { useCourseContent } from '@/hooks/useCourseContent'
@@ -86,6 +85,7 @@ export function CourseView() {
     const [showSummary, setShowSummary] = useState(false)
     const [isTasksModalOpen, setIsTasksModalOpen] = useState(false)
     const [isTrashModalOpen, setIsTrashModalOpen] = useState(false)
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
 
     // Course Tasks Query
     const { data: courseTasks = [] } = useQuery({
@@ -360,8 +360,19 @@ export function CourseView() {
                             <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">{course.description}</p>
                         )}
                     </div>
-                    {/* Action buttons directly below title and description */}
+                    {/* Action buttons directly below title and description.
+                        Only the two most frequent actions stay visible (Ajouter, Échéances);
+                        everything else (Hors-ligne, Modifier, Corbeille, Supprimer) folds into
+                        a single "More" menu — same consolidation pattern as ItemDesktopToolbar. */}
                     <div className="flex items-center gap-2 flex-wrap pt-1">
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:bg-primary/90 transition-all active:scale-95 shadow-sm"
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span className="whitespace-nowrap">{t('course.addContent')}</span>
+                        </button>
+
                         <button
                             onClick={() => setIsTasksModalOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md text-xs sm:text-sm font-medium transition-all active:scale-95 shadow-xs border border-border"
@@ -375,59 +386,66 @@ export function CourseView() {
                                 </span>
                             )}
                         </button>
-                        <button
-                            onClick={handleToggleOffline}
-                            disabled={isOfflineSaving}
-                            className={cn(
-                                "flex items-center gap-1.5 px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all active:scale-95 shadow-xs border cursor-pointer",
-                                isSavedOffline
-                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-400"
-                                    : "bg-secondary hover:bg-secondary/80 text-secondary-foreground border-border"
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                                className="flex items-center gap-1 px-2.5 py-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60"
+                                title={language === 'fr' ? "Plus d'options" : "More options"}
+                            >
+                                <MoreHorizontal className="h-4 w-4" />
+                            </button>
+
+                            {isMoreMenuOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsMoreMenuOpen(false)} />
+                                    <div className="absolute left-0 top-full mt-1.5 w-64 origin-top-left rounded-lg bg-card shadow-lg ring-1 ring-black/10 border z-50 animate-in fade-in zoom-in-95">
+                                        <div className="p-1 space-y-0.5">
+                                            <button
+                                                onClick={() => { setIsMoreMenuOpen(false); handleToggleOffline() }}
+                                                disabled={isOfflineSaving}
+                                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors disabled:opacity-50"
+                                            >
+                                                {isOfflineSaving ? (
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                                ) : isSavedOffline ? (
+                                                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                                                ) : (
+                                                    <HardDriveDownload className="h-3.5 w-3.5 text-muted-foreground" />
+                                                )}
+                                                {isSavedOffline ? (language === 'fr' ? 'Disponible hors-ligne ✓' : 'Available offline ✓') : (language === 'fr' ? 'Enregistrer hors-ligne' : 'Save offline')}
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setIsMoreMenuOpen(false); setIsEditModalOpen(true) }}
+                                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                            >
+                                                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                                {t('course.edit') || 'Modifier le cours'}
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setIsMoreMenuOpen(false); setIsTrashModalOpen(true) }}
+                                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                Corbeille
+                                            </button>
+
+                                            <div className="h-px bg-border my-1 mx-1" />
+
+                                            <button
+                                                onClick={() => { setIsMoreMenuOpen(false); handleDelete() }}
+                                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-destructive/10 text-destructive transition-colors"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                                {t('common.delete') || 'Supprimer le cours'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
                             )}
-                            title={isSavedOffline ? "Cours sauvegardé hors-ligne (cliquer pour options)" : "Enregistrer ce cours pour réviser hors-ligne"}
-                        >
-                            {isOfflineSaving ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            ) : isSavedOffline ? (
-                                <Check className="h-4 w-4 text-emerald-500" />
-                            ) : (
-                                <HardDriveDownload className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <span className="whitespace-nowrap">
-                                {isSavedOffline ? 'Hors-ligne ✓' : (language === 'fr' ? 'Hors-ligne' : 'Offline')}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium hover:bg-primary/90 transition-all active:scale-95 shadow-sm"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span className="whitespace-nowrap">{t('course.addContent')}</span>
-                        </button>
-                        <button
-                            onClick={() => setIsTrashModalOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs sm:text-sm font-medium"
-                            title="Corbeille (restaurer des documents)"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            <span>Corbeille</span>
-                        </button>
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="flex items-center gap-1.5 px-3 py-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors border border-border/60 text-xs sm:text-sm font-medium"
-                            title={t('course.edit')}
-                        >
-                            <Pencil className="h-4 w-4" />
-                            <span>{t('course.edit') || 'Modifier'}</span>
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="flex items-center gap-1.5 px-3 py-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors border border-destructive/20 text-xs sm:text-sm font-medium"
-                            title={t('common.delete')}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            <span>{t('common.delete') || 'Supprimer'}</span>
-                        </button>
+                        </div>
                     </div>
                 </div>
 
