@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { socketService } from '../services/socketService';
+import { encryptSensitiveSettings, decryptSensitiveSettings } from '../utils/crypto';
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
     try {
@@ -49,6 +50,9 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         }
 
         const { passwordHash, ...profileData } = profile;
+        if (profileData.settings) {
+            profileData.settings = decryptSensitiveSettings(profileData.settings as any);
+        }
         res.json(profileData);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -84,7 +88,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
             };
         }
 
-        const updateData: any = { settings: mergedSettings };
+        const updateData: any = { settings: encryptSensitiveSettings(mergedSettings) };
         if (name !== undefined) updateData.name = name;
         if (theme !== undefined) updateData.theme = theme;
         if (language !== undefined) updateData.language = language;
@@ -95,6 +99,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         });
 
         const { passwordHash, ...profileData } = updatedProfile;
+        if (profileData.settings) {
+            profileData.settings = decryptSensitiveSettings(profileData.settings as any);
+        }
         res.json(profileData);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });

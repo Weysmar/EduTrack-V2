@@ -1,4 +1,5 @@
-import { generateWithPerplexity } from '@/lib/ai/perplexity'
+import { AIServiceFactory } from '@/lib/ai/factory'
+import { useProfileStore } from '@/store/profileStore'
 import { studyPlanQueries, itemQueries, courseQueries } from '@/lib/api/queries'
 
 interface PlanGenerationParams {
@@ -61,8 +62,14 @@ export async function generateStudyPlan(params: PlanGenerationParams) {
         - Distribute tasks to fit ${params.hoursPerWeek} hours/week.
     `
 
-    // 3. Call AI
-    const response = await generateWithPerplexity(prompt)
+    // 3. Call AI — respecte le provider pour lequel l'utilisateur a une clé configurée
+    // (auparavant forcé sur Perplexity, ce qui échouait pour les utilisateurs n'ayant que Gemini)
+    const { getApiKey } = useProfileStore.getState()
+    const hasPerplexityKey = !!(getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries'))
+    const hasGeminiKey = !!(getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries'))
+    const provider: 'google' | 'perplexity' = hasPerplexityKey || !hasGeminiKey ? 'perplexity' : 'google'
+
+    const response = await AIServiceFactory.generateGeneric(prompt, "You are a helpful AI assistant.", provider)
     let planData: any
     try {
         // Clean cleanup if MD is returned

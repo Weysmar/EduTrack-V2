@@ -58,14 +58,11 @@ export const AI_MODELS: AIModelEntry[] = [
         aliases: ['gemini-3.7', 'gemini-3.7-pro', 'gemini-3.8', 'gemini-3.8-flash', 'gemini-3.8-pro']
     },
     {
-        id: 'gemini-3.7-thinking',
-        displayName: '🧠 Gemini 3.7 Flash Thinking',
-        provider: 'google',
-        maxTokens: 1_000_000,
-        capabilities: { vision: true, webSearch: false, reasoning: true },
-        aliases: ['gemini-3.7-thinking']
-    },
-    {
+        // NOTE (2026-09) : Google restreint désormais l'accès à la famille 2.5 aux clés API
+        // l'ayant déjà utilisée par le passé ; ce n'est plus le choix recommandé pour une
+        // clé toute neuve. On le garde comme dernier repli (pas comme filet universel) —
+        // si l'appel échoue avec un modèle/accès non trouvé, c'est attendu pour les
+        // nouvelles clés API et l'utilisateur retombera sur gemini-3.7-flash.
         id: 'gemini-2.5-flash',
         displayName: '🛡️ Gemini 2.5 Flash',
         provider: 'google',

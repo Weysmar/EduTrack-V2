@@ -16,6 +16,7 @@ import { getHealthScore } from '../controllers/healthScoreController';
 import { getMonthlyReport } from '../controllers/reportController';
 import { getBalanceHistory } from '../controllers/historyController';
 import categoryRoutes from './categoryRoutes';
+import { aiRateLimit } from '../middleware/aiRateLimit';
 import multer from 'multer';
 import path from 'path';
 
@@ -62,7 +63,7 @@ router.get('/transactions', getTransactions);
 router.post('/transactions', createTransaction);
 router.put('/transactions/:id', updateTransaction);
 router.delete('/transactions/:id', deleteTransaction);
-router.post('/transactions/categorize', categorizeTransactions);
+router.post('/transactions/categorize', aiRateLimit, categorizeTransactions);
 router.post('/transactions/auto-categorize', autoCategorizeTransactions);
 
 // Import Routes
@@ -77,7 +78,7 @@ router.get('/export', exportData);
 router.get('/history/balance', getBalanceHistory);
 
 // AI Audit
-router.post('/audit', audit);
+router.post('/audit', aiRateLimit, audit);
 
 // Bulk Reclassification
 router.post('/transactions/reclassify-all', reclassifyAllTransactions as any);

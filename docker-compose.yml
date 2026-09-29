@@ -31,6 +31,8 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-edutrack}:${POSTGRES_PASSWORD:-securepassword}@postgres:5432/${POSTGRES_DB:-edutrack_db}
       JWT_SECRET: ${JWT_SECRET}
+      # Encryption at rest for user-provided AI API keys stored in Profile.settings
+      SETTINGS_ENCRYPTION_KEY: ${SETTINGS_ENCRYPTION_KEY}
       # CORS setup for dokploy domain or local network
       CORS_ORIGIN: ${CORS_ORIGIN:-https://hubtrack.vpdeploy.com,http://localhost:5173,http://localhost}
       # Storage configuration (Local storage)

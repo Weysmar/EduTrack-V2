@@ -5,6 +5,83 @@ import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCom
 // Keys are passed per-request from the user's saved profile settings.
 // Model name resolution and fallback chains are managed by ../config/aiModels.ts.
 
+const PERPLEXITY_TIMEOUT_MS = 120000;
+const PERPLEXITY_MAX_ATTEMPTS = 3;
+
+/**
+ * Appelle l'API Perplexity (/chat/completions) avec timeout et retry sur erreurs transitoires.
+ *
+ * Note : cet endpoint est en cours de dépréciation douce par Perplexity au profit d'une
+ * nouvelle "Agent API" (POST /v1/agent, schéma requête/réponse différent : preset au lieu
+ * de model, input au lieu de messages, sortie dans output[].content[].text). Au 2026-09,
+ * Perplexity confirme que les requêtes synchrones/streaming existantes continuent de
+ * fonctionner (réécrites en interne vers l'Agent API), donc on garde ce chemin — un
+ * changement d'endpoint à l'aveugle risquerait de casser la génération pour un gain nul
+ * tant que le mapping exact modèle→preset et le mode JSON strict de la nouvelle API ne sont
+ * pas confirmés pour nos besoins (generateJSON).
+ */
+async function callPerplexity(
+    apiKey: string,
+    apiModel: string,
+    systemPrompt: string | undefined,
+    userPrompt: string
+): Promise<any> {
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= PERPLEXITY_MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), PERPLEXITY_TIMEOUT_MS);
+
+        try {
+            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: apiModel,
+                    messages: [
+                        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+                        { role: 'user', content: userPrompt }
+                    ]
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                const isTransient = response.status === 429 || response.status === 503 || response.status >= 500;
+                lastError = new Error(`Perplexity API Error: ${response.status} - ${errorText}`);
+                if (isTransient && attempt < PERPLEXITY_MAX_ATTEMPTS) {
+                    const delayMs = attempt * 1200;
+                    console.warn(`[AI Service] Perplexity ${response.status} (attempt ${attempt}/${PERPLEXITY_MAX_ATTEMPTS}). Retrying in ${delayMs}ms...`);
+                    await new Promise(res => setTimeout(res, delayMs));
+                    continue;
+                }
+                throw lastError;
+            }
+
+            return await response.json();
+        } catch (err: any) {
+            clearTimeout(timeoutId);
+            const isAbort = err.name === 'AbortError';
+            lastError = isAbort ? new Error('Perplexity API Error: timeout - La requête a dépassé le délai imparti.') : err;
+
+            if (isAbort && attempt < PERPLEXITY_MAX_ATTEMPTS) {
+                const delayMs = attempt * 1200;
+                console.warn(`[AI Service] Perplexity timeout (attempt ${attempt}/${PERPLEXITY_MAX_ATTEMPTS}). Retrying in ${delayMs}ms...`);
+                await new Promise(res => setTimeout(res, delayMs));
+                continue;
+            }
+            throw lastError;
+        }
+    }
+
+    throw lastError;
+}
+
 export const aiService = {
     async generateText(
         prompt: string,
@@ -37,36 +114,15 @@ export const aiService = {
             throw new Error(contextCheck.warning!);
         }
 
-        if (provider === 'perplexity') {
-            if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
-
-            console.log(`[AI Service] Generating text with Perplexity model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars (~${contextCheck.estimatedTokens} tokens).`);
-
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${effectiveKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: apiModel,
-                    messages: [
-                        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-                        { role: 'user', content: prompt }
-                    ]
-                })
-            });
-
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Perplexity API Error: ${response.status} - ${error}`);
-            }
-
-            const data = await response.json();
-            return data.choices[0].message.content;
-        }
-
         try {
+            if (provider === 'perplexity') {
+                if (!effectiveKey) throw new Error('Aucune clé API Perplexity fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
+
+                console.log(`[AI Service] Generating text with Perplexity model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars (~${contextCheck.estimatedTokens} tokens).`);
+
+                const data = await callPerplexity(effectiveKey, apiModel, systemPrompt, prompt);
+                return data.choices[0].message.content;
+            }
             // Validate per-user API key (BYOK architecture)
             if (!effectiveKey) {
                 throw new Error('Aucune clé API Google Gemini fournie. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.');

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
 import { resolveModelId, detectProvider } from '../config/aiModels';
+import { decryptSecret } from '../utils/crypto';
 
 export type AIProvider = 'google' | 'perplexity';
 
@@ -15,16 +16,22 @@ export interface ApiKeyConfig {
 // which is the single source of truth for all model definitions.
 export { resolveModelId, detectProvider };
 
-// Validate API key format (basic checks)
+// Validate API key format
+// Vérifie le préfixe attendu quand il est présent (signal fort) ; sinon repli sur une
+// vérification de longueur permissive (pour ne pas rejeter des clés valides passant par
+// un proxy/une gateway d'entreprise dont le format diffère du standard grand public).
 const validateApiKey = (key: string, provider: AIProvider): boolean => {
     if (!key || key.trim().length === 0) return false;
-    
+    const trimmed = key.trim();
+
     if (provider === 'google') {
-        // Gemini keys typically start with specific prefixes
-        return key.length > 20; // Basic length check
+        // Les clés Google API (Gemini AI Studio) commencent par "AIza" et font ~39 caractères
+        if (trimmed.startsWith('AIza')) return trimmed.length >= 30;
+        return trimmed.length > 20;
     } else if (provider === 'perplexity') {
-        // Perplexity keys are typically pplx-* or longer tokens
-        return key.length > 10;
+        // Les clés Perplexity commencent par "pplx-"
+        if (trimmed.startsWith('pplx-')) return trimmed.length >= 15;
+        return trimmed.length > 10;
     }
     return false;
 };
@@ -65,15 +72,15 @@ export const getApiKey = async (
         const settings = profile.settings as any;
         
         if (provider === 'google') {
-            // Try purpose-specific key first, then fallbacks
+            // Try purpose-specific key first, then fallbacks (déchiffrement : les clés sont chiffrées au repos)
             const possibleKeys = [
                 settings.google_gemini_summaries,
                 settings.google_gemini_exercises,
                 settings.google_gemini_categorization,
-            ].filter(Boolean);
-            
+            ].filter(Boolean).map(decryptSecret);
+
             for (const key of possibleKeys) {
-                if (validateApiKey(key, 'google')) {
+                if (key && validateApiKey(key, 'google')) {
                     return {
                         provider: 'google',
                         apiKey: key,
@@ -86,10 +93,10 @@ export const getApiKey = async (
             const possibleKeys = [
                 settings.perplexity_summaries,
                 settings.perplexity_exercises,
-            ].filter(Boolean);
-            
+            ].filter(Boolean).map(decryptSecret);
+
             for (const key of possibleKeys) {
-                if (validateApiKey(key, 'perplexity')) {
+                if (key && validateApiKey(key, 'perplexity')) {
                     return {
                         provider: 'perplexity',
                         apiKey: key,

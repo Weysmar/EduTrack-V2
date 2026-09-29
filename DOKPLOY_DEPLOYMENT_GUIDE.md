@@ -251,6 +251,12 @@ Le fichier [client/nginx.conf](file:///c:/Users/Vincent/.gemini/antigravity/scra
    # JWT Authentication
    JWT_SECRET=GENERER_UNE_CLE_ALEATOIRE_MINIMUM_32_CARACTERES
    
+   # Chiffrement au repos des clés API IA des utilisateurs (BYOK)
+   # Générez avec : openssl rand -hex 32
+   # ATTENTION : ne changez jamais cette valeur après la mise en prod sans plan de migration,
+   # sinon les clés API déjà chiffrées en base deviendront illisibles.
+   SETTINGS_ENCRYPTION_KEY=GENERER_AVEC_OPENSSL_RAND_HEX_32
+   
    # Google Gemini AI
    GEMINI_API_KEY=VOTRE_CLE_API_GEMINI_ICI
    

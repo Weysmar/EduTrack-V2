@@ -50,15 +50,10 @@ export const AI_MODELS: AIModelEntry[] = [
         recommended: true,
     },
     {
-        id: 'gemini-3.7-thinking',
-        displayName: '🧠 Gemini 3.7 Thinking — Raisonnement étape par étape',
-        provider: 'google',
-        maxTokens: 1_000_000,
-        capabilities: { vision: true, webSearch: false, reasoning: true },
-    },
-    {
+        // NOTE (2026-09) : accès restreint chez Google aux clés API l'ayant déjà utilisée ;
+        // plus garanti disponible pour une clé toute neuve — voir le registre serveur.
         id: 'gemini-2.5-flash',
-        displayName: '🛡️ Gemini 2.5 Flash — Secours haute disponibilité',
+        displayName: '🛡️ Gemini 2.5 Flash — Repli (accès parfois restreint)',
         provider: 'google',
         maxTokens: 1_000_000,
         capabilities: { vision: true, webSearch: false, reasoning: false },

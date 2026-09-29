@@ -142,7 +142,7 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
         const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération";
 
         if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
-            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 3.6 Flash) ou réessayer plus tard.");
+            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 2.5 Flash) ou réessayer plus tard.");
         }
 
         if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
