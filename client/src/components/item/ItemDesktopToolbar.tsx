@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/language-provider';
 import { RevisionGenerationMode } from '@/components/GenerateExerciseModal';
 import { TTSControls } from '@/components/TTSControls';
-import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown, Columns, BookOpen, FileEdit, Scale, Layers, Network } from 'lucide-react';
+import { ExternalLink, Download, Maximize, Check, Pencil, Edit, Loader2, Sparkles, BrainCircuit, CheckSquare, FileText, Trash2, RefreshCw, Sliders, FileDown, Columns, BookOpen, FileEdit, Scale, Layers, Network, MoreHorizontal, Volume2 } from 'lucide-react';
 
 interface ItemDesktopToolbarProps {
     item: any;
@@ -10,6 +11,8 @@ interface ItemDesktopToolbarProps {
     isText: boolean;
     isMarkdown: boolean;
     isOffice: boolean;
+    isPdf?: boolean;
+    isBpmn?: boolean;
     API_URL: string;
     officeEngine: 'google' | 'microsoft' | 'local';
     pdfUrl: string | null;
@@ -40,7 +43,7 @@ interface ItemDesktopToolbarProps {
 }
 
 export function ItemDesktopToolbar({
-    item, course, isText, isMarkdown, isOffice, API_URL, officeEngine, pdfUrl, handleDownload,
+    item, course, isText, isMarkdown, isOffice, isPdf, isBpmn, API_URL, officeEngine, pdfUrl, handleDownload,
     handleSyncDrive, isSyncingDrive, handleExportNotePdf, isExportingNotePdf,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
@@ -48,142 +51,45 @@ export function ItemDesktopToolbar({
     onOpenSideBySide, isSideBySide, t
 }: ItemDesktopToolbarProps) {
     const { language } = useLanguage();
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
+    const hasTTS = item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown));
+    const hasExportNotePdf = hasTTS && !!handleExportNotePdf;
+
+    // Construct the "open externally" target URL (same logic as before)
+    let targetUrl = pdfUrl || '';
+    if (item.type === 'link' && item.fileUrl) {
+        targetUrl = item.fileUrl;
+    } else if (item.storageKey) {
+        const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+        const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+        const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
+        const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
+
+        const isOdt = item.fileName?.toLowerCase().endsWith('.odt') || item.fileData?.toLowerCase().endsWith('.odt');
+        if (isOffice) {
+            if (officeEngine === 'microsoft' && !isOdt) {
+                targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
+            } else {
+                targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
+            }
+        } else {
+            targetUrl = publicRawUrl;
+        }
+    }
+    const hasUniversalFileActions = !!(item.fileData || item.type === 'resource' || (item.type === 'link' && item.storageKey) || pdfUrl);
+
+    // Fullscreen: hide from this menu when the active viewer already has its own complete
+    // enter/exit toggle (PDF, BPMN). Office only has an EXIT button internally, so it still
+    // needs this entry point; Image/Text/Generic have no internal toggle at all.
+    const showFullscreenAction = !!pdfUrl && !isPdf && !isBpmn;
+    // Side-by-side: only PDFViewer renders its own side-by-side control today.
+    const showSideBySideAction = !!pdfUrl && !!onOpenSideBySide && !isPdf;
+
+    const hasAnySecondaryAction = hasTTS || hasExportNotePdf || !!handleSyncDrive || hasUniversalFileActions || showFullscreenAction || showSideBySideAction;
+
     return (
         <div className="hidden md:flex items-center gap-1.5 justify-end flex-shrink-0">
-            {/* TTS Controls */}
-            {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && (
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <TTSControls
-                        text={item.content || item.extractedContent || ''}
-                        lang={item.language || (course?.language === 'en' ? 'en-US' : (course?.language === 'fr' ? 'fr-FR' : 'fr-FR'))}
-                    />
-                    <div className="h-4 w-px bg-border mx-0.5" />
-                </div>
-            )}
-
-            {/* Note HD PDF Export */}
-            {(item.type === 'note' || (item.type === 'resource' && (isText || isMarkdown))) && handleExportNotePdf && (
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                        onClick={handleExportNotePdf}
-                        disabled={isExportingNotePdf}
-                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
-                        title={t('item.exportPdf') || "Exporter en PDF Haute Définition (A4)"}
-                    >
-                        {isExportingNotePdf ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        ) : (
-                            <FileDown className="h-4 w-4 text-primary" />
-                        )}
-                        <span className="hidden xl:inline">Export PDF (HD)</span>
-                    </button>
-                    <div className="h-4 w-px bg-border mx-0.5" />
-                </div>
-            )}
-
-            {/* Universal View / Open in New Tab & Download Buttons */}
-            {(item.fileData || item.type === 'resource' || (item.type === 'link' && item.storageKey) || pdfUrl) && (
-                (() => {
-                    // Construct Public URL
-                    let targetUrl = pdfUrl || '';
-                    if (item.type === 'link' && item.fileUrl) {
-                        targetUrl = item.fileUrl;
-                    } else if (item.storageKey) {
-                        const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
-                        const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-                        const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
-                        const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
-
-                        const isOdt = item.fileName?.toLowerCase().endsWith('.odt') || item.fileData?.toLowerCase().endsWith('.odt');
-                        if (isOffice) {
-                            if (officeEngine === 'microsoft' && !isOdt) {
-                                targetUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(publicRawUrl)}`;
-                            } else {
-                                targetUrl = `https://docs.google.com/gview?url=${encodeURIComponent(publicRawUrl)}&embedded=false`;
-                            }
-                        } else {
-                            targetUrl = publicRawUrl;
-                        }
-                    }
-
-                    return (
-                        <div className="flex items-center gap-1">
-                            {handleSyncDrive && (
-                                <button
-                                    onClick={handleSyncDrive}
-                                    disabled={isSyncingDrive}
-                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium disabled:opacity-50"
-                                    title="Resynchroniser depuis Google Drive"
-                                >
-                                    <RefreshCw className={cn("h-4 w-4 text-emerald-500", isSyncingDrive && "animate-spin")} />
-                                    <span className="hidden xl:inline">Drive Sync</span>
-                                </button>
-                            )}
-                            {targetUrl && (
-                                <a
-                                    href={targetUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium"
-                                    title={t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
-                                >
-                                    <ExternalLink className="h-4 w-4" />
-                                    <span className="hidden lg:inline">{t('action.openNewTab') || "Ouvrir"}</span>
-                                </a>
-                            )}
-                            {handleDownload && (
-                                <button
-                                    onClick={handleDownload}
-                                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 flex items-center gap-1.5 text-xs font-medium"
-                                    title={t('file.download') || "Télécharger"}
-                                >
-                                    <Download className="h-4 w-4" />
-                                    <span className="hidden lg:inline">{t('file.download') || "Télécharger"}</span>
-                                </button>
-                            )}
-                            <div className="h-4 w-px bg-border mx-0.5" />
-                        </div>
-                    );
-                })()
-            )}
-
-            {/* Universal Fullscreen Button - Available for all items with files */}
-            {pdfUrl && (
-                <button
-                    onClick={() => {
-                        setMobileTab('pdf')
-                        setIsFocusMode(true)
-                    }}
-                    className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
-                    title={t('action.fullscreen') || "Plein écran"}
-                >
-                    <Maximize className="h-4 w-4" aria-hidden="true" />
-                </button>
-            )}
-
-            {/* Universal Side-by-side Button - Available for all items with files */}
-            {pdfUrl && onOpenSideBySide && (
-                <button
-                    onClick={onOpenSideBySide}
-                    className={cn(
-                        "p-1.5 rounded-lg transition-colors flex-shrink-0 flex items-center gap-1.5 text-xs font-medium cursor-pointer",
-                        isSideBySide
-                            ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    )}
-                    title={isSideBySide 
-                        ? (language === 'fr' ? "Mode côte à côte actif" : "Split view active") 
-                        : (language === 'fr' ? "Afficher un second document côte à côte" : "Display a second document side-by-side")}
-                >
-                    <Columns className="h-4 w-4" aria-hidden="true" />
-                    <span className="hidden xl:inline">
-                        {isSideBySide 
-                            ? (language === 'fr' ? "Scindé ✓" : "Split ✓") 
-                            : (language === 'fr' ? "Côte à côte" : "Side-by-side")}
-                    </span>
-                </button>
-            )}
-
             {/* Edit Button Logic */}
             {item.type === 'note' ? (
                 isEditMode ? (
@@ -366,13 +272,133 @@ export function ItemDesktopToolbar({
                 )}
             </div>
 
-            <button
-                onClick={handleDelete}
-                className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex-shrink-0"
-                title={t('action.moveToTrash') || "Mettre à la corbeille"}
-            >
-                <Trash2 className="h-4 w-4" />
-            </button>
+            {/* Secondary actions - consolidated into a single "More" menu to keep the toolbar
+                to 3 visible controls (Éditer / Génération IA / •••), mirroring the mobile
+                bottom-sheet pattern instead of a long row of icon-only buttons. */}
+            {hasAnySecondaryAction && (
+                <div className="relative flex-shrink-0">
+                    <button
+                        onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                        className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground flex-shrink-0 border border-transparent hover:border-border"
+                        title={language === 'fr' ? "Plus d'options" : "More options"}
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                    </button>
+
+                    {isMoreMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsMoreMenuOpen(false)} />
+                            <div className="absolute right-0 top-full mt-1.5 w-64 origin-top-right rounded-lg bg-card shadow-lg ring-1 ring-black/10 border z-50 animate-in fade-in zoom-in-95">
+                                <div className="p-1 space-y-0.5">
+                                    {hasTTS && (
+                                        <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs text-foreground">
+                                            <span className="flex items-center gap-2">
+                                                <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                {language === 'fr' ? "Lecture audio" : "Read aloud"}
+                                            </span>
+                                            <TTSControls
+                                                text={item.content || item.extractedContent || ''}
+                                                lang={item.language || (course?.language === 'en' ? 'en-US' : (course?.language === 'fr' ? 'fr-FR' : 'fr-FR'))}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {hasExportNotePdf && (
+                                        <button
+                                            onClick={() => { setIsMoreMenuOpen(false); handleExportNotePdf?.() }}
+                                            disabled={isExportingNotePdf}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors disabled:opacity-50"
+                                        >
+                                            {isExportingNotePdf ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> : <FileDown className="h-3.5 w-3.5 text-primary" />}
+                                            Export PDF (HD)
+                                        </button>
+                                    )}
+
+                                    {handleSyncDrive && (
+                                        <button
+                                            onClick={() => { setIsMoreMenuOpen(false); handleSyncDrive() }}
+                                            disabled={isSyncingDrive}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors disabled:opacity-50"
+                                        >
+                                            <RefreshCw className={cn("h-3.5 w-3.5 text-emerald-500", isSyncingDrive && "animate-spin")} />
+                                            {language === 'fr' ? "Synchroniser Drive" : "Sync Drive"}
+                                        </button>
+                                    )}
+
+                                    {hasUniversalFileActions && targetUrl && (
+                                        <a
+                                            href={targetUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={() => setIsMoreMenuOpen(false)}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                        >
+                                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                                            {t('action.openNewTab') || "Ouvrir dans un nouvel onglet"}
+                                        </a>
+                                    )}
+
+                                    {hasUniversalFileActions && handleDownload && (
+                                        <button
+                                            onClick={() => { setIsMoreMenuOpen(false); handleDownload() }}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                        >
+                                            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                                            {t('file.download') || "Télécharger"}
+                                        </button>
+                                    )}
+
+                                    {showFullscreenAction && (
+                                        <button
+                                            onClick={() => {
+                                                setIsMoreMenuOpen(false)
+                                                setMobileTab('pdf')
+                                                setIsFocusMode(true)
+                                            }}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                        >
+                                            <Maximize className="h-3.5 w-3.5 text-muted-foreground" />
+                                            {t('action.fullscreen') || "Plein écran"}
+                                        </button>
+                                    )}
+
+                                    {showSideBySideAction && (
+                                        <button
+                                            onClick={() => { setIsMoreMenuOpen(false); onOpenSideBySide?.() }}
+                                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground transition-colors"
+                                        >
+                                            <Columns className="h-3.5 w-3.5 text-muted-foreground" />
+                                            {isSideBySide
+                                                ? (language === 'fr' ? "Quitter le mode côte à côte" : "Exit split view")
+                                                : (language === 'fr' ? "Afficher côte à côte" : "Display side-by-side")}
+                                        </button>
+                                    )}
+
+                                    <div className="h-px bg-border my-1 mx-1" />
+
+                                    <button
+                                        onClick={() => { setIsMoreMenuOpen(false); handleDelete() }}
+                                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-destructive/10 text-destructive transition-colors"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        {t('action.moveToTrash') || "Mettre à la corbeille"}
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {!hasAnySecondaryAction && (
+                <button
+                    onClick={handleDelete}
+                    className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex-shrink-0"
+                    title={t('action.moveToTrash') || "Mettre à la corbeille"}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </button>
+            )}
         </div>
     );
 }

@@ -384,6 +384,7 @@ export function ItemView() {
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
     const isBpmn = ['bpmn', 'bpmn2', 'bpm'].includes(ext);
+    const isPdf = ext === 'pdf' || item?.fileType === 'application/pdf';
 
     if (isItemLoading) {
         return (
@@ -931,6 +932,8 @@ export function ItemView() {
                     isText={isText}
                     isMarkdown={isMarkdown}
                     isOffice={!!isOffice}
+                    isPdf={isPdf}
+                    isBpmn={isBpmn}
                     API_URL={API_URL}
                     officeEngine={officeEngine}
                     pdfUrl={pdfUrl}
@@ -1006,26 +1009,6 @@ export function ItemView() {
                     "w-full h-full",
                     showSummary ? "" : ((item.type === 'resource' || (item.type === 'link' && item.storageKey)) ? "max-w-none" : "max-w-5xl mx-auto")
                 )}>
-
-                    {/* Metadata Badges - Hidden on mobile if focus mode, or just padded differently? */}
-                    {item.type === 'exercise' && item.status && item.difficulty && (
-                        <div className="flex gap-2 p-4 md:p-0 mb-4">
-                            <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                item.difficulty === 'easy' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
-                                    item.difficulty === 'medium' ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30" :
-                                        "bg-red-100 text-red-700 dark:bg-red-900/30"
-                            )}>
-                                {t(`diff.${item.difficulty}`)}
-                            </span>
-                            <span className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                                item.status === 'completed' ? "bg-green-100 text-green-700 dark:bg-green-900/30" :
-                                    item.status === 'in-progress' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30" :
-                                        "bg-muted text-muted-foreground"
-                            )}>
-                                {t(`status.${item.status}`)}
-                            </span>
-                        </div>
-                    )}
 
                     {/* Content Logic: Summary VS Original Content */}
                     <div className={cn(
