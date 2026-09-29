@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -6,7 +6,32 @@ import * as os from 'os';
 import mammoth from 'mammoth';
 const pdfParse = require('pdf-parse');
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Runs a Python interpreter on a script, trying python3 first and falling back to python.
+ *
+ * Uses execFile (never exec/a shell string) so that filePath — which is derived from a
+ * user-uploaded file's original name — can never be interpreted as shell syntax, no matter
+ * what characters it contains (quotes, semicolons, backticks, $()...).
+ */
+async function runPython(scriptPath: string, filePath: string): Promise<string> {
+    const args = [scriptPath, filePath];
+    const opts = { timeout: 30000, maxBuffer: 20 * 1024 * 1024 };
+
+    if (process.platform === 'win32') {
+        const { stdout } = await execFileAsync('python', args, opts);
+        return stdout.toString();
+    }
+
+    try {
+        const { stdout } = await execFileAsync('python3', args, opts);
+        return stdout.toString();
+    } catch (err) {
+        const { stdout } = await execFileAsync('python', args, opts);
+        return stdout.toString();
+    }
+}
 
 export class ExtractionService {
     /**
@@ -46,17 +71,7 @@ if __name__ == '__main__':
         await fs.writeFile(tempScript, pythonScript, 'utf-8');
 
         try {
-            // Try python3 first, fallback to python
-            const command = process.platform === 'win32' 
-                ? `python "${tempScript}" "${filePath}"` 
-                : `python3 "${tempScript}" "${filePath}" || python "${tempScript}" "${filePath}"`;
-
-            const { stdout } = await execAsync(command, {
-                timeout: 30000,
-                maxBuffer: 20 * 1024 * 1024
-            });
-
-            return stdout.toString().trim();
+            return (await runPython(tempScript, filePath)).trim();
         } finally {
             await fs.unlink(tempScript).catch(() => {});
         }
@@ -70,8 +85,9 @@ if __name__ == '__main__':
 
         try {
             // Converting presentation to PDF preserves all text & formatting cleanly
-            await execAsync(
-                `libreoffice --headless --convert-to pdf --outdir "${tempDir}" "${filePath}"`,
+            await execFileAsync(
+                'libreoffice',
+                ['--headless', '--convert-to', 'pdf', '--outdir', tempDir, filePath],
                 { timeout: 90000 }
             );
 
@@ -119,16 +135,7 @@ if __name__ == '__main__':
         await fs.writeFile(tempScript, pythonScript, 'utf-8');
 
         try {
-            const command = process.platform === 'win32' 
-                ? `python "${tempScript}" "${filePath}"` 
-                : `python3 "${tempScript}" "${filePath}" || python "${tempScript}" "${filePath}"`;
-
-            const { stdout } = await execAsync(command, {
-                timeout: 30000,
-                maxBuffer: 20 * 1024 * 1024
-            });
-
-            return stdout.toString().trim();
+            return (await runPython(tempScript, filePath)).trim();
         } finally {
             await fs.unlink(tempScript).catch(() => {});
         }
@@ -151,8 +158,9 @@ if __name__ == '__main__':
         // Method 2: LibreOffice fallback
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'docx-extract-'));
         try {
-            await execAsync(
-                `libreoffice --headless --convert-to txt:"Text" --outdir "${tempDir}" "${filePath}"`,
+            await execFileAsync(
+                'libreoffice',
+                ['--headless', '--convert-to', 'txt:Text', '--outdir', tempDir, filePath],
                 { timeout: 60000 }
             );
 

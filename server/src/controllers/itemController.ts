@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { storageService } from '../services/storageService';
 import { socketService } from '../services/socketService';
 import { addOrUpdateExerciseAgendaTask, removeExerciseAgendaTask } from '../services/agendaService';
+import { sanitizeHtmlSnapshot } from '../utils/sanitizeHtml';
 
 import { prisma } from '../lib/prisma';
 import { Prisma } from '@prisma/client';
@@ -176,6 +177,11 @@ async function downloadAndProcessHtmlPage(targetUrl: string, domain: string): Pr
         if (!/<base\b/i.test(html)) {
             html = html.replace(/<head[^>]*>/i, (match) => match + '\n<base href="' + targetUrl + '">');
         }
+
+        // Strip active content (scripts, forms, embeds) before persisting: this snapshot is later
+        // rendered in an iframe and can also be downloaded and opened locally with no sandbox at all,
+        // so the stored file itself must never carry executable code from the source page.
+        html = sanitizeHtmlSnapshot(html);
 
         const cleanDomain = domain.replace(/[^a-zA-Z0-9.-]/g, '_');
         const htmlFileName = `${cleanDomain}-${Date.now()}.html`;

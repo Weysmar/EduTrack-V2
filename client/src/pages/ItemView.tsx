@@ -36,6 +36,7 @@ import { EditItemModal } from '@/components/EditItemModal'
 import { TTSControls } from '@/components/TTSControls'
 
 import { itemQueries, courseQueries } from '@/lib/api/queries'
+import { apiClient } from '@/lib/api/client'
 import { Editor } from '@/components/Editor'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Check, X as Cancel } from 'lucide-react'
@@ -137,6 +138,10 @@ export function ItemView() {
         }
     }, [isFocusMode])
     const [isImageFullscreen, setIsImageFullscreen] = useState(false)
+    // Sanitized HTML content for the embedded "link" snapshot reader — fetched with the normal
+    // Authorization header (never as a token in the iframe's URL, which a script inside a
+    // compromised snapshot could otherwise read straight off window.location).
+    const [linkSnapshotHtml, setLinkSnapshotHtml] = useState<string | null>(null)
     const [isAIMenuOpen, setIsAIMenuOpen] = useState(false) // Manual control for mobile compatibility
     const [mobileTab, setMobileTab] = useState<'pdf' | 'summary'>('pdf')
 
@@ -297,6 +302,18 @@ export function ItemView() {
         return null
     }, [sideBySideItem, token])
 
+    // Fetch the "link" HTML snapshot via the normal authenticated API client (Bearer header)
+    // instead of embedding the JWT in the iframe's src URL — a script running inside a
+    // compromised snapshot could otherwise read that token straight off its own location.
+    useEffect(() => {
+        setLinkSnapshotHtml(null)
+        if (item?.type !== 'link' || !item?.storageKey) return
+        let cancelled = false
+        apiClient.get(`/storage/proxy/${item.storageKey}`, { responseType: 'text' })
+            .then((res) => { if (!cancelled) setLinkSnapshotHtml(res.data) })
+            .catch((err) => console.error('Failed to load link snapshot:', err))
+        return () => { cancelled = true }
+    }, [item?.type, item?.storageKey])
 
     // Handle Escape key to exit focus mode and image fullscreen
     useEffect(() => {
@@ -1334,11 +1351,10 @@ export function ItemView() {
                                             isFocusMode ? "flex-1 min-h-0 h-full" : "h-[75vh] md:h-[82vh]"
                                         )}>
                                             <iframe
-                                                src={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : undefined}
-                                                srcDoc={(item as any).htmlSnapshot || undefined}
+                                                srcDoc={(item as any).htmlSnapshot || linkSnapshotHtml || undefined}
                                                 title={item.title}
                                                 className="w-full h-full border-0 bg-white"
-                                                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                                                sandbox="allow-same-origin"
                                             />
                                         </div>
                                     </div>

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { socketService } from '../services/socketService';
+import { storageService } from '../services/storageService';
 
 import { prisma } from '../lib/prisma';
 interface AuthRequest extends Request {
@@ -118,8 +119,44 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
 };
 
 // DELETE /api/courses/:id
+// Deleting a course is a hard, unrecoverable delete of every item it contains (the trash/soft-delete
+// system only exists at the item level — a course's items don't go through it). Since that cascade
+// used to bypass application cleanup entirely, it left the physical files in storage forever
+// (never removed) and orphaned Summary/FlashcardSet rows (no DB-level FK on those, so no cascade
+// cleans them up either). We now clean up both explicitly before letting the cascade delete run,
+// mirroring what permanentDeleteItem already does for a single item.
 export const deleteCourse = async (req: AuthRequest, res: Response) => {
     try {
+        const course = await prisma.course.findFirst({
+            where: { id: req.params.id, profileId: req.user!.id }
+        });
+
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        const items = await prisma.item.findMany({
+            where: { courseId: course.id },
+            select: { id: true, storageKey: true }
+        });
+
+        for (const item of items) {
+            if (item.storageKey) {
+                await storageService.deleteFile(item.storageKey).catch(err =>
+                    console.warn('Failed to delete physical file during course deletion:', err)
+                );
+            }
+        }
+
+        const itemIds = items.map(i => i.id);
+        if (itemIds.length > 0) {
+            await prisma.summary.deleteMany({
+                where: { OR: [{ itemId: { in: itemIds } }, { generatedItemId: { in: itemIds } }] }
+            }).catch(() => {});
+
+            await prisma.flashcardSet.deleteMany({
+                where: { itemId: { in: itemIds } }
+            }).catch(() => {});
+        }
+
         const result = await prisma.course.deleteMany({
             where: { id: req.params.id, profileId: req.user!.id }
         });
@@ -129,7 +166,7 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
         // Notify clients
         socketService.emitToProfile(req.user!.id, 'course:deleted', { id: req.params.id });
 
-        res.json({ message: 'Course deleted' });
+        res.json({ message: 'Course deleted', itemsDeleted: items.length });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting course', error });
     }

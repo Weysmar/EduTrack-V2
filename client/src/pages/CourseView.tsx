@@ -7,7 +7,7 @@ import { EditCourseModal } from '@/components/EditCourseModal'
 import { BulkActionBar, BulkGenerateMode } from '@/components/BulkActionBar'
 import { GenerateExerciseModal, RevisionGenerationMode } from '@/components/GenerateExerciseModal'
 import { useLanguage } from '@/components/language-provider'
-import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2, MoreHorizontal } from 'lucide-react'
+import { Trash2, FolderOpen, Plus, Pencil, Calendar as CalendarIcon, ArrowLeft, Menu, HardDriveDownload, Check, Loader2, MoreHorizontal, AlertTriangle, X } from 'lucide-react'
 import { TrashModal } from '@/components/TrashModal'
 import { SummaryPanel } from '@/components/SummaryPanel'
 import { useAuthStore } from '@/store/authStore'
@@ -86,6 +86,7 @@ export function CourseView() {
     const [isTasksModalOpen, setIsTasksModalOpen] = useState(false)
     const [isTrashModalOpen, setIsTrashModalOpen] = useState(false)
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
+    const [isDeleteCourseModalOpen, setIsDeleteCourseModalOpen] = useState(false)
 
     // Course Tasks Query
     const { data: courseTasks = [] } = useQuery({
@@ -167,11 +168,14 @@ export function CourseView() {
         }
     })
 
-    const handleDelete = useCallback(async () => {
-        if (confirm(t('course.delete.confirm'))) {
-            deleteCourseMutation.mutate(id)
-        }
-    }, [t, deleteCourseMutation, id])
+    const handleDelete = useCallback(() => {
+        setIsDeleteCourseModalOpen(true)
+    }, [])
+
+    const confirmDeleteCourse = useCallback(() => {
+        setIsDeleteCourseModalOpen(false)
+        deleteCourseMutation.mutate(id)
+    }, [deleteCourseMutation, id])
 
     const handleBulkDelete = async () => {
         if (selectedItems.size === 0) return
@@ -553,6 +557,61 @@ export function CourseView() {
                 onClose={() => setIsTrashModalOpen(false)}
                 currentCourseId={id}
             />
+
+            {/* Deleting a whole course bypasses the item-level trash entirely (Item.courseId is
+                mandatory, so items can't be soft-deleted independently of their course) — unlike
+                every other delete action in the app, this one offers no restore. The generic
+                confirm() previously used here didn't convey that difference, so this dedicated
+                modal states the item count and the irreversibility explicitly. */}
+            {isDeleteCourseModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="w-full max-w-md bg-card rounded-2xl border shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                                <AlertTriangle className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-base font-bold">
+                                    {language === 'fr' ? 'Supprimer définitivement ce cours ?' : 'Permanently delete this course?'}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {language === 'fr'
+                                        ? `« ${course.title} » et ${activeCourseItems.length} élément(s) (notes, fichiers, exercices...) seront supprimés immédiatement. `
+                                        : `"${course.title}" and ${activeCourseItems.length} item(s) (notes, files, exercises...) will be deleted immediately. `}
+                                    <strong className="text-foreground">
+                                        {language === 'fr'
+                                            ? "Contrairement à la suppression d'un élément seul, cette action ne passe PAS par la corbeille et est définitive."
+                                            : "Unlike deleting a single item, this does NOT go through the trash and cannot be undone."}
+                                    </strong>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsDeleteCourseModalOpen(false)}
+                                className="p-1 hover:bg-muted rounded-md shrink-0"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button
+                                onClick={() => setIsDeleteCourseModalOpen(false)}
+                                className="px-4 py-2 text-sm font-medium rounded-md border hover:bg-muted transition-colors"
+                            >
+                                {language === 'fr' ? 'Annuler' : 'Cancel'}
+                            </button>
+                            <button
+                                onClick={confirmDeleteCourse}
+                                disabled={deleteCourseMutation.isPending}
+                                className="px-4 py-2 text-sm font-medium rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {deleteCourseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {language === 'fr' ? 'Supprimer définitivement' : 'Permanently delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

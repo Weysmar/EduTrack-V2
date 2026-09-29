@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { sanitizeFilename, sanitizeKey, isPathWithinBase } from '../utils/sanitizePath';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -27,7 +28,11 @@ export const storageService = {
 
     async uploadFile(file: Express.Multer.File): Promise<{ url: string; key: string }> {
         const safeName = sanitizeFilename(file.originalname);
-        const key = `${Date.now()}-${safeName}`;
+        // A random, unguessable prefix instead of a millisecond timestamp: the old
+        // `${Date.now()}-${name}` key was predictable enough to enumerate/brute-force (see the
+        // storage IDOR fix in storageController.ts) and could theoretically collide under
+        // concurrent uploads in the same millisecond, silently overwriting another file.
+        const key = `${crypto.randomUUID()}-${safeName}`;
 
         if (STORAGE_TYPE === 's3') {
             const command = new PutObjectCommand({

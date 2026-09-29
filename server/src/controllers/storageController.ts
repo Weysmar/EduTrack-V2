@@ -1,17 +1,18 @@
 import { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import crypto from 'crypto';
 import { storageService } from '../services/storageService';
 import { sanitizeKey, isPathWithinBase } from '../utils/sanitizePath';
+import { prisma } from '../lib/prisma';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
 const STORAGE_TYPE = process.env.STORAGE_TYPE || 'local';
-const URL_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
-
-// export const getSignedUrl = ... (Removed for Option 3)
 
 import sharp from 'sharp';
+
+interface AuthRequest extends Request {
+    user?: { id: string };
+}
 
 export const servePublicFile = async (req: Request, res: Response) => {
     try {
@@ -95,7 +96,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
     }
 };
 
-export const proxyFile = async (req: Request, res: Response) => {
+export const proxyFile = async (req: AuthRequest, res: Response) => {
     try {
         const rawKey = req.params.key;
 
@@ -103,7 +104,30 @@ export const proxyFile = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Key is required' });
         }
 
+        if (!req.user?.id) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
         const key = sanitizeKey(rawKey);
+
+        // Ownership check: this route is authenticated but was otherwise willing to serve ANY
+        // key to ANY logged-in user — since storage keys are just visible in item data returned
+        // to every user, that let one profile read another profile's files. A key is only ever
+        // referenced by an Item's storageKey (main file) or thumbnailUrl (generated thumbnail).
+        const owningItem = await prisma.item.findFirst({
+            where: {
+                profileId: req.user.id,
+                OR: [
+                    { storageKey: key },
+                    { thumbnailUrl: { endsWith: `/${key}` } }
+                ]
+            },
+            select: { id: true }
+        });
+
+        if (!owningItem) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
 
         if (STORAGE_TYPE === 'local') {
             const baseDir = path.join(process.cwd(), UPLOAD_DIR);
