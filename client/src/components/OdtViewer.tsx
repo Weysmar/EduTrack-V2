@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import DOMPurify from 'dompurify';
 import { Loader2, AlertCircle, Download, FileText, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
@@ -14,6 +14,10 @@ export function OdtViewer({ url, className = "" }: OdtViewerProps) {
     const [error, setError] = useState<string | null>(null);
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [zoom, setZoom] = useState(100);
+    // Blob URLs created for this document's embedded images — revoked on the next load or
+    // unmount (see cleanup below). Previously never revoked at all: every embedded picture in
+    // every ODT viewed leaked its decoded blob for the lifetime of the tab.
+    const objectUrlsRef = useRef<string[]>([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -47,6 +51,7 @@ export function OdtViewer({ url, className = "" }: OdtViewerProps) {
                         const imgBlob = await zip.file(imgPath)!.async('blob');
                         const imgUrl = URL.createObjectURL(imgBlob);
                         imageMap.set(imgPath, imgUrl);
+                        objectUrlsRef.current.push(imgUrl);
                     } catch (_) {}
                 }
 
@@ -150,6 +155,8 @@ export function OdtViewer({ url, className = "" }: OdtViewerProps) {
 
         return () => {
             isMounted = false;
+            objectUrlsRef.current.forEach(u => URL.revokeObjectURL(u));
+            objectUrlsRef.current = [];
         };
     }, [url]);
 

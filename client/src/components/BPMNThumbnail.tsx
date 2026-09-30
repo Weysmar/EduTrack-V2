@@ -11,13 +11,27 @@ interface BPMNThumbnailProps {
     onError?: () => void;
 }
 
-// Global caches to ensure diagrams are only fetched & parsed once per session
+// Global caches to ensure diagrams are only fetched & parsed once per session.
+// Capped (simple insertion-order eviction) so a long session browsing many distinct BPMN
+// files doesn't grow these indefinitely.
+const BPMN_CACHE_MAX_ENTRIES = 100;
 const bpmnSvgCache = new Map<string, string>();
 const bpmnFetchCache = new Map<string, Promise<ArrayBuffer>>();
+
+function cachedSet<V>(cache: Map<string, V>, key: string, value: V) {
+    cache.set(key, value);
+    if (cache.size > BPMN_CACHE_MAX_ENTRIES) {
+        const oldestKey = cache.keys().next().value;
+        if (oldestKey !== undefined) cache.delete(oldestKey);
+    }
+}
 
 export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbnailProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<BpmnNavigatedViewer | null>(null);
+    // Tracks a blob URL extracted from a BPM archive (image fallback) for revocation — this path
+    // bypasses bpmnSvgCache entirely, so a fresh blob was created (and leaked) on every mount.
+    const imgSrcRef = useRef<string | null>(null);
 
     const [svg, setSvg] = useState<string | null>(() => bpmnSvgCache.get(url) || null);
     const [imgSrc, setImgSrc] = useState<string | null>(null);
@@ -51,7 +65,7 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                         if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
                         return res.arrayBuffer();
                     });
-                    bpmnFetchCache.set(url, fetchPromise);
+                    cachedSet(bpmnFetchCache, url, fetchPromise);
                 }
 
                 const buffer = await fetchPromise;
@@ -61,6 +75,7 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                 if (!isMounted) return;
 
                 if (parsed.type === 'image' && parsed.imageUrl) {
+                    imgSrcRef.current = parsed.imageUrl;
                     setImgSrc(parsed.imageUrl);
                     setLoading(false);
                     return;
@@ -126,7 +141,7 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                         if (!responsiveSvg.includes('preserveAspectRatio')) {
                             responsiveSvg = responsiveSvg.replace('<svg ', '<svg preserveAspectRatio="xMidYMid meet" ');
                         }
-                        bpmnSvgCache.set(url, responsiveSvg);
+                        cachedSet(bpmnSvgCache, url, responsiveSvg);
                         if (isMounted) {
                             setSvg(responsiveSvg);
                         }
@@ -157,6 +172,10 @@ export function BPMNThumbnail({ url, fileName, className, onError }: BPMNThumbna
                     viewerRef.current.destroy();
                 } catch (_) {}
                 viewerRef.current = null;
+            }
+            if (imgSrcRef.current) {
+                URL.revokeObjectURL(imgSrcRef.current);
+                imgSrcRef.current = null;
             }
         };
     }, [url, onError]);

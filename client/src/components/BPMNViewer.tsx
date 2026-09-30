@@ -40,6 +40,9 @@ export function BPMNViewer({
 }: BPMNViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const viewerRef = useRef<BpmnNavigatedViewer | null>(null)
+    // Tracks the blob URL created for an image extracted from a BPM archive (see
+    // parseProcessModelData) so it can be revoked — previously never freed.
+    const extractedImageUrlRef = useRef<string | null>(null)
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -115,6 +118,7 @@ export function BPMNViewer({
                 if (!isMounted) return
 
                 if (parsed.type === 'image' && parsed.imageUrl) {
+                    extractedImageUrlRef.current = parsed.imageUrl
                     setExtractedImageUrl(parsed.imageUrl)
                     setLoading(false)
                     return
@@ -180,6 +184,10 @@ export function BPMNViewer({
                     console.warn("Viewer destroy error on unmount:", err)
                 }
                 viewerRef.current = null
+            }
+            if (extractedImageUrlRef.current) {
+                URL.revokeObjectURL(extractedImageUrlRef.current)
+                extractedImageUrlRef.current = null
             }
         }
     }, [url, key])

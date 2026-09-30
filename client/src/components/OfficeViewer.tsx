@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FileText, Download, RefreshCw, Laptop, Minimize, Pencil } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { FileText, Download, RefreshCw, Laptop, Minimize, Pencil, Loader2 } from 'lucide-react';
 import { DocxViewer } from './DocxViewer';
 import { OdtViewer } from './OdtViewer';
 import { useLanguage } from './language-provider';
@@ -27,6 +27,13 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
         isOdt ? 'google' : 'microsoft'
     );
     const [hasError, setHasError] = useState(false);
+    // Cross-origin iframes never fire a real `error` event when Google/Microsoft's viewer loads
+    // successfully but renders its OWN "can't preview this file" page inside — the frame's load
+    // itself still "succeeds" from the browser's point of view. The one failure mode we *can*
+    // reliably detect is the frame never loading at all (blocked by a corporate firewall, an
+    // ad/tracker blocker, or the service being down): time out if `onLoad` never fires.
+    const [isIframeLoading, setIsIframeLoading] = useState(true);
+    const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const engine = controlledEngine || internalEngine;
     const setEngine = (newEngine: 'google' | 'microsoft' | 'local') => {
@@ -38,8 +45,6 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
         }
     };
 
-
-
     // Construct direct public URL
     const getPublicUrl = () => {
         if (!storageKey) return initialUrl;
@@ -50,6 +55,32 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     };
 
     const viewerUrl = getPublicUrl();
+
+    // Reset the error/loading state and (re)arm the load-timeout whenever we actually (re)point
+    // the iframe at a new src (document changed, or engine switched between google/microsoft).
+    // Previously `hasError` only ever reset on an explicit engine switch, so an error from a
+    // previous document could stay stuck on screen for a new one reusing the same component.
+    useEffect(() => {
+        if (engine !== 'google' && engine !== 'microsoft') return;
+
+        setHasError(false);
+        setIsIframeLoading(true);
+
+        if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = setTimeout(() => {
+            setIsIframeLoading(false);
+            setHasError(true);
+        }, 15000);
+
+        return () => {
+            if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
+        };
+    }, [viewerUrl, engine]);
+
+    const handleIframeLoad = () => {
+        if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
+        setIsIframeLoading(false);
+    };
 
     if (!viewerUrl) return null;
 
@@ -295,12 +326,21 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
 
             {/* Viewer Iframe */}
             <div className="flex-1 relative bg-white dark:bg-slate-950">
+                {isIframeLoading && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-950">
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                        <p className="text-sm text-muted-foreground">
+                            {t('document.viewerLoading') || `Chargement de l'aperçu (${engine === 'google' ? 'Google' : 'Microsoft'})...`}
+                        </p>
+                    </div>
+                )}
                 <iframe
                     key={engine}
                     src={currentSrc}
                     title={t('document.viewer')}
                     className="absolute inset-0 w-full h-full border-0"
                     allowFullScreen
+                    onLoad={handleIframeLoad}
                     onError={() => setHasError(true)}
                     allow="clipboard-write; autoplay"
                 />

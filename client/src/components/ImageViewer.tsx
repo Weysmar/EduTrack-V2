@@ -65,6 +65,12 @@ export function ImageViewer({
 
     useEffect(() => {
         let isMounted = true;
+        // Track the blob URL created by THIS effect run in a local variable rather than relying
+        // on the `displayUrl` state: setDisplayUrl() resolves asynchronously after this effect's
+        // cleanup closure has already been captured, so a cleanup that reads `displayUrl` from
+        // the outer scope always sees the previous render's value (often null) — the freshly
+        // created blob for the HEIC conversion was never revoked as a result.
+        let createdUrl: string | null = null;
         setLoading(true);
         setError(null);
 
@@ -90,13 +96,17 @@ export function ImageViewer({
                         quality: 0.8
                     });
 
+                    const newUrl = URL.createObjectURL(Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob);
                     if (isMounted) {
-                        const newUrl = URL.createObjectURL(Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob);
+                        createdUrl = newUrl;
                         setDisplayUrl(newUrl);
+                    } else {
+                        // Effect was already cleaned up (url changed / unmounted) before conversion finished
+                        URL.revokeObjectURL(newUrl);
                     }
                 } else {
                     // Regular image
-                    setDisplayUrl(url);
+                    if (isMounted) setDisplayUrl(url);
                 }
             } catch (err) {
                 console.error("Image loading error:", err);
@@ -110,9 +120,8 @@ export function ImageViewer({
 
         return () => {
             isMounted = false;
-            // Cleanup object URL if we created one for HEIC
-            if (displayUrl && displayUrl !== url) {
-                URL.revokeObjectURL(displayUrl);
+            if (createdUrl) {
+                URL.revokeObjectURL(createdUrl);
             }
         };
     }, [url]);
