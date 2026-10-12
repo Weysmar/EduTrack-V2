@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.1.0] - 2026-10-12
+
+### 🔒 Sécurité (serveur)
+- **Extraction de texte** : le dossier temporaire supprimé après extraction n'est plus dérivé du nom de fichier envoyé (un nom piégé pouvait faire supprimer un répertoire parent).
+- **Fichiers servis** (`/storage/public`, `/storage/proxy`) : HTML, SVG et types inconnus forcés en téléchargement avec une CSP `sandbox`, `nosniff` partout.
+- **Vignettes Office** : l'URL transmise à Microsoft/Google ne contient plus le JWT (helper `getPublicFileUrl`).
+- **Items** : `updateItem` n'accepte plus que les champs éditables ; `createItem` vérifie la propriété du cours et n'accepte qu'une miniature externe ; contrôle de propriété du proxy par égalité exacte.
+- **Dépendances** : `npm audit fix` (plus de vulnérabilité critique ; restent `sharp` — majeure — et `xlsx` — sans correctif).
+
+### 🛟 Fiabilité & pertes de données
+- **Notes** : autosave déclenchée uniquement par les vraies frappes et sérialisée, « Terminer » attend la sauvegarde en cours, flush au démontage, avertissement avant fermeture de l'onglet.
+- **Éditeur Word** : conversion HTML → docx réécrite (tableaux, images, listes imbriquées, couleurs, liens, titres h1-h6), confirmation avant fermeture, édition réservée aux docx/odt, document non rechargé après enregistrement (défilement conservé).
+- **Fichiers** : l'ancien fichier n'est supprimé qu'après upload et mise à jour réussis ; limite multer portée à 50 Mo (notes avec images collées).
+- **Annotations** : plantage de la barre d'outils corrigé, cache mis à jour après sauvegarde, sauvegarde en attente envoyée au démontage.
+- **Dessin** : tracé à main levée et export SVG des formes avec texte corrigés.
+
+### 🤖 Contenu envoyé à l'IA
+- Notes converties du HTML en texte (images base64 retirées), texte calculé au moment de la génération, PDF scannés détectés quel que soit le nombre de pages (OCR), `.doc` extraits par le serveur, `.pptx` correctement extraits pour les cartes mentales.
+- Utilitaire unique `lib/itemSourceText` (vérification `res.ok`, cache réservé au vrai texte).
+
+### ✨ UI / UX
+- **Navigation** : menu principal dans la barre latérale, barre d'onglets mobile, retour hiérarchique, palette de commandes cherchant tous les documents.
+- **Accueil** : section « Continuer » (documents récents), onboarding, squelettes de chargement.
+- **Révision** : répétition espacée guidée (cartes dues, mode entraînement, remise en file des cartes ratées), export Anki, quiz avec revue et « Refaire les erreurs ».
+- **Génération IA** : annulation (AbortController), progression, quota visible, messages d'erreur exploitables, choix du cours depuis un dossier.
+- **Fondations** : pages d'erreur par route, `tailwindcss-animate`, police Inter appliquée, thèmes sombres Nature/Sunset corrigés, `prefers-reduced-motion`, `h-dvh`, ~280 clés i18n ajoutées (parité EN/FR).
+- **Défilement** : feuille A4 de l'éditeur Word et notes longues sur mobile corrigées.
+
+### ⚡ Performance & build
+- Visionneuses, exports (html2pdf, docx), extraction (pdf.js, mammoth, OCR) et `heic2any` chargés à la demande ; `manualChunks` supprimés (préchargés partout) ; bundle de démarrage réduit d'environ 26 %.
+- Docker : Node 22 LTS (Node 20 en fin de vie), `npm ci`, `.dockerignore`.
+
+---
+
 ## [1.5.0] - 2026-04-19
 
 ### 🚀 Performance Backend (Partie 3.1)
