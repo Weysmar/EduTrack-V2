@@ -205,17 +205,48 @@ async function downloadAndProcessHtmlPage(targetUrl: string, domain: string): Pr
     }
 }
 
+const UPDATABLE_ITEM_FIELDS = [
+    'title', 'content', 'status', 'difficulty', 'dueDate', 'tags', 'extractedContent',
+    'fileUrl', 'fileName', 'fileType', 'fileSize'
+] as const;
+
+const parseTags = (tags: unknown): string[] => {
+    if (!tags) return [];
+    if (Array.isArray(tags)) return tags.map(String);
+    if (typeof tags === 'string') {
+        if (tags.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(tags);
+                return Array.isArray(parsed) ? parsed.map(String) : [];
+            } catch {
+                return [];
+            }
+        }
+        return [tags];
+    }
+    return [];
+};
+
 // POST /api/items
 export const createItem = async (req: AuthRequest, res: Response) => {
     try {
-        console.log('Creating item with body:', req.body);
         const { courseId, type, title, content, status, difficulty, tags, dueDate } = req.body;
+
+        // The target course must belong to the caller
+        const course = courseId
+            ? await prisma.course.findFirst({ where: { id: courseId, profileId: req.user!.id }, select: { id: true } })
+            : null;
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
         let fileUrl = req.body.fileUrl || null;
         let storageKey = null;
         let fileName = req.body.fileName || null;
         let fileSize = null;
 
-        let thumbnailUrl = req.body.thumbnailUrl || null;
+        // Client-supplied thumbnails are only external images (link previews): a local "/uploads/<key>"
+        // value would make the storage proxy treat another user's file as belonging to this item
+        const requestedThumbnail = typeof req.body.thumbnailUrl === 'string' ? req.body.thumbnailUrl : '';
+        let thumbnailUrl = /^https?:\/\//i.test(requestedThumbnail) ? requestedThumbnail : null;
         let fileType = req.body.fileType || (type === 'link' ? 'text/html' : null);
 
         let extractedContent: string | null = null;
@@ -282,7 +313,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
                 status,
                 difficulty,
                 dueDate: (parsedDueDate && !isNaN(parsedDueDate.getTime())) ? parsedDueDate : null,
-                tags: tags ? (typeof tags === 'string' ? (tags.startsWith('[') ? JSON.parse(tags) : [tags]) : tags) : [],
+                tags: parseTags(tags),
                 fileUrl,
                 storageKey,
                 fileName,
@@ -326,12 +357,13 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
 
         if (!item) return res.status(404).json({ message: 'Item not found' });
 
-        const updateData: any = { ...req.body };
-
-        // Sanitize data: remove 'file' property which comes from FormData implies by multer/body-parser but is not in Prisma schema
-        console.log("Before sanitize:", Object.keys(updateData));
-        delete updateData.file;
-        console.log("After sanitize:", Object.keys(updateData));
+        // Only client-editable fields: spreading req.body let a client rewrite profileId, courseId, deletedAt,
+        // storageKey or thumbnailUrl (the latter two are trusted by the storage proxy's ownership check)
+        const updateData: any = {};
+        for (const field of UPDATABLE_ITEM_FIELDS) {
+            if (req.body[field] !== undefined) updateData[field] = req.body[field];
+        }
+        if (updateData.tags !== undefined) updateData.tags = parseTags(updateData.tags);
 
         // Ensure fileSize is Int if present (from body, before potential overwrite)
         if (updateData.fileSize && typeof updateData.fileSize === 'string') {

@@ -217,8 +217,8 @@ export const extractFromODT = async (
     }
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'odt-extract-'));
-    const safeName = path.basename(filename) || 'document.odt';
-    const tempFilePath = path.join(tempDir, safeName);
+    // Fixed name: a client-controlled basename such as ".." would resolve outside tempDir
+    const tempFilePath = path.join(tempDir, 'document.odt');
 
     try {
         await fs.writeFile(tempFilePath, buffer);

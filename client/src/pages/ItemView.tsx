@@ -953,7 +953,6 @@ export function ItemView() {
                     isOffice={!!isOffice}
                     isPdf={isPdf}
                     isBpmn={isBpmn}
-                    API_URL={API_URL}
                     officeEngine={officeEngine}
                     pdfUrl={pdfUrl}
                     handleDownload={handleDownload}

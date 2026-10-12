@@ -10,3 +10,14 @@ export const getApiUrl = (): string => {
 };
 
 export const API_URL = getApiUrl();
+
+/**
+ * Absolute, token-free URL of a stored file, for third-party viewers (Microsoft Office / Google Docs)
+ * that must fetch the file themselves. Never hand them a /storage/proxy URL: it carries the user's JWT.
+ */
+export const getPublicFileUrl = (storageKey: string): string => {
+    const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+    const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+    const cleanKey = storageKey.startsWith('/') ? storageKey : `/${storageKey}`;
+    return `${cleanApiBase}/storage/public${cleanKey}`;
+};

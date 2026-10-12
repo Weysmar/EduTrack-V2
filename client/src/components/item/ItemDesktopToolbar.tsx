@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { getPublicFileUrl } from '@/config';
 import { useLanguage } from '@/components/language-provider';
 import { RevisionGenerationMode } from '@/components/GenerateExerciseModal';
 import { TTSControls } from '@/components/TTSControls';
@@ -13,7 +14,6 @@ interface ItemDesktopToolbarProps {
     isOffice: boolean;
     isPdf?: boolean;
     isBpmn?: boolean;
-    API_URL: string;
     officeEngine: 'google' | 'microsoft' | 'local';
     pdfUrl: string | null;
     handleDownload?: () => void;
@@ -43,7 +43,7 @@ interface ItemDesktopToolbarProps {
 }
 
 export function ItemDesktopToolbar({
-    item, course, isText, isMarkdown, isOffice, isPdf, isBpmn, API_URL, officeEngine, pdfUrl, handleDownload,
+    item, course, isText, isMarkdown, isOffice, isPdf, isBpmn, officeEngine, pdfUrl, handleDownload,
     handleSyncDrive, isSyncingDrive, handleExportNotePdf, isExportingNotePdf,
     setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
@@ -61,10 +61,7 @@ export function ItemDesktopToolbar({
     if (item.type === 'link' && item.fileUrl) {
         targetUrl = item.fileUrl;
     } else if (item.storageKey) {
-        const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
-        const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-        const cleanKey = item.storageKey.startsWith('/') ? item.storageKey : `/${item.storageKey}`;
-        const publicRawUrl = `${cleanApiBase}/storage/public${cleanKey}`;
+        const publicRawUrl = getPublicFileUrl(item.storageKey);
 
         const isOdt = item.fileName?.toLowerCase().endsWith('.odt') || item.fileData?.toLowerCase().endsWith('.odt');
         if (isOffice) {

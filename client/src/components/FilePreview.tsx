@@ -15,9 +15,11 @@ interface FilePreviewProps {
     fileType?: string;
     className?: string;
     showThumbnails?: boolean;
+    /** Token-free URL that third-party Office/Google viewers may fetch (see getPublicFileUrl) */
+    externalViewerUrl?: string | null;
 }
 
-export const FilePreview = memo(({ url, fileName, fileType, className, showThumbnails = true }: FilePreviewProps) => {
+export const FilePreview = memo(({ url, fileName, fileType, className, showThumbnails = true, externalViewerUrl }: FilePreviewProps) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -187,9 +189,12 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
     // 3. Office Live Thumbnails (PPTX, Excel, Word)
     // ENABLED: User requested thumbnails for all formats.
     // Note: This may cause console errors/warnings due to multiple Office Live iframes.
-    if ((isWord || isPPT || isExcel) && url && showThumbnails) {
+    // The file URL is handed to Microsoft/Google: never let an authenticated URL (?token=JWT) leave the app
+    const externalSourceUrl = externalViewerUrl || url;
+    const canUseExternalViewer = !!externalSourceUrl && !/[?&]token=/.test(externalSourceUrl);
+    if ((isWord || isPPT || isExcel) && externalSourceUrl && canUseExternalViewer && showThumbnails) {
         // Construct absolute URL for external viewers
-        const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+        const fullUrl = externalSourceUrl.startsWith('http') ? externalSourceUrl : `${window.location.origin}${externalSourceUrl}`;
         const isOdt = ext === 'odt';
         const viewerUrl = isOdt
             ? `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`

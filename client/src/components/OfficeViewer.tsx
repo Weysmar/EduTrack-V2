@@ -3,7 +3,7 @@ import { FileText, Download, RefreshCw, Laptop, Minimize, Pencil, Loader2 } from
 import { DocxViewer } from './DocxViewer';
 import { OdtViewer } from './OdtViewer';
 import { useLanguage } from './language-provider';
-import { API_URL } from '@/config';
+import { getPublicFileUrl } from '@/config';
 
 interface OfficeViewerProps {
     url: string;
@@ -46,13 +46,7 @@ export function OfficeViewer({ url: initialUrl, storageKey, className = "", engi
     };
 
     // Construct direct public URL
-    const getPublicUrl = () => {
-        if (!storageKey) return initialUrl;
-        const apiBase = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
-        const cleanApiBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-        const cleanPath = storageKey.startsWith('/') ? storageKey : `/${storageKey}`;
-        return `${cleanApiBase}/storage/public${cleanPath}`;
-    };
+    const getPublicUrl = () => storageKey ? getPublicFileUrl(storageKey) : initialUrl;
 
     const viewerUrl = getPublicUrl();
 

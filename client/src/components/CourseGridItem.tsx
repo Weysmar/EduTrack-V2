@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { CheckSquare, FileText, Dumbbell, Calendar, Brain, Layers, FileCheck, BookOpen, FileEdit, BrainCircuit, Scale, Globe, ExternalLink, Download } from 'lucide-react';
 import { FilePreview } from '@/components/FilePreview';
 import { useLanguage } from '@/components/language-provider';
-import { API_URL } from '@/config';
+import { API_URL, getPublicFileUrl } from '@/config';
 import { useAuthStore } from '@/store/authStore';
 
 interface CourseGridItemProps {
@@ -102,6 +102,7 @@ export const CourseGridItem = memo(({ item, isSelected, showThumbnails, onToggle
                         ) : (
                             <FilePreview
                                 url={item.storageKey ? `${API_URL}/storage/proxy/${item.storageKey}?token=${token}` : item.fileUrl}
+                                externalViewerUrl={item.storageKey ? getPublicFileUrl(item.storageKey) : item.fileUrl}
                                 fileName={item.fileName}
                                 fileType={item.fileType}
                                 showThumbnails={showThumbnails}

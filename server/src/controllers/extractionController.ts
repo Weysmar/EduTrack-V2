@@ -13,19 +13,23 @@ interface AuthRequest extends Request {
 
 // POST /api/extract
 export const extractText = async (req: AuthRequest, res: Response) => {
-    let tempFilePath: string | null = null;
+    // Only this dedicated directory is ever deleted. Never derive the cleanup target from a path built
+    // with the client-supplied filename: a name like ".." resolved to the parent directory, and the
+    // recursive cleanup then deleted os.tmpdir() or "/".
+    let tempDir: string | null = null;
 
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file provided' });
         }
 
-        // Save uploaded file temporarily
+        // Save uploaded file temporarily under a fixed name: only the extension is needed (it drives
+        // the extraction method), and it is restricted to a plain alphanumeric suffix
         // deepcode ignore NoRateLimitingForExpensiveWebOperation: multer handles size limits before buffer is populated
-        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'upload-'));
-        const safeName = sanitizeFilename(req.file.originalname);
-        tempFilePath = path.join(tempDir, safeName);
-        // deepcode ignore PT: original name is fully sanitized into a flat filename
+        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'upload-'));
+        const ext = path.extname(sanitizeFilename(req.file.originalname)).toLowerCase();
+        const safeExt = /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : '';
+        const tempFilePath = path.join(tempDir, `input${safeExt}`);
         await fs.writeFile(tempFilePath, req.file.buffer);
 
         // Extract text
@@ -40,8 +44,7 @@ export const extractText = async (req: AuthRequest, res: Response) => {
         });
     } finally {
         // Cleanup
-        if (tempFilePath) {
-            const tempDir = path.dirname(tempFilePath);
+        if (tempDir) {
             await fs.rm(tempDir, { recursive: true, force: true }).catch(console.error);
         }
     }

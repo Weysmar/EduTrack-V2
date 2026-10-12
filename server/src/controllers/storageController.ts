@@ -14,6 +14,30 @@ interface AuthRequest extends Request {
     user?: { id: string };
 }
 
+// File types that browsers render inline without executing scripts. Anything else (HTML, SVG, XML,
+// JS, unknown types...) is served from the app's own origin, so rendering it inline would let an
+// uploaded file run script with access to the session token: force a download and sandbox it.
+const INLINE_SAFE_EXTENSIONS = new Set([
+    '.pdf',
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.bmp', '.tif', '.tiff', '.heic', '.heif',
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp',
+    '.txt', '.csv', '.md', '.json', '.log',
+    '.mp3', '.wav', '.ogg', '.m4a', '.mp4', '.webm', '.mov'
+]);
+
+const isInlineSafe = (filePath: string) => INLINE_SAFE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+
+const applySafeServingHeaders = (res: Response, filePath: string, frameAncestors?: string) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const directives: string[] = [];
+    if (!isInlineSafe(filePath)) {
+        res.setHeader('Content-Disposition', 'attachment');
+        directives.push('sandbox');
+    }
+    if (frameAncestors) directives.push(`frame-ancestors ${frameAncestors}`);
+    if (directives.length > 0) res.setHeader('Content-Security-Policy', directives.join('; '));
+};
+
 export const servePublicFile = async (req: Request, res: Response) => {
     try {
         // Handle wildcard match for nested keys
@@ -39,6 +63,7 @@ export const servePublicFile = async (req: Request, res: Response) => {
             if (fs.existsSync(filePath)) {
                 res.setHeader('Access-Control-Allow-Origin', '*'); // Allow Google/MS to fetch
                 res.removeHeader('X-Frame-Options');
+                applySafeServingHeaders(res, filePath);
 
                 // Check for resizing request
                 if (width && !isNaN(Number(width))) {
@@ -119,7 +144,9 @@ export const proxyFile = async (req: AuthRequest, res: Response) => {
                 profileId: req.user.id,
                 OR: [
                     { storageKey: key },
-                    { thumbnailUrl: { endsWith: `/${key}` } }
+                    // Exact match on the URL the server generates for local thumbnails: a suffix match
+                    // accepted any client-chosen URL ending with "/<key>" (e.g. "https://x/<key>")
+                    { thumbnailUrl: `/uploads/${key}` }
                 ]
             },
             select: { id: true }
@@ -140,7 +167,7 @@ export const proxyFile = async (req: AuthRequest, res: Response) => {
             if (fs.existsSync(filePath)) {
                 // Explicitly allow framing for PDF viewer
                 res.removeHeader('X-Frame-Options');
-                res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+                applySafeServingHeaders(res, filePath, "'self' *");
                 // deepcode ignore PT: path is rigorously validated
                 return res.sendFile(filePath);
             } else {
