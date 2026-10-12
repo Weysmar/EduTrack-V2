@@ -14,6 +14,7 @@ import { useSummary } from '@/hooks/useSummary'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { useProfileStore } from '@/store/profileStore'
 import { useUIStore } from '@/store/uiStore'
+import { getItemSourceText } from '@/lib/itemSourceText'
 
 export function FolderView() {
     const { folderId } = useParams()
@@ -111,7 +112,8 @@ export function FolderView() {
             const itemsToProcess: string[] = []
 
             for (const i of filteredItems) {
-                let itemText = i.extractedContent || i.content || ''
+                // Notes are converted from editor HTML (base64 images dropped) instead of sent raw
+                const itemText = getItemSourceText(i)
                 if (itemText.trim().length > 0) {
                     itemsToProcess.push(`\n\n### ${i.title}\n(${i.type})\n${itemText}`)
                 }

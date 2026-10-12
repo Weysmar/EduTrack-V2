@@ -8,7 +8,7 @@ import { API_URL } from '@/config'
 import { useSummary } from '@/hooks/useSummary'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
-import { extractText } from '@/lib/extractText'
+import { getItemSourceText, needsFileExtraction, extractItemFileText, hasMeaningfulText } from '@/lib/itemSourceText'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar, ArrowLeftRight, RefreshCw, X as CloseIcon, Globe } from 'lucide-react'
@@ -171,11 +171,13 @@ export function ItemView() {
                 setEditedContent(item.content || '')
                 seededItemIdRef.current = String(item.id)
             }
-            if (item.extractedContent) {
-                setExerciseContent(item.extractedContent)
-            }
         }
     }, [item, isEditMode])
+
+    // The text handed to the generation modal belongs to one item: never carry it over to another one
+    useEffect(() => {
+        setExerciseContent('')
+    }, [item?.id])
 
     const pendingContentRef = useRef<string>(editedContent)
     pendingContentRef.current = editedContent
@@ -623,51 +625,44 @@ export function ItemView() {
         }
     };
 
+    // Text for AI generation, computed at click time from the current item (and the note draft being
+    // edited). A file whose text isn't extracted yet is downloaded and extracted once, then cached;
+    // only real text is cached (a scanned PDF's page markers or an error page must not be).
+    const resolveSourceText = async (): Promise<string> => {
+        const liveNoteHtml = isEditMode && item.type === 'note' ? editedContent : undefined
+        const text = getItemSourceText(item, liveNoteHtml)
+        if (!needsFileExtraction(item) || !pdfUrl) return text
+
+        const extracted = await extractItemFileText(item, pdfUrl)
+        if (!hasMeaningfulText(extracted)) return text
+
+        try {
+            await itemQueries.update(String(item.id), { extractedContent: extracted })
+            queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, extractedContent: extracted } : old)
+        } catch (saveError) {
+            console.warn("Could not save extracted content (non-fatal):", saveError)
+        }
+        return extracted
+    }
+
     const handleGenerateSummary = async (options: SummaryOptions = DEFAULT_SUMMARY_OPTIONS) => {
         try {
-            let textContent = exerciseContent || item.extractedContent || item.content || ''
-            if (item.type === 'resource') {
-                if (!textContent) {
-                    if (pdfUrl) {
-                        setIsExtracting(true)
-                        setShowSummary(true)
-                        try {
-                            const res = await fetch(pdfUrl);
-                            const blob = await res.blob();
-                            let safeName = item.fileName || '';
-                            if (!safeName && item.storageKey) {
-                                safeName = item.storageKey.split('-').slice(1).join('-');
-                            }
-                            if (!safeName) {
-                                if (item.fileType?.includes('presentation') || item.fileType?.includes('powerpoint')) {
-                                    safeName = 'presentation.pptx';
-                                } else if (item.fileType?.includes('word') || item.fileType?.includes('officedocument')) {
-                                    safeName = 'document.docx';
-                                } else if (item.fileType?.includes('pdf')) {
-                                    safeName = 'document.pdf';
-                                } else {
-                                    safeName = 'file.bin';
-                                }
-                            }
-                            const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
-                            const extractionResult = await extractText(file)
-                            textContent = extractionResult.text
-                            setExerciseContent(textContent)
-                            if (item.id) {
-                                await itemQueries.update(item.id, { extractedContent: textContent })
-                                queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, extractedContent: textContent } : old)
-                            }
-                        } catch (extractionErr: any) {
-                            console.error("Extraction error:", extractionErr)
-                            setIsExtracting(false)
-                            toast.error("Impossible d'extraire le texte du document", {
-                                description: extractionErr.message || "Vérifiez que le fichier contient du texte exploitable."
-                            });
-                            return
-                        }
-                        setIsExtracting(false)
-                    }
-                }
+            let textContent = ''
+            const willExtract = needsFileExtraction(item) && !!pdfUrl
+            if (willExtract) {
+                setIsExtracting(true)
+                setShowSummary(true)
+            }
+            try {
+                textContent = await resolveSourceText()
+            } catch (extractionErr: any) {
+                console.error("Extraction error:", extractionErr)
+                toast.error("Impossible d'extraire le texte du document", {
+                    description: extractionErr.message || "Vérifiez que le fichier contient du texte exploitable."
+                });
+                return
+            } finally {
+                if (willExtract) setIsExtracting(false)
             }
             if (!textContent || textContent.trim().length === 0) {
                 toast.error("Aucun texte à résumer", {
@@ -685,68 +680,23 @@ export function ItemView() {
 
     const handleOpenExercise = async (mode: RevisionGenerationMode) => {
         // Ensure text is extracted if it's a file
-        let effectiveContent = exerciseContent || item.extractedContent || item.content || '';
-
-        if (item.type === 'resource' && !effectiveContent && pdfUrl) {
-            setIsExtracting(true)
-            try {
-                // Auto-extracting content for exercise generation
-                const res = await fetch(pdfUrl);
-                if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-
-                const blob = await res.blob();
-                let safeName = item.fileName || '';
-                if (!safeName && item.storageKey) {
-                    safeName = item.storageKey.split('-').slice(1).join('-');
-                }
-                if (!safeName) {
-                    if (item.fileType?.includes('presentation') || item.fileType?.includes('powerpoint')) {
-                        safeName = 'presentation.pptx';
-                    } else if (item.fileType?.includes('word') || item.fileType?.includes('officedocument')) {
-                        safeName = 'document.docx';
-                    } else if (item.fileType?.includes('pdf')) {
-                        safeName = 'document.pdf';
-                    } else {
-                        safeName = 'file.bin';
-                    }
-                }
-                const file = new File([blob], safeName, { type: blob.type || item.fileType || 'application/pdf' })
-
-                const extractionResult = await extractText(file)
-                const textContent = extractionResult.text
-
-                if (!textContent || textContent.trim().length < 50) {
-                    toast.warning("Le texte extrait est très court. La génération peut échouer.", {
-                        description: `Longueur: ${textContent?.trim().length || 0} caractères`
-                    });
-                }
-
-                effectiveContent = textContent;
-                setExerciseContent(textContent);
-
-                try {
-                    if (item.id) {
-                        await itemQueries.update(item.id, { extractedContent: textContent });
-                        queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, extractedContent: textContent } : old);
-                    }
-                } catch (saveError) {
-                    console.warn("Could not save extracted content (non-fatal):", saveError);
-                }
-
-            } catch (e: any) {
-                console.error("Auto-extraction failed:", e);
-                toast.error("Erreur d'extraction du document", {
-                    description: e.message || "Impossible d'extraire le texte du fichier."
-                });
-                setIsExtracting(false);
-                return; // Stop here, don't open modal if extraction failed completely
-            } finally {
-                setIsExtracting(false)
-            }
+        let effectiveContent = '';
+        const willExtract = needsFileExtraction(item) && !!pdfUrl
+        if (willExtract) setIsExtracting(true)
+        try {
+            effectiveContent = await resolveSourceText()
+        } catch (e: any) {
+            console.error("Auto-extraction failed:", e);
+            toast.error("Erreur d'extraction du document", {
+                description: e.message || "Impossible d'extraire le texte du fichier."
+            });
+            return; // Stop here, don't open modal if extraction failed completely
+        } finally {
+            if (willExtract) setIsExtracting(false)
         }
 
         // Stricter validation: check trim() and minimum length
-        const trimmedContent = (effectiveContent || exerciseContent).trim();
+        const trimmedContent = effectiveContent.trim();
         if (!trimmedContent || trimmedContent.length < 50) {
             console.warn("Content too short:", trimmedContent.length, "characters");
             if (trimmedContent.length === 0) {
@@ -771,7 +721,7 @@ export function ItemView() {
         item.fileType?.startsWith('image/') ||
         /\.(jpg|jpeg|png|webp|avif|heic|heif)$/i.test(item.fileName || item.storageKey || '')
     ) ? 'image' as const : 'text' as const;
-    const itemContentLength = (exerciseContent || item.extractedContent || item.content || '').length;
+    const itemContentLength = (exerciseContent || getItemSourceText(item)).length;
 
     return (
         <div className="flex flex-col h-full overflow-hidden animate-in slide-in-from-right-5 duration-300">
@@ -798,7 +748,7 @@ export function ItemView() {
             <GenerateExerciseModal
                 isOpen={isExerciseModalOpen}
                 onClose={() => setIsExerciseModalOpen(false)}
-                sourceContent={exerciseContent || item.extractedContent || item.content || ''}
+                sourceContent={exerciseContent || getItemSourceText(item)}
                 sourceTitle={item?.title || item?.fileName || 'Document'}
                 courseId={String(course?.id || courseId || '')}
                 itemId={String(item?.id || '')}

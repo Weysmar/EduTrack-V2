@@ -119,9 +119,14 @@ def extract(path):
     try:
         with zipfile.ZipFile(path, 'r') as z:
             root = ET.fromstring(z.read('content.xml'))
+            # Whole paragraphs/headings via itertext(): reading elem.text alone dropped the text that
+            # follows a formatted span ("Le <span>theoreme</span> de Pythagore" lost " de Pythagore")
+            text_ns = '{urn:oasis:names:tc:opendocument:xmlns:text:1.0}'
             for elem in root.iter():
-                if elem.text and elem.text.strip():
-                    text_parts.append(elem.text.strip())
+                if elem.tag in (text_ns + 'p', text_ns + 'h'):
+                    paragraph = ''.join(elem.itertext()).strip()
+                    if paragraph:
+                        text_parts.append(paragraph)
     except Exception as e:
         sys.stderr.write(str(e))
         sys.exit(1)
@@ -160,7 +165,9 @@ if __name__ == '__main__':
         try {
             await execFileAsync(
                 'libreoffice',
-                ['--headless', '--convert-to', 'txt:Text', '--outdir', tempDir, filePath],
+                // Explicit UTF-8: without a locale in the container the plain-text export can use a legacy
+                // encoding, which the utf-8 read below then turns into mangled accents
+                ['--headless', '--convert-to', 'txt:Text (encoded):UTF8', '--outdir', tempDir, filePath],
                 { timeout: 60000 }
             );
 

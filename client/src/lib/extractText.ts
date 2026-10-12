@@ -32,7 +32,7 @@ export async function extractText(file: File): Promise<ExtractionResult> {
     let fileType = file.type;
     const fileName = file.name.toLowerCase();
 
-    if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+    if (fileName.endsWith('.docx')) {
         fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     } else if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) {
         fileType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
@@ -88,10 +88,12 @@ export async function extractText(file: File): Promise<ExtractionResult> {
                 }
             };
         } else if (
-            /\.pptx?$/i.test(fileName) ||
-            fileType.includes('presentation')
+            /\.(pptx?|doc)$/i.test(fileName) ||
+            fileType.includes('presentation') ||
+            fileType === 'application/msword'
         ) {
-            console.log('Detected PPT/PPTX - using backend extraction');
+            // Legacy binary .doc can't be read by mammoth: the server converts it with LibreOffice
+            console.log('Detected PPT/PPTX/DOC - using backend extraction');
             const result = await extractViaBackend(file);
             return {
                 ...result,
@@ -321,6 +323,8 @@ async function extractPdfText(file: File): Promise<ExtractionResult> {
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         let fullText = '';
+        // Real text only: the "--- Page N ---" markers must not count, or a scanned PDF looks like it has text
+        let charCount = 0;
 
         // Extract text from all pages
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -331,16 +335,16 @@ async function extractPdfText(file: File): Promise<ExtractionResult> {
                 .map((item) => item.str)
                 .join(' ');
 
+            charCount += pageText.replace(/\s+/g, '').length;
             fullText += `\n\n--- Page ${i} ---\n${pageText}`;
         }
 
         const extractedText = fullText.trim();
 
-        // Detect if PDF is likely scanned (very little extractable text)
-        const charCount = extractedText.replace(/\s+/g, '').length;
+        // Detect if PDF is likely scanned (very little extractable text), whatever its page count
         const avgCharsPerPage = charCount / pdf.numPages;
 
-        if (avgCharsPerPage < 50 && pdf.numPages > 2) {
+        if (avgCharsPerPage < 50) {
             console.warn(`PDF appears to be scanned (${charCount} chars for ${pdf.numPages} pages)`);
             warnings.push(`PDF semble être un scan (${Math.round(avgCharsPerPage)} chars/page)`);
 
@@ -356,8 +360,8 @@ async function extractPdfText(file: File): Promise<ExtractionResult> {
             }
         }
 
-        if (!extractedText) {
-            throw new Error('Le PDF ne contient aucun texte extrait.');
+        if (charCount === 0) {
+            throw new Error('Le PDF ne contient aucun texte (document scanné ?). Lancez l’OCR pour l’analyser.');
         }
 
         return {
@@ -430,9 +434,13 @@ async function extractImageText(file: File): Promise<string> {
     try {
         const { createWorker } = await import('tesseract.js');
         const worker = await createWorker('eng+fra'); // Load English and French
-        const ret = await worker.recognize(file);
-        await worker.terminate();
-        return ret.data.text;
+        try {
+            const ret = await worker.recognize(file);
+            return ret.data.text;
+        } finally {
+            // Also on failure: a leaked worker keeps its WASM engine and language data in memory
+            await worker.terminate();
+        }
     } catch (error) {
         console.error('OCR Error:', error);
         throw new Error('Failed to extract text from Image.');

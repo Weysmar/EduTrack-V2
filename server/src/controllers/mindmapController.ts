@@ -6,6 +6,7 @@ import { contentExtractionService } from '../services/contentExtractionService';
 import { storageService } from '../services/storageService';
 import { incrementAIGeneration } from './profileController';
 import { prisma } from '../lib/prisma';
+import { htmlToText, hasMeaningfulText } from '../utils/htmlToText';
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
 Output MUST be valid Mermaid mindmap syntax ONLY. Do not include explanations or markdown code blocks.
@@ -90,7 +91,8 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                 });
 
                 for (const note of notes) {
-                    combinedContent += `\n\n=== ${note.title} ===\n${note.content || ''}`;
+                    // Notes are stored as editor HTML (with base64 images): send their text only
+                    combinedContent += `\n\n=== ${note.title} ===\n${htmlToText(note.content || '')}`;
                     noteNames.push(note.title);
                 }
             }
@@ -107,6 +109,16 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
                 const extractionResults: Array<{ filename: string; text: string; warnings: string[] }> = [];
 
                 for (const item of fileItems) {
+                    // Reuse the text already extracted for this file (client OCR, Word editor...) when it is real
+                    if (hasMeaningfulText(item.extractedContent)) {
+                        const filename = item.fileName || item.title || 'unknown';
+                        const text = item.extractedContent!.substring(0, 20000);
+                        combinedContent += `\n\n=== ${filename} ===\n${text}`;
+                        fileNames.push(filename);
+                        extractionResults.push({ filename, text, warnings: [] });
+                        continue;
+                    }
+
                     if (!item.storageKey) {
                         console.warn(`File item ${item.id} has no storageKey`);
                         continue;

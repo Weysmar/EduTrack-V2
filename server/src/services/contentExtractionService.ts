@@ -203,11 +203,13 @@ export const extractFromText = (
 };
 
 /**
- * Extract text from ODT buffer
+ * Extract text from a buffer through the file-based extraction service (Python / LibreOffice):
+ * ODT, and presentations (PPTX/PPT), which the fallback below used to read as raw zip bytes.
  */
-export const extractFromODT = async (
+const extractViaTempFile = async (
     buffer: Buffer,
     filename: string,
+    extension: '.odt' | '.pptx' | '.ppt',
     options?: ExtractionOptions
 ): Promise<ExtractionResult> => {
     const warnings: string[] = [];
@@ -216,9 +218,9 @@ export const extractFromODT = async (
         throw new Error(validation.error);
     }
 
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'odt-extract-'));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'doc-extract-'));
     // Fixed name: a client-controlled basename such as ".." would resolve outside tempDir
-    const tempFilePath = path.join(tempDir, 'document.odt');
+    const tempFilePath = path.join(tempDir, `document${extension}`);
 
     try {
         await fs.writeFile(tempFilePath, buffer);
@@ -226,7 +228,7 @@ export const extractFromODT = async (
 
         let text = rawText || '';
         if (!text || text.trim().length === 0) {
-            throw new Error(`No text content found in ODT: ${filename}`);
+            throw new Error(`No text content found in ${filename}`);
         }
 
         const maxLength = options?.maxLength || 50000;
@@ -242,12 +244,21 @@ export const extractFromODT = async (
             warnings
         };
     } catch (error: any) {
-        console.error(`[Extraction] ODT extraction failed for ${filename}:`, error);
-        throw new Error(`Failed to extract text from ODT ${filename}: ${error.message}`);
+        console.error(`[Extraction] ${extension} extraction failed for ${filename}:`, error);
+        throw new Error(`Failed to extract text from ${filename}: ${error.message}`);
     } finally {
         await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
 };
+
+/**
+ * Extract text from ODT buffer
+ */
+export const extractFromODT = (buffer: Buffer, filename: string, options?: ExtractionOptions) =>
+    extractViaTempFile(buffer, filename, '.odt', options);
+
+/** Heuristic: NUL bytes in the first KBs mean binary data (zip, images...), not text */
+const looksBinary = (buffer: Buffer): boolean => buffer.subarray(0, 8000).includes(0);
 
 /**
  * Unified extraction function - detects type and routes appropriately
@@ -272,12 +283,22 @@ export const extractTextFromBuffer = async (
         case 'application/vnd.oasis.opendocument.text':
             return extractFromODT(buffer, filename, options);
             
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+            return extractViaTempFile(buffer, filename, '.pptx', options);
+
+        case 'application/vnd.ms-powerpoint':
+            return extractViaTempFile(buffer, filename, '.ppt', options);
+
         case 'text/plain':
         case 'text/markdown':
             return extractFromText(buffer, filename, options);
-            
+
         default:
-            // Try text extraction as fallback for unknown types
+            // Text fallback only for content that is actually text: images or zip-based formats
+            // were decoded as UTF-8 and their bytes sent to the AI as "content"
+            if (looksBinary(buffer)) {
+                throw new Error(`Unsupported file type: ${mimetype} (${filename})`);
+            }
             console.warn(`[Extraction] Unknown file type: ${mimetype}, attempting text extraction`);
             try {
                 return extractFromText(buffer, filename, options);
