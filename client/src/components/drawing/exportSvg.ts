@@ -131,6 +131,8 @@ export function generateSvgCode(
                 const lines = el.text.split('\n')
                 const lineHeight = fontSize * 1.25
                 const totalH = lines.length * lineHeight
+                // Vertically centered, same baseline formula as the on-screen canvas (DrawingCanvas)
+                const startY = (el.height - totalH) / 2 + fontSize * 0.85
                 const align = el.textAlign || 'center'
                 const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle'
                 const posX = align === 'left' ? 12 : align === 'right' ? el.width - 12 : el.width / 2

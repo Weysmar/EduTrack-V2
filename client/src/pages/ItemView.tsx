@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -38,7 +38,7 @@ import { TTSControls } from '@/components/TTSControls'
 import { itemQueries, courseQueries } from '@/lib/api/queries'
 import { apiClient } from '@/lib/api/client'
 import { Editor } from '@/components/Editor'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { Pencil, Check, X as Cancel } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -180,54 +180,103 @@ export function ItemView() {
     const pendingContentRef = useRef<string>(editedContent)
     pendingContentRef.current = editedContent
 
-    const updateMutation = useMutation({
-        mutationFn: (content: string) => {
-            if (!item?.id) throw new Error('No item ID')
+    // Note autosave.
+    // - Only real user edits mark the draft dirty: an idle edit session must never write its (possibly
+    //   stale) draft back over a newer version saved elsewhere and refetched through the socket.
+    // - Saves are serialized: an older request can never land after a newer one.
+    const isDraftDirtyRef = useRef(false)
+    const saveInFlightRef = useRef<Promise<void> | null>(null)
+
+    const persistNoteContent = async (itemId: string, content: string) => {
+        setSaveStatus('saving')
+        try {
             const formData = new FormData()
             formData.append('content', content)
-            return itemQueries.update(String(item.id), formData)
-        },
-        onMutate: () => {
-            setSaveStatus('saving')
-        },
-        onSuccess: (_data, savedContent) => {
+            await itemQueries.update(itemId, formData)
             // Update React Query cache directly so UI stays smooth without jarring full-page refetches
-            queryClient.setQueryData(['items', id], (old: any) => old ? { ...old, content: savedContent } : old)
-            setSaveStatus('saved')
-        },
-        onError: () => {
+            queryClient.setQueryData(['items', itemId], (old: any) => old ? { ...old, content } : old)
+            setSaveStatus(isDraftDirtyRef.current ? 'saving' : 'saved')
+        } catch (err) {
+            isDraftDirtyRef.current = true // keep the draft pending so the next save retries it
             setSaveStatus('error')
             toast.error(t('common.error') || 'Erreur de synchronisation')
+            throw err
         }
-    })
+    }
+
+    // Waits for the save in flight, then sends the latest draft if it is still dirty
+    const saveDraft = async (): Promise<void> => {
+        while (saveInFlightRef.current) await saveInFlightRef.current
+        if (!isDraftDirtyRef.current || !item?.id || item.type !== 'note') return
+        isDraftDirtyRef.current = false
+        const request = persistNoteContent(String(item.id), pendingContentRef.current).catch(() => {})
+        saveInFlightRef.current = request
+        try {
+            await request
+        } finally {
+            saveInFlightRef.current = null
+        }
+    }
+    const saveDraftRef = useRef(saveDraft)
+    saveDraftRef.current = saveDraft
+
+    const handleNoteChange = useCallback((html: string) => {
+        isDraftDirtyRef.current = true
+        setEditedContent(html)
+    }, [])
 
     // Real-time dynamic auto-save (Google Docs style, 800ms debounce)
     useEffect(() => {
-        if (!isEditMode || item?.type !== 'note') return
-        if (editedContent === item?.content) return
+        if (!isEditMode || item?.type !== 'note' || !isDraftDirtyRef.current) return
 
         // Immediately signal saving as soon as typing happens
         setSaveStatus('saving')
 
         const timer = setTimeout(() => {
-            updateMutation.mutate(editedContent)
+            saveDraftRef.current()
         }, 800) // 800ms debounce
 
         return () => clearTimeout(timer)
-    }, [editedContent, isEditMode, item?.content, item?.type])
+    }, [editedContent, isEditMode, item?.type])
 
-    // Immediate flush on page leave
+    // Flush the pending draft when leaving the page in-app (the debounce timer is cleared on unmount)
+    useEffect(() => () => {
+        if (isDraftDirtyRef.current) saveDraftRef.current()
+    }, [])
+
+    // Word editor unsaved state (reported by OfficeEditor), used to confirm before closing it
+    const [officeHasUnsavedChanges, setOfficeHasUnsavedChanges] = useState(false)
+
+    // Single exit path for edit mode, shared by every "Terminer"/"Retour" button (desktop, mobile, Word editor):
+    // notes are flushed before leaving edit mode, Word documents ask before discarding unsaved changes
+    const setEditModeGuarded = async (value: boolean) => {
+        if (value || !isEditMode) {
+            setIsEditMode(value)
+            return
+        }
+        if (officeHasUnsavedChanges) {
+            const confirmed = window.confirm(language === 'fr'
+                ? 'Des modifications ne sont pas enregistrées. Fermer l’éditeur sans enregistrer ?'
+                : 'You have unsaved changes. Close the editor without saving?')
+            if (!confirmed) return
+            setOfficeHasUnsavedChanges(false)
+        }
+        await saveDraftRef.current()
+        setIsEditMode(false)
+    }
+
+    // Warn before closing/reloading the tab with unsaved changes, and try a last save of the note draft
     useEffect(() => {
-        const handleBeforeUnload = () => {
-            if (isEditMode && item?.type === 'note' && pendingContentRef.current && pendingContentRef.current !== item?.content) {
-                const formData = new FormData()
-                formData.append('content', pendingContentRef.current)
-                itemQueries.update(String(item.id), formData)
-            }
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            const noteDirty = isEditMode && item?.type === 'note' && isDraftDirtyRef.current
+            if (!noteDirty && !officeHasUnsavedChanges) return
+            e.preventDefault()
+            e.returnValue = ''
+            if (noteDirty) saveDraftRef.current()
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [isEditMode, item?.content, item?.id, item?.type])
+    }, [isEditMode, item?.type, officeHasUnsavedChanges])
 
     // Handle Google Drive Re-sync
     const handleSyncDrive = async () => {
@@ -399,6 +448,9 @@ export function ItemView() {
 
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif'].includes(ext);
     const isOffice = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'odt'].includes(ext);
+    // Only formats the in-app Word editor can actually load: saving any other format through it
+    // replaced the original file (spreadsheet, presentation, legacy .doc) with a .docx
+    const isWordEditable = ['docx', 'odt'].includes(ext);
     const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
     const isText = ext === 'txt';
     const isMarkdown = ext === 'md';
@@ -963,10 +1015,9 @@ export function ItemView() {
                     setMobileTab={setMobileTab}
                     setIsFocusMode={setIsFocusMode}
                     isEditMode={!!isEditMode}
-                    editedContent={editedContent}
-                    setIsEditMode={setIsEditMode}
+                    isWordEditable={isWordEditable}
+                    setIsEditMode={setEditModeGuarded}
                     setEditedContent={setEditedContent}
-                    updateMutation={updateMutation}
                     setIsEditModalOpen={setIsEditModalOpen}
                     isExtracting={isExtracting}
                     isAIMenuOpen={isAIMenuOpen}
@@ -991,9 +1042,9 @@ export function ItemView() {
 
             <ItemMobileToolbar
                 itemType={item.type || 'note'}
-                isOffice={!!isOffice}
+                isOffice={isWordEditable}
                 isEditMode={isEditMode}
-                setIsEditMode={setIsEditMode}
+                setIsEditMode={setEditModeGuarded}
                 setIsEditModalOpen={setIsEditModalOpen}
                 isExtracting={isExtracting}
                 isAIMenuOpen={isAIMenuOpen}
@@ -1085,12 +1136,15 @@ export function ItemView() {
                                         }
 
                                         if (targetIsOffice) {
-                                            if (isEditMode) {
+                                            // Edit only the primary item (not the compared pane), and only formats the editor can load
+                                            const targetIsWordEditable = targetItem.id === item.id && ['docx', 'odt'].includes(targetExt || '');
+                                            if (isEditMode && targetIsWordEditable) {
                                                 return (
                                                     <OfficeEditor
                                                         item={targetItem}
                                                         fileUrl={targetPdfUrl}
-                                                        onClose={() => setIsEditMode(false)}
+                                                        onClose={() => setEditModeGuarded(false)}
+                                                        onDirtyChange={setOfficeHasUnsavedChanges}
                                                         className={viewerHeight}
                                                     />
                                                 );
@@ -1103,7 +1157,7 @@ export function ItemView() {
                                                     engine={officeEngine}
                                                     onEngineChange={setOfficeEngine}
                                                     onExitFocusMode={isFocusMode ? () => setIsFocusMode(false) : undefined}
-                                                    onEdit={() => setIsEditMode(true)}
+                                                    onEdit={targetIsWordEditable ? () => setIsEditMode(true) : undefined}
                                                 />
                                             );
                                         }
@@ -1444,7 +1498,7 @@ export function ItemView() {
                                         {item.type === 'note' ? (
                                             <Editor
                                                 content={isEditMode ? editedContent : (item.content || '')}
-                                                onChange={isEditMode ? setEditedContent : undefined}
+                                                onChange={isEditMode ? handleNoteChange : undefined}
                                                 editable={isEditMode}
                                                 className={isFocusMode ? "h-full" : "min-h-[50vh]"}
                                             />

@@ -19,7 +19,12 @@ import {
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+// Notes and Word documents send their HTML as a multipart text field: busboy's default 1 MB fieldSize
+// rejected any note with a few pasted images, so every autosave failed. Limits match nginx's 50 MB cap.
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fieldSize: 50 * 1024 * 1024, fileSize: 50 * 1024 * 1024 }
+});
 
 router.use(authenticate);
 

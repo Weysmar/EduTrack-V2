@@ -371,7 +371,9 @@ export function Editor({ content, onChange, editable = true, className, variant 
     // Keep editor editable state in sync
     useEffect(() => {
         if (editor) {
-            editor.setEditable(editable)
+            // No 'update' event: it reached onChange as if the user had typed, so merely entering edit mode
+            // rewrote the stored note (normalized HTML) and flagged Word documents as modified
+            editor.setEditable(editable, false)
         }
     }, [editable, editor])
 

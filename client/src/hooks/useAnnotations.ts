@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { itemQueries } from '@/lib/api/queries';
 import {
     AnnotationTool,
@@ -49,7 +50,18 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
     const [historyIndex, setHistoryIndex] = useState<number>(0);
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Data waiting for the debounce timer, flushed on unmount instead of being dropped
+    const pendingSaveRef = useRef<DocumentAnnotations | null>(null);
     const isFirstMount = useRef(true);
+    const queryClient = useQueryClient();
+
+    // Saves and mirrors the result into the item's query cache: viewers seed their state from
+    // item.annotations when they (re)mount (side-by-side toggle, pane swap, coming back to the item),
+    // and a stale cache made them reload old annotations, which the next autosave then wrote back.
+    const persistAnnotations = useCallback(async (dataToSave: DocumentAnnotations) => {
+        await itemQueries.saveAnnotations(itemId, dataToSave);
+        queryClient.setQueryData(['items', itemId], (old: any) => old ? { ...old, annotations: dataToSave } : old);
+    }, [itemId, queryClient]);
 
     // Update if itemId changes or initialAnnotations updates externally
     useEffect(() => {
@@ -80,9 +92,12 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
         }
 
         setIsSaving(true);
+        pendingSaveRef.current = dataToSave;
         saveTimeoutRef.current = setTimeout(async () => {
+            saveTimeoutRef.current = null;
+            pendingSaveRef.current = null;
             try {
-                await itemQueries.saveAnnotations(itemId, dataToSave);
+                await persistAnnotations(dataToSave);
                 setIsSaving(false);
                 setLastSaved(new Date());
                 if (onSaveSuccess) onSaveSuccess();
@@ -94,7 +109,7 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
                 });
             }
         }, 1200);
-    }, [itemId, onSaveSuccess]);
+    }, [itemId, onSaveSuccess, persistAnnotations]);
 
     // Immediate Backend Save (used for explicit actions like Clear)
     const saveImmediately = useCallback(async (dataToSave: DocumentAnnotations) => {
@@ -103,10 +118,11 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
             clearTimeout(saveTimeoutRef.current);
             saveTimeoutRef.current = null;
         }
+        pendingSaveRef.current = null;
 
         setIsSaving(true);
         try {
-            await itemQueries.saveAnnotations(itemId, dataToSave);
+            await persistAnnotations(dataToSave);
             setIsSaving(false);
             setLastSaved(new Date());
             if (onSaveSuccess) onSaveSuccess();
@@ -117,7 +133,7 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
                 description: "Les modifications sont conservées localement."
             });
         }
-    }, [itemId, onSaveSuccess]);
+    }, [itemId, onSaveSuccess, persistAnnotations]);
 
     // Add an annotation to a specific page
     const addAnnotation = useCallback((pageNumber: string | number, item: AnnotationItem) => {
@@ -239,11 +255,19 @@ export function useAnnotations({ itemId, initialAnnotations, onSaveSuccess }: Us
         setIsVisible(prev => !prev);
     }, []);
 
-    // Clean up timeout
+    // Flush the debounced save on unmount (closing the item or the split view within the debounce
+    // window used to silently drop the last annotation)
+    const persistRef = useRef(persistAnnotations);
+    persistRef.current = persistAnnotations;
     useEffect(() => {
         isFirstMount.current = false;
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+            const pending = pendingSaveRef.current;
+            pendingSaveRef.current = null;
+            if (pending) {
+                persistRef.current(pending).catch(err => console.error('Failed to flush annotations on unmount:', err));
+            }
         };
     }, []);
 

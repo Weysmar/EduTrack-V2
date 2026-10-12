@@ -75,7 +75,7 @@ export function AnnotationToolbar({
     const { language } = useLanguage();
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
     const [isWidthPickerOpen, setIsWidthPickerOpen] = useState(false);
-    const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
+    const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
     const tools: Array<{ id: AnnotationTool; label: string; icon: any }> = [
         { id: 'pointer', label: 'Curseur / Navigation (défiler, zoomer)', icon: MousePointer },

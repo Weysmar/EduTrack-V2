@@ -22,10 +22,12 @@ interface OfficeEditorProps {
     fileUrl: string;
     onClose: () => void;
     onSaveSuccess?: () => void;
+    /** Reports unsaved changes so the parent can confirm before closing the editor */
+    onDirtyChange?: (dirty: boolean) => void;
     className?: string;
 }
 
-export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className }: OfficeEditorProps) {
+export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, onDirtyChange, className }: OfficeEditorProps) {
     const { t } = useLanguage();
     const queryClient = useQueryClient();
 
@@ -38,6 +40,17 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
     const [isExporting, setIsExporting] = useState(false);
     const [isDuplicating, setIsDuplicating] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    // Saving after a failed conversion would replace the real file with an empty document
+    const [loadFailed, setLoadFailed] = useState(false);
+    const contentRef = useRef(content);
+    contentRef.current = content;
+
+    useEffect(() => {
+        onDirtyChange?.(hasUnsavedChanges);
+    }, [hasUnsavedChanges, onDirtyChange]);
+
+    // Clear the parent's flag when the editor goes away
+    useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
     // Initial conversion from document binary, done once per item. After a save the item is refetched
     // (new content and storage key, hence a new fileUrl): reloading then would unmount the editor behind the
@@ -88,6 +101,7 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                     if (item?.content) {
                         setContent(item.content);
                     } else {
+                        setLoadFailed(true);
                         toast.error('Impossible de convertir le document pour édition', {
                             description: error instanceof Error ? error.message : 'Format non supporté'
                         });
@@ -112,9 +126,10 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
 
     // Save changes back to server (updates both stored .docx and item content/text)
     const handleSave = async () => {
-        if (!content || isSaving) return;
+        if (!content || isSaving || loadFailed) return;
 
         setIsSaving(true);
+        const savedContent = content;
         try {
             // 1. Generate updated .docx blob
             const docxBlob = await convertHtmlToDocxBlob(content, item?.title || 'Document');
@@ -136,11 +151,11 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
             await itemQueries.update(item.id, formData);
 
             // Invalidate React Query cache
-            queryClient.invalidateQueries({ queryKey: ['item', item.id] });
             queryClient.invalidateQueries({ queryKey: ['items'] });
             queryClient.invalidateQueries({ queryKey: ['courses'] });
 
-            setHasUnsavedChanges(false);
+            // Still dirty if the user kept typing while the file was being generated and uploaded
+            setHasUnsavedChanges(contentRef.current !== savedContent);
             toast.success('Document Word enregistré avec succès !', {
                 description: 'Le fichier Word et les contenus d’analyse ont été mis à jour.'
             });
@@ -272,9 +287,10 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                     <button
                         type="button"
                         onClick={handleSave}
-                        disabled={isSaving || isLoading}
+                        disabled={isSaving || isLoading || loadFailed}
+                        title={loadFailed ? 'Document non chargé : enregistrer remplacerait le fichier par un document vide' : undefined}
                         className={cn(
-                            "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all",
+                            "px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                             hasUnsavedChanges
                                 ? "bg-primary text-primary-foreground hover:opacity-90 ring-2 ring-primary/30"
                                 : "bg-primary/90 text-primary-foreground hover:bg-primary"

@@ -352,9 +352,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 if (el.id !== dragState.elementId) return el
 
                 if (el.type === 'freehand') {
-                    const originX = el.x
-                    const originY = el.y
-                    const points = el.points ? [...el.points] : []
+                    // Append to the live stroke, not the drag-start snapshot: rebuilding from the snapshot
+                    // kept only [start, current] and turned every freehand stroke into a straight line
+                    const liveEl = elements.find(item => item.id === el.id) || el
+                    const originX = liveEl.x
+                    const originY = liveEl.y
+                    const points = liveEl.points ? [...liveEl.points] : []
                     points.push({ x: pos.x - originX, y: pos.y - originY })
                     return { ...el, points }
                 }

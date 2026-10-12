@@ -31,11 +31,11 @@ export const DrawingModal: React.FC<DrawingModalProps> = ({
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([])
     const [zoom, setZoom] = useState(1.0)
 
-    const [defaultStyle, setDefaultStyle] = useState({
+    const [defaultStyle, setDefaultStyle] = useState<React.ComponentProps<typeof DrawingToolbar>['defaultStyle']>({
         fillColor: '#60a5fa', // Soft blue
         strokeColor: '#2563eb', // Vibrant blue
         strokeWidth: 2,
-        strokeStyle: 'solid' as const,
+        strokeStyle: 'solid',
         textColor: '#1e293b',
         fontSize: 16,
         fontFamily: 'Inter, sans-serif'

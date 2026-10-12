@@ -370,19 +370,19 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
             updateData.fileSize = parseInt(updateData.fileSize, 10);
         }
 
-        // Handle File Replacement
+        // Handle File Replacement. The previous file and thumbnail are deleted only once the new upload
+        // AND the database update have succeeded: deleting first lost the document whenever the upload failed.
+        const keysToDeleteOnSuccess: string[] = [];
+        const keysToDeleteOnFailure: string[] = [];
         if (req.file) {
-            // Delete old file and thumbnail if exists
-            if (item.storageKey) {
-                await storageService.deleteFile(item.storageKey).catch(err =>
-                    console.error("Failed to delete old file during update:", err)
-                );
+            if (item.storageKey) keysToDeleteOnSuccess.push(item.storageKey);
+            if (item.thumbnailUrl?.startsWith('/uploads/')) {
+                keysToDeleteOnSuccess.push(item.thumbnailUrl.slice('/uploads/'.length));
             }
-            // Logic to delete old thumbnail? We don't verify if it exists but usually it shares a pattern or we should have stored key. 
-            // For now, simpler to just upload new. Optimally we should store thumbnailKey.
 
             // Upload new file
             const uploadResult = await storageService.uploadFile(req.file);
+            keysToDeleteOnFailure.push(uploadResult.key);
             updateData.fileUrl = uploadResult.url;
             updateData.storageKey = uploadResult.key;
             updateData.fileName = req.file.originalname;
@@ -400,10 +400,14 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
                 } as Express.Multer.File;
 
                 const thumbUpload = await storageService.uploadFile(thumbFile);
+                keysToDeleteOnFailure.push(thumbUpload.key);
                 updateData.thumbnailUrl = thumbUpload.url;
             } else {
                 updateData.thumbnailUrl = null; // Reset if not an image or fails
             }
+
+            // The previous file's extracted text no longer matches: drop it unless the client sent the new one
+            if (req.body.extractedContent === undefined) updateData.extractedContent = null;
         }
 
         if (updateData.dueDate !== undefined) {
@@ -415,10 +419,25 @@ export const updateItem = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        const updatedItem = await prisma.item.update({
-            where: { id: req.params.id },
-            data: updateData
-        });
+        let updatedItem;
+        try {
+            updatedItem = await prisma.item.update({
+                where: { id: req.params.id },
+                data: updateData
+            });
+        } catch (dbError) {
+            // Don't leave the freshly uploaded file(s) orphaned; the item still points to the old ones
+            for (const key of keysToDeleteOnFailure) {
+                await storageService.deleteFile(key).catch(() => {});
+            }
+            throw dbError;
+        }
+
+        for (const key of keysToDeleteOnSuccess) {
+            await storageService.deleteFile(key).catch(err =>
+                console.error("Failed to delete previous file after update:", err)
+            );
+        }
 
         // Sync with agenda if exercise
         if (updatedItem.type === 'exercise') {

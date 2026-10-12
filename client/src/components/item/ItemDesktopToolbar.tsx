@@ -24,10 +24,10 @@ interface ItemDesktopToolbarProps {
     setMobileTab: (tab: 'pdf' | 'summary') => void;
     setIsFocusMode: (val: boolean) => void;
     isEditMode: boolean;
-    editedContent: string;
+    /** docx/odt only: the formats the in-app Word editor can load */
+    isWordEditable: boolean;
     setIsEditMode: (val: boolean) => void;
     setEditedContent: (val: string) => void;
-    updateMutation: any;
     setIsEditModalOpen: (val: boolean) => void;
     isExtracting: boolean;
     isAIMenuOpen: boolean;
@@ -45,7 +45,7 @@ interface ItemDesktopToolbarProps {
 export function ItemDesktopToolbar({
     item, course, isText, isMarkdown, isOffice, isPdf, isBpmn, officeEngine, pdfUrl, handleDownload,
     handleSyncDrive, isSyncingDrive, handleExportNotePdf, isExportingNotePdf,
-    setMobileTab, setIsFocusMode, isEditMode, editedContent, setIsEditMode, setEditedContent, updateMutation,
+    setMobileTab, setIsFocusMode, isEditMode, isWordEditable, setIsEditMode, setEditedContent,
     setIsEditModalOpen, isExtracting, isAIMenuOpen, setIsAIMenuOpen, handleOpenExercise,
     hasSummary, setShowSummary, setIsSummaryOptionsOpen, handleDelete,
     onOpenSideBySide, isSideBySide, t
@@ -91,12 +91,8 @@ export function ItemDesktopToolbar({
             {item.type === 'note' ? (
                 isEditMode ? (
                     <button
-                        onClick={() => {
-                            if (editedContent !== item.content && !updateMutation.isPending) {
-                                updateMutation.mutate(editedContent)
-                            }
-                            setIsEditMode(false)
-                        }}
+                        // Leaving edit mode flushes the pending draft (waiting for any save in flight)
+                        onClick={() => setIsEditMode(false)}
                         className="px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold flex-shrink-0 shadow-xs"
                         title="Terminer l'édition (les modifications sont enregistrées en temps réel)"
                     >
@@ -115,7 +111,7 @@ export function ItemDesktopToolbar({
                         <Pencil className="h-4 w-4" />
                     </button>
                 )
-            ) : isOffice ? (
+            ) : isWordEditable ? (
                 isEditMode ? (
                     <button
                         onClick={() => setIsEditMode(false)}
