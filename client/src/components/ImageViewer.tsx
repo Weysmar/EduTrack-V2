@@ -1,7 +1,6 @@
 import { ZoomIn, ZoomOut, RotateCw, Loader2, Pencil } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useLanguage } from './language-provider'
-import heic2any from 'heic2any'
 import { cn } from '@/lib/utils'
 import { useAnnotations } from '@/hooks/useAnnotations'
 import { AnnotationToolbar } from '@/components/annotations/AnnotationToolbar'
@@ -90,6 +89,8 @@ export function ImageViewer({
                     if (!response.ok) throw new Error("Failed to fetch image");
                     const blob = await response.blob();
 
+                    // heic2any is ~1.3 MB: only fetched when an iPhone HEIC photo is actually displayed
+                    const { default: heic2any } = await import('heic2any')
                     const convertedBlob = await heic2any({
                         blob,
                         toType: "image/jpeg",

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, memo } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
 import { FileText, MonitorPlay, File as FileIcon, Loader2, Image as ImageIcon, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import heic2any from 'heic2any';
 import { BPMNThumbnail } from './BPMNThumbnail';
 
 // Configure the PDF worker here (same-origin file, see public/): main.tsx no longer imports pdf.js,
@@ -58,6 +57,8 @@ export const FilePreview = memo(({ url, fileName, fileType, className, showThumb
                 try {
                     const res = await fetch(url);
                     const blob = await res.blob();
+                    // heic2any is ~1.3 MB: only fetched when an iPhone HEIC photo is actually displayed
+                    const { default: heic2any } = await import('heic2any');
                     const converted = await heic2any({ blob, toType: "image/jpeg", quality: 0.5 });
                     if (isMounted) {
                         setPreviewUrl(URL.createObjectURL(Array.isArray(converted) ? converted[0] : converted));

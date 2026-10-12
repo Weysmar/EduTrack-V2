@@ -4,8 +4,8 @@ import { useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import html2pdf from 'html2pdf.js'
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
+// html2pdf and docx (~500 KB gzipped) are loaded only when the user exports
+import type { TextRun } from 'docx'
 import { saveAs } from 'file-saver'
 
 interface SummaryResultModalProps {
@@ -63,6 +63,8 @@ export function SummaryResultModal({ summary, isOpen, onClose, onDelete }: Summa
             // We need to append to body to be rendered
             document.body.appendChild(clone)
 
+            // @ts-ignore - no type declarations for html2pdf.js
+            const { default: html2pdf } = await import('html2pdf.js')
             await html2pdf().set(options).from(clone).save()
             document.body.removeChild(clone)
         } catch (e) {
@@ -76,6 +78,7 @@ export function SummaryResultModal({ summary, isOpen, onClose, onDelete }: Summa
         try {
             setIsExporting(true)
             const textContent = typeof summary.content === 'string' ? summary.content : "Contenu complexe"
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx')
 
             // Simple parser: converting markdown to Docx paragraphs
             // This is a naive implementation. For robust MD->Docx, a library is better, but 'docx' lib requires building the tree manually.

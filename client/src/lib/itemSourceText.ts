@@ -1,4 +1,3 @@
-import { extractText } from '@/lib/extractText'
 import { extractTextFromHtml } from '@/lib/htmlToText'
 
 /**
@@ -71,6 +70,9 @@ export async function extractItemFileText(item: any, fileUrl: string): Promise<s
     if (!res.ok) throw new Error(`Téléchargement du fichier impossible (${res.status})`)
     const blob = await res.blob()
     const file = new File([blob], guessFileName(item), { type: blob.type || item.fileType || 'application/octet-stream' })
+    // Loaded on demand: extractText pulls pdf.js, mammoth and OCR (~1 MB), which every course page
+    // importing this module used to download up front
+    const { extractText } = await import('@/lib/extractText')
     const { text } = await extractText(file)
     return (text || '').trim()
 }
