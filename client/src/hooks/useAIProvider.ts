@@ -55,6 +55,12 @@ const resolveDefaultProvider = (
     return 'perplexity'
 }
 
+/** Modèle initial s'il appartient bien au provider, sinon le modèle recommandé du provider */
+const resolveModel = (provider: AIProvider, preferredModel?: string): string =>
+    preferredModel && getModelsForProvider(provider).some(m => m.id === preferredModel)
+        ? preferredModel
+        : getDefaultModel(provider)
+
 export function useAIProvider({
     geminiKey,
     perplexityKey,
@@ -65,7 +71,7 @@ export function useAIProvider({
 
     const [provider, setProviderRaw] = useState<AIProvider>(defaultProvider)
     const [model, setModelRaw] = useState<string>(
-        initialModel ?? getDefaultModel(defaultProvider)
+        () => resolveModel(defaultProvider, initialModel)
     )
 
     /**
@@ -101,7 +107,7 @@ export function useAIProvider({
     const reset = useCallback(() => {
         const p = resolveDefaultProvider(geminiKey, perplexityKey, initialProvider)
         setProviderRaw(p)
-        setModelRaw(initialModel ?? getDefaultModel(p))
+        setModelRaw(resolveModel(p, initialModel))
     }, [geminiKey, perplexityKey, initialProvider, initialModel])
 
     const hasKeyForProvider = provider === 'google' ? !!geminiKey : !!perplexityKey

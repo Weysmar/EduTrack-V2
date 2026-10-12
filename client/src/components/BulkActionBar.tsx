@@ -37,7 +37,7 @@ export function BulkActionBar({ selectedCount, onClearSelection, onDelete, onGen
     }
 
     return createPortal(
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 md:gap-4 bg-foreground text-background px-3 md:px-6 py-3 rounded-full shadow-2xl animate-in slide-in-from-bottom-8 duration-200 max-w-[95vw]">
+        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 md:gap-4 bg-foreground text-background px-3 md:px-6 py-3 rounded-full shadow-2xl animate-in slide-in-from-bottom-8 duration-200 max-w-[95vw]">
             <div className="flex items-center gap-3 border-r border-background/20 pr-4">
                 <div className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full min-w-[1.5rem] text-center">
                     {selectedCount}

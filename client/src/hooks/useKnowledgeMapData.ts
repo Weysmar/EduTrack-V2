@@ -11,14 +11,14 @@ export function useKnowledgeMapData() {
     const queryClient = useQueryClient();
 
     // 1. Fetch all Folders (Topics)
-    const { data: folders = [] } = useQuery({
+    const { data: folders = [], isLoading: foldersLoading } = useQuery({
         queryKey: ['folders', activeProfile?.id],
         queryFn: folderQueries.getAll,
         enabled: !!activeProfile?.id
     });
 
     // 2. Fetch all Courses
-    const { data: coursesData } = useQuery({
+    const { data: coursesData, isLoading: coursesLoading } = useQuery({
         queryKey: ['courses', activeProfile?.id],
         queryFn: () => courseQueries.getAll(1, 1000),
         enabled: !!activeProfile?.id
@@ -27,7 +27,7 @@ export function useKnowledgeMapData() {
     const courses = coursesData?.courses || [];
 
     // 3. Fetch all Items (Documents)
-    const { data: itemsData } = useQuery({
+    const { data: itemsData, isLoading: itemsLoading } = useQuery({
         queryKey: ['items', activeProfile?.id],
         queryFn: () => itemQueries.getAll(1, 1000),
         enabled: !!activeProfile?.id
@@ -203,6 +203,6 @@ export function useKnowledgeMapData() {
         savePosition,
         assignCourseToFolder,
         uploadFile,
-        isLoading: false
+        isLoading: foldersLoading || coursesLoading || itemsLoading
     };
 }

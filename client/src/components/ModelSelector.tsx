@@ -10,8 +10,7 @@
  *   <ModelSelector {...ai} onClose={onClose} />
  */
 
-import { AlertCircle, Zap, Globe, AlertTriangle, Eye, EyeOff, Brain, Sparkles } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { AlertCircle, Zap, Globe, AlertTriangle, Eye, EyeOff, Brain } from 'lucide-react'
 import {
     getModelsForProvider,
     getModelById,
@@ -21,6 +20,8 @@ import {
     type FileCategory
 } from '@/config/aiModels'
 import { cn } from '@/lib/utils'
+import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
+import { useAIText } from '@/components/ai/useAIText'
 
 interface ModelSelectorProps {
     provider: AIProvider
@@ -56,7 +57,7 @@ export function ModelSelector({
     fileCategory,
     contentLength,
 }: ModelSelectorProps) {
-    const navigate = useNavigate()
+    const { t } = useAIText()
     const models = getModelsForProvider(provider)
     const activeModelEntry = getModelById(model)
 
@@ -70,7 +71,7 @@ export function ModelSelector({
         <div className="space-y-3">
             {/* Sélection du provider */}
             <div>
-                <label className="block text-sm font-medium mb-2">Moteur IA</label>
+                <label className="block text-sm font-medium mb-2">{t('ai.model.engine')}</label>
                 <div className="grid grid-cols-2 gap-2">
                     <button
                         type="button"
@@ -86,7 +87,7 @@ export function ModelSelector({
                     >
                         <Zap className="h-4 w-4 shrink-0" />
                         <span>Google Gemini</span>
-                        {!geminiKey && <span className="text-xs opacity-70">(clé manquante)</span>}
+                        {!geminiKey && <span className="text-xs opacity-70">({t('ai.key.missingShort')})</span>}
                     </button>
 
                     <button
@@ -103,40 +104,25 @@ export function ModelSelector({
                     >
                         <Globe className="h-4 w-4 shrink-0" />
                         <span>Perplexity</span>
-                        {!perplexityKey && <span className="text-xs opacity-70">(clé manquante)</span>}
+                        {!perplexityKey && <span className="text-xs opacity-70">({t('ai.key.missingShort')})</span>}
                     </button>
                 </div>
 
-                {/* Alerte clé manquante */}
+                {/* Clé manquante : message guidé (qu'est-ce qu'une clé, où l'obtenir, lien Paramètres) */}
                 {!hasKeyForProvider && (
-                    <div className={cn(
-                        'mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300',
-                        'p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs animate-in fade-in'
-                    )}>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-                            <span className="truncate">
-                                Clé API manquante pour {provider === 'google' ? 'Google Gemini' : 'Perplexity'}.
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onClose?.()
-                                navigate('/settings')
-                            }}
-                            className="font-semibold underline hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs"
-                        >
-                            Paramètres ↗
-                        </button>
-                    </div>
+                    <MissingApiKeyNotice
+                        provider={provider}
+                        onNavigate={onClose}
+                        compact={compact || !!geminiKey || !!perplexityKey}
+                        className="mt-2"
+                    />
                 )}
             </div>
 
             {/* Sélection du modèle — liste dérivée dynamiquement du registre */}
             <div>
                 <label className={cn('block mb-1', compact ? 'text-xs text-muted-foreground' : 'text-sm font-medium')}>
-                    Version du modèle
+                    {t('ai.model.version')}
                 </label>
                 <select
                     value={model}
@@ -158,21 +144,21 @@ export function ModelSelector({
                         </span>
                         {activeModelEntry.capabilities.vision ? (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
-                                <Eye className="h-3 w-3" /> Vision native
+                                <Eye className="h-3 w-3" /> {t('ai.model.vision')}
                             </span>
                         ) : (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/70 text-muted-foreground border border-border/40">
-                                <EyeOff className="h-3 w-3" /> OCR texte
+                                <EyeOff className="h-3 w-3" /> {t('ai.model.ocr')}
                             </span>
                         )}
                         {activeModelEntry.capabilities.reasoning && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                                <Brain className="h-3 w-3" /> Raisonnement
+                                <Brain className="h-3 w-3" /> {t('ai.model.reasoning')}
                             </span>
                         )}
                         {activeModelEntry.capabilities.webSearch && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                                <Globe className="h-3 w-3" /> Web
+                                <Globe className="h-3 w-3" /> {t('ai.model.web')}
                             </span>
                         )}
                     </div>

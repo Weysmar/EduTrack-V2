@@ -1,8 +1,11 @@
 
 import { SummaryResult } from '@/lib/summary/types'
-import { Copy, RefreshCw, Settings, Check, Maximize2 } from 'lucide-react'
+import { Copy, RefreshCw, Settings, Check, Maximize2, Sparkles, FileText, AlertCircle } from 'lucide-react'
 import { useState } from 'react'
-import { useLanguage } from '@/components/language-provider'
+import { useAIText } from '@/components/ai/useAIText'
+import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
+import { GenerationProgress } from '@/components/ai/GenerationProgress'
+import { useProfileStore } from '@/store/profileStore'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -14,57 +17,120 @@ interface SummaryPanelProps {
     onConfigure: () => void
     onMaximize?: () => void
     onClose?: () => void
+    /** Génération IA en cours */
     isLoading?: boolean
     error?: string | null
+    /** Chargement du résumé existant (≠ génération) — optionnel, cf. useSummary().isFetching */
+    isFetching?: boolean
+    /** Début de la génération en cours (affiche le temps écoulé) — optionnel, cf. useSummary().generationStartedAt */
+    generationStartedAt?: number | null
+    /** Action du bouton "Générer un résumé" quand aucun résumé n'existe (défaut : onRegenerate) */
+    onGenerate?: () => void
 }
 
-export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, onClose, isLoading, error }: SummaryPanelProps) {
+const formatDuration = (ms: number): string => {
+    if (!ms || ms <= 0) return '—'
+    if (ms < 1000) return `${Math.round(ms)} ms`
+    const seconds = ms / 1000
+    if (seconds < 60) return `${seconds.toFixed(1)} s`
+    const m = Math.floor(seconds / 60)
+    const s = Math.round(seconds % 60)
+    return `${m} min ${String(s).padStart(2, '0')} s`
+}
+
+export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, onClose, isLoading, error, isFetching, generationStartedAt, onGenerate }: SummaryPanelProps) {
     const [copied, setCopied] = useState(false)
-    const { t } = useLanguage()
+    const { t } = useAIText()
+    // Sélecteur sur apiKeys : re-rendu automatique quand une clé est ajoutée
+    const apiKeys = useProfileStore(state => state.apiKeys)
+    const hasAnyKey = !!(
+        apiKeys?.google_gemini_summaries || apiKeys?.google_gemini_exercises ||
+        apiKeys?.perplexity_summaries || apiKeys?.perplexity_exercises
+    )
 
     if (isLoading) {
         return (
-            <div className="bg-card/50 border rounded-xl p-6 animate-pulse flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-                <div className="h-6 bg-muted rounded w-1/3 mb-4"></div>
-                <div className="space-y-3 w-full max-w-[80%]">
+            <div className="bg-card/50 border rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] gap-4">
+                <div className="space-y-3 w-full max-w-[80%] animate-pulse">
+                    <div className="h-6 bg-muted rounded w-1/3 mx-auto mb-4"></div>
                     <div className="h-4 bg-muted rounded w-full"></div>
                     <div className="h-4 bg-muted rounded w-5/6 mx-auto"></div>
                     <div className="h-4 bg-muted rounded w-4/6 mx-auto"></div>
                 </div>
-                <p className="mt-6 text-sm text-muted-foreground animate-pulse font-medium">
-                    {t('summary.generating') || "Génération du résumé en cours..."}
-                </p>
+                {generationStartedAt ? (
+                    <GenerationProgress startedAt={generationStartedAt} className="w-full max-w-sm text-left" />
+                ) : (
+                    <p className="text-sm text-muted-foreground animate-pulse font-medium">
+                        {t('summary.generating')}
+                    </p>
+                )}
+            </div>
+        )
+    }
+
+    if (isFetching && !summary) {
+        return (
+            <div className="bg-card/50 border rounded-xl p-6 animate-pulse flex flex-col items-center justify-center text-center h-full min-h-[200px]">
+                <div className="space-y-3 w-full max-w-[80%]">
+                    <div className="h-4 bg-muted rounded w-full"></div>
+                    <div className="h-4 bg-muted rounded w-5/6 mx-auto"></div>
+                </div>
+                <p className="mt-6 text-sm text-muted-foreground">{t('ai.summary.loading')}</p>
             </div>
         )
     }
 
     if (error) {
         return (
-            <div className="bg-card/50 border rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] border-destructive/20 relative overflow-hidden">
+            <div className="bg-card/50 border rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] border-destructive/20 relative overflow-hidden gap-3">
                 <div className="absolute inset-0 bg-destructive/5 pointer-events-none" />
-                <p className="text-destructive font-semibold mb-2 flex items-center gap-2">
-                    ⚠️ {t('error.generic') || "Erreur"}
-                </p>
-                <p className="text-sm text-muted-foreground mb-4 max-w-[250px] mx-auto">
-                    {t('error.ai_missing') || "L'IA Chrome n'est pas activée sur ce navigateur."}
-                </p>
-
-                <button
-                    onClick={onRegenerate}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90 z-10"
-                >
-                    {t('action.retry') || "Réessayer"}
-                </button>
+                {hasAnyKey ? (
+                    <>
+                        <p className="text-destructive font-semibold flex items-center gap-2 z-10">
+                            <AlertCircle className="h-4 w-4" />
+                            {t('ai.summary.errorTitle')}
+                        </p>
+                        <p className="text-sm text-muted-foreground max-w-sm mx-auto z-10 break-words">
+                            {error}
+                        </p>
+                        <button
+                            onClick={onRegenerate}
+                            className="px-4 py-2 min-h-[40px] bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90 z-10"
+                        >
+                            {t('action.retry')}
+                        </button>
+                    </>
+                ) : (
+                    <MissingApiKeyNotice className="z-10 w-full max-w-sm" />
+                )}
             </div>
         )
     }
 
     if (!summary) {
         return (
-            <div className="bg-card/50 border rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mb-4 opacity-50"></div>
-                <p className="text-sm text-muted-foreground">En attente de génération...</p>
-                <p className="text-[10px] text-muted-foreground/50 mt-1">L'IA locale peut prendre quelques secondes.</p>
+            <div className="bg-card/50 border rounded-xl p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] gap-3">
+                {hasAnyKey ? (
+                    <>
+                        <div className="p-3 bg-muted text-muted-foreground rounded-full">
+                            <FileText className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-foreground">{t('ai.summary.empty')}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{t('ai.summary.emptyHint')}</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={onGenerate ?? onRegenerate}
+                            className="mt-1 inline-flex items-center gap-2 px-4 py-2 min-h-[40px] text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            <span>{t('ai.summary.generateCta')}</span>
+                        </button>
+                    </>
+                ) : (
+                    <MissingApiKeyNotice className="w-full max-w-sm" />
+                )}
             </div>
         )
     }
@@ -154,7 +220,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                             {formatSummaryMarkdown(summary.content)}
                         </ReactMarkdown>
                     </div>
-                ) : "Complex format visualization not yet supported"}
+                ) : t('ai.summary.unsupportedFormat')}
             </div>
 
             {/* Footer Stats */}
@@ -162,7 +228,7 @@ export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, o
                 <div className="flex gap-4">
                     {handleKeyFact(t('summary.stats.words'), summary.stats.summaryWordCount)}
                     {handleKeyFact(t('summary.stats.ratio'), `${Math.round((summary.stats.summaryWordCount / summary.stats.originalWordCount) * 100)}% `)}
-                    {handleKeyFact(t('summary.stats.time'), `${Math.round(summary.stats.processingTimeMs)} ms`)}
+                    {handleKeyFact(t('summary.stats.time'), formatDuration(summary.stats?.processingTimeMs ?? 0))}
                 </div>
                 <div className="text-[10px] opacity-50">
                     {new Date(summary.createdAt).toLocaleString()}

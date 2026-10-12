@@ -1,17 +1,17 @@
 
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import { Dialog, Transition, Combobox } from '@headlessui/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-    X, Sparkles, FileText, Check, ChevronsUpDown, Loader2, Plus, 
-    Upload, BrainCircuit, Trophy, RotateCcw, LayoutGrid, ArrowLeft, 
-    CheckCircle, ArrowRight 
-} from 'lucide-react';
+import { X, Sparkles, FileText, Check, ChevronsUpDown, Loader2, BrainCircuit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { itemQueries } from '@/lib/api/queries';
-import { mindmapQueries } from '@/lib/api/queries';
-import { useLanguage } from '@/components/language-provider';
+import { apiClient } from '@/lib/api/client';
+import { useAIText } from '@/components/ai/useAIText';
+import { GenerationProgress } from '@/components/ai/GenerationProgress';
+import { AIQuotaLine } from '@/components/ai/AIQuotaLine';
+import { AIRequestError, getAIErrorMessage, isAbortError } from '@/lib/ai/errors';
+import { AI_REQUEST_TIMEOUT_MS } from '@/lib/ai/constants';
 import { ModelSelector } from '@/components/ModelSelector';
 import { useAIProvider } from '@/hooks/useAIProvider';
 import { useProfileStore } from '@/store/profileStore';
@@ -26,7 +26,7 @@ interface GenerateMindMapModalProps {
 }
 
 export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile, onSuccess }: GenerateMindMapModalProps) {
-    const { t } = useLanguage();
+    const { t } = useAIText();
     const queryClient = useQueryClient();
     const { getApiKey } = useProfileStore();
 
@@ -37,11 +37,15 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     // State
     const [selectedNotes, setSelectedNotes] = useState<any[]>(initialSelectedNotes);
     const [selectedFiles, setSelectedFiles] = useState<any[]>(initialSelectedFile ? [initialSelectedFile] : []);
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [query, setQuery] = useState('');
     const [fileQuery, setFileQuery] = useState('');
     const [prompt, setPrompt] = useState(''); // Optional custom instructions
     const [name, setName] = useState('');
+    const [startedAt, setStartedAt] = useState<number | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
+
+    // Annule la requête si le modal est démonté pendant la génération
+    useEffect(() => () => abortRef.current?.abort(), []);
 
     useEffect(() => {
         if (isOpen) {
@@ -84,17 +88,27 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const generateMutation = useMutation({
         mutationFn: async () => {
             if (!ai.hasKeyForProvider) {
-                throw new Error(`Clé API manquante pour ${ai.provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez configurer votre clé dans Profil > Paramètres.`);
+                throw new AIRequestError(t('ai.error.missingKey', { provider: ai.provider === 'google' ? 'Google Gemini' : 'Perplexity' }), 'missing_key');
             }
-            const data = await mindmapQueries.generate({
-                noteIds: selectedNotes.map(n => n.id),
-                fileItemIds: selectedFiles.map(f => f.id),
-                name: name || `Mind Map ${new Date().toLocaleDateString()}`,
-                model: ai.model,
-                provider: ai.provider,
-                courseId // Pass courseId to link the mind map
-            });
-            return data;
+            abortRef.current?.abort();
+            const controller = new AbortController();
+            abortRef.current = controller;
+            setStartedAt(Date.now());
+            try {
+                // Appel direct (plutôt que mindmapQueries.generate) pour pouvoir annuler la requête
+                const { data } = await apiClient.post('/mindmaps/generate', {
+                    noteIds: selectedNotes.map(n => n.id),
+                    fileItemIds: selectedFiles.map(f => f.id),
+                    name: name || `Mind Map ${new Date().toLocaleDateString()}`,
+                    model: ai.model,
+                    provider: ai.provider,
+                    courseId // Pass courseId to link the mind map
+                }, { timeout: AI_REQUEST_TIMEOUT_MS, signal: controller.signal });
+                return data;
+            } finally {
+                if (abortRef.current === controller) abortRef.current = null;
+                setStartedAt(null);
+            }
         },
         onSuccess: (data) => {
             toast.success(t('mindmap.gen.success'));
@@ -102,30 +116,44 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
             if (onSuccess) onSuccess(data);
             handleClose();
         },
-        onError: (error: any) => {
-            toast.error(t('mindmap.gen.error') + ': ' + (error.response?.data?.message || error.message));
+        onError: (error: unknown) => {
+            if (isAbortError(error)) {
+                toast.info(t('ai.cancelled'));
+                return;
+            }
+            toast.error(t('mindmap.gen.error'), { description: getAIErrorMessage(error, { provider: ai.provider }) });
         }
     });
+
+    const isGenerating = generateMutation.isPending;
 
     const handleClose = () => {
         setSelectedNotes([]);
         setSelectedFiles([]);
-        setUploadedFiles([]);
         setName('');
         setQuery('');
         setFileQuery('');
         onClose();
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            setUploadedFiles([...uploadedFiles, ...Array.from(e.target.files)]);
+    /** Échap / clic extérieur : ignoré pendant la génération (utiliser "Annuler") */
+    const handleDialogClose = () => {
+        if (isGenerating) return;
+        handleClose();
+    };
+
+    /** Bouton Annuler : interrompt la génération en cours, sinon ferme le modal */
+    const handleCancel = () => {
+        if (isGenerating) {
+            abortRef.current?.abort();
+            return;
         }
+        handleClose();
     };
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={handleClose}>
+            <Dialog as="div" className="relative z-50" onClose={handleDialogClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -155,7 +183,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                         <BrainCircuit className="h-5 w-5 text-purple-500" />
                                         {t('mindmap.gen.title')}
                                     </Dialog.Title>
-                                    <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">
+                                    <button onClick={handleCancel} aria-label={t('action.close')} className="text-muted-foreground hover:text-foreground p-1 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-md">
                                         <X className="h-5 w-5" />
                                     </button>
                                 </div>
@@ -366,25 +394,19 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                         onClose={handleClose}
                                     />
 
-                                    {/* File Upload (Placeholder for now) */}
-                                    <div className="border border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center bg-muted/20">
-                                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                        <p className="text-sm text-muted-foreground mb-1">{t('mindmap.gen.upload.label')}</p>
-                                        <button className="text-xs text-primary font-medium hover:underline" disabled>
-                                            Browse files
-                                        </button>
-                                    </div>
+                                    <GenerationProgress startedAt={startedAt} showKeepOpenHint />
 
-                                    <div className="flex justify-end gap-3 mt-6">
+                                    <div className="flex flex-wrap items-center justify-end gap-3 mt-6">
+                                        <AIQuotaLine className="mr-auto" />
                                         <button
-                                            onClick={handleClose}
-                                            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-md transition-colors"
+                                            onClick={handleCancel}
+                                            className="px-4 py-2 min-h-[40px] text-sm font-medium text-muted-foreground hover:bg-muted rounded-md transition-colors"
                                         >
-                                            {t('mindmap.gen.cancel')}
+                                            {isGenerating ? t('ai.action.cancelGeneration') : t('mindmap.gen.cancel')}
                                         </button>
                                         <button
                                             onClick={() => generateMutation.mutate()}
-                                            disabled={generateMutation.isPending || !ai.hasKeyForProvider || (selectedNotes.length === 0 && selectedFiles.length === 0 && uploadedFiles.length === 0)}
+                                            disabled={generateMutation.isPending || !ai.hasKeyForProvider || (selectedNotes.length === 0 && selectedFiles.length === 0)}
                                             className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
                                             {generateMutation.isPending ? (

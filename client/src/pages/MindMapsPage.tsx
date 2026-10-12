@@ -16,7 +16,7 @@ export function MindMapsPage() {
     const { t } = useLanguage();
     const { activeProfile } = useProfileStore();
     const queryClient = useQueryClient();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const targetId = searchParams.get('id');
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -43,9 +43,21 @@ export function MindMapsPage() {
         mutationFn: mindmapQueries.delete,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['mindmaps'] });
-            setSelectedMindMap(null); // Close detail if open
+            closeMindMap(); // Close detail if open
         }
     });
+
+    // Closing the viewer also drops ?id= from the URL, otherwise any refetch reopened it
+    const closeMindMap = () => {
+        setSelectedMindMap(null);
+        if (targetId) {
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.delete('id');
+                return next;
+            }, { replace: true });
+        }
+    };
 
     const filteredMindMaps = mindMaps?.filter((mm: any) =>
         mm.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,6 +122,14 @@ export function MindMapsPage() {
                 <div className="flex justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
+            ) : filteredMindMaps.length === 0 && searchQuery.trim() && (mindMaps?.length || 0) > 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                    <Search className="h-10 w-10 mx-auto mb-3 opacity-50" aria-hidden="true" />
+                    <p className="font-medium text-foreground">{t('mindmap.search.noResults', { query: searchQuery.trim() })}</p>
+                    <button onClick={() => setSearchQuery('')} className="mt-3 text-sm text-primary hover:underline">
+                        {t('mindmap.search.clear')}
+                    </button>
+                </div>
             ) : filteredMindMaps.length === 0 ? (
                 <div className="text-center py-20 bg-muted/10 rounded-2xl border border-dashed">
                     <BrainCircuit className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
@@ -163,8 +183,9 @@ export function MindMapsPage() {
                                 </div>
                                 <button
                                     onClick={(e) => handleDelete(e, mm.id)}
-                                    className="p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                    title="Delete"
+                                    className="p-2.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                                    title={t('common.delete')}
+                                    aria-label={t('common.delete')}
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -182,7 +203,7 @@ export function MindMapsPage() {
 
             {/* Detail Modal */}
             <Transition appear show={!!selectedMindMap} as={Fragment}>
-                <Dialog as="div" className="relative z-50" onClose={() => setSelectedMindMap(null)}>
+                <Dialog as="div" className="relative z-50" onClose={closeMindMap}>
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
@@ -218,7 +239,7 @@ export function MindMapsPage() {
                                                         Generated on {format(new Date(selectedMindMap.createdAt), 'PPP')}
                                                     </p>
                                                 </div>
-                                                <button onClick={() => setSelectedMindMap(null)} className="p-2 hover:bg-muted rounded-full">
+                                                <button onClick={closeMindMap} className="p-2 hover:bg-muted rounded-full" aria-label={t('common.close')}>
                                                     <X className="h-6 w-6" />
                                                 </button>
                                             </div>

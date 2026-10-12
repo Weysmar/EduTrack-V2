@@ -19,10 +19,7 @@ export function ControlBar({ isZenMode, onToggleZen }: ControlBarProps) {
         fitView({ padding: 0.2, duration: 800 });
     };
 
-    if (isZenMode) return null; // Hide ControlBar in Zen Mode (or keep minimal?)
-    // Let's keep it visible or provide a way to exit. 
-    // Actually, user wants "Hide everything". So let's return a minimal "Exit Zen" button if isZenMode.
-
+    // Zen mode hides the controls but always keeps a way out.
     if (isZenMode) {
         return (
             <Panel position="top-right" className="m-4">

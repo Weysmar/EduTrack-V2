@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+
 import { ApiKeySettings } from "@/components/profile/ApiKeySettings"
 import { AdminUserManagement } from "@/components/settings/AdminUserManagement"
 import { Settings, Moon, Sun, Monitor, Keyboard, Key, ChevronRight, History, Layout, Users, Calendar, Globe, Smartphone, Bell, HardDriveDownload, Download, Trash2, CheckCircle2, AlertTriangle, Send } from "lucide-react"
@@ -7,7 +8,7 @@ import { useLanguage } from '@/components/language-provider'
 import { GoogleConnectButton } from '@/components/GoogleConnectButton'
 import { useCalendarStore } from '@/store/calendarStore'
 import { cn } from '@/lib/utils'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
 import { useAuthStore } from '@/store/authStore'
 import { changelogs } from '@/data/changelog'
@@ -27,8 +28,22 @@ import {
     OfflineCourseData
 } from '@/lib/offlineManager'
 
+const SETTINGS_TABS = ['appearance', 'raccourcis', 'api', 'changelog', 'users', 'calendars', 'mobile'] as const
+type SettingsTab = typeof SETTINGS_TABS[number]
+
 export function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'raccourcis' | 'api' | 'changelog' | 'users' | 'calendars' | 'mobile'>('calendars')
+    // Active tab lives in the URL (?tab=api) so other screens can deep-link to it (e.g. "Configurer l'IA")
+    // and the browser Back button returns to the previous tab
+    const [searchParams, setSearchParams] = useSearchParams()
+    const requestedTab = searchParams.get('tab')
+    const activeTab = (SETTINGS_TABS.includes(requestedTab as SettingsTab) ? requestedTab : 'calendars') as SettingsTab
+    const setActiveTab = (tab: SettingsTab) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev)
+            next.set('tab', tab)
+            return next
+        })
+    }
     const { theme, setTheme, themeColor, setThemeColor, minecraftTheme, setMinecraftTheme } = useTheme()
     const { t, language, setLanguage } = useLanguage()
     const { feeds } = useCalendarStore()
@@ -87,7 +102,7 @@ export function SettingsPage() {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
+                                onClick={() => setActiveTab(tab.id as SettingsTab)}
                                 className={cn(
                                     "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all",
                                     activeTab === tab.id

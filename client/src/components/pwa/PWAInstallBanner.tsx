@@ -9,7 +9,7 @@ export function PWAInstallBanner() {
     }
 
     return (
-        <div className="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 bg-card/95 backdrop-blur-xl border border-primary/20 shadow-2xl rounded-2xl p-4 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-3 left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 bg-card/95 backdrop-blur-xl border border-primary/20 shadow-2xl rounded-2xl p-4 animate-in slide-in-from-bottom-5 duration-300">
             <div className="flex items-start gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center text-white shrink-0 shadow-md">
                     <img src="/logo.svg" alt="EduTrack" className="h-6 w-6 object-contain filter brightness-0 invert" onError={(e) => {

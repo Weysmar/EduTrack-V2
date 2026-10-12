@@ -9,26 +9,8 @@ if (typeof URL.parse === 'undefined') {
     };
 }
 
-import { pdfjs } from 'react-pdf';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Use same-origin local worker to prevent mobile CORS restrictions and fake worker failures
-const getWorkerUrl = () => {
-    if (typeof window !== 'undefined' && window.location?.origin) {
-        return `${window.location.origin}/pdf.worker.min.mjs`;
-    }
-    return '/pdf.worker.min.mjs';
-};
-const workerUrl = getWorkerUrl();
-
-try {
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-    if (pdfjsLib?.GlobalWorkerOptions) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-    }
-} catch (e) {
-    console.warn("Could not set workerSrc globally:", e);
-}
+// The pdf.js worker is configured by the modules that use pdf.js (PDFViewer, FilePreview, extractText):
+// importing it here put the whole library in the startup bundle of every page
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'

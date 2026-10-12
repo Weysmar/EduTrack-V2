@@ -59,10 +59,29 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
     const location = useLocation()
     const isActive = location.pathname === `/edu/folder/${folder.id}`
     const queryClient = useQueryClient()
+    const [isDragOver, setIsDragOver] = useState(false)
+
+    const isCourseDrag = (e: React.DragEvent) =>
+        Array.from(e.dataTransfer.types || []).some(type => type.toLowerCase() === 'courseid')
+
+    const handleDragOver = (e: React.DragEvent) => {
+        if (!isCourseDrag(e)) return
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'move'
+        if (!isDragOver) setIsDragOver(true)
+    }
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        // Ignore leave events fired when moving over a child element
+        if (e.currentTarget.contains(e.relatedTarget as globalThis.Node | null)) return
+        setIsDragOver(false)
+    }
 
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
+        setIsDragOver(false)
         const courseId = e.dataTransfer.getData('courseId')
         if (courseId) {
             const idToUpdate = String(courseId);
@@ -85,16 +104,23 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
             <div
                 className={cn(
                     "group flex items-center justify-between px-2 py-1.5 rounded-md transition-colors select-none",
-                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    isDragOver
+                        ? "bg-primary/15 text-primary ring-2 ring-primary/60 ring-inset"
+                        : isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
-                style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 8)}px` }}
-                onDragOver={(e) => e.preventDefault()}
+                style={{ paddingLeft: `${Math.max(4, (level || 0) * 12 + 4)}px` }}
+                onDragEnter={handleDragOver}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
-                <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+                <div className="flex items-center gap-1 overflow-hidden flex-1 min-w-0">
                     <button
+                        type="button"
                         onClick={(e) => { e.preventDefault(); toggleFolderExpanded(String(folder.id)) }}
-                        className="p-0.5 hover:bg-muted-foreground/10 rounded-sm transition-colors shrink-0"
+                        className="h-8 w-8 -my-1.5 flex items-center justify-center hover:bg-muted-foreground/10 rounded-md transition-colors shrink-0"
+                        aria-expanded={isOpen}
+                        aria-label={folder.name}
                     >
                         <ChevronRight className={cn("h-3.5 w-3.5 transition-transform duration-200", isOpen && "rotate-90")} />
                     </button>
@@ -105,15 +131,18 @@ function FolderItem({ folder, allFolders, allCourses, level }: { folder: Folder,
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                {/* Always visible on touch screens (no hover), revealed on hover from md up */}
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0 ml-1">
                     <button
+                        type="button"
                         onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
                             setIsEditModalOpen(true)
                         }}
-                        className="p-1 hover:bg-muted-foreground/15 rounded text-muted-foreground hover:text-foreground transition-colors"
-                        title={t('folder.edit') || "Renommer le dossier"}
+                        className="h-8 w-8 md:h-6 md:w-6 -my-1.5 flex items-center justify-center hover:bg-muted-foreground/15 rounded text-muted-foreground hover:text-foreground transition-colors"
+                        title={t('folder.edit')}
+                        aria-label={t('folder.edit')}
                     >
                         <Pencil className="h-3 w-3" />
                     </button>
@@ -157,7 +186,7 @@ function CourseItem({ course, level }: { course: Course, level: number }) {
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
-            style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 24)}px` }}
+            style={{ paddingLeft: `${Math.max(8, (level || 0) * 12 + 28)}px` }}
         >
             {course.icon ? (
                 <span className="w-5 h-5 flex items-center justify-center text-lg leading-none">{course.icon}</span>

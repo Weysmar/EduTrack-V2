@@ -1,5 +1,6 @@
 import { QuizQuestion } from '@/lib/types';
 import { AIServiceFactory } from '@/lib/ai/factory';
+import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
 export interface QuizGenerationParams {
     content: string;
@@ -9,7 +10,14 @@ export interface QuizGenerationParams {
     topics?: string[];
     provider: 'google' | 'perplexity';
     model?: string;
+    /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
+    language?: OutputLanguage;
+    /** Signal d'annulation (AbortController) */
+    signal?: AbortSignal;
 }
+
+/** Nombre max de caractères du contenu source envoyés à l'IA */
+export const QUIZ_MAX_CHARS = 15000;
 
 const SYSTEM_PROMPT = `
 Tu es un expert pédagogique de premier plan dans la conception de QCM (Questionnaires à Choix Multiples) d'excellence universitaire.
@@ -53,12 +61,16 @@ RÈGLES STRICTES DE STRUCTURE ET FORMAT :
    }
 `;
 
+const buildSystemPrompt = (lang: OutputLanguage = 'fr'): string =>
+    SYSTEM_PROMPT.replace('EN FRANÇAIS', outputLanguageName(lang)) + outputLanguageInstruction(lang);
+
 export async function generateQuizQuestions(params: QuizGenerationParams): Promise<Partial<QuizQuestion>[]> {
-    const { content, count, difficulty, types, topics } = params;
+    const { content, count, difficulty, types, topics, language = 'fr' } = params;
+    const source = truncateContent(content, QUIZ_MAX_CHARS);
 
     const userPrompt = `
     CONTENU:
-    ${content.substring(0, 15000)} ...
+    ${source.text}${source.truncated ? ' ... (contenu tronqué)' : ''}
 
     PARAMÈTRES:
     Nombre de questions: ${count}
@@ -66,11 +78,11 @@ export async function generateQuizQuestions(params: QuizGenerationParams): Promi
     Types: ${types.join(', ')}
     Sujets: ${topics?.join(', ') || 'Tous les sujets pertinents'}
 
-    Générez le QCM en format JSON strictement en Français.
+    Générez le QCM en format JSON strict, ${language === 'en' ? 'rédigé en anglais' : 'rédigé en français'}.
     `;
 
     try {
-        const textOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
+        const textOutput = await AIServiceFactory.generateGeneric(userPrompt, buildSystemPrompt(language), params.provider, params.model, { signal: params.signal });
 
         // Clean markdown code fences if present
         let cleanText = textOutput.trim();

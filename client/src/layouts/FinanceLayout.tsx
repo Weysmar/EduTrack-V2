@@ -40,7 +40,7 @@ export function FinanceLayout() {
     }, [closeSidebar])
 
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-background relative">
+        <div className="flex h-dvh w-full overflow-hidden bg-background relative">
             <CommandPalette />
 
             {isSidebarOpen && (

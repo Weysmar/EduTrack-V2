@@ -4,7 +4,8 @@ import { EduLayout } from '@/layouts/EduLayout'
 import { FinanceLayout } from '@/layouts/FinanceLayout'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider, useTheme } from "@/components/theme-provider"
+import { RouteErrorPage } from "@/components/RouteErrorPage"
 import { RequireAuth } from '@/components/RequireAuth'
 import { LanguageProvider } from "@/components/language-provider"
 import { Toaster } from "sonner"
@@ -113,6 +114,7 @@ const RootLayout = () => {
 const router = createBrowserRouter([
     {
         element: <RootLayout />,
+        errorElement: <RouteErrorPage />,
         children: [
             {
                 path: '/',
@@ -162,115 +164,125 @@ const router = createBrowserRouter([
                     {
                         path: '/edu',
                         element: <EduLayout />,
-                        children: [
-                            {
-                                index: true,
-                                element: <Navigate to="/edu/dashboard" replace />
-                            },
-                            {
-                                path: 'dashboard',
-                                element: <LazyPage><Dashboard /></LazyPage>,
-                            },
-                            {
-                                path: 'library',
-                                element: <LazyPage><LibraryPage /></LazyPage>,
-                            },
-                            {
-                                path: 'focus',
-                                element: <LazyPage><FocusPage /></LazyPage>,
-                            },
-                            {
-                                path: 'settings',
-                                element: <LazyPage><SettingsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'course/:courseId',
-                                element: <LazyPage><CourseView /></LazyPage>,
-                            },
-                            {
-                                path: 'course/:courseId/item/:itemId',
-                                element: <LazyPage><ItemView /></LazyPage>,
-                            },
-                            {
-                                path: 'folder/:folderId',
-                                element: <LazyPage><FolderView /></LazyPage>,
-                            },
-                            {
-                                path: 'flashcards',
-                                element: <LazyPage><Flashcards /></LazyPage>,
-                            },
-                            {
-                                path: 'flashcards/study/:setId',
-                                element: <LazyPage><StudySession /></LazyPage>,
-                            },
-                            {
-                                path: 'quiz/study/:id',
-                                element: <LazyPage><QuizStudy /></LazyPage>,
-                            },
-                            {
-                                path: 'mindmaps',
-                                element: <LazyPage><MindMapsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'calendar',
-                                element: <LazyPage><CalendarPage /></LazyPage>,
-                            },
-                            {
-                                path: 'profiles',
-                                element: <LazyPage><ProfileManager /></LazyPage>,
-                            }
-                        ]
+                        errorElement: <RouteErrorPage />,
+                        children: [{
+                            // Pathless route: a page error renders inside the layout, keeping the sidebar/navigation
+                            errorElement: <RouteErrorPage />,
+                            children: [
+                                {
+                                    index: true,
+                                    element: <Navigate to="/edu/dashboard" replace />
+                                },
+                                {
+                                    path: 'dashboard',
+                                    element: <LazyPage><Dashboard /></LazyPage>,
+                                },
+                                {
+                                    path: 'library',
+                                    element: <LazyPage><LibraryPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'focus',
+                                    element: <LazyPage><FocusPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'settings',
+                                    element: <LazyPage><SettingsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'course/:courseId',
+                                    element: <LazyPage><CourseView /></LazyPage>,
+                                },
+                                {
+                                    path: 'course/:courseId/item/:itemId',
+                                    element: <LazyPage><ItemView /></LazyPage>,
+                                },
+                                {
+                                    path: 'folder/:folderId',
+                                    element: <LazyPage><FolderView /></LazyPage>,
+                                },
+                                {
+                                    path: 'flashcards',
+                                    element: <LazyPage><Flashcards /></LazyPage>,
+                                },
+                                {
+                                    path: 'flashcards/study/:setId',
+                                    element: <LazyPage><StudySession /></LazyPage>,
+                                },
+                                {
+                                    path: 'quiz/study/:id',
+                                    element: <LazyPage><QuizStudy /></LazyPage>,
+                                },
+                                {
+                                    path: 'mindmaps',
+                                    element: <LazyPage><MindMapsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'calendar',
+                                    element: <LazyPage><CalendarPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'profiles',
+                                    element: <LazyPage><ProfileManager /></LazyPage>,
+                                }
+                            ]
+                        }]
                     },
                     // FinanceTrack Routes
                     {
                         path: '/finance',
                         element: <FinanceLayout />,
-                        children: [
-                            {
-                                index: true,
-                                element: <Navigate to="/finance/dashboard" replace />
-                            },
-                            {
-                                path: 'dashboard',
-                                element: <LazyPage><FinanceDashboard /></LazyPage>,
-                            },
-                            {
-                                path: 'import',
-                                element: <LazyPage><ImportPage /></LazyPage>,
-                            },
-                            {
-                                path: 'categories',
-                                element: <LazyPage><FinanceCategoriesPage /></LazyPage>,
-                            },
-                            {
-                                path: 'bank/:bankId',
-                                element: <LazyPage><BankDetailsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'account/:accountId',
-                                element: <LazyPage><AccountDetailsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'settings',
-                                element: <LazyPage><SettingsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'recurring',
-                                element: <LazyPage><RecurringPage /></LazyPage>,
-                            },
-                            {
-                                path: 'savings',
-                                element: <LazyPage><SavingsPage /></LazyPage>,
-                            },
-                            {
-                                path: 'rules',
-                                element: <LazyPage><RulesPage /></LazyPage>,
-                            },
-                            {
-                                path: 'reports',
-                                element: <LazyPage><MonthlyReportPage /></LazyPage>,
-                            }
-                        ]
+                        errorElement: <RouteErrorPage />,
+                        children: [{
+                            // Pathless route: a page error renders inside the layout, keeping the sidebar/navigation
+                            errorElement: <RouteErrorPage />,
+                            children: [
+                                {
+                                    index: true,
+                                    element: <Navigate to="/finance/dashboard" replace />
+                                },
+                                {
+                                    path: 'dashboard',
+                                    element: <LazyPage><FinanceDashboard /></LazyPage>,
+                                },
+                                {
+                                    path: 'import',
+                                    element: <LazyPage><ImportPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'categories',
+                                    element: <LazyPage><FinanceCategoriesPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'bank/:bankId',
+                                    element: <LazyPage><BankDetailsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'account/:accountId',
+                                    element: <LazyPage><AccountDetailsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'settings',
+                                    element: <LazyPage><SettingsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'recurring',
+                                    element: <LazyPage><RecurringPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'savings',
+                                    element: <LazyPage><SavingsPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'rules',
+                                    element: <LazyPage><RulesPage /></LazyPage>,
+                                },
+                                {
+                                    path: 'reports',
+                                    element: <LazyPage><MonthlyReportPage /></LazyPage>,
+                                }
+                            ]
+                        }]
                     }
                 ]
             },
@@ -283,13 +295,21 @@ const router = createBrowserRouter([
     }
 ])
 
+// Toasts follow the app theme (they stayed light in dark mode); centered on phones, where the bottom
+// of the screen is taken by the tab bar / document toolbar
+const ThemedToaster = () => {
+    const { theme } = useTheme()
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+    return <Toaster richColors theme={theme} position={isMobile ? 'top-center' : 'top-right'} />
+}
+
 function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <LanguageProvider defaultLanguage="fr" storageKey="vite-ui-language">
                 <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                     <RouterProvider router={router} />
-                    <Toaster richColors position="top-right" />
+                    <ThemedToaster />
                 </ThemeProvider>
             </LanguageProvider>
         </QueryClientProvider>

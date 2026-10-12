@@ -8,6 +8,9 @@ interface FocusState {
     isActive: boolean;
     mode: FocusMode;
     timeLeft: number;
+    // Wall-clock end of the running countdown. timeLeft is derived from it on each tick, so the timer
+    // survives reloads and doesn't drift when the browser throttles timers in background tabs.
+    endsAt: number | null;
     cycles: number;
     zenMode: boolean; // Hide UI distractions
 
@@ -26,30 +29,64 @@ const MODES = {
     longBreak: 15 * 60
 }
 
+// `Notification` doesn't exist on iOS Safari (outside installed PWAs): reading it unguarded threw and
+// aborted the end of the session (no logging, no switch to the break)
+const notify = (title: string, body: string) => {
+    try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, { body });
+        }
+    } catch {
+        // Notifications are best-effort
+    }
+};
+
+const secondsUntil = (endsAt: number) => Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+
 export const useFocusStore = create<FocusState>()(
     persist(
         (set, get) => ({
             isActive: false,
             mode: 'work',
             timeLeft: MODES.work,
+            endsAt: null,
             cycles: 0,
             zenMode: false,
 
-            start: () => set({ isActive: true }),
-            pause: () => set({ isActive: false }),
+            start: () => {
+                const { isActive, timeLeft } = get();
+                if (isActive) return;
+                // Ask once, from this user gesture, so the end-of-session notification can be shown
+                if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                    Notification.requestPermission().catch(() => {});
+                }
+                set({ isActive: true, endsAt: Date.now() + timeLeft * 1000 });
+            },
+            pause: () => {
+                const { endsAt, timeLeft } = get();
+                set({ isActive: false, endsAt: null, timeLeft: endsAt ? secondsUntil(endsAt) : timeLeft });
+            },
             reset: () => {
                 const mode = get().mode;
-                set({ timeLeft: MODES[mode], isActive: false });
+                set({ timeLeft: MODES[mode], isActive: false, endsAt: null });
             },
             tick: () => {
-                const { timeLeft, isActive } = get();
-                if (isActive && timeLeft > 0) {
-                    set({ timeLeft: timeLeft - 1 });
-                } else if (isActive && timeLeft === 0) {
+                const { isActive, endsAt, timeLeft } = get();
+                if (!isActive) return;
+                // Older persisted state may lack endsAt: anchor it now
+                if (!endsAt) {
+                    set({ endsAt: Date.now() + timeLeft * 1000 });
+                    return;
+                }
+                const remaining = secondsUntil(endsAt);
+                if (remaining === 0) {
+                    set({ timeLeft: 0 });
                     get().completeSession();
+                } else if (remaining !== timeLeft) {
+                    set({ timeLeft: remaining });
                 }
             },
-            setMode: (mode) => set({ mode, timeLeft: MODES[mode], isActive: false }),
+            setMode: (mode) => set({ mode, timeLeft: MODES[mode], isActive: false, endsAt: null }),
             toggleZen: () => set((state) => ({ zenMode: !state.zenMode })),
             completeSession: () => {
                 const { mode, cycles } = get();
@@ -59,9 +96,7 @@ export const useFocusStore = create<FocusState>()(
                     const nextMode = newCycles % 4 === 0 ? 'longBreak' : 'break';
 
                     // Native Notification
-                    if (Notification.permission === 'granted') {
-                        new Notification("Session terminée !", { body: "Prenez une pause bien méritée ☕" });
-                    }
+                    notify("Session terminée !", "Prenez une pause bien méritée ☕");
 
                     // Play notification sound
                     soundUtils.playSessionComplete();
@@ -103,15 +138,14 @@ export const useFocusStore = create<FocusState>()(
                     set({
                         mode: nextMode,
                         timeLeft: MODES[nextMode],
+                        endsAt: null,
                         cycles: newCycles,
                         isActive: false,
                         zenMode: false // Auto-exit Zen on break
                     });
                 } else {
                     // Back to work
-                    if (Notification.permission === 'granted') {
-                        new Notification("Fin de la pause", { body: "C'est reparti pour une session ! 🚀" });
-                    }
+                    notify("Fin de la pause", "C'est reparti pour une session ! 🚀");
 
                     // Play break end sound
                     soundUtils.playBreakEnd();
@@ -119,6 +153,7 @@ export const useFocusStore = create<FocusState>()(
                     set({
                         mode: 'work',
                         timeLeft: MODES.work,
+                        endsAt: null,
                         isActive: false,
                         zenMode: false // User must manually re-enable zen or auto? Let's say manual start
                     });
@@ -127,11 +162,23 @@ export const useFocusStore = create<FocusState>()(
         }),
         {
             name: 'focus-storage',
+            // The running countdown is persisted as its end time: a reload resumes it (or completes it if
+            // it ended while the tab was closed) instead of showing 25:00 in break mode
             partialize: (state) => ({
                 mode: state.mode,
                 cycles: state.cycles,
-                // Don't persist isActive to avoid running on load immediately
-            })
+                timeLeft: state.timeLeft,
+                isActive: state.isActive,
+                endsAt: state.endsAt
+            }),
+            onRehydrateStorage: () => (state) => {
+                if (!state) return;
+                const max = MODES[state.mode] ?? MODES.work;
+                if (typeof state.timeLeft !== 'number' || state.timeLeft < 0 || state.timeLeft > max) {
+                    state.timeLeft = max;
+                }
+                if (state.isActive && !state.endsAt) state.isActive = false;
+            }
         }
     )
 );

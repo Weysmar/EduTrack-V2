@@ -5,9 +5,11 @@ import { cn } from '@/lib/utils';
 import heic2any from 'heic2any';
 import { BPMNThumbnail } from './BPMNThumbnail';
 
-// Configure PDF Worker
-// Worker is now configured globally in main.tsx
-// pdfjs.GlobalWorkerOptions.workerSrc = ... 
+// Configure the PDF worker here (same-origin file, see public/): main.tsx no longer imports pdf.js,
+// so that the ~1 MB library is only downloaded by the screens that render PDFs
+if (typeof window !== 'undefined') {
+    pdfjs.GlobalWorkerOptions.workerSrc = `${window.location.origin}/pdf.worker.min.mjs`;
+}
 
 interface FilePreviewProps {
     url?: string | null;

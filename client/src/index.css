@@ -267,7 +267,7 @@
         --ring: 142.1 76.2% 36.3%;
     }
 
-    .dark .theme-nature {
+    .dark.theme-nature {
         --primary: 142.1 70.6% 45.3%;
         /* Green 500 */
         --primary-foreground: 144.9 80.4% 10%;
@@ -281,7 +281,7 @@
         --ring: 24.6 95% 53.1%;
     }
 
-    .dark .theme-sunset {
+    .dark.theme-sunset {
         --primary: 20.5 90.2% 48.2%;
         /* Orange 600 */
         --primary-foreground: 60 9.1% 97.8%;
@@ -314,6 +314,18 @@
 @layer base {
     * {
         @apply border-border;
+    }
+
+    /* Honour the OS "reduce motion" setting (loading spinners keep turning so progress stays visible) */
+    @media (prefers-reduced-motion: reduce) {
+        *:not(.animate-spin),
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
     }
 
     html,

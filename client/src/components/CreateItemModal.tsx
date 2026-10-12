@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Dumbbell, FileText, FolderOpen, Loader2, ArrowRight, Calendar as CalendarIcon, Globe, ExternalLink, Sparkles, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { Editor } from './Editor'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import { useProfileStore } from '@/store/profileStore'
@@ -19,9 +18,11 @@ interface CreateItemModalProps {
     onClose: () => void
     courseId: string
     initialFile?: File | null
+    /** Files dropped on the course page; applied each time the modal opens */
+    initialFiles?: File[]
 }
 
-export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: CreateItemModalProps) {
+export function CreateItemModal({ isOpen, onClose, courseId, initialFile, initialFiles }: CreateItemModalProps) {
     const navigate = useNavigate()
     const { activeProfile } = useProfileStore()
     const [type, setType] = useState<ItemType>(initialFile ? 'resource' : 'note')
@@ -39,6 +40,17 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
     const [isUploading, setIsUploading] = useState(false)
     const { t, language } = useLanguage()
     const queryClient = useQueryClient()
+
+    // The modal stays mounted on the course page, so useState initial values only ever saw the first
+    // drop: apply dropped files each time it opens (drag & drop opened an empty "Note" form before)
+    useEffect(() => {
+        if (!isOpen) return
+        const dropped = initialFiles?.length ? initialFiles : (initialFile ? [initialFile] : [])
+        if (dropped.length === 0) return
+        setType('resource')
+        setFiles(dropped)
+        setTitle(dropped.length === 1 ? dropped[0].name.replace(/\.[^/.]+$/, '') : '')
+    }, [isOpen, initialFile, initialFiles])
 
     const fetchUrlPreview = async (rawUrl?: string) => {
         let urlToFetch = (rawUrl !== undefined ? rawUrl : linkUrl).trim()
@@ -155,58 +167,74 @@ export function CreateItemModal({ isOpen, onClose, courseId, initialFile }: Crea
         setUploadProgress(0)
 
         if (type === 'resource' && files.length > 0) {
+            // Each file is uploaded independently: one failure no longer hides which files were already
+            // saved (retrying the whole list created duplicates). Only failed files stay in the list.
+            const failedFiles: File[] = [];
             try {
                 let count = 0;
                 for (const currentFile of files) {
                     count++;
-                    const formData = new FormData();
-                    formData.append('type', type);
-                    formData.append('courseId', courseId);
-                    if (activeProfile?.id) formData.append('profileId', activeProfile.id);
+                    try {
+                        const formData = new FormData();
+                        formData.append('type', type);
+                        formData.append('courseId', courseId);
+                        if (activeProfile?.id) formData.append('profileId', activeProfile.id);
 
-                    const itemTitle = files.length === 1 && title.trim() ? title : currentFile.name.replace(/\.[^/.]+$/, "");
-                    formData.append('title', itemTitle);
+                        const itemTitle = files.length === 1 && title.trim() ? title : currentFile.name.replace(/\.[^/.]+$/, "");
+                        formData.append('title', itemTitle);
 
-                    let fileToUpload = currentFile;
-                    if (currentFile.type.startsWith('image/')) {
-                        try {
-                            const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-                            fileToUpload = await imageCompression(currentFile, options);
-                        } catch (error) {
-                            console.error("Image compression failed", error);
+                        let fileToUpload = currentFile;
+                        if (currentFile.type.startsWith('image/')) {
+                            try {
+                                const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+                                fileToUpload = await imageCompression(currentFile, options);
+                            } catch (error) {
+                                console.error("Image compression failed", error);
+                            }
                         }
-                    }
 
-                    // Attach Google Drive file ID tag if present
-                    const driveFileId = (currentFile as any).driveFileId;
-                    if (driveFileId) {
-                        formData.append('tags', JSON.stringify([`gdrive:${driveFileId}`]));
-                    }
-
-                    formData.append('file', fileToUpload);
-                    formData.append('fileName', fileToUpload.name);
-                    formData.append('fileType', fileToUpload.type);
-                    formData.append('fileSize', fileToUpload.size.toString());
-
-                    // Manual API call to track individual file progress
-                    await itemQueries.create(formData, {
-                        onUploadProgress: (progressEvent: any) => {
-                            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                            // Combine global progress (file X of N) with current file %
-                            const totalProgress = ((count - 1) / files.length * 100) + (percentCompleted / files.length);
-                            setUploadProgress(Math.round(totalProgress));
+                        // Attach Google Drive file ID tag if present
+                        const driveFileId = (currentFile as any).driveFileId;
+                        if (driveFileId) {
+                            formData.append('tags', JSON.stringify([`gdrive:${driveFileId}`]));
                         }
-                    });
+
+                        formData.append('file', fileToUpload);
+                        formData.append('fileName', fileToUpload.name);
+                        formData.append('fileType', fileToUpload.type);
+                        formData.append('fileSize', fileToUpload.size.toString());
+
+                        // Manual API call to track individual file progress
+                        await itemQueries.create(formData, {
+                            onUploadProgress: (progressEvent: any) => {
+                                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                // Combine global progress (file X of N) with current file %
+                                const totalProgress = ((count - 1) / files.length * 100) + (percentCompleted / files.length);
+                                setUploadProgress(Math.round(totalProgress));
+                            }
+                        });
+                    } catch (fileError) {
+                        console.error(`Upload failed for ${currentFile.name}:`, fileError);
+                        failedFiles.push(currentFile);
+                    }
                 }
 
                 queryClient.invalidateQueries({ queryKey: ['items'] });
-                onClose();
-                setTitle('');
-                setContent('');
-                setFiles([]);
+                if (failedFiles.length === 0) {
+                    onClose();
+                    setTitle('');
+                    setContent('');
+                    setFiles([]);
+                } else {
+                    const saved = files.length - failedFiles.length;
+                    toast.error(t('upload.partialFailure', { saved, total: files.length }), {
+                        description: failedFiles.map(f => f.name).join(', ')
+                    });
+                    setFiles(failedFiles);
+                }
             } catch (error) {
                 console.error(error);
-                toast.error("Upload failed");
+                toast.error(t('upload.failed'));
             } finally {
                 setIsUploading(false)
                 setUploadProgress(0)

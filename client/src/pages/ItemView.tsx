@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, type ComponentType } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,7 @@ import { useSummary } from '@/hooks/useSummary'
 import { SummaryOptionsModal } from '@/components/SummaryOptionsModal'
 import { SummaryResultModal } from '@/components/SummaryResultModal'
 import { getItemSourceText, needsFileExtraction, extractItemFileText, hasMeaningfulText } from '@/lib/itemSourceText'
+import { recordRecentItem, removeRecentItem } from '@/store/recentItemsStore'
 import { downloadDriveFileById } from '@/lib/drive/googleDriveService'
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS } from '@/lib/summary/types'
 import { Dumbbell, FileText, FolderOpen, MonitorPlay, Trash2, Download, ArrowLeft, Maximize, Minimize, Library, Sparkles, BrainCircuit, ExternalLink, Loader2, Edit, Image as ImageIcon, Layers, Workflow, Calendar, ArrowLeftRight, RefreshCw, X as CloseIcon, Globe } from 'lucide-react'
@@ -17,21 +18,14 @@ import { ItemMobileToolbar } from '@/components/item/ItemMobileToolbar'
 import { SideBySidePickerModal } from '@/components/item/SideBySidePickerModal'
 import { ItemMarkdownDisplay } from '@/components/item/ItemMarkdownDisplay'
 import { useSummaryExport } from '@/hooks/useSummaryExport'
-import { exportNoteToPdf } from '@/lib/exportNotePdf'
 import { getOfflineItem, getOfflineCourse } from '@/lib/offlineManager'
 import { GenerateExerciseModal, RevisionGenerationMode } from '@/components/GenerateExerciseModal'
 import { RevisionSheetViewer } from '@/components/revision/RevisionSheetViewer'
 import { ClozeExerciseViewer } from '@/components/revision/ClozeExerciseViewer'
-import { MindMapViewer } from '@/components/MindMapViewer'
 import { CheckSquare, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { PDFViewer } from '@/components/PDFViewer'
-import { OfficeViewer } from '@/components/OfficeViewer'
-import { OfficeEditor } from '@/components/office/OfficeEditor'
-import { ImageViewer } from '@/components/ImageViewer'
 import { GenericFileViewer } from '@/components/GenericFileViewer'
 import { TextViewer } from '@/components/TextViewer'
-import { BPMNViewer } from '@/components/BPMNViewer'
 import { EditItemModal } from '@/components/EditItemModal'
 import { TTSControls } from '@/components/TTSControls'
 
@@ -41,6 +35,28 @@ import { Editor } from '@/components/Editor'
 import { useQueryClient } from '@tanstack/react-query'
 import { Pencil, Check, X as Cancel } from 'lucide-react'
 import { toast } from 'sonner'
+
+// Heavy viewers are loaded on demand for the document type being opened: importing them all statically
+// made every item page download ~1.4 MB gzipped (bpmn-js, mermaid, pdf.js, docx, editor...)
+const ViewerFallback = () => (
+    <div className="flex items-center justify-center h-full min-h-[40vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+)
+const lazyViewer = <P extends object>(load: () => Promise<ComponentType<P>>) => {
+    const LazyComponent = lazy(() => load().then(component => ({ default: component }))) as unknown as ComponentType<P>
+    return (props: P) => (
+        <Suspense fallback={<ViewerFallback />}>
+            <LazyComponent {...props} />
+        </Suspense>
+    )
+}
+const PDFViewer = lazyViewer(() => import('@/components/PDFViewer').then(m => m.PDFViewer))
+const OfficeViewer = lazyViewer(() => import('@/components/OfficeViewer').then(m => m.OfficeViewer))
+const OfficeEditor = lazyViewer(() => import('@/components/office/OfficeEditor').then(m => m.OfficeEditor))
+const ImageViewer = lazyViewer(() => import('@/components/ImageViewer').then(m => m.ImageViewer))
+const BPMNViewer = lazyViewer(() => import('@/components/BPMNViewer').then(m => m.BPMNViewer))
+const MindMapViewer = lazyViewer(() => import('@/components/MindMapViewer').then(m => m.MindMapViewer))
 
 export function ItemView() {
     const { courseId, itemId } = useParams()
@@ -80,6 +96,13 @@ export function ItemView() {
         },
         enabled: !!courseId
     })
+
+    // Feeds the dashboard "Continuer" section and the command palette's recent items
+    useEffect(() => {
+        if (item?.id && item.courseId) {
+            recordRecentItem({ itemId: item.id, courseId: item.courseId, title: item.title, type: item.type })
+        }
+    }, [item?.id, item?.courseId, item?.title, item?.type])
 
     // Safety redirect: If itemId accidentally equals courseId, redirect to course
     useEffect(() => {
@@ -401,6 +424,7 @@ export function ItemView() {
         )
         try {
             const noteContent = isEditMode ? editedContent : (item.content || item.extractedContent || '')
+            const { exportNoteToPdf } = await import('@/lib/exportNotePdf')
             await exportNoteToPdf({
                 title: item.title || (language === 'fr' ? 'Note de cours' : 'Course note'),
                 content: noteContent,
@@ -600,6 +624,7 @@ export function ItemView() {
                 const deletedItemId = item.id;
                 try {
                     await itemQueries.delete(deletedItemId);
+                    removeRecentItem(deletedItemId);
                     toast.success("Élément déplacé dans la corbeille", {
                         description: "Le fichier n'est pas perdu et peut être restauré.",
                         action: {

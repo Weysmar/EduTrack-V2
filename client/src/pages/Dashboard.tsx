@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, PenTool, Layout, CheckCircle2, Network } from 'lucide-react'
+import { Folder, Book, Clock, Zap, FileText, Dumbbell, ArrowRight, Plus, UserCircle, Calendar as CalendarIcon, Sparkles, Flame, PenTool, Network, Link2, BookOpen, AlertTriangle, RefreshCw, History } from 'lucide-react'
 import { useLanguage } from '@/components/language-provider'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { CreateCourseModal } from '@/components/CreateCourseModal'
@@ -14,15 +14,44 @@ import { useQueryClient } from '@tanstack/react-query'
 import { StatCardVariant } from '@/components/ui/StatCard';
 import { apiClient } from '@/lib/api/client'
 import { useTheme } from '@/components/theme-provider'
+import { useRecentItems } from '@/store/recentItemsStore'
+import { useNavT } from '@/components/layout/navI18n'
+
+const itemTypeIcon = (type?: string) => {
+    switch (type) {
+        case 'exercise': return <Dumbbell className="h-4 w-4 text-green-500" />
+        case 'note': return <FileText className="h-4 w-4 text-yellow-500" />
+        case 'resource': return <Folder className="h-4 w-4 text-blue-500" />
+        case 'link': return <Link2 className="h-4 w-4 text-sky-500" />
+        case 'mindmap': return <Network className="h-4 w-4 text-indigo-500" />
+        default: return <BookOpen className="h-4 w-4 text-muted-foreground" />
+    }
+}
+
+function formatRelative(timestamp: number, language: string) {
+    const diffSeconds = Math.round((timestamp - Date.now()) / 1000)
+    const rtf = new Intl.RelativeTimeFormat(language === 'en' ? 'en' : 'fr', { numeric: 'auto' })
+    const abs = Math.abs(diffSeconds)
+    if (abs < 60) return rtf.format(diffSeconds, 'second')
+    if (abs < 3600) return rtf.format(Math.round(diffSeconds / 60), 'minute')
+    if (abs < 86400) return rtf.format(Math.round(diffSeconds / 3600), 'hour')
+    return rtf.format(Math.round(diffSeconds / 86400), 'day')
+}
+
+function Skeleton({ className }: { className?: string }) {
+    return <div className={cn("animate-pulse rounded-md bg-muted", className)} />
+}
 
 export function Dashboard() {
     const { t, language } = useLanguage()
+    const tr = useNavT()
     const { minecraftTheme } = useTheme()
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false)
     const { activeProfile } = useProfileStore()
     const queryClient = useQueryClient()
     const isLoggingVisit = useRef(false)
+    const recentItemsRaw = useRecentItems()
 
     // Synchronize latest profile data (including real-time AI Generation count)
     const { data: currentProfile } = useQuery({
@@ -38,15 +67,34 @@ export function Dashboard() {
     })
 
     // Queries
-    const { data: coursesData } = useQuery({
+    // Own key (prefix ['courses'] so invalidations still refresh it) - must not collide with the
+    // full list (getAll(1, 1000)) used by the sidebar / command palette / folder view.
+    const {
+        data: coursesData,
+        isLoading: coursesLoading,
+        isError: coursesError,
+        refetch: refetchCourses
+    } = useQuery({
+        queryKey: ['courses', 'recent'],
+        queryFn: () => courseQueries.getAll(1, 10), // Newest courses for the dashboard
+        enabled: !!activeProfile
+    })
+
+    // Full course list (shared cache with the sidebar, no extra request): used for course titles.
+    const { data: allCoursesData } = useQuery({
         queryKey: ['courses'],
-        queryFn: () => courseQueries.getAll(1, 10), // Get recent for dashboard
+        queryFn: () => courseQueries.getAll(1, 1000),
         enabled: !!activeProfile
     })
 
     const courses = coursesData?.courses || []
 
-    const { data: itemsData } = useQuery({
+    const {
+        data: itemsData,
+        isLoading: itemsLoading,
+        isError: itemsError,
+        refetch: refetchItems
+    } = useQuery({
         queryKey: ['items'],
         queryFn: () => itemQueries.getAll(1, 1000), // Get all items for stats
         enabled: !!activeProfile
@@ -154,6 +202,32 @@ export function Dashboard() {
         return streak;
     }, [sessions]);
 
+    // Course titles by id (full list when available, recent list otherwise)
+    const courseById = useMemo(() => {
+        const map = new Map<string, any>();
+        (coursesData?.courses || []).forEach((c: any) => map.set(String(c.id), c));
+        (allCoursesData?.courses || []).forEach((c: any) => map.set(String(c.id), c));
+        return map;
+    }, [coursesData, allCoursesData]);
+
+    // "Continue" list: recently opened documents, cleaned against the server list when it is complete
+    const continueItems = useMemo(() => {
+        const items: any[] = itemsData?.items || []
+        const itemsComplete = !!itemsData && (itemsData.total == null || items.length >= itemsData.total)
+        const itemsById = new Map<string, any>(items.map((i: any) => [String(i.id), i]))
+        return recentItemsRaw
+            .filter(r => !itemsComplete || itemsById.has(r.itemId))
+            .map(r => {
+                const fresh = itemsById.get(r.itemId)
+                return {
+                    ...r,
+                    title: fresh?.title || r.title,
+                    type: fresh?.type || r.type,
+                    courseTitle: courseById.get(r.courseId)?.title as string | undefined,
+                }
+            })
+            .slice(0, 4)
+    }, [recentItemsRaw, itemsData, courseById])
 
     if (!activeProfile) {
         return (
@@ -179,49 +253,96 @@ export function Dashboard() {
     const itemList = allItems || []
 
     // Derived Data
-    const courseCount = courseList.length
+    const courseCount: number = coursesData?.total ?? courseList.length
     const exerciseCount = itemList.filter((i: any) => i.type === 'exercise').length
     const noteCount = itemList.filter((i: any) => i.type === 'note').length
 
+    const statsLoading = coursesLoading || itemsLoading
+    const hasError = coursesError || itemsError
+    const isNewUser = !coursesLoading && !coursesError && !!coursesData && courseCount === 0
+
+    // The API returns courses newest first; keep the sort as a safety net.
     const recentCourses = [...courseList].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5)
-    const lastActiveCourse = recentCourses[0];
+
+    // Last document really opened by the user (recent-items store), not the newest created course.
+    const lastRecentItem = continueItems[0]
+    const lastActiveCourseId: string | undefined = lastRecentItem?.courseId ?? (recentCourses[0] ? String(recentCourses[0].id) : undefined)
 
     // Enrich activity
-    const activity = itemList
+    const activity = [...itemList]
         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5)
         .map((item: any) => {
-            const course = courseList.find((c: any) => c.id === item.courseId);
+            const course = courseById.get(String(item.courseId));
             return { ...item, courseTitle: course?.title };
         });
 
+    const retryAll = () => {
+        refetchCourses()
+        refetchItems()
+    }
+
+    const strongClass = cn(minecraftTheme ? "text-white bg-[#081c15]/60 px-1 border border-[#52b788]/50" : "text-foreground dark:text-white")
+    const heroButtonClass = cn(
+        "inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition-all shadow-sm w-full sm:w-auto px-4 py-2.5 sm:px-6 sm:py-3 min-h-[44px]",
+        minecraftTheme
+            ? "rounded-none border-2 border-[#74c69d] bg-[#3a7d44] hover:bg-[#469d53] text-white shadow-[3px_3px_0px_0px_#081c15] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+            : "rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
+    )
+    const heroIconClass = cn("w-4 h-4 shrink-0", minecraftTheme ? "fill-yellow-300 text-yellow-300" : "fill-primary-foreground dark:fill-slate-900")
+
     // Quick Actions
-    const quickActions = [
-        { 
-            icon: Plus, 
-            label: language === 'fr' ? "Nouveau Sujet" : "New Course", 
-            action: () => setIsCreateModalOpen(true), 
-            color: minecraftTheme ? "bg-[#2d6a4f] hover:bg-[#40916c] border-[#52b788]/60 text-white" : "bg-blue-500" 
+    const quickActions: { icon: any; label: string; link?: string; action?: () => void; color: string }[] = [
+        {
+            icon: Plus,
+            label: language === 'fr' ? "Nouveau Sujet" : "New Course",
+            action: () => setIsCreateModalOpen(true),
+            color: minecraftTheme ? "bg-[#2d6a4f] hover:bg-[#40916c] border-[#52b788]/60 text-white" : "bg-blue-500"
         },
-        { 
-            icon: PenTool, 
-            label: language === 'fr' ? "Nouvelle Note" : "New Note", 
-            link: lastActiveCourse ? `/edu/course/${lastActiveCourse.id}` : null, 
-            color: minecraftTheme ? "bg-[#8c501e] hover:bg-[#a45e23] border-[#d4976a]/60 text-white" : "bg-amber-500" 
+        {
+            icon: PenTool,
+            label: language === 'fr' ? "Nouvelle Note" : "New Note",
+            // A note lives in a course: without any course, start by creating one.
+            ...(lastActiveCourseId
+                ? { link: `/edu/course/${lastActiveCourseId}` }
+                : { action: () => setIsCreateModalOpen(true) }),
+            color: minecraftTheme ? "bg-[#8c501e] hover:bg-[#a45e23] border-[#d4976a]/60 text-white" : "bg-amber-500"
         },
-        { 
-            icon: Zap, 
-            label: language === 'fr' ? "Mode Focus" : "Focus Mode", 
-            link: "/edu/focus", 
-            color: minecraftTheme ? "bg-[#5a189a] hover:bg-[#7b2cbf] border-[#b5179e]/60 text-white" : "bg-violet-600" 
+        {
+            icon: Zap,
+            label: language === 'fr' ? "Mode Focus" : "Focus Mode",
+            link: "/edu/focus",
+            color: minecraftTheme ? "bg-[#5a189a] hover:bg-[#7b2cbf] border-[#b5179e]/60 text-white" : "bg-violet-600"
         },
-        { 
-            icon: CalendarIcon, 
-            label: language === 'fr' ? "Mon Planning" : "My Schedule", 
-            action: () => setIsRevisionModalOpen(true), 
-            color: minecraftTheme ? "bg-[#0077b6] hover:bg-[#0096c7] border-[#90e0ef]/60 text-white" : "bg-emerald-500" 
+        {
+            icon: CalendarIcon,
+            label: language === 'fr' ? "Mon Planning" : "My Schedule",
+            action: () => setIsRevisionModalOpen(true),
+            color: minecraftTheme ? "bg-[#0077b6] hover:bg-[#0096c7] border-[#90e0ef]/60 text-white" : "bg-emerald-500"
         },
     ]
+
+    const renderQuickActionContent = (action: typeof quickActions[number]) => (
+        <>
+            <div className={cn(
+                "w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95 shrink-0",
+                minecraftTheme
+                    ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                    : "rounded-2xl",
+                action.color
+            )}>
+                <action.icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+            </div>
+            <span className={cn(
+                "text-[10px] sm:text-xs font-medium transition-colors text-center truncate w-full max-w-full block px-0.5",
+                minecraftTheme
+                    ? "text-emerald-100/80 group-hover:text-white"
+                    : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
+            )}>
+                {action.label}
+            </span>
+        </>
+    )
 
     return (
         <div className="p-3 md:p-4 lg:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-24 space-y-4 md:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
@@ -236,10 +357,10 @@ export function Dashboard() {
                 {/* Background decorative elements */}
                 {minecraftTheme ? (
                     <div className="absolute -top-4 -right-4 p-6 opacity-30 select-none pointer-events-none">
-                        <img 
-                            src="/assets/minecraft_grass_block.webp" 
-                            alt="Minecraft Grass Block" 
-                            className="w-56 h-56 object-contain filter drop-shadow-[0_12px_16px_rgba(0,0,0,0.8)] rotate-6" 
+                        <img
+                            src="/assets/minecraft_grass_block.webp"
+                            alt="Minecraft Grass Block"
+                            className="w-56 h-56 object-contain filter drop-shadow-[0_12px_16px_rgba(0,0,0,0.8)] rotate-6"
                         />
                     </div>
                 ) : (
@@ -270,43 +391,54 @@ export function Dashboard() {
                             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2 text-foreground dark:text-white">
                                 {greeting},{" "}
                                 <span className={cn(
-                                    minecraftTheme 
-                                        ? "text-[#55ff55] drop-shadow-[2px_2px_0px_#000]" 
+                                    minecraftTheme
+                                        ? "text-[#55ff55] drop-shadow-[2px_2px_0px_#000]"
                                         : "text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-300 dark:to-violet-300"
                                 )}>
                                     {activeProfile.name}
                                 </span>.
                             </h1>
-                            <p className={cn(
-                                "text-sm md:text-base lg:text-lg max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none",
-                                minecraftTheme ? "text-emerald-100/90" : "text-muted-foreground dark:text-slate-300"
-                            )}>
-                                {language === 'fr' ? (
-                                    <>Prêt à continuer votre progression ? Vous étiez sur <strong className={cn(minecraftTheme ? "text-white bg-[#081c15]/60 px-1 border border-[#52b788]/50" : "text-foreground dark:text-white")}>{lastActiveCourse?.title || "vos cours"}</strong> récemment.</>
-                                ) : (
-                                    <>Ready to continue your progress? You were working on <strong className={cn(minecraftTheme ? "text-white bg-[#081c15]/60 px-1 border border-[#52b788]/50" : "text-foreground dark:text-white")}>{lastActiveCourse?.title || "your courses"}</strong> recently.</>
-                                )}
-                            </p>
+                            {coursesLoading ? (
+                                <div className="space-y-2 max-w-lg pt-1" aria-busy="true">
+                                    <Skeleton className="h-4 w-full max-w-md" />
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
+                            ) : (
+                                <p className={cn(
+                                    "text-sm md:text-base lg:text-lg max-w-lg leading-relaxed line-clamp-2 md:line-clamp-none",
+                                    minecraftTheme ? "text-emerald-100/90" : "text-muted-foreground dark:text-slate-300"
+                                )}>
+                                    {isNewUser ? (
+                                        tr('dashboard.hero.newUser')
+                                    ) : lastRecentItem ? (
+                                        <>{tr('dashboard.hero.ready')} {tr('dashboard.hero.recentlyOn')} <strong className={strongClass}>{lastRecentItem.title}</strong></>
+                                    ) : (
+                                        <>{tr('dashboard.hero.ready')} {tr('dashboard.hero.pickCourse')}</>
+                                    )}
+                                </p>
+                            )}
                         </div>
 
-                        {lastActiveCourse && (
+                        {isNewUser ? (
+                            <div className="pt-2">
+                                <button type="button" onClick={() => setIsCreateModalOpen(true)} className={heroButtonClass}>
+                                    <Plus className="w-4 h-4 shrink-0" />
+                                    <span className="truncate">{tr('dashboard.createFirstCourse')}</span>
+                                </button>
+                            </div>
+                        ) : lastRecentItem ? (
                             <div className="pt-2">
                                 <Link
-                                    to={`/edu/course/${lastActiveCourse.id}`}
-                                    className={cn(
-                                        "inline-flex items-center justify-center gap-2 font-bold text-xs sm:text-sm transition-all shadow-sm w-full sm:w-auto px-4 py-2.5 sm:px-6 sm:py-3",
-                                        minecraftTheme
-                                            ? "rounded-none border-2 border-[#74c69d] bg-[#3a7d44] hover:bg-[#469d53] text-white shadow-[3px_3px_0px_0px_#081c15] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                                            : "rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 dark:shadow-white/10"
-                                    )}
+                                    to={`/edu/course/${lastRecentItem.courseId}/item/${lastRecentItem.itemId}`}
+                                    className={heroButtonClass}
                                 >
-                                    <Zap className={cn("w-4 h-4 shrink-0", minecraftTheme ? "fill-yellow-300 text-yellow-300" : "fill-primary-foreground dark:fill-slate-900")} />
+                                    <Zap className={heroIconClass} />
                                     <span className="truncate">
-                                        {language === 'fr' ? `Reprendre ${lastActiveCourse.title}` : `Resume ${lastActiveCourse.title}`}
+                                        {tr('dashboard.resume')} {lastRecentItem.title}
                                     </span>
                                 </Link>
                             </div>
-                        )}
+                        ) : null}
                     </div>
 
                     {/* DOCK (Quick Actions) - Grid 4 cols on mobile, flex on desktop */}
@@ -318,47 +450,16 @@ export function Dashboard() {
                                     to={action.link}
                                     className="group flex flex-col items-center gap-1 sm:gap-1.5 min-w-0"
                                 >
-                                    <div className={cn(
-                                        "w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95 shrink-0",
-                                        minecraftTheme 
-                                            ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
-                                            : "rounded-2xl",
-                                        action.color
-                                    )}>
-                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[10px] sm:text-xs font-medium transition-colors text-center truncate w-full max-w-full block px-0.5",
-                                        minecraftTheme 
-                                            ? "text-emerald-100/80 group-hover:text-white" 
-                                            : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
-                                    )}>
-                                        {action.label}
-                                    </span>
+                                    {renderQuickActionContent(action)}
                                 </Link>
                             ) : (
                                 <button
                                     key={idx}
+                                    type="button"
                                     onClick={action.action}
                                     className="group flex flex-col items-center gap-1 sm:gap-1.5 min-w-0"
                                 >
-                                    <div className={cn(
-                                        "w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 active:scale-95 shrink-0",
-                                        minecraftTheme 
-                                            ? "rounded-none border-2 border-black/50 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.6)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" 
-                                            : "rounded-2xl",
-                                        action.color
-                                    )}>
-                                        <action.icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[10px] sm:text-xs font-medium transition-colors text-center truncate w-full max-w-full block px-0.5",
-                                        minecraftTheme 
-                                            ? "text-emerald-100/80 group-hover:text-white" 
-                                            : "text-muted-foreground group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white"
-                                    )}>
-                                        {action.label}
-                                    </span>
+                                    {renderQuickActionContent(action)}
                                 </button>
                             )
                         ))}
@@ -368,6 +469,25 @@ export function Dashboard() {
 
             <CreateCourseModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
             <RevisionProgramModal isOpen={isRevisionModalOpen} onClose={() => setIsRevisionModalOpen(false)} />
+
+            {/* ERROR STATE */}
+            {hasError && (
+                <div role="alert" className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{tr('dashboard.error.title')}</p>
+                        <p className="text-xs text-muted-foreground">{tr('dashboard.error.desc')}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={retryAll}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors min-h-[44px] sm:min-h-0"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        {tr('common.retry')}
+                    </button>
+                </div>
+            )}
 
             {/* BENTO GRID LAYOUT */}
             <div className="space-y-6 w-full min-w-0 max-w-full">
@@ -385,94 +505,173 @@ export function Dashboard() {
 
                         {/* STATS ROW */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 w-full min-w-0">
-                            <StatCardVariant
-                                title={t('dashboard.stats.courses')}
-                                value={courseCount}
-                                icon={<Book className="h-6 w-6" />}
-                                variant="blue"
-                                className="bg-card/50 backdrop-blur-sm"
-                            />
-                            <StatCardVariant
-                                title={t('dashboard.stats.exercises')}
-                                value={exerciseCount}
-                                icon={<Dumbbell className="h-6 w-6" />}
-                                variant="green"
-                                className="bg-card/50 backdrop-blur-sm"
-                            />
-                            <StatCardVariant
-                                title={t('dashboard.stats.notes')}
-                                value={noteCount}
-                                icon={<FileText className="h-6 w-6" />}
-                                variant="yellow"
-                                className="bg-card/50 backdrop-blur-sm"
-                            />
-                            <StatCardVariant
-                                title={t('dashboard.stats.aiGeneration')}
-                                value={(currentProfile?.aiGenerationsCount ?? (currentProfile?.settings as any)?.aiGenerationCount)
-                                    ?? (activeProfile?.aiGenerationsCount ?? (activeProfile?.settings as any)?.aiGenerationCount)
-                                    ?? 0}
-                                icon={<Sparkles className="h-6 w-6" />}
-                                variant="purple"
-                                className="bg-card/50 backdrop-blur-sm"
-                            />
+                            {statsLoading ? (
+                                Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="bg-card/50 border rounded-2xl p-3 sm:p-5 flex items-center justify-between gap-2" aria-busy="true">
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton className="h-3 w-16" />
+                                            <Skeleton className="h-6 w-10" />
+                                        </div>
+                                        <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl" />
+                                    </div>
+                                ))
+                            ) : (
+                                <>
+                                    <StatCardVariant
+                                        title={t('dashboard.stats.courses')}
+                                        value={coursesError ? '—' : courseCount}
+                                        icon={<Book className="h-6 w-6" />}
+                                        variant="blue"
+                                        className="bg-card/50 backdrop-blur-sm"
+                                    />
+                                    <StatCardVariant
+                                        title={t('dashboard.stats.exercises')}
+                                        value={itemsError ? '—' : exerciseCount}
+                                        icon={<Dumbbell className="h-6 w-6" />}
+                                        variant="green"
+                                        className="bg-card/50 backdrop-blur-sm"
+                                    />
+                                    <StatCardVariant
+                                        title={t('dashboard.stats.notes')}
+                                        value={itemsError ? '—' : noteCount}
+                                        icon={<FileText className="h-6 w-6" />}
+                                        variant="yellow"
+                                        className="bg-card/50 backdrop-blur-sm"
+                                    />
+                                    <StatCardVariant
+                                        title={t('dashboard.stats.aiGeneration')}
+                                        value={(currentProfile?.aiGenerationsCount ?? (currentProfile?.settings as any)?.aiGenerationCount)
+                                            ?? (activeProfile?.aiGenerationsCount ?? (activeProfile?.settings as any)?.aiGenerationCount)
+                                            ?? 0}
+                                        icon={<Sparkles className="h-6 w-6" />}
+                                        variant="purple"
+                                        className="bg-card/50 backdrop-blur-sm"
+                                    />
+                                </>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* RECENT COURSES SLIDER (Span 2) */}
-                            <div className="lg:col-span-2 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-bold flex items-center gap-2">
-                                        <Clock className="h-5 w-5 text-primary" />
-                                        {t('dashboard.recent')}
-                                    </h2>
-                                    <Link
-                                        to="/edu/library"
-                                        className={cn(
-                                            "text-xs transition-colors",
-                                            minecraftTheme
-                                                ? "text-[#55ff55] hover:text-[#74c69d] font-bold drop-shadow-[1px_1px_0px_#000]"
-                                                : "text-primary hover:underline"
-                                        )}
-                                    >
-                                        {language === 'fr' ? "Voir tout" : "View all"}
-                                    </Link>
-                                </div>
-
-                                {recentCourses.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {recentCourses.slice(0, 4).map((course: any) => (
-                                            <Link
-                                                key={course.id}
-                                                to={`/edu/course/${course.id}`}
-                                                className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
-                                            >
-                                                <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
-                                                <div className="p-5">
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        {course.icon ? (
-                                                            <span className="text-2xl bg-muted/50 p-2 rounded-lg">{course.icon}</span>
-                                                        ) : (
-                                                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                                                                <Folder className="h-5 w-5 text-muted-foreground" />
-                                                            </div>
-                                                        )}
-                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                                                            <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                                                        </div>
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* CONTINUE: recently opened documents */}
+                                {continueItems.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h2 className="text-lg font-bold flex items-center gap-2">
+                                            <History className="h-5 w-5 text-primary" />
+                                            {tr('dashboard.continue')}
+                                        </h2>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {continueItems.map(recent => (
+                                                <Link
+                                                    key={recent.itemId}
+                                                    to={`/edu/course/${recent.courseId}/item/${recent.itemId}`}
+                                                    className="group flex items-center gap-3 bg-card border rounded-2xl p-4 min-h-[44px] hover:shadow-md hover:border-primary/40 transition-all"
+                                                >
+                                                    <div className="p-2 rounded-lg bg-background border shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                                                        {itemTypeIcon(recent.type)}
                                                     </div>
-                                                    <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2">
-                                                        {course.description || (language === 'fr' ? "Aucune description" : "No description")}
-                                                    </p>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground">
-                                        {t('dashboard.empty.courses')}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{recent.title}</h3>
+                                                        <p className="text-xs text-muted-foreground truncate">
+                                                            {recent.courseTitle ? `${recent.courseTitle} • ` : ''}{formatRelative(recent.openedAt, language)}
+                                                        </p>
+                                                    </div>
+                                                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </Link>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
+
+                                {/* RECENT COURSES (fallback when no document was opened yet) */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-lg font-bold flex items-center gap-2">
+                                            <Clock className="h-5 w-5 text-primary" />
+                                            {continueItems.length === 0 && !isNewUser && recentCourses.length > 0
+                                                ? tr('dashboard.continue')
+                                                : t('dashboard.recent')}
+                                        </h2>
+                                        {!isNewUser && (
+                                            <Link
+                                                to="/edu/library"
+                                                className={cn(
+                                                    "text-xs transition-colors",
+                                                    minecraftTheme
+                                                        ? "text-[#55ff55] hover:text-[#74c69d] font-bold drop-shadow-[1px_1px_0px_#000]"
+                                                        : "text-primary hover:underline"
+                                                )}
+                                            >
+                                                {language === 'fr' ? "Voir tout" : "View all"}
+                                            </Link>
+                                        )}
+                                    </div>
+
+                                    {coursesLoading ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" aria-busy="true">
+                                            {Array.from({ length: 2 }).map((_, i) => (
+                                                <div key={i} className="bg-card border rounded-2xl overflow-hidden">
+                                                    <Skeleton className="h-2 w-full rounded-none" />
+                                                    <div className="p-5 space-y-3">
+                                                        <Skeleton className="h-10 w-10 rounded-lg" />
+                                                        <Skeleton className="h-5 w-2/3" />
+                                                        <Skeleton className="h-3 w-full" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : recentCourses.length > 0 ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {recentCourses.slice(0, 4).map((course: any) => (
+                                                <Link
+                                                    key={course.id}
+                                                    to={`/edu/course/${course.id}`}
+                                                    className="group bg-card border rounded-2xl overflow-hidden hover:shadow-md transition-all hover:-translate-y-1"
+                                                >
+                                                    <div className="h-2 w-full" style={{ backgroundColor: course.color }} />
+                                                    <div className="p-5">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            {course.icon ? (
+                                                                <span className="text-2xl bg-muted/50 p-2 rounded-lg">{course.icon}</span>
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                                                                    <Folder className="h-5 w-5 text-muted-foreground" />
+                                                                </div>
+                                                            )}
+                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                                                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                                                            </div>
+                                                        </div>
+                                                        <h3 className="font-bold text-lg line-clamp-1 mb-1">{course.title}</h3>
+                                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                                            {course.description || (language === 'fr' ? "Aucune description" : "No description")}
+                                                        </p>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : coursesError ? (
+                                        <div className="h-32 bg-muted/20 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground text-sm">
+                                            {tr('dashboard.error.title')}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-muted/20 border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-center">
+                                            <p className="text-sm text-muted-foreground">{t('dashboard.empty.courses')}</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCreateModalOpen(true)}
+                                                className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                {tr('dashboard.createFirstCourse')}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {continueItems.length === 0 && !coursesLoading && recentCourses.length > 0 && (
+                                        <p className="text-xs text-muted-foreground">{tr('dashboard.continue.empty')}</p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* ACTIVITY FEED (Span 1) */}
@@ -482,14 +681,21 @@ export function Dashboard() {
                                     {language === 'fr' ? "Activité Récente" : "Recent Activity"}
                                 </h2>
                                 <div className="bg-card border rounded-2xl p-4 space-y-1 max-h-[400px] overflow-auto">
-                                    {activity.length > 0 ? (
+                                    {itemsLoading ? (
+                                        Array.from({ length: 4 }).map((_, i) => (
+                                            <div key={i} className="flex items-center gap-3 p-3" aria-busy="true">
+                                                <Skeleton className="h-8 w-8 rounded-lg" />
+                                                <div className="flex-1 space-y-2">
+                                                    <Skeleton className="h-3.5 w-3/4" />
+                                                    <Skeleton className="h-3 w-1/2" />
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : activity.length > 0 ? (
                                         activity.map((item: any) => (
-                                            <Link key={item.id} to={`/edu/course/${item.courseId}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
+                                            <Link key={item.id} to={`/edu/course/${item.courseId}/item/${item.id}`} className="flex items-center gap-3 p-3 hover:bg-muted/50 rounded-xl transition-colors group">
                                                 <div className="p-2 rounded-lg bg-background border shadow-sm group-hover:scale-105 transition-transform">
-                                                    {item.type === 'exercise' && <Dumbbell className="h-4 w-4 text-green-500" />}
-                                                    {item.type === 'note' && <FileText className="h-4 w-4 text-yellow-500" />}
-                                                    {item.type === 'resource' && <Folder className="h-4 w-4 text-blue-500" />}
-                                                    {item.activityType === 'mindmap' && <Network className="h-4 w-4 text-indigo-500" />}
+                                                    {itemTypeIcon(item.activityType === 'mindmap' ? 'mindmap' : item.type)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{item.title}</h4>

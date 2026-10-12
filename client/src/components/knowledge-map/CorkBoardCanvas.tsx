@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactFlow, {
     Background,
@@ -27,6 +27,17 @@ const edgeTypes = {
     thread: ConnectionThread
 };
 
+/** Highlights search matches and dims the other nodes. */
+function applySearch(node: Node, query: string): Node {
+    const q = query.trim().toLowerCase();
+    const isMatch = !q || String(node.data?.title ?? '').toLowerCase().includes(q);
+    return {
+        ...node,
+        data: { ...node.data, isHighlighted: q ? isMatch : false },
+        style: { ...node.style, opacity: q && !isMatch ? 0.3 : 1 },
+    };
+}
+
 interface MapContentProps {
     searchQuery: string;
     showTopics: boolean;
@@ -44,6 +55,11 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const { fitView } = useReactFlow();
+
+    const searchRef = useRef(searchQuery);
+    searchRef.current = searchQuery;
+    const hasFittedRef = useRef(false);
+    const lastFilterKeyRef = useRef('');
 
     // Zen Mode State
     const [isZenMode, setIsZenMode] = useState(false);
@@ -71,26 +87,12 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
             if (isCourse && !showCourses) isVisible = false;
             if (isItem && !showDocuments) isVisible = false;
 
-            // Search Logic
-            let isMatch = true;
-            if (searchQuery) {
-                isMatch = node.title.toLowerCase().includes(searchQuery.toLowerCase());
-            }
-
             if (isVisible) {
                 newNodes.push({
                     id: node.id,
                     type: 'postIt',
                     position: { x: posX, y: posY },
-                    data: {
-                        ...node,
-                        isHighlighted: searchQuery ? isMatch : false,
-                        // If searching, we could dim non-matches or styling them in the Node
-                        // For now we pass the flag
-                    },
-                    style: {
-                        opacity: searchQuery && !isMatch ? 0.3 : 1
-                    }
+                    data: { ...node },
                 });
             }
 
@@ -140,16 +142,30 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
             placeNode(root, i * 1500, 0, { start: 0, end: Math.PI * 2 }, 0);
         });
 
-        setNodes(newNodes);
+        setNodes(newNodes.map(n => applySearch(n, searchRef.current)));
         setEdges(newEdges);
 
-        // Initial centering
-        // We use a small timeout to let the nodes render in React Flow before fitting
-        setTimeout(() => {
-            fitView({ padding: 0.2, duration: 800 });
-        }, 100);
+        // Center only on first display and when the filters change (not on data refetch / search).
+        const filterKey = `${showTopics}-${showCourses}-${showDocuments}`;
+        if (!hasFittedRef.current || lastFilterKeyRef.current !== filterKey) {
+            // Small timeout to let the nodes render in React Flow before fitting.
+            // Refs are updated in the callback so a cancelled timer is retried on the next run.
+            const timer = setTimeout(() => {
+                hasFittedRef.current = true;
+                lastFilterKeyRef.current = filterKey;
+                fitView({ padding: 0.2, duration: 800 });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, showDocuments]);
 
-    }, [rootNodes, setNodes, setEdges, fitView, showTopics, showCourses, showDocuments, searchQuery]);
+    // Search only re-styles the existing nodes (debounced): no re-layout, no re-centering.
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setNodes(nds => nds.map(n => applySearch(n, searchQuery)));
+        }, 150);
+        return () => clearTimeout(timer);
+    }, [searchQuery, setNodes]);
 
     const onNodeDragStop = useCallback((event: any, node: Node) => {
         savePosition(node.id, node.position.x, node.position.y);
@@ -157,8 +173,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
 
     const navigate = useNavigate();
 
-    const onNodeDoubleClick = useCallback((event: any, node: Node) => {
-        // Navigate on double click
+    const openNode = useCallback((node: Node) => {
         if (node.data.type === 'course') {
             onClose(); // Close modal before navigating
             navigate(`/edu/course/${node.id}`);
@@ -178,6 +193,20 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
         }
     }, [fitView, navigate, onClose]);
 
+    // Desktop: double-click opens a node (single click selects / drags).
+    const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+        openNode(node);
+    }, [openNode]);
+
+    // Touch devices: double-tap is unreliable, a single tap opens the node.
+    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        const pointerType = (event.nativeEvent as PointerEvent | undefined)?.pointerType;
+        const isCoarse = typeof window !== 'undefined' && window.matchMedia?.('(hover: none) and (pointer: coarse)').matches;
+        if (pointerType === 'touch' || (!pointerType && isCoarse)) {
+            openNode(node);
+        }
+    }, [openNode]);
+
     if (isLoading) {
         return <div className="flex items-center justify-center h-full text-[#5D4037] font-serif">{t('common.loading')}</div>;
     }
@@ -190,6 +219,7 @@ function MapContent({ searchQuery, showTopics, showCourses, showDocuments, onTog
             onEdgesChange={onEdgesChange}
             onNodeDragStop={onNodeDragStop}
             onNodeDoubleClick={onNodeDoubleClick}
+            onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             minZoom={0.2}

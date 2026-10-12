@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { X, Calendar, Clock, BookOpen, ChevronRight, Loader2, Sparkles, Folder, Brain, Zap, AlertTriangle } from 'lucide-react'
+import { X, Calendar, Clock, BookOpen, ChevronRight, Sparkles, Folder, Brain, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useLanguage } from '@/components/language-provider'
+import { useAIText } from '@/components/ai/useAIText'
+import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
+import { GenerationProgress } from '@/components/ai/GenerationProgress'
+import { AIQuotaLine } from '@/components/ai/AIQuotaLine'
+import { getAIErrorMessage } from '@/lib/ai/errors'
+import { CALENDAR_ROUTE } from '@/lib/ai/constants'
 import { courseQueries, folderQueries, studyPlanQueries } from '@/lib/api/queries'
 import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
@@ -17,7 +22,7 @@ interface RevisionProgramModalProps {
 type Step = 1 | 2 | 3 | 4; // 1: Target, 2: Date, 3: Parameters, 4: Result
 
 export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalProps) {
-    const { t } = useLanguage()
+    const { t } = useAIText()
     const navigate = useNavigate()
     const [step, setStep] = useState<Step>(1)
 
@@ -33,6 +38,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
     const [provider, setProvider] = useState<'google' | 'perplexity'>('google')
 
     const [generatedPlan, setGeneratedPlan] = useState<any>(null)
+    const [startedAt, setStartedAt] = useState<number | null>(null)
 
     const { apiKeys } = useProfileStore()
     const { isConnected: isCalendarConnected } = useCalendarStore()
@@ -52,14 +58,15 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
 
     const generateMutation = useMutation({
         mutationFn: (data: any) => studyPlanQueries.generate(data, apiKey),
+        onMutate: () => setStartedAt(Date.now()),
+        onSettled: () => setStartedAt(null),
         onSuccess: (data) => {
             setGeneratedPlan(data.program)
             setStep(4)
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             console.error(error)
-            const errMsg = error.response?.data?.error || error.message || "Failed to generate plan."
-            toast.error(errMsg)
+            toast.error(t('ai.plan.error'), { description: getAIErrorMessage(error, { provider }) })
         }
     })
 
@@ -102,6 +109,14 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
         if (!isOpen) reset()
     }, [isOpen])
 
+    /** Libellé traduit du type de tâche renvoyé par l'IA (repli : valeur brute) */
+    const taskTypeLabel = (type?: string) => {
+        if (!type) return ''
+        const key = `ai.plan.type.${type}`
+        const label = t(key)
+        return label === key ? type : label
+    }
+
     if (!isOpen) return null
 
     return (
@@ -134,10 +149,10 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {generateMutation.isPending ? (
-                        <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center animate-pulse">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
                             <p className="text-lg font-medium text-muted-foreground">{t('revision.generating')}</p>
-                            <p className="text-sm text-muted-foreground/70">{provider === 'perplexity' ? "Consulting the knowledge of the universe..." : "Gemini is thinking..."}</p>
+                            <p className="text-sm text-muted-foreground/70">{t('ai.plan.thinking')}</p>
+                            <GenerationProgress startedAt={startedAt} className="w-full max-w-sm text-left" />
                         </div>
                     ) : (
                         <>
@@ -146,7 +161,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                     <h3 className="text-xl font-semibold mb-4">{t('revision.selectTarget')}</h3>
 
                                     <div className="grid gap-3">
-                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Courses</div>
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">{t('ai.plan.courses')}</div>
                                         {courses?.map((course: any) => (
                                             <button
                                                 key={course.id}
@@ -161,7 +176,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                             </button>
                                         ))}
 
-                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 mt-4">Folders (Subjects)</div>
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 mt-4">{t('ai.plan.folders')}</div>
                                         {folders?.map((folder: any) => (
                                             <button
                                                 key={folder.id}
@@ -186,7 +201,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                         <div className="flex items-center gap-4">
                                             <Calendar className="h-6 w-6 text-muted-foreground" />
                                             <div className="flex-1">
-                                                <label className="text-sm font-medium mb-1 block">Date</label>
+                                                <label className="text-sm font-medium mb-1 block">{t('ai.plan.date')}</label>
                                                 <input
                                                     type="date"
                                                     value={examDate}
@@ -202,11 +217,11 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                             {isCalendarConnected ? (
                                                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                                    {t('calendar.connected') || "Calendar Linked"}
+                                                    {t('ai.plan.calendarLinked')}
                                                 </div>
                                             ) : (
                                                 <p className="text-muted-foreground">
-                                                    {t('revision.noCalendar')} • <button onClick={() => navigate('/calendar')} className="underline cursor-pointer hover:text-primary transition-colors">{t('revision.linkCalendar')}</button>
+                                                    {t('revision.noCalendar')} • <button onClick={() => { onClose(); navigate(CALENDAR_ROUTE) }} className="underline cursor-pointer hover:text-primary transition-colors">{t('revision.linkCalendar')}</button>
                                                 </p>
                                             )}
                                         </div>
@@ -224,7 +239,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                         {/* Hours Per Day */}
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center">
-                                                <label className="text-sm font-medium text-muted-foreground">Hours per Day</label>
+                                                <label className="text-sm font-medium text-muted-foreground">{t('ai.plan.hoursPerDay')}</label>
                                                 <span className="text-lg font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{hoursPerDay}h</span>
                                             </div>
                                             <input
@@ -245,8 +260,8 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                         {/* Days Per Week */}
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-center">
-                                                <label className="text-sm font-medium text-muted-foreground">Days per Week</label>
-                                                <span className="text-lg font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{daysPerWeek}d</span>
+                                                <label className="text-sm font-medium text-muted-foreground">{t('ai.plan.daysPerWeek')}</label>
+                                                <span className="text-lg font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{t('ai.plan.daysShort', { n: daysPerWeek })}</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -258,8 +273,8 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                                 className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                                             />
                                             <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span>1d</span>
-                                                <span>7d</span>
+                                                <span>{t('ai.plan.daysShort', { n: 1 })}</span>
+                                                <span>{t('ai.plan.daysShort', { n: 7 })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -268,12 +283,12 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                     <div className="bg-muted/30 p-4 rounded-xl border space-y-4">
                                         <div className="flex items-center gap-3 text-sm">
                                             <Clock className="w-4 h-4 text-primary" />
-                                            <span className="font-medium">Total Weekly Effort:</span>
-                                            <span className="font-bold">~{hoursPerDay * daysPerWeek} hours / week</span>
+                                            <span className="font-medium">{t('ai.plan.weeklyEffort')}</span>
+                                            <span className="font-bold">{t('ai.plan.hoursPerWeek', { hours: hoursPerDay * daysPerWeek })}</span>
                                         </div>
 
                                         <div className="border-t pt-4">
-                                            <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-3 block">AI Model Provider</label>
+                                            <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-3 block">{t('ai.plan.provider')}</label>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <button
                                                     onClick={() => setProvider('google')}
@@ -302,11 +317,9 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                             </div>
 
                                             {!apiKey && (
-                                                <div className="flex items-center gap-2 mt-3 text-amber-600 dark:text-amber-500 text-xs bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
-                                                    <AlertTriangle className="h-3 w-3" />
-                                                    <span>API Key missing for {provider === 'google' ? 'Gemini' : 'Perplexity'}. Check settings.</span>
-                                                </div>
+                                                <MissingApiKeyNotice provider={provider} onNavigate={onClose} compact className="mt-3" />
                                             )}
+                                            <AIQuotaLine className="mt-3" />
                                         </div>
                                     </div>
                                 </div>
@@ -318,8 +331,8 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                         <div className="inline-flex p-3 bg-green-500/10 rounded-full text-green-500 mb-2">
                                             <Sparkles className="h-8 w-8" />
                                         </div>
-                                        <h3 className="text-xl font-bold">Plan Ready!</h3>
-                                        <p className="text-muted-foreground">Here is your optimized path to success.</p>
+                                        <h3 className="text-xl font-bold">{t('ai.plan.ready')}</h3>
+                                        <p className="text-muted-foreground">{t('ai.plan.readySubtitle')}</p>
                                     </div>
 
                                     {/* Timeline Visualization */}
@@ -328,7 +341,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                             <div key={idx} className="relative">
                                                 <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-background border-4 border-primary box-content" />
                                                 <div className="mb-2 flex items-center gap-2">
-                                                    <h4 className="font-bold text-lg">Day {session.day}</h4>
+                                                    <h4 className="font-bold text-lg">{t('ai.plan.day', { n: session.day })}</h4>
                                                     <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{session.date}</span>
                                                 </div>
 
@@ -346,9 +359,9 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                                             <div>
                                                                 <div className="flex items-center gap-2">
                                                                     <p className="font-medium">{task.title}</p>
-                                                                    {task.priority === 'high' && <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded uppercase font-bold">High Priority</span>}
+                                                                    {task.priority === 'high' && <span className="text-[10px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded uppercase font-bold">{t('ai.plan.highPriority')}</span>}
                                                                 </div>
-                                                                <p className="text-xs text-muted-foreground mt-0.5">{task.duration} min • {task.type}</p>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">{task.duration} min • {taskTypeLabel(task.type)}</p>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -359,7 +372,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                         {/* Exam Day */}
                                         <div className="relative">
                                             <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-red-500 border-4 border-background box-content" />
-                                            <h4 className="font-bold text-lg text-red-600">Exam Day</h4>
+                                            <h4 className="font-bold text-lg text-red-600">{t('ai.plan.examDay')}</h4>
                                             <p className="text-muted-foreground">{generatedPlan.examDate}</p>
                                         </div>
                                     </div>
@@ -369,7 +382,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                             onClick={onClose}
                                             className="px-8 py-3 bg-primary text-primary-foreground rounded-full font-bold shadow-lg hover:scale-105 transition-all"
                                         >
-                                            Start My Quest!
+                                            {t('ai.plan.start')}
                                         </button>
                                     </div>
                                 </div>
@@ -386,7 +399,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                                 onClick={() => setStep(prev => (prev - 1) as Step)}
                                 className="px-4 py-2 hover:bg-muted rounded-md transition-colors"
                             >
-                                Back
+                                {t('common.back')}
                             </button>
                         ) : (
                             <div />
@@ -401,7 +414,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
                             }
                             className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 disabled:opacity-50 flex items-center gap-2 font-medium"
                         >
-                            {step === 3 ? t('revision.generate') : 'Next'}
+                            {step === 3 ? t('revision.generate') : t('ai.plan.next')}
                             {step < 3 && <ChevronRight className="h-4 w-4" />}
                         </button>
                     </div>

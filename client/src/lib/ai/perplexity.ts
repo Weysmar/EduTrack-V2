@@ -9,6 +9,12 @@
 import { SummaryOptions } from "../summary/types";
 import { useProfileStore } from "@/store/profileStore";
 import { apiClient } from "@/lib/api/client";
+import { AIRequestError, toAIError } from "./errors";
+import { aiMessage } from "./messages";
+import { AI_REQUEST_TIMEOUT_MS } from "./constants";
+
+const missingPerplexityKeyError = () =>
+    new AIRequestError(aiMessage('ai.error.missingKey', { provider: 'Perplexity' }), 'missing_key');
 
 export interface PerplexityOptions {
     compressionLevel: '20' | '30' | '40' | '50';
@@ -39,12 +45,12 @@ export class PerplexityService {
         }
     }
 
-    static async generateSummary(text: string, options: SummaryOptions, perplexityOptions: PerplexityOptions): Promise<string> {
+    static async generateSummary(text: string, options: SummaryOptions, perplexityOptions: PerplexityOptions, signal?: AbortSignal): Promise<string> {
         const API_KEY = useProfileStore.getState().getApiKey('perplexity_summaries')
             || useProfileStore.getState().getApiKey('perplexity_exercises');
 
         if (!API_KEY) {
-            throw new Error("Clé API Perplexity manquante. Veuillez la configurer dans Profil > Paramètres > Clés API.");
+            throw missingPerplexityKeyError();
         }
 
         const systemPrompt = `Tu es un expert en synthèse académique structurée et pédagogique.
@@ -95,15 +101,19 @@ INSTRUCTIONS DE CONTENU :
 `;
 
         // Routage via le backend unifié — plus d'appel direct à l'API Perplexity
-        const { data } = await apiClient.post('/ai/generate', {
-            prompt: `Voici le texte à résumer :\n\n${text}`,
-            systemPrompt,
-            provider: 'perplexity',
-            model: perplexityOptions.model || 'sonar-pro',
-            apiKey: API_KEY
-        }, { timeout: 300000 });
+        try {
+            const { data } = await apiClient.post('/ai/generate', {
+                prompt: `Voici le texte à résumer :\n\n${text}`,
+                systemPrompt,
+                provider: 'perplexity',
+                model: perplexityOptions.model || 'sonar-pro',
+                apiKey: API_KEY
+            }, { timeout: AI_REQUEST_TIMEOUT_MS, signal });
 
-        return data.text;
+            return data.text;
+        } catch (error: unknown) {
+            throw toAIError(error, { provider: 'perplexity' });
+        }
     }
 }
 
@@ -113,13 +123,14 @@ INSTRUCTIONS DE CONTENU :
 export async function generateWithPerplexity(
     prompt: string,
     systemPrompt: string = "You are a helpful AI assistant.",
-    model?: string
+    model?: string,
+    signal?: AbortSignal
 ): Promise<string> {
     const API_KEY = useProfileStore.getState().getApiKey('perplexity_exercises')
         || useProfileStore.getState().getApiKey('perplexity_summaries');
 
     if (!API_KEY) {
-        throw new Error("Clé API Perplexity manquante. Veuillez la configurer dans Profil > Paramètres > Clés API.");
+        throw missingPerplexityKeyError();
     }
 
     try {
@@ -131,15 +142,13 @@ export async function generateWithPerplexity(
             model: model || 'sonar-pro',
             apiKey: API_KEY
         }, {
-            timeout: 300000
+            timeout: AI_REQUEST_TIMEOUT_MS,
+            signal
         });
 
         return data.text;
-    } catch (error: any) {
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération Perplexity";
-        if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
-            throw new Error("La génération a pris plus de 5 minutes. Veuillez réessayer avec un extrait plus concis.");
-        }
-        throw new Error(errorMessage);
+    } catch (error: unknown) {
+        // Message actionnable : limite quotidienne, quota, timeout, réseau, clé invalide…
+        throw toAIError(error, { provider: 'perplexity' });
     }
 }

@@ -1,5 +1,6 @@
 import { QuizQuestion } from '@/lib/types';
 import { AIServiceFactory } from '@/lib/ai/factory';
+import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
 export interface TrueFalseGenerationParams {
     content: string;
@@ -8,7 +9,14 @@ export interface TrueFalseGenerationParams {
     difficulty?: 'easy' | 'normal' | 'hard' | 'mixed';
     provider: 'google' | 'perplexity';
     model?: string;
+    /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
+    language?: OutputLanguage;
+    /** Signal d'annulation (AbortController) */
+    signal?: AbortSignal;
 }
+
+/** Nombre max de caractères du contenu source envoyés à l'IA */
+export const TRUE_FALSE_MAX_CHARS = 18000;
 
 const SYSTEM_PROMPT = `
 Tu es un expert pédagogique de référence dans la conception de questions d'examen VRAI / FAUX à fort impact cognitif.
@@ -53,12 +61,17 @@ FORMAT DE SORTIE (JSON STRICT SANS AUCUN TEXTE AUTOUR) :
 }
 `;
 
+const buildSystemPrompt = (lang: OutputLanguage = 'fr'): string =>
+    SYSTEM_PROMPT.replace('EN FRANÇAIS', outputLanguageName(lang)) + outputLanguageInstruction(lang);
+
 export async function generateTrueFalseQuestions(params: TrueFalseGenerationParams): Promise<Partial<QuizQuestion>[]> {
-    const { content, sourceTitle, count, difficulty = 'mixed' } = params;
+    const { content, sourceTitle, count, difficulty = 'mixed', language = 'fr' } = params;
+    const source = truncateContent(content, TRUE_FALSE_MAX_CHARS);
+    const tfOptions = language === 'en' ? ['True', 'False'] : ['Vrai', 'Faux'];
 
     const userPrompt = `
 CONTENU DU COURS :
-${content.substring(0, 18000)} ...
+${source.text}${source.truncated ? ' ... (contenu tronqué)' : ''}
 
 SOURCE / TITRE :
 ${sourceTitle || 'Cours'}
@@ -67,10 +80,10 @@ PARAMÈTRES :
 Nombre d'affirmations Vrai/Faux : ${count}
 Difficulté : ${difficulty}
 
-Génère les questions Vrai/Faux en format JSON strict en français.
+Génère les questions Vrai/Faux en format JSON strict, ${language === 'en' ? 'rédigées en anglais' : 'rédigées en français'}.
 `;
 
-    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
+    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, buildSystemPrompt(language), params.provider, params.model, { signal: params.signal });
 
     let cleanText = rawOutput.trim();
     if (cleanText.startsWith('```json')) {
@@ -92,7 +105,7 @@ Génère les questions Vrai/Faux en format JSON strict en français.
 
     return questions.map((q: any) => ({
         stem: q.stem || '?',
-        options: ['Vrai', 'Faux'],
+        options: tfOptions,
         correctAnswer: q.correctAnswer === 1 ? 1 : 0,
         explanation: q.explanation || '',
         difficulty: q.difficulty || difficulty

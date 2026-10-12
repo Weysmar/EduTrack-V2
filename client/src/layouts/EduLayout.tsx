@@ -2,9 +2,13 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useUIStore } from '@/store/uiStore'
 import { cn } from '@/lib/utils'
 import { EduSidebar } from '@/components/layout/EduSidebar'
+import { MobileTabBar } from '@/components/layout/MobileTabBar'
+import { shouldHideTabBar } from '@/components/layout/navItems'
+import { useNavT } from '@/components/layout/navI18n'
 import { Menu, ArrowLeft, Search } from 'lucide-react'
 import { ModeToggle } from '@/components/mode-toggle'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CommandPalette } from '@/components/CommandPalette'
 import { useCommandStore } from '@/store/commandStore'
 import { useSocket } from '@/hooks/useSocket'
@@ -12,19 +16,33 @@ import { useAuthStore } from '@/store/authStore'
 import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
 import { useFocusStore } from '@/store/focusStore'
-import { KnowledgeMapModal } from '@/components/knowledge-map/KnowledgeMapModal'
 import { CompactFocusTimer } from '@/components/CompactFocusTimer'
 import { useLanguage } from '@/components/language-provider'
+import type { Course, Folder } from '@/lib/types'
+
+// Loaded on demand: the map pulls reactflow and fetches every folder/course/item.
+const KnowledgeMapModal = lazy(() =>
+    import('@/components/knowledge-map/KnowledgeMapModal').then(m => ({ default: m.KnowledgeMapModal }))
+)
+
+const IS_MAC = typeof navigator !== 'undefined'
+    && /Mac|iPhone|iPad|iPod/i.test((navigator as any).userAgentData?.platform || navigator.platform || navigator.userAgent || '')
 
 export function EduLayout() {
     const { t } = useLanguage()
+    const tr = useNavT()
     useSocket()
     const location = useLocation()
     const navigate = useNavigate()
+    const queryClient = useQueryClient()
 
-    const { user, isAuthenticated } = useAuthStore()
-    const { activeProfile, switchProfile } = useProfileStore()
+    const user = useAuthStore(state => state.user)
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated)
+    const activeProfile = useProfileStore(state => state.activeProfile)
+    const switchProfile = useProfileStore(state => state.switchProfile)
     const [isMapOpen, setIsMapOpen] = useState(false)
+    const openMap = useCallback(() => setIsMapOpen(true), [])
+    const closeMap = useCallback(() => setIsMapOpen(false), [])
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,7 +61,8 @@ export function EduLayout() {
         }
     }, [isAuthenticated, user?.id, activeProfile?.id, switchProfile])
 
-    const { setUrl, disconnect } = useCalendarStore()
+    const setUrl = useCalendarStore(state => state.setUrl)
+    const disconnect = useCalendarStore(state => state.disconnect)
 
     useEffect(() => {
         if (activeProfile?.settings?.google_calendar) {
@@ -53,16 +72,22 @@ export function EduLayout() {
         }
     }, [activeProfile, setUrl, disconnect])
 
-    const { isSidebarOpen, isCollapsed, toggleSidebar, closeSidebar } = useUIStore()
-    const { open: openCommandPalette } = useCommandStore()
-    const { tick, isActive } = useFocusStore();
+    const isSidebarOpen = useUIStore(state => state.isSidebarOpen)
+    const isCollapsed = useUIStore(state => state.isCollapsed)
+    const toggleSidebar = useUIStore(state => state.toggleSidebar)
+    const closeSidebar = useUIStore(state => state.closeSidebar)
+    const openCommandPalette = useCommandStore(state => state.open)
+
+    // Focus timer: subscribe to the two fields we need only (timeLeft changes every second).
+    const isFocusActive = useFocusStore(state => state.isActive)
+    const tick = useFocusStore(state => state.tick)
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (isActive) {
+        let interval: ReturnType<typeof setInterval> | undefined;
+        if (isFocusActive) {
             interval = setInterval(tick, 1000);
         }
         return () => clearInterval(interval);
-    }, [isActive, tick]);
+    }, [isFocusActive, tick]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -77,10 +102,53 @@ export function EduLayout() {
         if (window.innerWidth < 1024) closeSidebar()
     }, [location.pathname, closeSidebar])
 
+    /** Hierarchical parent of the current page, or null when there is none. */
+    const getBackTarget = (pathname: string): string | null => {
+        const itemMatch = pathname.match(/^\/edu\/course\/([^/]+)\/item\//)
+        if (itemMatch) return `/edu/course/${itemMatch[1]}`
+
+        const courseMatch = pathname.match(/^\/edu\/course\/([^/]+)\/?$/)
+        if (courseMatch) {
+            const data = queryClient.getQueryData<{ courses?: Course[] }>(['courses'])
+            const course = data?.courses?.find(c => String(c.id) === courseMatch[1])
+            return course?.folderId != null && course.folderId !== '' ? `/edu/folder/${course.folderId}` : '/edu/dashboard'
+        }
+
+        const folderMatch = pathname.match(/^\/edu\/folder\/([^/]+)\/?$/)
+        if (folderMatch) {
+            const folders = queryClient.getQueryData<Folder[]>(['folders'])
+            const folder = Array.isArray(folders) ? folders.find(f => String(f.id) === folderMatch[1]) : undefined
+            return folder?.parentId != null && folder.parentId !== '' ? `/edu/folder/${folder.parentId}` : '/edu/dashboard'
+        }
+
+        if (pathname.startsWith('/edu/flashcards/study/')) return '/edu/flashcards'
+
+        return null
+    }
+
+    const handleBack = () => {
+        const target = getBackTarget(location.pathname)
+        if (target) {
+            navigate(target)
+        } else if (location.key !== 'default') {
+            // There is in-app history: going back stays inside the app.
+            navigate(-1)
+        } else {
+            navigate('/edu/dashboard')
+        }
+    }
+
+    const showBack = location.pathname !== '/edu/dashboard' && location.pathname !== '/edu' && location.pathname !== '/edu/'
+    const showTabBar = !shouldHideTabBar(location.pathname)
+
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-background relative">
-            <CommandPalette />
-            <KnowledgeMapModal isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
+        <div className="flex h-dvh w-full overflow-hidden bg-background relative">
+            <CommandPalette onOpenKnowledgeMap={openMap} />
+            {isMapOpen && (
+                <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" aria-busy="true" />}>
+                    <KnowledgeMapModal isOpen onClose={closeMap} />
+                </Suspense>
+            )}
 
             {isSidebarOpen && (
                 <div
@@ -95,7 +163,7 @@ export function EduLayout() {
                     isSidebarOpen ? (isCollapsed ? "w-64 lg:w-20" : "w-64") : "-translate-x-full lg:w-0 lg:border-none"
                 )}
             >
-                <EduSidebar />
+                <EduSidebar onOpenKnowledgeMap={openMap} />
             </aside>
 
             <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden transition-all duration-300">
@@ -104,31 +172,22 @@ export function EduLayout() {
                         <button
                             onClick={toggleSidebar}
                             className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label="Toggle Sidebar"
-                            title="Menu / Sidebar"
+                            aria-label={tr('nav.toggleSidebar')}
+                            title={tr('nav.toggleSidebar')}
                         >
                             <Menu className="h-5 w-5" />
                         </button>
 
-                        {/* Back Arrow when navigated inside a subpage (folder, course, item, etc.) */}
-                        {location.pathname !== '/edu/dashboard' && location.pathname !== '/edu' && (
+                        {/* Back arrow: hierarchical parent (item -> course -> folder -> dashboard) */}
+                        {showBack && (
                             <button
-                                onClick={() => {
-                                    if (location.pathname.startsWith('/edu/course/') && location.pathname.includes('/item/')) {
-                                        const parts = location.pathname.split('/')
-                                        navigate(`/edu/course/${parts[3]}`)
-                                    } else if (window.history.length > 2) {
-                                        navigate(-1)
-                                    } else {
-                                        navigate('/edu/dashboard')
-                                    }
-                                }}
+                                onClick={handleBack}
                                 className="p-2 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs font-medium"
-                                aria-label="Retour au menu"
-                                title="Retour au menu"
+                                aria-label={t('common.back')}
+                                title={t('common.back')}
                             >
                                 <ArrowLeft className="h-5 w-5" />
-                                <span className="hidden sm:inline">Retour</span>
+                                <span className="hidden sm:inline">{t('common.back')}</span>
                             </button>
                         )}
                     </div>
@@ -143,12 +202,17 @@ export function EduLayout() {
                                 {t('app.search')}
                             </div>
                             <kbd className="pointer-events-none absolute right-3 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
-                                <span className="text-xs">⌘</span>K
+                                {IS_MAC ? <><span className="text-xs">⌘</span>K</> : 'Ctrl K'}
                             </kbd>
                         </div>
                     </button>
 
-                    <button onClick={openCommandPalette} className="sm:hidden p-2 hover:bg-accent rounded-md">
+                    <button
+                        onClick={openCommandPalette}
+                        className="sm:hidden p-2 hover:bg-accent rounded-md"
+                        aria-label={t('app.search')}
+                        title={t('app.search')}
+                    >
                         <Search className="h-5 w-5" />
                     </button>
 
@@ -168,6 +232,9 @@ export function EduLayout() {
                 )}>
                     <Outlet />
                 </main>
+
+                {/* Mobile bottom tab bar: in the flex flow, so <main> is shortened by its height (+ safe area). */}
+                {showTabBar && <MobileTabBar onOpenMenu={toggleSidebar} />}
             </div>
         </div>
     )

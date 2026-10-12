@@ -1,3 +1,6 @@
+import defaultTheme from 'tailwindcss/defaultTheme'
+import animate from 'tailwindcss-animate'
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
@@ -16,6 +19,10 @@ export default {
             },
         },
         extend: {
+            // Inter is self-hosted (index.css @font-face) but was never applied: the UI fell back to system fonts
+            fontFamily: {
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+            },
             colors: {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
@@ -72,5 +79,6 @@ export default {
             },
         },
     },
-    plugins: [],
+    // tailwindcss-animate powers the animate-in / fade-in / zoom-in / slide-in-from-* classes used across the app
+    plugins: [animate],
 }

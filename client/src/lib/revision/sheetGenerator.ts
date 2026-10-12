@@ -1,4 +1,5 @@
 import { AIServiceFactory } from '@/lib/ai/factory';
+import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
 export interface RevisionKeyConcept {
     term: string;
@@ -42,7 +43,14 @@ export interface RevisionSheetParams {
     focus?: string[];
     provider: 'google' | 'perplexity';
     model?: string;
+    /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
+    language?: OutputLanguage;
+    /** Signal d'annulation (AbortController) */
+    signal?: AbortSignal;
 }
+
+/** Nombre max de caractères du contenu source envoyés à l'IA */
+export const SHEET_MAX_CHARS = 20000;
 
 const SYSTEM_PROMPT = `
 Tu es un professeur agrégé et un expert pédagogique d'élite.
@@ -106,12 +114,16 @@ FORMAT DE SORTIE (JSON STRICT SANS AUCUN TEXTE AVANT OU APRÈS) :
 }
 `;
 
+const buildSystemPrompt = (lang: OutputLanguage = 'fr'): string =>
+    SYSTEM_PROMPT.replace('EN FRANÇAIS', outputLanguageName(lang)) + outputLanguageInstruction(lang);
+
 export async function generateRevisionSheet(params: RevisionSheetParams): Promise<RevisionSheetData> {
-    const { content, sourceTitle, difficulty = 'normal', focus } = params;
+    const { content, sourceTitle, difficulty = 'normal', focus, language = 'fr' } = params;
+    const source = truncateContent(content, SHEET_MAX_CHARS);
 
     const userPrompt = `
 CONTENU DU COURS À CONDENSER EN FICHE DE RÉVISION :
-${content.substring(0, 20000)} ...
+${source.text}${source.truncated ? ' ... (contenu tronqué)' : ''}
 
 TITRE / SOURCE :
 ${sourceTitle || 'Cours'}
@@ -120,10 +132,10 @@ PARAMÈTRES :
 Difficulté ciblée : ${difficulty}
 Axes d'attention prioritaires : ${focus && focus.length ? focus.join(', ') : 'Concepts fondamentaux, formules clés, pièges d\'examen'}
 
-Génère la fiche de révision complète au format JSON strict en français.
+Génère la fiche de révision complète au format JSON strict, ${language === 'en' ? 'rédigée en anglais' : 'rédigée en français'}.
 `;
 
-    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
+    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, buildSystemPrompt(language), params.provider, params.model, { signal: params.signal });
 
     // Clean markdown wrappers
     let cleanText = rawOutput.trim();

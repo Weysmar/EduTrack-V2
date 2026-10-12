@@ -1,13 +1,13 @@
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS, CompressionLevel, SummaryFormat } from '@/lib/summary/types'
-import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
 import { useProfileStore } from '@/store/profileStore'
 import { ModelSelector } from '@/components/ModelSelector'
-import { getDefaultModel } from '@/config/aiModels'
 import { useAIProvider } from '@/hooks/useAIProvider'
 import { X, Sliders } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useLanguage } from '@/components/language-provider'
+import { useAIText } from '@/components/ai/useAIText'
+import { AIQuotaLine } from '@/components/ai/AIQuotaLine'
+import { AI_SETTINGS_ROUTE } from '@/lib/ai/constants'
 import type { FileCategory } from '@/config/aiModels'
 
 interface SummaryOptionsModalProps {
@@ -31,22 +31,24 @@ export function SummaryOptionsModal({
     const { getApiKey } = useProfileStore()
     const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises')
     const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises')
-    const initialProvider = (!perplexityKey && geminiKey) ? 'google' : 'perplexity'
 
-    // Hook qui garantit le couplage provider ↔ modèle
+    // On ne reprend le provider des options précédentes que si une clé existe pour lui
+    // (sinon useAIProvider choisit automatiquement le provider disposant d'une clé).
+    const preferredProvider = initialOptions?.provider
+    const preferredHasKey = preferredProvider === 'google' ? !!geminiKey : preferredProvider === 'perplexity' ? !!perplexityKey : false
+
+    // Hook qui garantit le couplage provider ↔ modèle (le modèle appartient toujours au provider)
     const ai = useAIProvider({
         geminiKey,
         perplexityKey,
-        initialProvider: initialOptions?.provider as 'google' | 'perplexity' | undefined,
-        initialModel: initialOptions?.model
+        initialProvider: preferredHasKey ? preferredProvider : undefined,
+        initialModel: preferredHasKey ? initialOptions?.model : undefined
     })
 
-    const [options, setOptions] = useState<SummaryOptions>({
-        ...initialOptions,
-        provider: ai.provider,
-        model: ai.model
-    })
-    const { t } = useLanguage()
+    // Options de mise en forme uniquement : provider/modèle viennent TOUJOURS du hook
+    // (évite d'enregistrer le modèle de l'ancien provider lors d'un changement).
+    const [options, setOptions] = useState<SummaryOptions>(initialOptions)
+    const { t } = useAIText()
 
     useEffect(() => {
         if (isOpen) {
@@ -54,8 +56,6 @@ export function SummaryOptionsModal({
             setOptions(prev => ({
                 ...initialOptions,
                 ...prev,
-                provider: ai.provider,
-                model: ai.model
             }))
         }
     }, [isOpen, initialOptions, geminiKey, perplexityKey])
@@ -66,11 +66,11 @@ export function SummaryOptionsModal({
 
     const handleGenerate = () => {
         if (!hasKeyForSelectedProvider) {
-            navigate('/settings')
             onClose()
+            navigate(AI_SETTINGS_ROUTE)
             return
         }
-        onGenerate(options)
+        onGenerate({ ...options, provider: ai.provider, model: ai.model })
         onClose()
     }
 
@@ -98,14 +98,8 @@ export function SummaryOptionsModal({
                                 <ModelSelector
                                     provider={ai.provider}
                                     model={ai.model}
-                                    setProvider={(p) => {
-                                        ai.setProvider(p)
-                                        setOptions(prev => ({ ...prev, provider: p, model: ai.model }))
-                                    }}
-                                    setModel={(m) => {
-                                        ai.setModel(m)
-                                        setOptions(prev => ({ ...prev, model: m }))
-                                    }}
+                                    setProvider={ai.setProvider}
+                                    setModel={ai.setModel}
                                     hasKeyForProvider={ai.hasKeyForProvider}
                                     geminiKey={geminiKey}
                                     perplexityKey={perplexityKey}
@@ -180,7 +174,7 @@ export function SummaryOptionsModal({
                                 />
                                 <span className="text-sm">{t('summary.detectKeywords')}</span>
                             </label>
-                            {options.provider === 'perplexity' && (
+                            {ai.provider === 'perplexity' && (
                                 <label className="flex items-center gap-3 cursor-pointer min-h-[44px]">
                                     <input
                                         type="checkbox"
@@ -196,7 +190,8 @@ export function SummaryOptionsModal({
                         </div>
                     </div >
 
-                    <div className="p-4 border-t bg-muted/10 flex justify-end gap-2 pb-safe">
+                    <div className="p-4 border-t bg-muted/10 flex flex-wrap items-center justify-end gap-2 pb-safe">
+                        <AIQuotaLine className="mr-auto" />
                         <button onClick={onClose} className="px-6 py-3 text-sm hover:bg-muted rounded-md min-h-[44px]">
                             {t('action.cancel')}
                         </button>

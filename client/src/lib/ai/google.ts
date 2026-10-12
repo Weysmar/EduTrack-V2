@@ -1,8 +1,13 @@
 
 import { SummaryOptions } from "../summary/types";
 import { useProfileStore } from "@/store/profileStore";
-import { useAuthStore } from "@/store/authStore";
 import { apiClient } from "@/lib/api/client";
+import { AIRequestError, toAIError } from "./errors";
+import { aiMessage } from "./messages";
+import { AI_REQUEST_TIMEOUT_MS } from "./constants";
+
+const missingGeminiKeyError = () =>
+    new AIRequestError(aiMessage('ai.error.missingKey', { provider: 'Google Gemini' }), 'missing_key');
 
 export interface GoogleGeminiOptions {
     compressionLevel: '20' | '30' | '40' | '50';
@@ -32,12 +37,12 @@ export class GoogleGeminiService {
         }
     }
 
-    static async generateSummary(text: string, options: SummaryOptions, geminiOptions: GoogleGeminiOptions): Promise<string> {
+    static async generateSummary(text: string, options: SummaryOptions, geminiOptions: GoogleGeminiOptions, signal?: AbortSignal): Promise<string> {
         const API_KEY = useProfileStore.getState().getApiKey('google_gemini_summaries')
             || useProfileStore.getState().getApiKey('google_gemini_exercises');
 
         if (!API_KEY) {
-            throw new Error("Clé API Google Gemini manquante. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.");
+            throw missingGeminiKeyError();
         }
 
         const systemPrompt = `Tu es un expert en synthèse académique structurée et pédagogique.
@@ -92,36 +97,25 @@ INSTRUCTIONS DE CONTENU :
                 model: model,
                 apiKey: API_KEY
             }, {
-                timeout: 300000
+                timeout: AI_REQUEST_TIMEOUT_MS,
+                signal
             });
 
             return data.text;
 
-        } catch (error: any) {
-            console.error("Gemini Backend Error:", error);
-
-            // Handle Axios error structure
-            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération";
-
-            if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
-                throw new Error("Quota Google AI dépassé. Veuillez réessayer dans quelques minutes ou changer de modèle dans les paramètres.");
-            }
-
-            if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
-                throw new Error("Le document est très volumineux et la génération a pris plus de 5 minutes. Veuillez réessayer avec une section plus courte ou un modèle plus rapide.");
-            }
-
-            throw new Error(errorMessage);
+        } catch (error: unknown) {
+            // Message actionnable : limite quotidienne, quota, timeout, réseau, clé invalide…
+            throw toAIError(error, { provider: 'google' });
         }
     }
 }
 
-export async function generateWithGoogle(prompt: string, systemPrompt?: string, model?: string): Promise<string> {
+export async function generateWithGoogle(prompt: string, systemPrompt?: string, model?: string, signal?: AbortSignal): Promise<string> {
     const API_KEY = useProfileStore.getState().getApiKey('google_gemini_exercises')
         || useProfileStore.getState().getApiKey('google_gemini_summaries');
 
     if (!API_KEY) {
-        throw new Error("Clé API Google Gemini manquante. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.");
+        throw missingGeminiKeyError();
     }
 
     try {
@@ -132,23 +126,11 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
             model: model || 'gemini-3.7-flash',
             apiKey: API_KEY
         }, {
-            timeout: 300000
+            timeout: AI_REQUEST_TIMEOUT_MS,
+            signal
         });
         return data.text;
-    } catch (error: any) {
-        console.error("AI Error", error);
-
-        // Handle Axios error structure
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Erreur de génération";
-
-        if (errorMessage.includes('429') || errorMessage.includes('Quota exceeded') || errorMessage.includes('Too Many Requests')) {
-            throw new Error("Quota Google AI dépassé. Veuillez changer de modèle (utilisez Gemini 2.5 Flash) ou réessayer plus tard.");
-        }
-
-        if (errorMessage.includes('timeout') || error.code === 'ECONNABORTED') {
-            throw new Error("Le document est très volumineux et la génération a pris plus de 5 minutes. Veuillez réessayer avec une section plus courte ou un modèle plus rapide.");
-        }
-
-        throw new Error(errorMessage);
+    } catch (error: unknown) {
+        throw toAIError(error, { provider: 'google' });
     }
 }

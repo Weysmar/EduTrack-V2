@@ -1,5 +1,6 @@
 import { Flashcard } from '@/lib/types';
 import { AIServiceFactory } from '@/lib/ai/factory';
+import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
 export interface GenerationParams {
   content: string;
@@ -8,7 +9,14 @@ export interface GenerationParams {
   types: ('facts' | 'concepts' | 'calculations' | 'applications')[];
   provider: 'google' | 'perplexity';
   model?: string;
+  /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
+  language?: OutputLanguage;
+  /** Signal d'annulation (AbortController) */
+  signal?: AbortSignal;
 }
+
+/** Nombre max de caractères du contenu source envoyés à l'IA */
+export const FLASHCARDS_MAX_CHARS = 15000;
 
 const SYSTEM_PROMPT = `
 Tu es un expert pédagogique de premier plan dans la création de flashcards pour la répétition espacée (Spaced Repetition / Anki).
@@ -35,25 +43,29 @@ RÈGLES STRICTES DE MISE EN FORME ET PÉDAGOGIE :
    }
 `;
 
+const buildSystemPrompt = (lang: OutputLanguage = 'fr'): string =>
+  SYSTEM_PROMPT.replace('EN FRANÇAIS', outputLanguageName(lang)) + outputLanguageInstruction(lang);
+
 export async function generateFlashcards(params: GenerationParams): Promise<Partial<Flashcard>[]> {
-  const { content, count, difficulty, types } = params;
+  const { content, count, difficulty, types, language = 'fr' } = params;
+  const source = truncateContent(content, FLASHCARDS_MAX_CHARS);
 
   const userPrompt = `
     CONTENU ORIGINAL:
-    ${content.substring(0, 15000)} ... (truncated if too long)
+    ${source.text}${source.truncated ? ' ... (contenu tronqué)' : ''}
 
     PARAMÈTRES:
     Nombre de cartes: ${count}
     Difficulté cible: ${difficulty}
     Types: ${types.join(', ')}
 
-    Génère le JSON maintenant.
+    Génère le JSON maintenant (contenu rédigé ${language === 'en' ? 'en anglais' : 'en français'}).
     `;
 
 
 
   try {
-    const textOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
+    const textOutput = await AIServiceFactory.generateGeneric(userPrompt, buildSystemPrompt(language), params.provider, params.model, { signal: params.signal });
 
     // Clean markdown code fences if present
     let cleanText = textOutput.trim();

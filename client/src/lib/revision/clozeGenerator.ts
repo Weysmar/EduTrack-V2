@@ -1,4 +1,5 @@
 import { AIServiceFactory } from '@/lib/ai/factory';
+import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
 export interface ClozeBlank {
     index: number;
@@ -31,7 +32,14 @@ export interface ClozeGenerationParams {
     difficulty?: 'easy' | 'normal' | 'hard' | 'mixed';
     provider: 'google' | 'perplexity';
     model?: string;
+    /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
+    language?: OutputLanguage;
+    /** Signal d'annulation (AbortController) */
+    signal?: AbortSignal;
 }
+
+/** Nombre max de caractères du contenu source envoyés à l'IA */
+export const CLOZE_MAX_CHARS = 18000;
 
 const SYSTEM_PROMPT = `
 Tu es un expert pédagogique international dans la conception d'exercices à trous (textes lacunaires / Cloze tests) pour l'apprentissage actif (Active Recall).
@@ -81,12 +89,16 @@ FORMAT DE SORTIE (JSON STRICT SANS COMMENTAIRE) :
 }
 `;
 
+const buildSystemPrompt = (lang: OutputLanguage = 'fr'): string =>
+    SYSTEM_PROMPT.replace('EN FRANÇAIS', outputLanguageName(lang)) + outputLanguageInstruction(lang);
+
 export async function generateClozeExercises(params: ClozeGenerationParams): Promise<ClozeExerciseData> {
-    const { content, sourceTitle, count = 3, difficulty = 'normal' } = params;
+    const { content, sourceTitle, count = 3, difficulty = 'normal', language = 'fr' } = params;
+    const source = truncateContent(content, CLOZE_MAX_CHARS);
 
     const userPrompt = `
 CONTENU DU COURS :
-${content.substring(0, 18000)} ...
+${source.text}${source.truncated ? ' ... (contenu tronqué)' : ''}
 
 SOURCE / TITRE :
 ${sourceTitle || 'Cours'}
@@ -95,10 +107,10 @@ PARAMÈTRES :
 Nombre d'exercices / paragraphes : ${count}
 Niveau de difficulté : ${difficulty}
 
-Génère la série d'exercices à trous au format JSON strict en français.
+Génère la série d'exercices à trous au format JSON strict, ${language === 'en' ? 'rédigée en anglais' : 'rédigée en français'}.
 `;
 
-    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, SYSTEM_PROMPT, params.provider, params.model);
+    const rawOutput = await AIServiceFactory.generateGeneric(userPrompt, buildSystemPrompt(language), params.provider, params.model, { signal: params.signal });
 
     // Clean wrappers
     let cleanText = rawOutput.trim();

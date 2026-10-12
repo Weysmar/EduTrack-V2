@@ -11,7 +11,8 @@ import {
     Area
 } from 'recharts';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/components/language-provider';
 
 interface QuizAttempt {
     id: string;
@@ -26,22 +27,24 @@ interface QuizHistoryChartProps {
 }
 
 export const QuizHistoryChart: React.FC<QuizHistoryChartProps> = ({ attempts }) => {
+    const { t, language } = useLanguage();
+    const locale = language === 'en' ? enUS : fr;
     const data = attempts.map(attempt => ({
-        date: format(new Date(attempt.createdAt), 'dd/MM HH:mm', { locale: fr }),
+        date: format(new Date(attempt.createdAt), language === 'en' ? 'MM/dd HH:mm' : 'dd/MM HH:mm', { locale }),
         score: attempt.score,
-        fullDate: format(new Date(attempt.createdAt), 'PPpp', { locale: fr })
+        fullDate: format(new Date(attempt.createdAt), 'PPpp', { locale })
     }));
 
     if (attempts.length === 0) {
         return (
-            <div className="h-40 flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl">
-                Aucune tentative enregistrée
+            <div className="h-40 flex items-center justify-center text-sm text-muted-foreground border-2 border-dashed rounded-xl px-4 text-center">
+                {t('quiz.history.empty')}
             </div>
         );
     }
 
     return (
-        <div className="w-full h-64 mt-6">
+        <div className="w-full h-64 mt-6" role="img" aria-label={t('quiz.history.ariaLabel', { count: attempts.length })}>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -72,7 +75,7 @@ export const QuizHistoryChart: React.FC<QuizHistoryChartProps> = ({ attempts }) 
                                 return (
                                     <div className="bg-popover border rounded-lg p-2 shadow-md text-xs font-medium">
                                         <p className="text-muted-foreground mb-1">{payload[0].payload.fullDate}</p>
-                                        <p className="text-primary font-bold">Score: {payload[0].value}%</p>
+                                        <p className="text-primary font-bold">{t('quiz.history.tooltipScore', { score: String(payload[0].value) })}</p>
                                     </div>
                                 );
                             }

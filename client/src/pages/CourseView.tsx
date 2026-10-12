@@ -155,9 +155,15 @@ export function CourseView() {
     const generationMenuRef = useRef<HTMLDivElement>(null)
 
     const [dragActive, setDragActive] = useState(false)
-    const [droppedFile, setDroppedFile] = useState<File | null>(null)
+    const [droppedFiles, setDroppedFiles] = useState<File[]>([])
 
-    const { summary, generate: generateSummary, isGenerating: isSummaryGenerating } = useSummary(id, 'course', undefined, id)
+    const {
+        summary,
+        generate: generateSummary,
+        isGenerating: isSummaryGenerating,
+        isFetching: isSummaryFetching,
+        generationStartedAt: summaryGenerationStartedAt
+    } = useSummary(id, 'course', undefined, id)
 
     // --- Handlers ---
     const deleteCourseMutation = useMutation({
@@ -165,6 +171,9 @@ export function CourseView() {
         onSuccess: () => {
             navigate('/edu/dashboard')
             queryClient.invalidateQueries({ queryKey: ['courses'] })
+        },
+        onError: () => {
+            toast.error(t('course.delete_error'))
         }
     })
 
@@ -192,18 +201,36 @@ export function CourseView() {
             const quizzes = itemsToDelete.filter(i => i.type === 'quiz')
             const mindmaps = itemsToDelete.filter(i => i.type === 'mindmap')
 
-            const promises = []
-            if (regularItems.length > 0) promises.push(itemQueries.bulkDelete(regularItems.map(i => i.id)))
-            summaries.forEach(s => promises.push(summaryQueries.delete(s.id)))
-            flashcards.forEach(f => promises.push(flashcardQueries.delete(f.id)))
-            quizzes.forEach(q => promises.push(quizQueries.delete(q.id)))
-            mindmaps.forEach(m => promises.push(mindmapQueries.delete(m.id)))
+            // Each deletion remembers which ids it covers: a failed one must not be reported as deleted
+            const operations: { ids: string[]; run: Promise<unknown> }[] = []
+            if (regularItems.length > 0) operations.push({ ids: regularItems.map(i => i.id), run: itemQueries.bulkDelete(regularItems.map(i => i.id)) })
+            summaries.forEach(s => operations.push({ ids: [s.id], run: summaryQueries.delete(s.id) }))
+            flashcards.forEach(f => operations.push({ ids: [f.id], run: flashcardQueries.delete(f.id) }))
+            quizzes.forEach(q => operations.push({ ids: [q.id], run: quizQueries.delete(q.id) }))
+            mindmaps.forEach(m => operations.push({ ids: [m.id], run: mindmapQueries.delete(m.id) }))
 
-            await Promise.allSettled(promises)
-            toast.success(t('bulk.delete_success') || "Éléments supprimés")
-            
-            // Clean up local state
-            setAllVisibleItems(prev => prev.filter(i => !selectedItems.has(i.id)))
+            const results = await Promise.allSettled(operations.map(op => op.run))
+            const deletedIds = new Set<string>()
+            let failedCount = 0
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') operations[index].ids.forEach(itemId => deletedIds.add(itemId))
+                else failedCount += operations[index].ids.length
+            })
+
+            // Flashcards, quizzes and mind maps emit no socket event: refresh their caches explicitly,
+            // otherwise deleted sets reappeared on the next visit
+            ;['items', 'summaries', 'flashcards', 'quizzes', 'mindmaps'].forEach(key =>
+                queryClient.invalidateQueries({ queryKey: [key] })
+            )
+
+            if (failedCount === 0) {
+                toast.success(t('bulk.delete_success'))
+            } else {
+                toast.error(t('bulk.delete_partial', { deleted: deletedIds.size, failed: failedCount }))
+            }
+
+            // Clean up local state (only what was actually deleted)
+            setAllVisibleItems(prev => prev.filter(i => !deletedIds.has(i.id)))
             clearSelection()
         } catch (error: any) {
             toast.error(t('bulk.delete_error') || "Erreur lors de la suppression")
@@ -288,7 +315,7 @@ export function CourseView() {
         e.preventDefault(); e.stopPropagation();
         setDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setDroppedFile(e.dataTransfer.files[0]);
+            setDroppedFiles(Array.from(e.dataTransfer.files)); // every dropped file, not just the first
             setIsAddModalOpen(true);
         }
     }
@@ -502,9 +529,9 @@ export function CourseView() {
             {/* Modals */}
             <CreateItemModal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
+                onClose={() => { setIsAddModalOpen(false); setDroppedFiles([]) }}
                 courseId={id}
-                initialFile={droppedFile}
+                initialFiles={droppedFiles}
             />
             <EditCourseModal
                 isOpen={isEditModalOpen}
@@ -539,6 +566,8 @@ export function CourseView() {
                     summary={summary}
                     onClose={() => setShowSummary(false)}
                     isLoading={isSummaryGenerating}
+                    isFetching={isSummaryFetching}
+                    generationStartedAt={summaryGenerationStartedAt}
                     onConfigure={() => setIsSummaryOptionsOpen(true)}
                     onRegenerate={() => setIsSummaryOptionsOpen(true)}
                 />

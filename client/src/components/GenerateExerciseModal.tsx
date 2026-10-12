@@ -1,27 +1,46 @@
 import { Dialog, Transition } from '@headlessui/react'
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { generateFlashcards, GenerationParams } from '@/lib/flashcards/generator'
-import { generateQuizQuestions } from '@/lib/quiz/generator'
-import { generateTrueFalseQuestions } from '@/lib/revision/trueFalseGenerator'
-import { generateClozeExercises } from '@/lib/revision/clozeGenerator'
-import { generateRevisionSheet } from '@/lib/revision/sheetGenerator'
-import { 
-    Loader2, Brain, AlertCircle, CheckSquare, Layers, 
-    Scale, FileEdit, BookOpen, BrainCircuit, Sparkles, FileText 
+import { generateFlashcards, GenerationParams, FLASHCARDS_MAX_CHARS } from '@/lib/flashcards/generator'
+import { generateQuizQuestions, QUIZ_MAX_CHARS } from '@/lib/quiz/generator'
+import { generateTrueFalseQuestions, TRUE_FALSE_MAX_CHARS } from '@/lib/revision/trueFalseGenerator'
+import { generateClozeExercises, CLOZE_MAX_CHARS } from '@/lib/revision/clozeGenerator'
+import { generateRevisionSheet, SHEET_MAX_CHARS } from '@/lib/revision/sheetGenerator'
+import {
+    Loader2, AlertCircle, CheckSquare, Layers,
+    Scale, FileEdit, BookOpen, BrainCircuit, Sparkles, FileText, Info
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useProfileStore } from '@/store/profileStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { ModelSelector } from '@/components/ModelSelector'
 import { useAIProvider } from '@/hooks/useAIProvider'
-import { useLanguage } from '@/components/language-provider'
+import { useAIText } from '@/components/ai/useAIText'
+import { GenerationProgress } from '@/components/ai/GenerationProgress'
+import { AIQuotaLine } from '@/components/ai/AIQuotaLine'
+import { courseQueries } from '@/lib/api/queries'
+import { apiClient } from '@/lib/api/client'
+import { DEFAULT_SUMMARY_OPTIONS, type SummaryOptions } from '@/lib/summary/types'
+import { AIRequestError, getAIErrorMessage, isAbortError } from '@/lib/ai/errors'
+import { AI_REQUEST_TIMEOUT_MS, providerLabel } from '@/lib/ai/constants'
 
 import type { FileCategory } from '@/config/aiModels'
 
 export type RevisionGenerationMode = 'flashcards' | 'quiz' | 'true_false' | 'cloze' | 'sheet' | 'mindmap' | 'summary'
+
+/** Limite de caractères envoyés à l'IA par format (au-delà, le contenu est tronqué) */
+const MAX_CHARS_BY_MODE: Partial<Record<RevisionGenerationMode, number>> = {
+    flashcards: FLASHCARDS_MAX_CHARS,
+    quiz: QUIZ_MAX_CHARS,
+    true_false: TRUE_FALSE_MAX_CHARS,
+    cloze: CLOZE_MAX_CHARS,
+    sheet: SHEET_MAX_CHARS,
+}
+
+/** Formats enregistrés comme items de cours : un cours est obligatoire */
+const COURSE_REQUIRED_MODES: RevisionGenerationMode[] = ['cloze', 'sheet']
 
 interface GenerateExerciseModalProps {
     isOpen: boolean
@@ -46,7 +65,7 @@ export function GenerateExerciseModal({
     fileCategory,
     onSuccess
 }: GenerateExerciseModalProps) {
-    const { t } = useLanguage()
+    const { t, language } = useAIText()
     const navigate = useNavigate()
     const queryClient = useQueryClient()
     const { activeProfile, getApiKey } = useProfileStore()
@@ -56,13 +75,32 @@ export function GenerateExerciseModal({
 
     const [mode, setMode] = useState<RevisionGenerationMode>(initialMode)
     const [isLoading, setIsLoading] = useState(false)
+    const [startedAt, setStartedAt] = useState<number | null>(null)
+    const [stage, setStage] = useState<'saving' | undefined>(undefined)
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard' | 'mixed'>('mixed')
     const [count, setCount] = useState<number>(10)
     const [selectedTypes, setSelectedTypes] = useState<string[]>(['concept', 'fact'])
+    const [selectedCourseId, setSelectedCourseId] = useState<string>('')
     const [error, setError] = useState<string | null>(null)
+    const abortRef = useRef<AbortController | null>(null)
     const isOnline = useOnlineStatus()
 
     const hasKeyForSelectedProvider = ai.hasKeyForProvider
+
+    // Sans cours fourni (ex: depuis un dossier), l'utilisateur choisit le cours de destination
+    const needsCoursePicker = !courseId
+    const courseRequired = needsCoursePicker && COURSE_REQUIRED_MODES.includes(mode)
+    const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
+        queryKey: ['courses', 'generation-picker'],
+        queryFn: () => courseQueries.getAll(1, 1000),
+        enabled: isOpen && needsCoursePicker,
+        staleTime: 60 * 1000,
+    })
+    const courses: Array<{ id: string; title: string }> = coursesData?.courses || []
+
+    const maxChars = MAX_CHARS_BY_MODE[mode]
+    const contentLength = sourceContent?.length ?? 0
+    const isTruncated = !!maxChars && contentLength > maxChars
 
     useEffect(() => {
         if (isOpen) {
@@ -70,10 +108,14 @@ export function GenerateExerciseModal({
             setCount(initialMode === 'cloze' ? 3 : 10)
             setDifficulty('mixed')
             setSelectedTypes(['concept', 'fact'])
+            setSelectedCourseId('')
             setError(null)
             ai.reset()
         }
     }, [isOpen, initialMode, geminiKey, perplexityKey])
+
+    // Annule la requête en cours si le modal est démonté
+    useEffect(() => () => abortRef.current?.abort(), [])
 
     const handleTypeToggle = (type: string) => {
         if (selectedTypes.includes(type)) {
@@ -83,23 +125,57 @@ export function GenerateExerciseModal({
         }
     }
 
+    /** Échap / clic sur le fond : ignorés pendant la génération (utiliser "Annuler") */
+    const handleDialogClose = () => {
+        if (isLoading) return
+        onClose()
+    }
+
+    /** "Annuler" : interrompt réellement la génération (AbortController) puis ferme */
+    const handleCancel = () => {
+        if (isLoading) {
+            abortRef.current?.abort()
+        }
+        onClose()
+    }
+
     const handleGenerate = async () => {
         if (!hasKeyForSelectedProvider) {
-            setError(`Clé API manquante pour ${ai.provider === 'google' ? 'Google Gemini' : 'Perplexity'}. Veuillez renseigner votre clé personnelle dans Profil > Paramètres > Clés API.`);
-            return;
+            setError(t('ai.error.missingKey', { provider: providerLabel(ai.provider) }))
+            return
         }
 
         if (!sourceContent || !sourceContent.trim()) {
-            setError(t('exercise.error.noContent') || "Aucun contenu disponible pour la génération. Veuillez vous assurer que le document contient du texte.");
-            return;
+            setError(t('ai.error.noContent'))
+            return
         }
 
+        if (courseRequired && !selectedCourseId) {
+            setError(t('ai.course.required'))
+            return
+        }
+
+        abortRef.current?.abort()
+        const controller = new AbortController()
+        abortRef.current = controller
+        const { signal } = controller
+        /** Lève une erreur d'annulation si l'utilisateur a cliqué sur "Annuler" entre deux étapes */
+        const ensureActive = () => {
+            if (signal.aborted) throw new AIRequestError(t('ai.error.aborted'), 'aborted')
+        }
+
+        const targetCourseId = courseId || selectedCourseId || undefined
+        const outputLanguage = language === 'en' ? 'en' : 'fr'
+        const startTime = Date.now()
+
         setIsLoading(true)
+        setStartedAt(startTime)
+        setStage(undefined)
         setError(null)
 
         try {
             const now = new Date()
-            const { flashcardQueries, quizQueries, itemQueries, mindmapQueries } = await import('@/lib/api/queries')
+            const { flashcardQueries, quizQueries, itemQueries } = await import('@/lib/api/queries')
             const difficultyLabel = difficulty === 'easy' ? 'Facile' : difficulty === 'hard' ? 'Difficile' : difficulty === 'mixed' ? 'Mixte' : 'Moyen'
 
             // 1. FLASHCARDS
@@ -110,13 +186,17 @@ export function GenerateExerciseModal({
                     difficulty,
                     types: selectedTypes as GenerationParams['types'],
                     provider: ai.provider,
-                    model: ai.model
+                    model: ai.model,
+                    language: outputLanguage,
+                    signal
                 })
 
-                if (!cards || cards.length === 0) throw new Error("Aucune flashcard générée.")
+                ensureActive()
+                if (!cards || cards.length === 0) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const createdSet = await flashcardQueries.create({
-                    courseId,
+                    courseId: targetCourseId,
                     itemId,
                     profileId: activeProfile?.id || "",
                     name: `${sourceTitle} - Flashcards`,
@@ -130,15 +210,15 @@ export function GenerateExerciseModal({
                 })
 
                 queryClient.invalidateQueries({ queryKey: ['flashcards'] })
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['flashcards', courseId] })
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['flashcards', targetCourseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Flashcards générées avec succès !")
                 onClose()
                 navigate(`/edu/flashcards/study/${createdSet.id}`)
-            } 
+            }
             // 2. QCM (Choix Multiples)
             else if (mode === 'quiz') {
                 const questions = await generateQuizQuestions({
@@ -147,13 +227,17 @@ export function GenerateExerciseModal({
                     difficulty,
                     types: selectedTypes as any,
                     provider: ai.provider,
-                    model: ai.model
+                    model: ai.model,
+                    language: outputLanguage,
+                    signal
                 })
 
-                if (!questions || questions.length === 0) throw new Error("Aucune question retournée.")
+                ensureActive()
+                if (!questions || questions.length === 0) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const quiz = await quizQueries.create({
-                    courseId,
+                    courseId: targetCourseId,
                     itemId,
                     profileId: activeProfile?.id || "",
                     name: `${sourceTitle} - QCM`,
@@ -172,9 +256,9 @@ export function GenerateExerciseModal({
                 })
 
                 queryClient.invalidateQueries({ queryKey: ['quizzes'] })
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['quizzes', courseId] })
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['quizzes', targetCourseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Quiz QCM généré avec succès !")
@@ -189,13 +273,17 @@ export function GenerateExerciseModal({
                     count,
                     difficulty,
                     provider: ai.provider,
-                    model: ai.model
+                    model: ai.model,
+                    language: outputLanguage,
+                    signal
                 })
 
-                if (!tfQuestions || tfQuestions.length === 0) throw new Error("Aucune question Vrai/Faux générée.")
+                ensureActive()
+                if (!tfQuestions || tfQuestions.length === 0) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const quiz = await quizQueries.create({
-                    courseId,
+                    courseId: targetCourseId,
                     itemId,
                     profileId: activeProfile?.id || "",
                     name: `${sourceTitle} - Vrai / Faux`,
@@ -209,23 +297,23 @@ export function GenerateExerciseModal({
                     quizType: 'true_false',
                     questions: tfQuestions.map(q => ({
                         stem: q.stem || '?',
-                        options: q.options || ['Vrai', 'Faux'],
+                        options: q.options || (outputLanguage === 'en' ? ['True', 'False'] : ['Vrai', 'Faux']),
                         correctAnswer: q.correctAnswer ?? 0,
                         explanation: q.explanation || ''
                     }))
                 })
 
                 queryClient.invalidateQueries({ queryKey: ['quizzes'] })
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['quizzes', courseId] })
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['quizzes', targetCourseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Questions Vrai/Faux générées avec succès !")
                 onClose()
                 navigate(`/edu/quiz/study/${quiz.id}`)
             }
-            // 4. EXERCICES À TROUS
+            // 4. EXERCICES À TROUS (enregistrés dans un cours : targetCourseId garanti par courseRequired)
             else if (mode === 'cloze') {
                 const clozeData = await generateClozeExercises({
                     content: sourceContent,
@@ -233,13 +321,17 @@ export function GenerateExerciseModal({
                     count: Math.min(count, 5), // Paragraph count
                     difficulty,
                     provider: ai.provider,
-                    model: ai.model
+                    model: ai.model,
+                    language: outputLanguage,
+                    signal
                 })
 
-                if (!clozeData || !clozeData.exercises?.length) throw new Error("Aucun exercice à trous généré.")
+                ensureActive()
+                if (!clozeData || !clozeData.exercises?.length) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const createdItem = await itemQueries.create({
-                    courseId: courseId || "",
+                    courseId: targetCourseId,
                     profileId: activeProfile?.id || "",
                     type: 'cloze',
                     title: `${sourceTitle} - Exercice à trous`,
@@ -248,17 +340,17 @@ export function GenerateExerciseModal({
                     status: 'active'
                 })
 
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Exercice à trous généré avec succès !")
                 onClose()
-                if (courseId) {
-                    navigate(`/edu/course/${courseId}/item/${createdItem.id}`)
+                if (targetCourseId) {
+                    navigate(`/edu/course/${targetCourseId}/item/${createdItem.id}`)
                 }
             }
-            // 5. FICHE DE RÉVISION
+            // 5. FICHE DE RÉVISION (enregistrée dans un cours)
             else if (mode === 'sheet') {
                 const sheetData = await generateRevisionSheet({
                     content: sourceContent,
@@ -266,13 +358,17 @@ export function GenerateExerciseModal({
                     difficulty,
                     focus: selectedTypes,
                     provider: ai.provider,
-                    model: ai.model
+                    model: ai.model,
+                    language: outputLanguage,
+                    signal
                 })
 
-                if (!sheetData) throw new Error("Échec de la génération de la fiche.")
+                ensureActive()
+                if (!sheetData) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const createdItem = await itemQueries.create({
-                    courseId: courseId || "",
+                    courseId: targetCourseId,
                     profileId: activeProfile?.id || "",
                     type: 'sheet',
                     title: `${sourceTitle} - Fiche de révision`,
@@ -281,30 +377,33 @@ export function GenerateExerciseModal({
                     status: 'completed'
                 })
 
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Fiche de révision générée avec succès !")
                 onClose()
-                if (courseId) {
-                    navigate(`/edu/course/${courseId}/item/${createdItem.id}`)
+                if (targetCourseId) {
+                    navigate(`/edu/course/${targetCourseId}/item/${createdItem.id}`)
                 }
             }
             // 6. MIND MAP IA
             else if (mode === 'mindmap') {
-                const mindMap = await mindmapQueries.generate({
+                // Appel direct : le serveur accepte `content`, et on peut annuler via `signal`
+                const { data: mindMap } = await apiClient.post('/mindmaps/generate', {
                     content: sourceContent,
                     name: `${sourceTitle} - Mind Map`,
-                    courseId,
+                    courseId: targetCourseId,
                     provider: ai.provider,
                     model: ai.model
-                })
+                }, { timeout: AI_REQUEST_TIMEOUT_MS, signal })
+
+                ensureActive()
 
                 queryClient.invalidateQueries({ queryKey: ['mindmaps'] })
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['mindmaps', courseId] })
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['mindmaps', targetCourseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Mind Map générée avec succès !")
@@ -319,37 +418,37 @@ export function GenerateExerciseModal({
                 const { summaryQueries } = await import('@/lib/api/queries')
                 const { v4: uuidv4 } = await import('uuid')
 
-                const summaryText = await AIServiceFactory.generateSummary(sourceContent, {
+                const summaryOptions: SummaryOptions = {
+                    ...DEFAULT_SUMMARY_OPTIONS,
                     provider: ai.provider,
                     model: ai.model,
                     compression: 0.5,
-                    format: 'structured',
+                    format: 'bullets',
                     useWebSearch: false
-                })
+                }
 
-                if (!summaryText) throw new Error("Échec de la génération du résumé.")
+                const summaryText = await AIServiceFactory.generateSummary(sourceContent, summaryOptions, { signal })
+                const processingTimeMs = Date.now() - startTime
+
+                ensureActive()
+                if (!summaryText) throw new Error(t('ai.error.noResult'))
+                setStage('saving')
 
                 const cleanedContent = formatSummaryMarkdown(summaryText)
 
                 const summaryPayload = {
                     id: uuidv4(),
-                    itemId: itemId ? String(itemId) : (courseId ? String(courseId) : 'course'),
+                    itemId: itemId ? String(itemId) : (targetCourseId ? String(targetCourseId) : 'course'),
                     itemType: itemId ? 'note' : 'course',
-                    courseId: courseId || null,
+                    courseId: targetCourseId || null,
                     content: cleanedContent,
                     stats: {
                         originalWordCount: sourceContent.split(/\s+/).filter(Boolean).length,
                         summaryWordCount: cleanedContent.split(/\s+/).filter(Boolean).length,
                         compressionRatio: cleanedContent.length / (sourceContent.length || 1),
-                        processingTimeMs: 0
+                        processingTimeMs
                     },
-                    options: {
-                        provider: ai.provider,
-                        model: ai.model,
-                        compression: 0.5,
-                        format: 'structured',
-                        useWebSearch: false
-                    },
+                    options: summaryOptions,
                     createdAt: Date.now()
                 }
 
@@ -360,9 +459,9 @@ export function GenerateExerciseModal({
                     queryClient.invalidateQueries({ queryKey: ['summary', String(itemId)] })
                 }
                 queryClient.invalidateQueries({ queryKey: ['summaries'] })
-                if (courseId) {
-                    queryClient.invalidateQueries({ queryKey: ['summaries', courseId] })
-                    queryClient.invalidateQueries({ queryKey: ['items', courseId] })
+                if (targetCourseId) {
+                    queryClient.invalidateQueries({ queryKey: ['summaries', targetCourseId] })
+                    queryClient.invalidateQueries({ queryKey: ['items', targetCourseId] })
                 }
 
                 toast.success("Résumé généré avec succès !")
@@ -370,19 +469,26 @@ export function GenerateExerciseModal({
                 onSuccess?.('summary', savedSummary || summaryPayload)
             }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
+            if (isAbortError(e)) {
+                toast.info(t('ai.cancelled'))
+                return
+            }
             console.error("Exercise generation failed:", e)
-            const msg = e.response?.data?.error || e.response?.data?.message || e.message || "Échec de génération. Vérifiez votre clé API ou votre connexion internet et réessayez."
+            const msg = getAIErrorMessage(e, { provider: ai.provider })
             setError(msg)
             toast.error(msg)
         } finally {
+            if (abortRef.current === controller) abortRef.current = null
             setIsLoading(false)
+            setStartedAt(null)
+            setStage(undefined)
         }
     }
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[100]" onClose={onClose}>
+            <Dialog as="div" className="relative z-[100]" onClose={handleDialogClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -420,6 +526,8 @@ export function GenerateExerciseModal({
                                 </Dialog.Title>
 
                                 <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-6">
+                                    {/* Options verrouillées pendant la génération */}
+                                    <fieldset disabled={isLoading} className="space-y-6 min-w-0 disabled:opacity-70">
                                     {/* 6 Revision Modes Grid */}
                                     <div>
                                         <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
@@ -568,6 +676,58 @@ export function GenerateExerciseModal({
                                         />
                                     </div>
 
+                                    {/* Cours de destination (quand aucun cours n'est fourni, ex: depuis un dossier) */}
+                                    {needsCoursePicker && (
+                                        <div>
+                                            <label htmlFor="ai-generation-course" className="block text-sm font-medium mb-1.5">
+                                                {t('ai.course.label')}
+                                                {courseRequired && <span className="text-destructive"> *</span>}
+                                            </label>
+                                            <select
+                                                id="ai-generation-course"
+                                                value={selectedCourseId}
+                                                onChange={(e) => {
+                                                    setSelectedCourseId(e.target.value)
+                                                    setError(null)
+                                                }}
+                                                className={cn(
+                                                    "w-full bg-background border px-3 py-2.5 rounded-xl text-sm ring-offset-background focus:ring-2 focus:ring-primary/20",
+                                                    courseRequired && !selectedCourseId && "border-amber-500/60"
+                                                )}
+                                            >
+                                                <option value="">
+                                                    {isLoadingCourses
+                                                        ? t('ai.course.loading')
+                                                        : courseRequired ? t('ai.course.placeholder') : t('ai.course.none')}
+                                                </option>
+                                                {courses.map(course => (
+                                                    <option key={course.id} value={course.id}>{course.title}</option>
+                                                ))}
+                                            </select>
+                                            <p className={cn(
+                                                "mt-1 text-[11px]",
+                                                courseRequired && !selectedCourseId ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
+                                            )}>
+                                                {!isLoadingCourses && courses.length === 0
+                                                    ? t('ai.course.empty')
+                                                    : courseRequired ? t('ai.course.required') : t('ai.course.optionalHint')}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Contenu tronqué pour ce format */}
+                                    {isTruncated && maxChars && (
+                                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-300 text-xs flex items-start gap-2">
+                                            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                                            <span>
+                                                {t('ai.truncated.notice', {
+                                                    limit: maxChars.toLocaleString(language === 'en' ? 'en-US' : 'fr-FR'),
+                                                    total: contentLength.toLocaleString(language === 'en' ? 'en-US' : 'fr-FR')
+                                                })}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* Count / Paragraphs Options (Not needed for MindMap, Sheet, or Summary) */}
                                     {mode !== 'mindmap' && mode !== 'sheet' && mode !== 'summary' && (
                                         <div>
@@ -639,6 +799,11 @@ export function GenerateExerciseModal({
                                         </div>
                                     )}
 
+                                    </fieldset>
+
+                                    {/* Progression : temps écoulé + étapes */}
+                                    <GenerationProgress startedAt={startedAt} stage={stage} showKeepOpenHint />
+
                                     {error && (
                                         <div className="p-3.5 bg-destructive/10 text-destructive rounded-xl text-xs sm:text-sm flex items-center gap-2 animate-in fade-in">
                                             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -647,22 +812,26 @@ export function GenerateExerciseModal({
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-end gap-2.5 p-5 sm:p-6 pt-4 border-t shrink-0 bg-muted/10 pb-safe">
+                                <div className="flex flex-wrap items-center justify-end gap-2.5 p-5 sm:p-6 pt-4 border-t shrink-0 bg-muted/10 pb-safe">
+                                    <AIQuotaLine className="mr-auto" />
                                     <button
-                                        onClick={onClose}
-                                        disabled={isLoading}
-                                        className="px-4 py-2.5 text-xs sm:text-sm font-medium hover:bg-muted rounded-xl transition-colors"
+                                        onClick={handleCancel}
+                                        disabled={stage === 'saving'}
+                                        className={cn(
+                                            "px-4 py-2.5 text-xs sm:text-sm font-medium rounded-xl transition-colors disabled:opacity-50",
+                                            isLoading ? "text-destructive hover:bg-destructive/10" : "hover:bg-muted"
+                                        )}
                                     >
-                                        Annuler
+                                        {isLoading ? t('ai.action.cancelGeneration') : t('ai.action.cancel')}
                                     </button>
                                     <button
                                         onClick={handleGenerate}
-                                        disabled={isLoading || !isOnline}
+                                        disabled={isLoading || !isOnline || (courseRequired && !selectedCourseId)}
                                         className="px-5 py-2.5 text-xs sm:text-sm font-bold bg-primary text-primary-foreground rounded-xl transition-all hover:opacity-90 flex items-center gap-2 shadow-sm disabled:opacity-50"
                                     >
                                         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                        {isLoading 
-                                            ? 'Génération en cours...' 
+                                        {isLoading
+                                            ? t('ai.progress.generating')
                                             : mode === 'flashcards' ? 'Générer les Flashcards'
                                             : mode === 'quiz' ? 'Générer le QCM'
                                             : mode === 'true_false' ? 'Générer les Vrai/Faux'

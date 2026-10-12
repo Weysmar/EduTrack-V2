@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
 import { SummaryResult } from '@/lib/summary/types'
-// @ts-ignore
-import html2pdf from 'html2pdf.js'
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
+// html2pdf and docx are heavy (~500 KB gzipped together): loaded only when the user exports
+import type { Paragraph, TextRun } from 'docx'
 import { saveAs } from 'file-saver'
+import { toast } from 'sonner'
+
+type DocxModule = typeof import('docx')
 import { useLanguage } from '@/components/language-provider'
 
 interface UseSummaryExportReturn {
@@ -53,17 +55,20 @@ export function useSummaryExport(summary: SummaryResult | null, title: string = 
 
             const opt: any = {
                 margin: 10, // simplified margin
-                filename: `${title.replace(/[^a-z0-9]/yi, '_')}_summary.pdf`,
+                filename: `${title.replace(/[^a-z0-9]/gi, '_')}_summary.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }
 
+            // @ts-ignore - no type declarations for html2pdf.js
+            const { default: html2pdf } = await import('html2pdf.js')
             await html2pdf().set(opt).from(element).save()
 
             document.body.removeChild(element)
         } catch (error) {
             console.error('PDF Export failed:', error)
+            toast.error(t('export.error'))
         } finally {
             setIsExporting(false)
         }
@@ -74,6 +79,8 @@ export function useSummaryExport(summary: SummaryResult | null, title: string = 
 
         setIsExporting(true)
         try {
+            const docx = await import('docx')
+            const { Document, Packer, Paragraph, HeadingLevel, AlignmentType } = docx
             const doc = new Document({
                 styles: {
                     default: {
@@ -107,22 +114,24 @@ export function useSummaryExport(summary: SummaryResult | null, title: string = 
                                 color: "64748B", // Slate-500
                             }
                         }),
-                        ...processMarkdownToDocx(summary.content)
+                        ...processMarkdownToDocx(docx, summary.content)
                     ],
                 }],
             })
 
             const blob = await Packer.toBlob(doc)
-            saveAs(blob, `${title.replace(/[^a-z0-9]/yi, '_')}_summary.docx`)
+            saveAs(blob, `${title.replace(/[^a-z0-9]/gi, '_')}_summary.docx`)
         } catch (error) {
             console.error('DOCX Export failed:', error)
+            toast.error(t('export.error'))
         } finally {
             setIsExporting(false)
         }
     }
 
     // Helper to convert simple markdown to Docx paragraphs
-    const processMarkdownToDocx = (text: string): Paragraph[] => {
+    const processMarkdownToDocx = (docx: DocxModule, text: string): Paragraph[] => {
+        const { Paragraph, HeadingLevel } = docx
         const lines = text.split('\n')
         return lines.map(line => {
             const trimmed = line.trim()
@@ -149,13 +158,13 @@ export function useSummaryExport(summary: SummaryResult | null, title: string = 
                 })
             } else if (trimmed.startsWith('- ')) {
                 return new Paragraph({
-                    children: processTextRuns(trimmed.replace('- ', '')),
+                    children: processTextRuns(docx, trimmed.replace('- ', '')),
                     bullet: { level: 0 },
                     run: { font: "Arial", size: 24 } // 24 = 12pt
                 })
             } else if (trimmed.length > 0) {
                 return new Paragraph({
-                    children: processTextRuns(trimmed),
+                    children: processTextRuns(docx, trimmed),
                     spacing: { after: 120 },
                     run: { font: "Arial", size: 24 }
                 })
@@ -164,7 +173,7 @@ export function useSummaryExport(summary: SummaryResult | null, title: string = 
         })
     }
 
-    const processTextRuns = (text: string): TextRun[] => {
+    const processTextRuns = ({ TextRun }: DocxModule, text: string): TextRun[] => {
         // Simple bold parsing (**text**)
         const parts = text.split(/(\*\*.*?\*\*)/g)
         return parts.map(part => {
