@@ -150,9 +150,11 @@ function buildDecorations(state: any, editor: Editor): DecorationSet {
                     })
                 );
 
-                // Render KaTeX widget
+                // Render KaTeX widget. The key lets ProseMirror reuse the existing DOM when the formula is
+                // unchanged; without it every widget is re-rendered on each keystroke or caret move, which
+                // shifts the layout and makes the editor jump while scrolling.
                 decorations.push(
-                    Decoration.widget(m.from, () => {
+                    Decoration.widget(m.from, (_view, getPos) => {
                         const el = document.createElement(m.displayMode ? 'div' : 'span');
                         el.className = m.displayMode
                             ? 'tiptap-math-block katex-display-wrapper my-3 text-center overflow-x-auto overflow-y-hidden select-text transition-opacity hover:opacity-90'
@@ -163,7 +165,9 @@ function buildDecorations(state: any, editor: Editor): DecorationSet {
                             el.style.cursor = 'pointer';
                             el.addEventListener('mousedown', (e) => {
                                 e.preventDefault();
-                                editor.commands.setTextSelection(m.from + (m.displayMode ? 2 : 1));
+                                // Reused widgets may have moved since creation: resolve the live position
+                                const from = getPos() ?? m.from;
+                                editor.commands.setTextSelection(from + (m.displayMode ? 2 : 1));
                                 editor.commands.focus();
                             });
                         }
@@ -183,7 +187,8 @@ function buildDecorations(state: any, editor: Editor): DecorationSet {
 
                         return el;
                     }, {
-                        side: -1
+                        side: -1,
+                        key: `math:${m.displayMode ? 'block' : 'inline'}:${isEditable ? 'edit' : 'view'}:${m.formula}`
                     })
                 );
             }

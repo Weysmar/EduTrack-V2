@@ -123,7 +123,8 @@ export function Editor({ content, onChange, editable = true, className, variant 
     // Close all popover pickers on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as Node
+            // DOM Node (the Tiptap `Node` import shadows the global type)
+            const target = e.target as globalThis.Node
             if (fontPickerRef.current && !fontPickerRef.current.contains(target)) {
                 setShowFontPicker(false)
             }
@@ -210,6 +211,16 @@ export function Editor({ content, onChange, editable = true, className, variant 
         toast.success(language === 'fr' ? 'Dessin inséré avec succès !' : 'Drawing inserted successfully!')
     }
 
+    // Keep the caret clear of the sticky toolbar (wraps to several rows on mobile; in the document variant it sits
+    // outside the scroll area) and of the fixed mobile bottom bar when typing auto-scrolls the view
+    const isMobileViewport = window.innerWidth < 768
+    const caretScrollMargins = {
+        top: variant === 'document' ? 40 : (isMobileViewport ? 150 : 70),
+        bottom: isMobileViewport ? 110 : 40,
+        left: 5,
+        right: 5
+    }
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -244,6 +255,8 @@ export function Editor({ content, onChange, editable = true, className, variant 
             onChange?.(editor.getHTML())
         },
         editorProps: {
+            scrollThreshold: caretScrollMargins,
+            scrollMargin: caretScrollMargins,
             transformPastedHTML: (html) => {
                 // Strip hardcoded dark/black inline styles from pasted web/Word content so it adapts seamlessly to dark/light theme
                 return html
@@ -1097,7 +1110,10 @@ export function Editor({ content, onChange, editable = true, className, variant 
 
             {variant === 'document' ? (
                 <div className="w-full flex-1 flex justify-center p-4 sm:p-8 bg-slate-200/60 dark:bg-slate-950 overflow-y-auto scrollbar-thin">
-                    <div className="w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-sm border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all box-border overflow-hidden relative">
+                    {/* self-start: a stretched flex child is capped to the scroll area's height (or the A4 min-height),
+                        so longer documents overflowed the sheet. overflow-x-clip (not overflow-hidden): the sheet must not
+                        become a scroll container, otherwise everything past the first page is clipped and unreachable. */}
+                    <div className="self-start w-full max-w-[21.5cm] min-h-[29.7cm] bg-white text-slate-900 shadow-2xl rounded-sm border border-slate-300 dark:border-slate-800 p-8 sm:p-14 my-2 sm:my-4 transition-all box-border overflow-x-clip relative">
                         <EditorContent editor={editor} className="min-h-[25cm] w-full max-w-full focus:outline-none" />
                     </div>
                 </div>

@@ -161,19 +161,21 @@ export function ItemView() {
     const driveTag = item?.tags?.find((t: string) => t.startsWith('gdrive:'));
     const driveFileId = driveTag ? driveTag.replace('gdrive:', '') : null;
 
-    // Sync content when item loads or if opened in edit mode
+    // Sync content when item loads or if opened in edit mode.
+    // While editing, the draft is seeded only once per item: later cache updates (autosave, socket refetch)
+    // must not overwrite what the user is typing, otherwise the editor content is reset and the view jumps.
+    const seededItemIdRef = useRef<string | null>(null)
     useEffect(() => {
         if (item) {
-            if (!isEditMode) {
+            if (!isEditMode || seededItemIdRef.current !== String(item.id)) {
                 setEditedContent(item.content || '')
-            } else if (searchParams.get('edit') === 'true') {
-                setEditedContent(item.content || '')
+                seededItemIdRef.current = String(item.id)
             }
             if (item.extractedContent) {
                 setExerciseContent(item.extractedContent)
             }
         }
-    }, [item, isEditMode, searchParams])
+    }, [item, isEditMode])
 
     const pendingContentRef = useRef<string>(editedContent)
     pendingContentRef.current = editedContent
@@ -1022,8 +1024,10 @@ export function ItemView() {
                     ? "p-0 md:p-3 pb-20 md:pb-3" 
                     : "px-0 md:px-8 pt-0 pb-24 md:pb-8"
             )}>
+                {/* min-h-full (not h-full): a fixed-height child lets long notes overflow past the container's
+                    bottom padding, hiding the end of the document behind the mobile bottom toolbar */}
                 <div className={cn(
-                    "w-full h-full",
+                    "w-full min-h-full",
                     showSummary ? "" : ((item.type === 'resource' || (item.type === 'link' && item.storageKey)) ? "max-w-none" : "max-w-5xl mx-auto")
                 )}>
 

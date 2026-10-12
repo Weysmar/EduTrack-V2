@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
@@ -39,9 +39,17 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
     const [isDuplicating, setIsDuplicating] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    // Initial conversion from document binary if item.content is empty
+    // Initial conversion from document binary, done once per item. After a save the item is refetched
+    // (new content and storage key, hence a new fileUrl): reloading then would unmount the editor behind the
+    // spinner, throwing the user back to the top of the document and discarding anything typed meanwhile.
+    const loadedItemIdRef = useRef<string | null>(null);
     useEffect(() => {
+        const itemId = String(item?.id);
+        if (loadedItemIdRef.current === itemId) return;
+
         let isMounted = true;
+        // Marked only once a load completes, so a cancelled run (StrictMode double effect) is retried
+        const markLoaded = () => { loadedItemIdRef.current = itemId; };
 
         async function loadDocument() {
             if (!fileUrl) {
@@ -49,6 +57,7 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                     setContent(item.content);
                 }
                 setIsLoading(false);
+                markLoaded();
                 return;
             }
 
@@ -71,6 +80,7 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                 if (isMounted) {
                     setContent(html);
                     setIsLoading(false);
+                    markLoaded();
                 }
             } catch (error) {
                 console.error('Failed to load & convert Office document:', error);
@@ -83,6 +93,7 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
                         });
                     }
                     setIsLoading(false);
+                    markLoaded();
                 }
             }
         }
@@ -92,7 +103,7 @@ export function OfficeEditor({ item, fileUrl, onClose, onSaveSuccess, className 
         return () => {
             isMounted = false;
         };
-    }, [fileUrl, item?.content, isOdt]);
+    }, [fileUrl, item?.id, item?.content, isOdt]);
 
     const handleContentChange = useCallback((newContent: string) => {
         setContent(newContent);
