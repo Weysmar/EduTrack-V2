@@ -1,3 +1,4 @@
+import type { AIProvider } from '@/config/aiModels';
 import { QuizQuestion } from '@/lib/types';
 import { AIServiceFactory } from '@/lib/ai/factory';
 import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
@@ -8,7 +9,7 @@ export interface QuizGenerationParams {
     difficulty: 'easy' | 'normal' | 'hard' | 'mixed';
     types: ('concept' | 'fact' | 'application' | 'calculation')[];
     topics?: string[];
-    provider: 'google' | 'perplexity';
+    provider: AIProvider;
     model?: string;
     /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
     language?: OutputLanguage;

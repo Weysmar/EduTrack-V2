@@ -1,12 +1,13 @@
 import { KeyRound, ExternalLink, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { AI_SETTINGS_ROUTE, GEMINI_KEY_URL, PERPLEXITY_KEY_URL, providerLabel } from '@/lib/ai/constants'
+import { AI_SETTINGS_ROUTE, CLAUDE_KEY_URL, GEMINI_KEY_URL, PERPLEXITY_KEY_URL, providerLabel } from '@/lib/ai/constants'
+import type { AIProvider } from '@/config/aiModels'
 import { useAIText } from './useAIText'
 
 interface MissingApiKeyNoticeProps {
     /** Provider sélectionné (sinon message générique "ajoutez une clé") */
-    provider?: 'google' | 'perplexity' | null
+    provider?: AIProvider | null
     /** Appelé avant la navigation vers les Paramètres (ex: fermer le modal parent) */
     onNavigate?: () => void
     /** Variante plus compacte (sans l'explication détaillée) */
@@ -27,9 +28,13 @@ export function MissingApiKeyNotice({ provider, onNavigate, compact = false, cla
         navigate(AI_SETTINGS_ROUTE)
     }
 
-    const links = provider === 'perplexity'
-        ? [{ href: PERPLEXITY_KEY_URL, label: t('ai.key.getPerplexity') }, { href: GEMINI_KEY_URL, label: t('ai.key.getGemini') }]
-        : [{ href: GEMINI_KEY_URL, label: t('ai.key.getGemini') }, { href: PERPLEXITY_KEY_URL, label: t('ai.key.getPerplexity') }]
+    // Lien du provider sélectionné en premier, puis les autres
+    const allLinks: { provider: AIProvider; href: string; label: string }[] = [
+        { provider: 'google', href: GEMINI_KEY_URL, label: t('ai.key.getGemini') },
+        { provider: 'perplexity', href: PERPLEXITY_KEY_URL, label: t('ai.key.getPerplexity') },
+        { provider: 'anthropic', href: CLAUDE_KEY_URL, label: t('ai.key.getClaude') },
+    ]
+    const links = [...allLinks.filter(l => l.provider === provider), ...allLinks.filter(l => l.provider !== provider)]
 
     return (
         <div

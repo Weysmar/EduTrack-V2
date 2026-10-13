@@ -41,7 +41,7 @@ export class AIRequestError extends Error {
 }
 
 interface ErrorContext {
-    provider?: 'google' | 'perplexity' | string | null
+    provider?: 'google' | 'perplexity' | 'anthropic' | string | null
     lang?: UILanguage
 }
 

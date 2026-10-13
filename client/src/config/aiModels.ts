@@ -10,7 +10,20 @@
  * (ex : avertir si image envoyée à un modèle sans vision).
  */
 
-export type AIProvider = 'google' | 'perplexity';
+export type AIProvider = 'google' | 'perplexity' | 'anthropic';
+
+/** Providers proposés dans l'interface (ordre d'affichage) */
+export const AI_PROVIDERS: AIProvider[] = ['google', 'perplexity', 'anthropic'];
+
+export const isAIProvider = (value: unknown): value is AIProvider =>
+    typeof value === 'string' && (AI_PROVIDERS as string[]).includes(value);
+
+/** Nom affiché de chaque provider */
+export const PROVIDER_LABELS: Record<AIProvider, string> = {
+    google: 'Google Gemini',
+    perplexity: 'Perplexity',
+    anthropic: 'Claude',
+};
 
 /** Capacités du modèle utilisées pour valider la compatibilité fichier ↔ modèle. */
 export interface ModelCapabilities {
@@ -37,10 +50,23 @@ export interface AIModelEntry {
     capabilities: ModelCapabilities;
     recommended?: boolean;
     deprecated?: boolean;
+    /** Modèle en preview : sélectionnable, mais susceptible d'évoluer ou d'être retiré par le fournisseur */
+    preview?: boolean;
+    /** Caractères par token pour l'estimation du contexte (défaut 3.5) */
+    charsPerToken?: number;
 }
 
 /** Modèle Gemini par défaut : à changer ici uniquement (miroir de DEFAULT_GEMINI_MODEL côté serveur) */
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+/** Modèle Claude par défaut (miroir de DEFAULT_CLAUDE_MODEL côté serveur) */
+export const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-5-5';
+
+/** Modèle par défaut de chaque provider */
+export const DEFAULT_MODELS: Record<AIProvider, string> = {
+    google: DEFAULT_GEMINI_MODEL,
+    perplexity: 'sonar-pro',
+    anthropic: DEFAULT_CLAUDE_MODEL,
+};
 
 /**
  * Anciens identifiants encore présents dans les réglages enregistrés → modèle actuel.
@@ -77,6 +103,21 @@ export const AI_MODELS: AIModelEntry[] = [
         provider: 'google',
         maxTokens: 1_000_000,
         capabilities: { vision: true, webSearch: false, reasoning: false },
+    },
+    {
+        id: 'gemini-3.5-flash-lite',
+        displayName: 'Gemini 3.5 Flash-Lite — Très rapide & économique',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: false },
+    },
+    {
+        id: 'gemini-3.1-pro-preview',
+        displayName: 'Gemini 3.1 Pro (preview) — Raisonnement poussé',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        preview: true,
     },
     {
         // NOTE (2026-09) : accès restreint chez Google aux clés API l'ayant déjà utilisée ;
@@ -125,6 +166,34 @@ export const AI_MODELS: AIModelEntry[] = [
         maxTokens: 128_000,
         capabilities: { vision: false, webSearch: true, reasoning: true },
     },
+
+    // ── Anthropic Claude ──────────────────────────────────────────────────────
+    // Tokenizer Claude : ~2.5 caractères par token (1M tokens ≈ 2.5M caractères)
+    {
+        id: 'claude-sonnet-5-5',
+        displayName: 'Claude Sonnet 5.5 — Recommandé',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        recommended: true,
+        charsPerToken: 2.5,
+    },
+    {
+        id: 'claude-haiku-5-5',
+        displayName: 'Claude Haiku 5.5 — Rapide & économique',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        charsPerToken: 2.5,
+    },
+    {
+        id: 'claude-opus-5-5',
+        displayName: 'Claude Opus 5.5 — Le plus puissant',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        charsPerToken: 2.5,
+    },
 ];
 
 /** Retourne les modèles disponibles pour un provider donné (non dépréciés). */
@@ -134,7 +203,7 @@ export const getModelsForProvider = (provider: AIProvider): AIModelEntry[] =>
 /** Retourne le modèle recommandé par défaut pour un provider. */
 export const getDefaultModel = (provider: AIProvider): string => {
     const recommended = AI_MODELS.find(m => m.provider === provider && m.recommended && !m.deprecated);
-    return recommended?.id ?? (provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar-pro');
+    return recommended?.id ?? DEFAULT_MODELS[provider];
 };
 
 export const getModelById = (id: string): AIModelEntry | undefined =>
@@ -174,7 +243,7 @@ export const checkContextFit = (
     const entry = AI_MODELS.find(m => m.id === modelId);
     const maxTokens = entry?.maxTokens ?? 200_000;
 
-    const estimatedTokens = estimateTokens(promptChars);
+    const estimatedTokens = estimateTokens(promptChars, entry?.charsPerToken);
     const usableTokens = Math.floor(maxTokens * (1 - safetyMargin));
     const fits = estimatedTokens <= usableTokens;
     const fillRatio = estimatedTokens / usableTokens;
@@ -235,6 +304,9 @@ export const detectProvider = (model?: string): AIProvider => {
     const lower = normalized.toLowerCase();
     if (lower.startsWith('sonar') || lower.includes('perplexity') || lower.startsWith('pplx')) {
         return 'perplexity';
+    }
+    if (lower.startsWith('claude') || lower.includes('anthropic')) {
+        return 'anthropic';
     }
     return 'google';
 };

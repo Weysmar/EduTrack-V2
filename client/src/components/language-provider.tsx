@@ -1211,6 +1211,19 @@ const translations: Translations = {
         "mindmap.viewer.zoomIn": "Zoom in",
         "mindmap.viewer.zoomOut": "Zoom out",
         "mindmap.viewMode": "View mode",
+
+        // Added keys (UX overhaul)
+        "settings.api.claude.hint": "Pay as you go: requires an Anthropic account with credit.",
+        "settings.api.claude.key": "Claude API key",
+        "settings.api.claude.title": "Anthropic Claude",
+        "settings.api.gemini.hint": "Free key, enough for every AI feature.",
+        "settings.api.gemini.key": "Google Gemini API key",
+        "settings.api.getKey": "Get a key",
+        "settings.api.hideKey": "Hide key",
+        "settings.api.perplexity.hint": "Web search with cited sources (paid).",
+        "settings.api.perplexity.key": "Perplexity API key",
+        "settings.api.placeholder.claude": "sk-ant-...",
+        "settings.api.showKey": "Show key",
     },
     fr: {
         "app.title": "EduTrack",
@@ -2424,6 +2437,19 @@ const translations: Translations = {
         "mindmap.viewer.zoomIn": "Zoom avant",
         "mindmap.viewer.zoomOut": "Zoom arrière",
         "mindmap.viewMode": "Mode d'affichage",
+
+        // Added keys (UX overhaul)
+        "settings.api.claude.hint": "Payant à l'usage : nécessite un compte Anthropic avec du crédit.",
+        "settings.api.claude.key": "Clé API Claude",
+        "settings.api.claude.title": "Anthropic Claude",
+        "settings.api.gemini.hint": "Clé gratuite, suffisante pour toutes les fonctions IA.",
+        "settings.api.gemini.key": "Clé API Google Gemini",
+        "settings.api.getKey": "Obtenir une clé",
+        "settings.api.hideKey": "Masquer la clé",
+        "settings.api.perplexity.hint": "Recherche web avec sources citées (payant).",
+        "settings.api.perplexity.key": "Clé API Perplexity",
+        "settings.api.placeholder.claude": "sk-ant-...",
+        "settings.api.showKey": "Afficher la clé",
     },
     mc: {
 

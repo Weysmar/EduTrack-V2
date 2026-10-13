@@ -1,6 +1,6 @@
-import { DEFAULT_GEMINI_MODEL } from '@/config/aiModels'
+import { DEFAULT_GEMINI_MODEL, type AIProvider } from '@/config/aiModels'
 
-export type AIProvider = 'perplexity' | 'google'
+export type { AIProvider }
 export type SummaryType = 'note' | 'exercise' | 'course' | 'folder' | 'bulk' | 'resource' | 'drive-link'
 export type SummaryFormat = 'bullets' | 'paragraph' | 'timeline' | 'outline' | 'mindmap'
 export type CompressionLevel = 0.2 | 0.3 | 0.4 | 0.5 // 20%, 30%, 40%, 50%

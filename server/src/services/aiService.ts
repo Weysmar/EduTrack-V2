@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCompatibility, FileCategory, DEFAULT_GEMINI_MODEL } from '../config/aiModels';
+import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCompatibility, FileCategory, DEFAULT_GEMINI_MODEL, AIProvider } from '../config/aiModels';
 
 // Multi-user architecture: Each user provides their own API key (BYOK)
 // Keys are passed per-request from the user's saved profile settings.
@@ -82,13 +82,113 @@ async function callPerplexity(
     throw lastError;
 }
 
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
+const ANTHROPIC_TIMEOUT_MS = 280000;
+const ANTHROPIC_MAX_ATTEMPTS = 3;
+/** Plafond de sortie (réflexion adaptative incluse) : large pour les résumés détaillés */
+const ANTHROPIC_MAX_TOKENS = 32000;
+
+/**
+ * Appelle l'API Anthropic Messages (Claude) avec timeout et retry sur erreurs transitoires
+ * (429 limite de débit, 529 surcharge, 5xx). Retourne le texte de la réponse : les blocs de
+ * réflexion (thinking) éventuels sont ignorés.
+ */
+export async function callAnthropic(
+    apiKey: string,
+    apiModel: string,
+    systemPrompt: string | undefined,
+    userPrompt: string
+): Promise<string> {
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= ANTHROPIC_MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
+
+        try {
+            const response = await fetch(ANTHROPIC_API_URL, {
+                method: 'POST',
+                headers: {
+                    'x-api-key': apiKey,
+                    'anthropic-version': ANTHROPIC_VERSION,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: apiModel,
+                    max_tokens: ANTHROPIC_MAX_TOKENS,
+                    ...(systemPrompt ? { system: systemPrompt } : {}),
+                    messages: [{ role: 'user', content: userPrompt }]
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorType = '';
+                let errorMessage = errorText;
+                try {
+                    const parsed = JSON.parse(errorText);
+                    errorType = parsed?.error?.type || '';
+                    errorMessage = parsed?.error?.message || errorText;
+                } catch { /* corps non JSON */ }
+
+                lastError = new Error(`Anthropic API Error: ${response.status} ${errorType} - ${errorMessage}`);
+                const isTransient = response.status === 429 || response.status === 529 || response.status >= 500;
+                if (isTransient && attempt < ANTHROPIC_MAX_ATTEMPTS) {
+                    const delayMs = attempt * 1500;
+                    console.warn(`[AI Service] Anthropic ${response.status} (attempt ${attempt}/${ANTHROPIC_MAX_ATTEMPTS}). Retrying in ${delayMs}ms...`);
+                    await new Promise(res => setTimeout(res, delayMs));
+                    continue;
+                }
+                throw lastError;
+            }
+
+            const data: any = await response.json();
+            const text = Array.isArray(data?.content)
+                ? data.content.filter((block: any) => block?.type === 'text').map((block: any) => block.text).join('')
+                : '';
+            if (!text.trim()) {
+                throw new Error(`Anthropic API Error: empty response (stop_reason: ${data?.stop_reason ?? 'unknown'})`);
+            }
+            return text;
+        } catch (err: any) {
+            clearTimeout(timeoutId);
+            const isAbort = err.name === 'AbortError';
+            lastError = isAbort ? new Error('Anthropic API Error: timeout - La requête a dépassé le délai imparti.') : err;
+            if (isAbort && attempt < ANTHROPIC_MAX_ATTEMPTS) {
+                console.warn(`[AI Service] Anthropic timeout (attempt ${attempt}/${ANTHROPIC_MAX_ATTEMPTS}). Retrying...`);
+                continue;
+            }
+            throw lastError;
+        }
+    }
+
+    throw lastError;
+}
+
+/** Parse la réponse JSON d'un modèle sans mode JSON natif (fences Markdown, texte autour). */
+export function parseLooseJSON(text: string): any {
+    const clean = text.replace(/```(?:json)?\n?|\n?```/g, '').trim();
+    try {
+        return JSON.parse(clean);
+    } catch (error) {
+        // Repli : premier objet/tableau JSON trouvé dans la réponse
+        const start = clean.search(/[[{]/);
+        const end = Math.max(clean.lastIndexOf('}'), clean.lastIndexOf(']'));
+        if (start >= 0 && end > start) return JSON.parse(clean.slice(start, end + 1));
+        throw error;
+    }
+}
+
 export const aiService = {
     async generateText(
         prompt: string,
         systemPrompt?: string,
         model: string = DEFAULT_GEMINI_MODEL,
         apiKey?: string,
-        provider: 'google' | 'perplexity' = 'google',
+        provider: AIProvider = 'google',
         fileCategory?: FileCategory
     ): Promise<string> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
@@ -122,6 +222,13 @@ export const aiService = {
 
                 const data = await callPerplexity(effectiveKey, apiModel, systemPrompt, prompt);
                 return data.choices[0].message.content;
+            }
+            if (provider === 'anthropic') {
+                if (!effectiveKey) throw new Error('Aucune clé API Anthropic (Claude) fournie. Veuillez configurer votre clé dans Profil > Paramètres > Clés API.');
+
+                console.log(`[AI Service] Generating text with Claude model ${model} (API: ${apiModel}). Prompt length: ${fullPrompt.length} chars (~${contextCheck.estimatedTokens} tokens).`);
+
+                return await callAnthropic(effectiveKey, apiModel, systemPrompt, prompt);
             }
             // Validate per-user API key (BYOK architecture)
             if (!effectiveKey) {
@@ -198,8 +305,14 @@ export const aiService = {
             if (message.includes('404') && message.includes('find')) {
                 message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant ou changer de modèle dans les paramètres.`;
             }
-            if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key'))) {
+            if (message.includes('API_KEY_INVALID') || message.includes('API key not valid') || (message.includes('401') && message.includes('API key')) || message.includes('authentication_error')) {
                 message = `Clé API invalide. Veuillez vérifier votre clé personnelle dans Profil > Paramètres > Clés API.`;
+            }
+            if (message.includes('not_found_error')) {
+                message = `Modèle IA temporairement indisponible. Veuillez réessayer dans un instant ou changer de modèle dans les paramètres.`;
+            }
+            if (message.toLowerCase().includes('credit balance')) {
+                message = `Crédit Anthropic insuffisant : rechargez votre compte sur platform.claude.com (Billing) ou choisissez un autre fournisseur.`;
             }
             if (message.includes('503') || message.includes('high demand') || message.includes('overloaded')) {
                 message = `Les serveurs IA sont temporairement surchargés (503). Veuillez réessayer dans quelques instants.`;
@@ -216,15 +329,15 @@ export const aiService = {
         systemPrompt?: string,
         model: string = DEFAULT_GEMINI_MODEL,
         apiKey?: string,
-        provider: 'google' | 'perplexity' = 'google',
+        provider: AIProvider = 'google',
         fileCategory?: FileCategory
     ): Promise<any> {
         const effectiveKey = apiKey ? apiKey.trim() : undefined;
 
-        if (provider === 'perplexity') {
-            const text = await this.generateText(prompt, (systemPrompt || '') + " Output strictly valid JSON.", model, effectiveKey, 'perplexity', fileCategory);
-            const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
-            return JSON.parse(cleanText);
+        // Pas de mode JSON natif utilisé pour ces providers : consigne dans le prompt + parsing tolérant
+        if (provider === 'perplexity' || provider === 'anthropic') {
+            const text = await this.generateText(prompt, (systemPrompt || '') + " Output strictly valid JSON.", model, effectiveKey, provider, fileCategory);
+            return parseLooseJSON(text);
         }
 
         try {

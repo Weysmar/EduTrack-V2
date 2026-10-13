@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { apiClient } from '@/lib/api/client'
-import { DEFAULT_GEMINI_MODEL } from '@/config/aiModels'
+import { DEFAULT_GEMINI_MODEL, type AIProvider } from '@/config/aiModels'
+import { PROVIDER_KEY_FIELDS, clearedLegacyKeyFields, resolveProviderKey, resolveProviderKeys } from '@/lib/ai/apiKeys'
 
 interface Profile {
     id: string;
@@ -14,16 +15,37 @@ interface Profile {
     aiGenerationsCount?: number;
 }
 
-interface ApiKeyMap {
-    perplexity_summaries: string | null;
-    perplexity_exercises: string | null;
+export interface ApiKeyMap {
+    /** Une seule clé par fournisseur IA (voir lib/ai/apiKeys.ts) */
+    google_gemini_api_key: string | null;
+    perplexity_api_key: string | null;
+    anthropic_api_key: string | null;
     google_calendar: string | null;
-    google_gemini_summaries: string | null;
-    google_gemini_exercises: string | null;
     google_client_id?: string | null;
     google_drive_api_key?: string | null;
-    finance_audit_provider: 'google' | 'perplexity' | null;
+    finance_audit_provider: AIProvider | null;
     finance_audit_model: string | null;
+}
+
+const defaultApiKeys = (): ApiKeyMap => ({
+    google_gemini_api_key: null,
+    perplexity_api_key: null,
+    anthropic_api_key: null,
+    google_calendar: null,
+    google_client_id: null,
+    google_drive_api_key: null,
+    finance_audit_provider: 'google',
+    finance_audit_model: DEFAULT_GEMINI_MODEL
+})
+
+/** Clés du profil, anciens emplacements (résumés/exercices) repris dans l'emplacement unique de chaque fournisseur */
+export const apiKeysFromSettings = (settings?: Record<string, any> | null): ApiKeyMap => {
+    const keys: ApiKeyMap = settings ? { ...defaultApiKeys(), ...settings, ...clearedLegacyKeyFields() } : defaultApiKeys()
+    const providerKeys = resolveProviderKeys(settings)
+    for (const [provider, field] of Object.entries(PROVIDER_KEY_FIELDS) as [AIProvider, keyof ApiKeyMap][]) {
+        (keys as any)[field] = providerKeys[provider]
+    }
+    return keys
 }
 
 interface ProfileState {
@@ -43,6 +65,8 @@ interface ProfileState {
     setApiKey: (service: keyof ApiKeyMap, key: string) => Promise<void>;
     updateApiKeys: (keys: ApiKeyMap) => Promise<void>;
     getApiKey: (service: keyof ApiKeyMap) => string | null;
+    /** Clé API du fournisseur IA (emplacement unique, avec repli sur les anciens emplacements) */
+    getProviderKey: (provider: AIProvider) => string | null;
 
     // Folder Expansion State (saved in user account)
     isFolderExpanded: (folderId: string) => boolean;
@@ -66,17 +90,7 @@ export const useProfileStore = create<ProfileState>()(
     persist(
         (set, get) => ({
             activeProfile: null,
-            apiKeys: {
-                perplexity_summaries: null,
-                perplexity_exercises: null,
-                google_calendar: null,
-                google_gemini_summaries: null,
-                google_gemini_exercises: null,
-                google_client_id: null,
-                google_drive_api_key: null,
-                finance_audit_provider: 'google',
-                finance_audit_model: DEFAULT_GEMINI_MODEL
-            },
+            apiKeys: defaultApiKeys(),
             isLoading: false,
 
             loadProfile: async () => {
@@ -85,19 +99,7 @@ export const useProfileStore = create<ProfileState>()(
                     const response = await apiClient.get('/auth/me');
                     const profile = response.data;
 
-                    const defaultKeys: ApiKeyMap = {
-                        perplexity_summaries: null,
-                        perplexity_exercises: null,
-                        google_calendar: null,
-                        google_gemini_summaries: null,
-                        google_gemini_exercises: null,
-                        google_client_id: null,
-                        google_drive_api_key: null,
-                        finance_audit_provider: 'google',
-                        finance_audit_model: DEFAULT_GEMINI_MODEL
-                    };
-
-                    const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;
+                    const keys = apiKeysFromSettings(profile.settings);
 
                     set({ activeProfile: profile, apiKeys: keys, isLoading: false });
                 } catch (e) {
@@ -126,24 +128,14 @@ export const useProfileStore = create<ProfileState>()(
             logout: () => {
                 set({
                     activeProfile: null,
-                    apiKeys: {
-                        perplexity_summaries: null,
-                        perplexity_exercises: null,
-                        google_calendar: null,
-                        google_gemini_summaries: null,
-                        google_gemini_exercises: null,
-                        google_client_id: null,
-                        google_drive_api_key: null,
-                        finance_audit_provider: 'google',
-                        finance_audit_model: DEFAULT_GEMINI_MODEL
-                    }
+                    apiKeys: defaultApiKeys()
                 });
             },
 
             setApiKey: async (service: keyof ApiKeyMap, key: string) => {
                 const { activeProfile, apiKeys } = get();
                 const trimmedKey = typeof key === 'string' ? key.trim() : key;
-                const newKeys = { ...apiKeys, [service]: trimmedKey };
+                const newKeys = { ...apiKeys, [service]: trimmedKey, ...clearedLegacyKeyFields() };
                 set({ apiKeys: newKeys });
 
                 const targetId = activeProfile?.id || 'me';
@@ -169,6 +161,8 @@ export const useProfileStore = create<ProfileState>()(
                 for (const [k, v] of Object.entries(newKeys)) {
                     trimmedKeys[k] = typeof v === 'string' ? v.trim() : v;
                 }
+                // Les anciens emplacements (une clé par usage) sont vidés : la clé unique fait foi
+                Object.assign(trimmedKeys, clearedLegacyKeyFields());
 
                 // 1. Update local state
                 set({ apiKeys: trimmedKeys });
@@ -195,6 +189,11 @@ export const useProfileStore = create<ProfileState>()(
                 return typeof key === 'string' ? key.trim() : (key || null);
             },
 
+            getProviderKey: (provider: AIProvider) => {
+                const { activeProfile, apiKeys } = get();
+                return resolveProviderKey(provider, apiKeys, activeProfile?.settings);
+            },
+
             createProfile: async (data: Partial<Profile>) => {
                 const response = await apiClient.post('/profiles', data);
                 return response.data.id;
@@ -205,19 +204,7 @@ export const useProfileStore = create<ProfileState>()(
                     const response = await apiClient.get(`/profiles/${id}`);
                     const profile = response.data;
 
-                    const defaultKeys: ApiKeyMap = {
-                        perplexity_summaries: null,
-                        perplexity_exercises: null,
-                        google_calendar: null,
-                        google_gemini_summaries: null,
-                        google_gemini_exercises: null,
-                        google_client_id: null,
-                        google_drive_api_key: null,
-                        finance_audit_provider: 'google',
-                        finance_audit_model: DEFAULT_GEMINI_MODEL
-                    };
-
-                    const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;
+                    const keys = apiKeysFromSettings(profile.settings);
 
                     set({ activeProfile: profile, apiKeys: keys });
                 } catch (e) {

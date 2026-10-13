@@ -1,9 +1,15 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
-import { resolveModelId, detectProvider, DEFAULT_GEMINI_MODEL } from '../config/aiModels';
+import {
+    resolveModelId,
+    detectProvider,
+    modelForProvider,
+    AI_PROVIDERS,
+    DEFAULT_MODELS,
+    AIProvider,
+} from '../config/aiModels';
 import { decryptSecret } from '../utils/crypto';
 
-export type AIProvider = 'google' | 'perplexity';
+export type { AIProvider };
 
 export interface ApiKeyConfig {
     provider: AIProvider;
@@ -16,11 +22,43 @@ export interface ApiKeyConfig {
 // which is the single source of truth for all model definitions.
 export { resolveModelId, detectProvider };
 
+/**
+ * Un seul emplacement de clé par provider dans Profile.settings.
+ * Les anciens emplacements (une clé par usage : résumés, exercices…) restent lus en repli
+ * tant que l'utilisateur n'a pas réenregistré ses paramètres.
+ */
+export const PROVIDER_KEY_FIELDS: Record<AIProvider, { field: string; legacy: string[] }> = {
+    google: {
+        field: 'google_gemini_api_key',
+        legacy: ['google_gemini_summaries', 'google_gemini_exercises', 'google_gemini_categorization'],
+    },
+    perplexity: {
+        field: 'perplexity_api_key',
+        legacy: ['perplexity_summaries', 'perplexity_exercises'],
+    },
+    anthropic: {
+        field: 'anthropic_api_key',
+        legacy: [],
+    },
+};
+
+const ENV_KEYS: Record<AIProvider, string> = {
+    google: 'GEMINI_API_KEY',
+    perplexity: 'PERPLEXITY_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
+};
+
+const PROVIDER_NAMES: Record<AIProvider, string> = {
+    google: 'Gemini',
+    perplexity: 'Perplexity',
+    anthropic: 'Claude (Anthropic)',
+};
+
 // Validate API key format
 // Vérifie le préfixe attendu quand il est présent (signal fort) ; sinon repli sur une
 // vérification de longueur permissive (pour ne pas rejeter des clés valides passant par
 // un proxy/une gateway d'entreprise dont le format diffère du standard grand public).
-const validateApiKey = (key: string, provider: AIProvider): boolean => {
+export const validateApiKey = (key: string, provider: AIProvider): boolean => {
     if (!key || key.trim().length === 0) return false;
     const trimmed = key.trim();
 
@@ -32,8 +70,25 @@ const validateApiKey = (key: string, provider: AIProvider): boolean => {
         // Les clés Perplexity commencent par "pplx-"
         if (trimmed.startsWith('pplx-')) return trimmed.length >= 15;
         return trimmed.length > 10;
+    } else if (provider === 'anthropic') {
+        // Les clés Anthropic commencent par "sk-ant-"
+        if (trimmed.startsWith('sk-ant-')) return trimmed.length >= 30;
+        return trimmed.length > 20;
     }
     return false;
+};
+
+/** Clé enregistrée pour un provider : emplacement unique d'abord, puis anciens emplacements (déchiffrés). */
+export const getStoredProviderKey = (settings: Record<string, any> | null | undefined, provider: AIProvider): string | null => {
+    if (!settings) return null;
+    const { field, legacy } = PROVIDER_KEY_FIELDS[provider];
+    for (const name of [field, ...legacy]) {
+        const raw = settings[name];
+        if (!raw) continue;
+        const key = decryptSecret(raw);
+        if (key && validateApiKey(key, provider)) return key.trim();
+    }
+    return null;
 };
 
 /**
@@ -47,99 +102,45 @@ export const getApiKey = async (
     provider: AIProvider,
     options?: {
         requestApiKey?: string;
+        /** Conservé pour compatibilité : une seule clé par provider désormais */
         purpose?: 'summaries' | 'exercises' | 'categorization' | 'audit';
     }
 ): Promise<ApiKeyConfig> => {
-    const { requestApiKey, purpose = 'summaries' } = options || {};
-    
+    const { requestApiKey } = options || {};
+    const model = DEFAULT_MODELS[provider];
+
     // Priority 1: Request-provided key
     if (requestApiKey && validateApiKey(requestApiKey, provider)) {
-        return {
-            provider,
-            apiKey: requestApiKey,
-            model: provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar',
-            source: 'request'
-        };
+        return { provider, apiKey: requestApiKey.trim(), model, source: 'request' };
     }
-    
-    // Priority 2: Profile settings
+
+    // Priority 2: Profile settings (déchiffrement : les clés sont chiffrées au repos)
     const profile = await prisma.profile.findUnique({
         where: { id: profileId },
         select: { settings: true }
     });
-    
-    if (profile?.settings) {
-        const settings = profile.settings as any;
-        
-        if (provider === 'google') {
-            // Try purpose-specific key first, then fallbacks (déchiffrement : les clés sont chiffrées au repos)
-            const possibleKeys = [
-                settings.google_gemini_summaries,
-                settings.google_gemini_exercises,
-                settings.google_gemini_categorization,
-            ].filter(Boolean).map(decryptSecret);
-
-            for (const key of possibleKeys) {
-                if (key && validateApiKey(key, 'google')) {
-                    return {
-                        provider: 'google',
-                        apiKey: key,
-                        model: settings.finance_audit_model || DEFAULT_GEMINI_MODEL,
-                        source: 'profile_settings'
-                    };
-                }
-            }
-        } else if (provider === 'perplexity') {
-            const possibleKeys = [
-                settings.perplexity_summaries,
-                settings.perplexity_exercises,
-            ].filter(Boolean).map(decryptSecret);
-
-            for (const key of possibleKeys) {
-                if (key && validateApiKey(key, 'perplexity')) {
-                    return {
-                        provider: 'perplexity',
-                        apiKey: key,
-                        model: settings.finance_audit_model || 'sonar',
-                        source: 'profile_settings'
-                    };
-                }
-            }
-        }
+    const storedKey = getStoredProviderKey(profile?.settings as Record<string, any> | null, provider);
+    if (storedKey) {
+        return { provider, apiKey: storedKey, model, source: 'profile_settings' };
     }
-    
+
     // Priority 3: Environment variables
-    if (provider === 'google') {
-        const envKey = process.env.GEMINI_API_KEY;
-        if (envKey && validateApiKey(envKey, 'google')) {
-            return {
-                provider: 'google',
-                apiKey: envKey,
-                model: DEFAULT_GEMINI_MODEL,
-                source: 'environment'
-            };
-        }
-    } else if (provider === 'perplexity') {
-        const envKey = process.env.PERPLEXITY_API_KEY;
-        if (envKey && validateApiKey(envKey, 'perplexity')) {
-            return {
-                provider: 'perplexity',
-                apiKey: envKey,
-                model: 'sonar',
-                source: 'environment'
-            };
-        }
+    const envKey = process.env[ENV_KEYS[provider]];
+    if (envKey && validateApiKey(envKey, provider)) {
+        return { provider, apiKey: envKey.trim(), model, source: 'environment' };
     }
-    
+
     // No valid key found
     throw new Error(
-        `No valid ${provider === 'google' ? 'Gemini' : 'Perplexity'} API key found. ` +
+        `No valid ${PROVIDER_NAMES[provider]} API key found. ` +
         `Please configure your API key in Settings > API.`
     );
 };
 
 /**
- * Get API key specifically for FinanceTrack features
+ * Get API key specifically for FinanceTrack features.
+ * Essaie le provider préféré, puis les autres providers configurés. Le modèle choisi dans
+ * les réglages (finance_audit_model) n'est utilisé que s'il appartient au provider retenu.
  */
 export const getFinanceApiKey = async (
     profileId: string,
@@ -152,26 +153,25 @@ export const getFinanceApiKey = async (
         where: { id: profileId },
         select: { settings: true }
     });
-    
+
     const settings = (profile?.settings as any) || {};
-    const provider = options?.preferredProvider || 
-                     settings.finance_audit_provider || 
-                     'google';
-    
-    // Try to get key for the preferred provider
-    try {
-        return await getApiKey(profileId, provider, {
-            requestApiKey: options?.requestApiKey,
-            purpose: 'categorization'
-        });
-    } catch (error) {
-        // If preferred provider fails, try the other one
-        const fallbackProvider = provider === 'google' ? 'perplexity' : 'google';
-        return await getApiKey(profileId, fallbackProvider, {
-            requestApiKey: options?.requestApiKey,
-            purpose: 'categorization'
-        });
+    const savedProvider = AI_PROVIDERS.includes(settings.finance_audit_provider) ? settings.finance_audit_provider as AIProvider : undefined;
+    const preferred: AIProvider = options?.preferredProvider || savedProvider || 'google';
+    const candidates = [preferred, ...AI_PROVIDERS.filter(p => p !== preferred)];
+
+    let lastError: unknown;
+    for (const provider of candidates) {
+        try {
+            const config = await getApiKey(profileId, provider, {
+                requestApiKey: options?.requestApiKey,
+                purpose: 'categorization'
+            });
+            return { ...config, model: modelForProvider(provider, settings.finance_audit_model) };
+        } catch (error) {
+            lastError = error;
+        }
     }
+    throw lastError;
 };
 
 /**
@@ -181,5 +181,5 @@ export const getDefaultModel = (provider: AIProvider, preferredModel?: string): 
     if (preferredModel) {
         return resolveModelId(preferredModel);
     }
-    return provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar';
+    return DEFAULT_MODELS[provider];
 };

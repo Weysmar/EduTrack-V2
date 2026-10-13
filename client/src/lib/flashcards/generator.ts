@@ -1,3 +1,4 @@
+import type { AIProvider } from '@/config/aiModels';
 import { Flashcard } from '@/lib/types';
 import { AIServiceFactory } from '@/lib/ai/factory';
 import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
@@ -7,7 +8,7 @@ export interface GenerationParams {
   count: number;
   difficulty: 'easy' | 'normal' | 'hard' | 'mixed';
   types: ('facts' | 'concepts' | 'calculations' | 'applications')[];
-  provider: 'google' | 'perplexity';
+  provider: AIProvider;
   model?: string;
   /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
   language?: OutputLanguage;

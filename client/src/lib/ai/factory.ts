@@ -1,6 +1,8 @@
 import { PerplexityService, generateWithPerplexity } from "./perplexity";
 import { GoogleGeminiService, generateWithGoogle } from "./google";
+import { ClaudeService, generateWithClaude } from "./anthropic";
 import { SummaryOptions } from "../summary/types";
+import type { AIProvider } from "@/config/aiModels";
 
 /** Options transverses d'une requête IA (annulation, etc.) */
 export interface AIRequestOptions {
@@ -19,6 +21,11 @@ export class AIServiceFactory {
                 compressionLevel: compressionStr,
                 model: options.model
             }, request.signal);
+        } else if (provider === 'anthropic') {
+            return ClaudeService.generateSummary(text, options, {
+                compressionLevel: compressionStr,
+                model: options.model
+            }, request.signal);
         } else {
             return PerplexityService.generateSummary(text, options, {
                 compressionLevel: compressionStr,
@@ -31,12 +38,14 @@ export class AIServiceFactory {
     static async generateGeneric(
         prompt: string,
         systemPrompt: string = "You are a helpful AI assistant",
-        provider: 'google' | 'perplexity' = 'perplexity',
+        provider: AIProvider = 'perplexity',
         model?: string,
         request: AIRequestOptions = {}
     ): Promise<string> {
         if (provider === 'google') {
             return generateWithGoogle(prompt, systemPrompt, model, request.signal);
+        } else if (provider === 'anthropic') {
+            return generateWithClaude(prompt, systemPrompt, model, request.signal);
         } else {
             return generateWithPerplexity(prompt, systemPrompt, model, request.signal);
         }

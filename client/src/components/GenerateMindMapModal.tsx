@@ -14,7 +14,8 @@ import { AIRequestError, getAIErrorMessage, isAbortError } from '@/lib/ai/errors
 import { AI_REQUEST_TIMEOUT_MS } from '@/lib/ai/constants';
 import { ModelSelector } from '@/components/ModelSelector';
 import { useAIProvider } from '@/hooks/useAIProvider';
-import { useProfileStore } from '@/store/profileStore';
+import { useProviderKeys } from '@/hooks/useProviderKeys';
+import { providerLabel } from '@/lib/ai/constants';
 
 interface GenerateMindMapModalProps {
     isOpen: boolean;
@@ -28,11 +29,8 @@ interface GenerateMindMapModalProps {
 export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelectedNotes = [], initialSelectedFile, onSuccess }: GenerateMindMapModalProps) {
     const { t } = useAIText();
     const queryClient = useQueryClient();
-    const { getApiKey } = useProfileStore();
-
-    const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises');
-    const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises');
-    const ai = useAIProvider({ geminiKey, perplexityKey });
+    const keys = useProviderKeys();
+    const ai = useAIProvider({ keys });
 
     // State
     const [selectedNotes, setSelectedNotes] = useState<any[]>(initialSelectedNotes);
@@ -53,7 +51,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
             if (initialSelectedNotes.length) setSelectedNotes(initialSelectedNotes);
             if (initialSelectedFile) setSelectedFiles([initialSelectedFile]);
         }
-    }, [isOpen, initialSelectedNotes, initialSelectedFile, geminiKey, perplexityKey]);
+    }, [isOpen, initialSelectedNotes, initialSelectedFile, keys.google, keys.perplexity, keys.anthropic]);
 
 
     // Fetch available notes
@@ -88,7 +86,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
     const generateMutation = useMutation({
         mutationFn: async () => {
             if (!ai.hasKeyForProvider) {
-                throw new AIRequestError(t('ai.error.missingKey', { provider: ai.provider === 'google' ? 'Google Gemini' : 'Perplexity' }), 'missing_key');
+                throw new AIRequestError(t('ai.error.missingKey', { provider: providerLabel(ai.provider) }), 'missing_key');
             }
             abortRef.current?.abort();
             const controller = new AbortController();
@@ -389,8 +387,7 @@ export function GenerateMindMapModal({ isOpen, onClose, courseId, initialSelecte
                                         setProvider={ai.setProvider}
                                         setModel={ai.setModel}
                                         hasKeyForProvider={ai.hasKeyForProvider}
-                                        geminiKey={geminiKey}
-                                        perplexityKey={perplexityKey}
+                                        keys={keys}
                                         onClose={handleClose}
                                     />
 

@@ -46,8 +46,7 @@ export class PerplexityService {
     }
 
     static async generateSummary(text: string, options: SummaryOptions, perplexityOptions: PerplexityOptions, signal?: AbortSignal): Promise<string> {
-        const API_KEY = useProfileStore.getState().getApiKey('perplexity_summaries')
-            || useProfileStore.getState().getApiKey('perplexity_exercises');
+        const API_KEY = useProfileStore.getState().getProviderKey('perplexity');
 
         if (!API_KEY) {
             throw missingPerplexityKeyError();
@@ -126,8 +125,7 @@ export async function generateWithPerplexity(
     model?: string,
     signal?: AbortSignal
 ): Promise<string> {
-    const API_KEY = useProfileStore.getState().getApiKey('perplexity_exercises')
-        || useProfileStore.getState().getApiKey('perplexity_summaries');
+    const API_KEY = useProfileStore.getState().getProviderKey('perplexity');
 
     if (!API_KEY) {
         throw missingPerplexityKeyError();

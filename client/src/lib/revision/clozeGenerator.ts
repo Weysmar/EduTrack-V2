@@ -1,3 +1,4 @@
+import type { AIProvider } from '@/config/aiModels';
 import { AIServiceFactory } from '@/lib/ai/factory';
 import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
@@ -30,7 +31,7 @@ export interface ClozeGenerationParams {
     sourceTitle?: string;
     count?: number; // Number of paragraphs / exercises (default 3)
     difficulty?: 'easy' | 'normal' | 'hard' | 'mixed';
-    provider: 'google' | 'perplexity';
+    provider: AIProvider;
     model?: string;
     /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
     language?: OutputLanguage;

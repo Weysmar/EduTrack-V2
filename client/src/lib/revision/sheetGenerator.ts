@@ -1,3 +1,4 @@
+import type { AIProvider } from '@/config/aiModels';
 import { AIServiceFactory } from '@/lib/ai/factory';
 import { outputLanguageInstruction, outputLanguageName, truncateContent, type OutputLanguage } from '@/lib/ai/language';
 
@@ -41,7 +42,7 @@ export interface RevisionSheetParams {
     sourceTitle?: string;
     difficulty?: 'easy' | 'normal' | 'hard' | 'mixed';
     focus?: string[];
-    provider: 'google' | 'perplexity';
+    provider: AIProvider;
     model?: string;
     /** Langue du contenu généré (langue de l'interface). Défaut : 'fr' */
     language?: OutputLanguage;

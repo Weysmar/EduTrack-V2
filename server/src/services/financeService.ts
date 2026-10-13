@@ -357,7 +357,7 @@ export class FinanceService {
         const apiKey = apiConfig.apiKey;
 
         if (!apiKey) {
-            throw new Error('No API key configured. Please add your Gemini API key in Settings.');
+            throw new Error('No API key configured. Please add an AI API key in Settings.');
         }
 
         // Call categorizer service
@@ -367,7 +367,7 @@ export class FinanceService {
             id: t.id
         }));
 
-        const categorizedMap = await categorizerService.categorizeBatch(txData, apiKey);
+        const categorizedMap = await categorizerService.categorizeBatch(txData, apiKey, apiConfig.provider);
 
         // Update transactions with categories
         const updates = Object.entries(categorizedMap).map(([index, category]) => {
@@ -540,7 +540,7 @@ export class FinanceService {
         const apiKey = apiConfig.apiKey;
 
         if (!apiKey) {
-            const providerName = provider === 'google' ? 'Gemini' : 'Perplexity';
+            const providerName = provider === 'google' ? 'Gemini' : provider === 'anthropic' ? 'Claude' : 'Perplexity';
             throw new Error(`No API key configured for ${providerName}. Please add it in Settings.`);
         }
 
@@ -552,7 +552,7 @@ export class FinanceService {
         const systemPrompt = "Tu es un analyste financier personnel expert. Ton objectif est d'analyser les transactions récentes de l'utilisateur et de lui donner un résumé court (max 150 mots), percutant et des conseils actionnables.";
         const prompt = `Voici mes dernières transactions :\n${txList}\n\nAnalyse ma situation financière récente. Identifie les tendances de dépenses, les anomalies éventuelles et propose 2-3 conseils concrets pour optimiser mon budget.\nRéponds en français avec un ton encourageant mais professionnel.`;
 
-        const auditText = await aiService.generateText(prompt, systemPrompt, model, apiKey);
+        const auditText = await aiService.generateText(prompt, systemPrompt, model, apiKey, provider);
         return { audit: auditText };
     }
 

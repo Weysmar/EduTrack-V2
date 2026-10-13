@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
 import { logErrorToFile } from '../utils/fileLogger';
 import { incrementAIGeneration } from './profileController';
+import { isAIProvider, AIProvider } from '../config/aiModels';
 
 interface AuthRequest extends Request {
     user?: { id: string };
@@ -9,8 +10,8 @@ interface AuthRequest extends Request {
 
 export const generateContent = async (req: AuthRequest, res: Response) => {
     try {
+        // Ne jamais journaliser le corps brut : il contient la clé API et le contenu des notes
         console.log('=== AI Generate Request ===');
-        console.log('Body:', JSON.stringify(req.body, null, 2));
 
         const { systemPrompt, provider, model, fileCategory } = req.body;
         const apiKey = typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : req.body.apiKey;
@@ -35,7 +36,7 @@ export const generateContent = async (req: AuthRequest, res: Response) => {
         console.log('Prompt length:', prompt.length);
         if (fileCategory) console.log('File Category:', fileCategory);
 
-        const selectedProvider = provider === 'perplexity' ? 'perplexity' : 'google';
+        const selectedProvider: AIProvider = isAIProvider(provider) ? provider : 'google';
         console.log('Calling aiService.generateText with provider:', selectedProvider, 'and model:', model);
         const response = await aiService.generateText(prompt, systemPrompt, model, apiKey, selectedProvider, fileCategory);
         console.log('Generation successful, response length:', response?.length);
@@ -79,7 +80,7 @@ export const generateJSON = async (req: AuthRequest, res: Response) => {
                 error: 'Aucune clé API configurée. Veuillez renseigner votre clé API personnelle dans Profil > Paramètres > Clés API.'
             });
         }
-        const selectedProvider = provider === 'perplexity' ? 'perplexity' : 'google';
+        const selectedProvider: AIProvider = isAIProvider(provider) ? provider : 'google';
         const response = await aiService.generateJSON(prompt, systemPrompt, model, apiKey, selectedProvider, fileCategory);
 
         // Increment AI generation counter if user is authenticated

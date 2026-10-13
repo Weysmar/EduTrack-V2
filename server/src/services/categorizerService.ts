@@ -1,7 +1,7 @@
 import { aiService } from './aiService';
 
 import { prisma } from '../lib/prisma';
-import { DEFAULT_GEMINI_MODEL } from '../config/aiModels';
+import { FAST_MODELS, AIProvider } from '../config/aiModels';
 
 // Predefined categories to guide the AI
 const DEFAULT_CATEGORIES = [
@@ -14,8 +14,9 @@ export const categorizerService = {
      * Categorizes a batch of transactions using AI
      * @param transactions List of transactions { description, amount }
      * @param apiKey User's API Key
+     * @param provider Provider of the API key (fast model of this provider is used)
      */
-    async categorizeBatch(transactions: { description: string, amount: number, id?: string }[], apiKey?: string): Promise<Record<string, string>> {
+    async categorizeBatch(transactions: { description: string, amount: number, id?: string }[], apiKey?: string, provider: AIProvider = 'google'): Promise<Record<string, string>> {
         if (transactions.length === 0) return {};
 
         // Prepare prompt
@@ -33,7 +34,7 @@ export const categorizerService = {
         `;
 
         try {
-            const result = await aiService.generateJSON(prompt, "Expert comptable rigoureux.", DEFAULT_GEMINI_MODEL, apiKey);
+            const result = await aiService.generateJSON(prompt, "Expert comptable rigoureux.", FAST_MODELS[provider], apiKey, provider);
 
             // Map back to IDs or Indexes
             // Result ex: { "1": "Alimentation", "2": "Transport" }
@@ -59,10 +60,10 @@ export const categorizerService = {
     /**
      * Predict category for a single transaction (fallback)
      */
-    async predictCategory(description: string, amount: number, apiKey?: string): Promise<string> {
+    async predictCategory(description: string, amount: number, apiKey?: string, provider: AIProvider = 'google'): Promise<string> {
         const prompt = `Catégorise cette dépense : "${description}" (${amount}€). Catégories possibles : ${DEFAULT_CATEGORIES.join(', ')}. Réponds juste par la catégorie.`;
         try {
-            const text = await aiService.generateText(prompt, undefined, DEFAULT_GEMINI_MODEL, apiKey);
+            const text = await aiService.generateText(prompt, undefined, FAST_MODELS[provider], apiKey, provider);
             const category = text.trim().replace(/['"]/g, '');
             return DEFAULT_CATEGORIES.find(c => c.toLowerCase() === category.toLowerCase()) || "Autre";
         } catch (e) {

@@ -1,3 +1,4 @@
+import { firstProviderWithKey } from '@/lib/ai/apiKeys'
 import { AIServiceFactory } from '@/lib/ai/factory'
 import { useProfileStore } from '@/store/profileStore'
 import { studyPlanQueries, itemQueries, courseQueries } from '@/lib/api/queries'
@@ -64,10 +65,12 @@ export async function generateStudyPlan(params: PlanGenerationParams) {
 
     // 3. Call AI — respecte le provider pour lequel l'utilisateur a une clé configurée
     // (auparavant forcé sur Perplexity, ce qui échouait pour les utilisateurs n'ayant que Gemini)
-    const { getApiKey } = useProfileStore.getState()
-    const hasPerplexityKey = !!(getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries'))
-    const hasGeminiKey = !!(getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries'))
-    const provider: 'google' | 'perplexity' = hasPerplexityKey || !hasGeminiKey ? 'perplexity' : 'google'
+    const { getProviderKey } = useProfileStore.getState()
+    const provider = firstProviderWithKey({
+        google: getProviderKey('google'),
+        perplexity: getProviderKey('perplexity'),
+        anthropic: getProviderKey('anthropic'),
+    }) ?? 'perplexity'
 
     const response = await AIServiceFactory.generateGeneric(prompt, "You are a helpful AI assistant.", provider)
     let planData: any

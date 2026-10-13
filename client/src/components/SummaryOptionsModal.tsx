@@ -1,8 +1,8 @@
 import { SummaryOptions, DEFAULT_SUMMARY_OPTIONS, CompressionLevel, SummaryFormat } from '@/lib/summary/types'
 import { useNavigate } from 'react-router-dom'
-import { useProfileStore } from '@/store/profileStore'
 import { ModelSelector } from '@/components/ModelSelector'
 import { useAIProvider } from '@/hooks/useAIProvider'
+import { useProviderKeys } from '@/hooks/useProviderKeys'
 import { X, Sliders } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useAIText } from '@/components/ai/useAIText'
@@ -28,19 +28,16 @@ export function SummaryOptionsModal({
     contentLength,
 }: SummaryOptionsModalProps) {
     const navigate = useNavigate()
-    const { getApiKey } = useProfileStore()
-    const geminiKey = getApiKey('google_gemini_summaries') || getApiKey('google_gemini_exercises')
-    const perplexityKey = getApiKey('perplexity_summaries') || getApiKey('perplexity_exercises')
+    const keys = useProviderKeys()
 
     // On ne reprend le provider des options précédentes que si une clé existe pour lui
     // (sinon useAIProvider choisit automatiquement le provider disposant d'une clé).
     const preferredProvider = initialOptions?.provider
-    const preferredHasKey = preferredProvider === 'google' ? !!geminiKey : preferredProvider === 'perplexity' ? !!perplexityKey : false
+    const preferredHasKey = !!preferredProvider && !!keys[preferredProvider]
 
     // Hook qui garantit le couplage provider ↔ modèle (le modèle appartient toujours au provider)
     const ai = useAIProvider({
-        geminiKey,
-        perplexityKey,
+        keys,
         initialProvider: preferredHasKey ? preferredProvider : undefined,
         initialModel: preferredHasKey ? initialOptions?.model : undefined
     })
@@ -58,7 +55,7 @@ export function SummaryOptionsModal({
                 ...prev,
             }))
         }
-    }, [isOpen, initialOptions, geminiKey, perplexityKey])
+    }, [isOpen, initialOptions, keys.google, keys.perplexity, keys.anthropic])
 
     if (!isOpen) return null
 
@@ -101,8 +98,7 @@ export function SummaryOptionsModal({
                                     setProvider={ai.setProvider}
                                     setModel={ai.setModel}
                                     hasKeyForProvider={ai.hasKeyForProvider}
-                                    geminiKey={geminiKey}
-                                    perplexityKey={perplexityKey}
+                                    keys={keys}
                                     onClose={onClose}
                                     compact
                                     fileCategory={fileCategory}

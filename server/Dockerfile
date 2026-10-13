@@ -23,6 +23,9 @@ COPY . .
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Tests unitaires avant le build : un test en échec arrête le déploiement
+RUN npm run test:ci
+
 # Build TypeScript
 RUN npm run build
 

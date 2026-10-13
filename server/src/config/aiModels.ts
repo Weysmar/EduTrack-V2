@@ -13,7 +13,13 @@
  * Aucune autre modification n'est nécessaire.
  */
 
-export type AIProvider = 'google' | 'perplexity';
+export type AIProvider = 'google' | 'perplexity' | 'anthropic';
+
+/** Liste des providers pris en charge (ordre d'affichage / de repli) */
+export const AI_PROVIDERS: AIProvider[] = ['google', 'perplexity', 'anthropic'];
+
+export const isAIProvider = (value: unknown): value is AIProvider =>
+    typeof value === 'string' && (AI_PROVIDERS as string[]).includes(value);
 
 /** Capacités du modèle utilisées pour valider la compatibilité fichier ↔ modèle. */
 export interface ModelCapabilities {
@@ -43,10 +49,32 @@ export interface AIModelEntry {
     capabilities: ModelCapabilities;
     recommended?: boolean;
     deprecated?: boolean;
+    /** Modèle en preview : sélectionnable, mais exclu des chaînes de repli automatiques */
+    preview?: boolean;
+    /** Caractères par token pour l'estimation du contexte (défaut 3.5 ; plus bas = tokenizer plus "gourmand") */
+    charsPerToken?: number;
 }
 
 /** Modèle Gemini par défaut (réglages vides, appels internes) : à changer ici uniquement */
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+/** Modèle Gemini rapide et économique pour les tâches de fond (catégorisation…) */
+export const DEFAULT_GEMINI_LITE_MODEL = 'gemini-3.5-flash-lite';
+/** Modèle Claude par défaut : meilleur compromis vitesse / qualité */
+export const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-5-5';
+
+/** Modèle par défaut de chaque provider (réglages vides, repli entre providers) */
+export const DEFAULT_MODELS: Record<AIProvider, string> = {
+    google: DEFAULT_GEMINI_MODEL,
+    perplexity: 'sonar-pro',
+    anthropic: DEFAULT_CLAUDE_MODEL,
+};
+
+/** Modèle rapide/économique de chaque provider pour les tâches de fond courtes */
+export const FAST_MODELS: Record<AIProvider, string> = {
+    google: DEFAULT_GEMINI_LITE_MODEL,
+    perplexity: 'sonar',
+    anthropic: 'claude-haiku-5-5',
+};
 
 export const AI_MODELS: AIModelEntry[] = [
     // ── Google Gemini ───────────────────────────────────────────────────────────────────────────
@@ -71,6 +99,26 @@ export const AI_MODELS: AIModelEntry[] = [
         maxTokens: 1_000_000,
         capabilities: { vision: true, webSearch: false, reasoning: false },
         aliases: ['gemini-3.5-flash', 'gemini-3.6']
+    },
+    {
+        // Stable, le plus rapide et le moins cher de la famille 3.5 : utilisé pour les tâches de fond
+        id: 'gemini-3.5-flash-lite',
+        displayName: 'Gemini 3.5 Flash-Lite',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: false },
+        aliases: ['gemini-3.5-lite']
+    },
+    {
+        // Preview (2026-10) : raisonnement poussé (maths, sciences). Google peut le modifier ou le retirer :
+        // jamais utilisé en repli automatique, et un échec bascule vers les modèles Flash stables.
+        id: 'gemini-3.1-pro-preview',
+        displayName: 'Gemini 3.1 Pro (preview)',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        preview: true,
+        aliases: ['gemini-3.1-pro']
     },
     {
         // NOTE (2026-09) : Google restreint désormais l'accès à la famille 2.5 aux clés API
@@ -133,6 +181,38 @@ export const AI_MODELS: AIModelEntry[] = [
         provider: 'perplexity',
         maxTokens: 128_000,
         capabilities: { vision: false, webSearch: true, reasoning: true }
+    },
+
+    // ── Anthropic Claude ──────────────────────────────────────────────────────────────────────────
+    // Génération 5.5 (2026-10) : fenêtre 1M tokens, vision, réflexion adaptative.
+    // Le tokenizer Claude compte ~2.5 caractères par token (1M tokens ≈ 2.5M caractères).
+    {
+        id: 'claude-sonnet-5-5',
+        displayName: 'Claude Sonnet 5.5',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        recommended: true,
+        charsPerToken: 2.5,
+        aliases: ['claude-sonnet', 'sonnet']
+    },
+    {
+        id: 'claude-haiku-5-5',
+        displayName: 'Claude Haiku 5.5',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        charsPerToken: 2.5,
+        aliases: ['claude-haiku', 'haiku']
+    },
+    {
+        id: 'claude-opus-5-5',
+        displayName: 'Claude Opus 5.5',
+        provider: 'anthropic',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: true },
+        charsPerToken: 2.5,
+        aliases: ['claude-opus', 'opus']
     }
 ];
 
@@ -147,8 +227,8 @@ export const AI_MODELS: AIModelEntry[] = [
  *
  * @param chars Nombre de caractères du texte brut
  */
-export const estimateTokens = (chars: number): number =>
-    Math.ceil(chars / 3.5);
+export const estimateTokens = (chars: number, charsPerToken = 3.5): number =>
+    Math.ceil(chars / charsPerToken);
 
 /** Résultat de vérification d'adéquation du contexte */
 export interface ContextFitResult {
@@ -177,7 +257,7 @@ export const checkContextFit = (
     const entry = AI_MODELS.find(m => m.id === resolved);
     const maxTokens = entry?.maxTokens ?? 200_000; // Limite conservative par défaut
 
-    const estimatedTokens = estimateTokens(promptChars);
+    const estimatedTokens = estimateTokens(promptChars, entry?.charsPerToken);
     const usableTokens = Math.floor(maxTokens * (1 - safetyMargin));
     const fits = estimatedTokens <= usableTokens;
     const fillRatio = estimatedTokens / usableTokens;
@@ -284,6 +364,9 @@ export const detectProvider = (model?: string): AIProvider => {
     if (lower.startsWith('gemini') || lower.includes('google')) {
         return 'google';
     }
+    if (lower.startsWith('claude') || lower.includes('anthropic')) {
+        return 'anthropic';
+    }
 
     // 3. Modèle non reconnu : warning explicite pour éviter les bugs silencieux
     console.warn(`[AI Registry] detectProvider: Modèle "${model}" non reconnu dans le registre ni par famille connue. Repli sur le provider par défaut 'google'.`);
@@ -295,8 +378,8 @@ export const detectProvider = (model?: string): AIProvider => {
  *
  * La liste est dérivée DYNAMIQUEMENT du registre AI_MODELS :
  *   1. Le modèle primaire demandé (résolu via alias)
- *   2. Les autres modèles recommandés du même provider (non dépréciés)
- *   3. Tous les autres modèles du même provider (non dépréciés)
+ *   2. Les autres modèles recommandés du même provider (non dépréciés, hors preview)
+ *   3. Tous les autres modèles du même provider (non dépréciés, hors preview)
  *
  * ⚠️  Aucune liste hardcodée ici. Ajouter un modèle dans AI_MODELS suffit
  *     pour qu'il entre automatiquement dans la rotation de fallback.
@@ -304,11 +387,11 @@ export const detectProvider = (model?: string): AIProvider => {
 export const getFallbackChain = (primaryModel: string): string[] => {
     const primaryId = resolveModelId(primaryModel);
     const entry = AI_MODELS.find(m => m.id === primaryId);
-    const provider = entry?.provider ?? 'google';
+    const provider = entry?.provider ?? detectProvider(primaryId);
 
-    // Modèles du même provider, non dépréciés, ordonnés : recommandés d'abord
+    // Modèles du même provider, non dépréciés ni preview, ordonnés : recommandés d'abord
     const peers = AI_MODELS
-        .filter(m => m.provider === provider && !m.deprecated)
+        .filter(m => m.provider === provider && !m.deprecated && !m.preview)
         .sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0))
         .map(m => m.id);
 
@@ -322,3 +405,15 @@ export const getFallbackChain = (primaryModel: string): string[] => {
  */
 export const getModelsForProvider = (provider: AIProvider): AIModelEntry[] =>
     AI_MODELS.filter(m => m.provider === provider && !m.deprecated);
+
+/**
+ * Modèle à utiliser pour un provider : le modèle demandé s'il appartient bien à ce provider
+ * (alias résolus), sinon le modèle par défaut du provider. Évite d'envoyer un modèle Gemini à Claude.
+ */
+export const modelForProvider = (provider: AIProvider, requested?: string | null): string => {
+    if (requested) {
+        const resolved = resolveModelId(requested);
+        if (detectProvider(resolved) === provider) return resolved;
+    }
+    return DEFAULT_MODELS[provider];
+};

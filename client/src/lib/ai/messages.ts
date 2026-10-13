@@ -22,12 +22,14 @@ export const AI_MESSAGES: Record<UILanguage, Record<string, string>> = {
         'ai.key.howTo': 'Créez la clé, copiez-la, puis collez-la dans Paramètres › Clés API.',
         'ai.key.getGemini': 'Obtenir une clé Gemini (gratuit)',
         'ai.key.getPerplexity': 'Obtenir une clé Perplexity',
+        'ai.key.getClaude': "Obtenir une clé Claude (payant à l'usage)",
         'ai.key.openSettings': 'Ajouter ma clé dans les Paramètres',
         'ai.key.missingShort': 'clé manquante',
 
         // Sélecteur de modèle
         'ai.model.engine': 'Moteur IA',
         'ai.model.version': 'Version du modèle',
+        'ai.model.preview': 'Preview',
         'ai.model.vision': 'Vision native',
         'ai.model.ocr': 'OCR texte',
         'ai.model.reasoning': 'Raisonnement',
@@ -121,11 +123,13 @@ export const AI_MESSAGES: Record<UILanguage, Record<string, string>> = {
         'ai.key.howTo': 'Create the key, copy it, then paste it into Settings › API keys.',
         'ai.key.getGemini': 'Get a Gemini key (free)',
         'ai.key.getPerplexity': 'Get a Perplexity key',
+        'ai.key.getClaude': 'Get a Claude key (pay as you go)',
         'ai.key.openSettings': 'Add my key in Settings',
         'ai.key.missingShort': 'key missing',
 
         'ai.model.engine': 'AI engine',
         'ai.model.version': 'Model version',
+        'ai.model.preview': 'Preview',
         'ai.model.vision': 'Native vision',
         'ai.model.ocr': 'Text OCR',
         'ai.model.reasoning': 'Reasoning',

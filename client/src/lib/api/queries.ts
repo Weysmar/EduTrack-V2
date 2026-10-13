@@ -247,14 +247,9 @@ export const studyPlanQueries = {
         return res;
     },
     generate: async (data: any, apiKey?: string) => {
+        // En-tête unique quel que soit le fournisseur (le serveur lit data.provider)
         const headers: any = {};
-        if (apiKey) {
-            if (data.provider === 'perplexity') {
-                headers['x-perplexity-api-key'] = apiKey;
-            } else {
-                headers['x-gemini-api-key'] = apiKey;
-            }
-        }
+        if (apiKey) headers['x-ai-api-key'] = apiKey;
         const config = { headers };
         const { data: res } = await apiClient.post('/planning/generate', data, config);
         return res;

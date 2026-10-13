@@ -1,30 +1,38 @@
 
 import { useState, useEffect } from 'react'
 import { useProfileStore } from '@/store/profileStore'
-import { getModelsForProvider, getDefaultModel, DEFAULT_GEMINI_MODEL, normalizeModelId } from '@/config/aiModels'
-import { Eye, EyeOff, Save, AlertCircle, Wallet } from 'lucide-react'
+import { getModelsForProvider, getDefaultModel, isAIProvider, AI_PROVIDERS, PROVIDER_LABELS, DEFAULT_GEMINI_MODEL, normalizeModelId, type AIProvider } from '@/config/aiModels'
+import { CLAUDE_KEY_URL, GEMINI_KEY_URL, PERPLEXITY_KEY_URL } from '@/lib/ai/constants'
+import { Eye, EyeOff, Save, AlertCircle, Wallet, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 
+type ApiKeyForm = {
+    google_gemini_api_key: string;
+    perplexity_api_key: string;
+    anthropic_api_key: string;
+    google_calendar: string;
+    google_client_id: string;
+    google_drive_api_key: string;
+    finance_audit_provider: AIProvider;
+    finance_audit_model: string;
+}
+
+/** Un seul emplacement de clé par fournisseur IA */
+const AI_KEY_SECTIONS: { provider: AIProvider; field: 'google_gemini_api_key' | 'perplexity_api_key' | 'anthropic_api_key'; titleKey: string; labelKey: string; placeholderKey: string; hintKey: string; keyUrl: string }[] = [
+    { provider: 'google', field: 'google_gemini_api_key', titleKey: 'settings.api.gemini.vincent', labelKey: 'settings.api.gemini.key', placeholderKey: 'settings.api.placeholder.gemini', hintKey: 'settings.api.gemini.hint', keyUrl: GEMINI_KEY_URL },
+    { provider: 'perplexity', field: 'perplexity_api_key', titleKey: 'settings.api.perplexity.default', labelKey: 'settings.api.perplexity.key', placeholderKey: 'settings.api.placeholder.pplx', hintKey: 'settings.api.perplexity.hint', keyUrl: PERPLEXITY_KEY_URL },
+    { provider: 'anthropic', field: 'anthropic_api_key', titleKey: 'settings.api.claude.title', labelKey: 'settings.api.claude.key', placeholderKey: 'settings.api.placeholder.claude', hintKey: 'settings.api.claude.hint', keyUrl: CLAUDE_KEY_URL },
+]
+
 export function ApiKeySettings() {
-    const { activeProfile, getApiKey, updateApiKeys } = useProfileStore()
+    const { activeProfile, getApiKey, getProviderKey, updateApiKeys } = useProfileStore()
     const { t } = useLanguage()
-    const [keys, setKeys] = useState<{
-        perplexity_summaries: string;
-        perplexity_exercises: string;
-        google_calendar: string;
-        google_gemini_summaries: string;
-        google_gemini_exercises: string;
-        google_client_id: string;
-        google_drive_api_key: string;
-        finance_audit_provider: 'google' | 'perplexity';
-        finance_audit_model: string;
-    }>({
-        perplexity_summaries: '',
-        perplexity_exercises: '',
+    const [keys, setKeys] = useState<ApiKeyForm>({
+        google_gemini_api_key: '',
+        perplexity_api_key: '',
+        anthropic_api_key: '',
         google_calendar: '',
-        google_gemini_summaries: '',
-        google_gemini_exercises: '',
         google_client_id: '',
         google_drive_api_key: '',
         finance_audit_provider: 'google',
@@ -37,15 +45,16 @@ export function ApiKeySettings() {
 
     useEffect(() => {
         if (activeProfile) {
+            const savedProvider = getApiKey('finance_audit_provider')
             setKeys({
-                perplexity_summaries: getApiKey('perplexity_summaries') || '',
-                perplexity_exercises: getApiKey('perplexity_exercises') || '',
+                // Reprend aussi les clés des anciens emplacements (résumés / exercices)
+                google_gemini_api_key: getProviderKey('google') || '',
+                perplexity_api_key: getProviderKey('perplexity') || '',
+                anthropic_api_key: getProviderKey('anthropic') || '',
                 google_calendar: getApiKey('google_calendar') || '',
-                google_gemini_summaries: getApiKey('google_gemini_summaries') || '',
-                google_gemini_exercises: getApiKey('google_gemini_exercises') || '',
                 google_client_id: getApiKey('google_client_id') || '',
                 google_drive_api_key: getApiKey('google_drive_api_key') || '',
-                finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
+                finance_audit_provider: isAIProvider(savedProvider) ? savedProvider : 'google',
                 finance_audit_model: normalizeModelId(getApiKey('finance_audit_model')) || DEFAULT_GEMINI_MODEL
             })
         }
@@ -92,55 +101,34 @@ export function ApiKeySettings() {
             )}
 
             <div className="space-y-6">
-                {/* Perplexity Section */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">{t('settings.api.perplexity.default')}</h3>
+                {/* Fournisseurs IA : une clé chacun */}
+                {AI_KEY_SECTIONS.map(section => (
+                    <div key={section.provider} className="space-y-3">
+                        <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">{t(section.titleKey)}</h3>
 
-                    <ApiKeyInput
-                        id="perplexity_summaries"
-                        label={t('settings.api.perplexity.summaries')}
-                        value={keys.perplexity_summaries}
-                        onChange={v => setKeys(prev => ({ ...prev, perplexity_summaries: v }))}
-                        show={showKey['perplexity_summaries']}
-                        onToggle={() => toggleShow('perplexity_summaries')}
-                        placeholder={t('settings.api.placeholder.pplx')}
-                    />
-
-                    <ApiKeyInput
-                        id="perplexity_exercises"
-                        label={t('settings.api.perplexity.exercises')}
-                        value={keys.perplexity_exercises}
-                        onChange={v => setKeys(prev => ({ ...prev, perplexity_exercises: v }))}
-                        show={showKey['perplexity_exercises']}
-                        onToggle={() => toggleShow('perplexity_exercises')}
-                        placeholder={t('settings.api.placeholder.pplx')}
-                    />
-                </div>
-
-                {/* Google Gemini Section */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-medium uppercase text-muted-foreground tracking-wider border-b pb-2">{t('settings.api.gemini.vincent')}</h3>
-
-                    <ApiKeyInput
-                        id="google_gemini_summaries"
-                        label={t('settings.api.gemini.summaries')}
-                        value={keys.google_gemini_summaries}
-                        onChange={v => setKeys(prev => ({ ...prev, google_gemini_summaries: v }))}
-                        show={showKey['google_gemini_summaries']}
-                        onToggle={() => toggleShow('google_gemini_summaries')}
-                        placeholder={t('settings.api.placeholder.gemini')}
-                    />
-
-                    <ApiKeyInput
-                        id="google_gemini_exercises"
-                        label={t('settings.api.gemini.exercises')}
-                        value={keys.google_gemini_exercises}
-                        onChange={v => setKeys(prev => ({ ...prev, google_gemini_exercises: v }))}
-                        show={showKey['google_gemini_exercises']}
-                        onToggle={() => toggleShow('google_gemini_exercises')}
-                        placeholder={t('settings.api.placeholder.gemini')}
-                    />
-                </div>
+                        <ApiKeyInput
+                            id={section.field}
+                            label={t(section.labelKey)}
+                            value={keys[section.field]}
+                            onChange={v => setKeys(prev => ({ ...prev, [section.field]: v }))}
+                            show={showKey[section.field]}
+                            onToggle={() => toggleShow(section.field)}
+                            placeholder={t(section.placeholderKey)}
+                        />
+                        <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-1.5">
+                            <span>{t(section.hintKey)}</span>
+                            <a
+                                href={section.keyUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-2"
+                            >
+                                {t('settings.api.getKey')}
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                        </p>
+                    </div>
+                ))}
 
                 {/* Integrations Section */}
                 <div className="space-y-4">
@@ -192,17 +180,18 @@ export function ApiKeySettings() {
                             <select
                                 value={keys.finance_audit_provider}
                                 onChange={(e) => {
-                                    const provider = e.target.value as 'google' | 'perplexity';
+                                    const provider = e.target.value as AIProvider;
                                     setKeys(prev => ({
                                         ...prev,
                                         finance_audit_provider: provider,
-                                        finance_audit_model: provider === 'google' ? getDefaultModel('google') : getDefaultModel('perplexity')
+                                        finance_audit_model: getDefaultModel(provider)
                                     }));
                                 }}
                                 className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                             >
-                                <option value="google">Google Gemini</option>
-                                <option value="perplexity">Perplexity AI</option>
+                                {AI_PROVIDERS.map(provider => (
+                                    <option key={provider} value={provider}>{PROVIDER_LABELS[provider]}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -213,7 +202,7 @@ export function ApiKeySettings() {
                                 onChange={(e) => setKeys(prev => ({ ...prev, finance_audit_model: e.target.value }))}
                                 className="w-full bg-background border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                             >
-                                {getModelsForProvider(keys.finance_audit_provider as 'google' | 'perplexity').map(m => (
+                                {getModelsForProvider(keys.finance_audit_provider).map(m => (
                                     <option key={m.id} value={m.id}>{m.displayName}</option>
                                 ))}
                             </select>
@@ -245,6 +234,7 @@ function ApiKeyInput({ id, label, value, onChange, show, onToggle, placeholder }
     onToggle: () => void;
     placeholder: string;
 }) {
+    const { t } = useLanguage()
     return (
         <div className="space-y-1">
             <label htmlFor={id} className="text-sm font-medium">{label}</label>
@@ -256,10 +246,13 @@ function ApiKeyInput({ id, label, value, onChange, show, onToggle, placeholder }
                     onChange={(e) => onChange(e.target.value)}
                     className="w-full bg-background border rounded-md pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono"
                     placeholder={placeholder}
+                    autoComplete="off"
+                    spellCheck={false}
                 />
                 <button
                     type="button"
                     onClick={onToggle}
+                    aria-label={show ? t('settings.api.hideKey') : t('settings.api.showKey')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                     {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

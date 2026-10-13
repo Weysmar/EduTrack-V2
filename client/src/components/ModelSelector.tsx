@@ -6,12 +6,15 @@
  * `useAIProvider` — ce composant est purement d'affichage.
  *
  * Usage avec le hook :
- *   const ai = useAIProvider({ geminiKey, perplexityKey })
- *   <ModelSelector {...ai} onClose={onClose} />
+ *   const keys = useProviderKeys()
+ *   const ai = useAIProvider({ keys })
+ *   <ModelSelector {...ai} keys={keys} onClose={onClose} />
  */
 
-import { AlertCircle, Zap, Globe, AlertTriangle, Eye, EyeOff, Brain } from 'lucide-react'
+import { AlertCircle, Zap, Globe, AlertTriangle, Eye, EyeOff, Brain, Sparkles, FlaskConical, type LucideIcon } from 'lucide-react'
 import {
+    AI_PROVIDERS,
+    PROVIDER_LABELS,
     getModelsForProvider,
     getModelById,
     validateFileModelCompatibility,
@@ -22,6 +25,13 @@ import {
 import { cn } from '@/lib/utils'
 import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
 import { useAIText } from '@/components/ai/useAIText'
+import type { ProviderKeys } from '@/hooks/useAIProvider'
+
+const PROVIDER_ICONS: Record<AIProvider, LucideIcon> = {
+    google: Zap,
+    perplexity: Globe,
+    anthropic: Sparkles,
+}
 
 interface ModelSelectorProps {
     provider: AIProvider
@@ -32,8 +42,8 @@ interface ModelSelectorProps {
     setModel: (model: string) => void
     /** Vrai si une clé est disponible pour le provider courant (fourni par useAIProvider) */
     hasKeyForProvider: boolean
-    geminiKey: string | null | undefined
-    perplexityKey: string | null | undefined
+    /** Clés disponibles par provider (voir useProviderKeys) */
+    keys: ProviderKeys
     /** Ferme le modal parent avant de naviguer vers les paramètres */
     onClose?: () => void
     /** Variante visuelle compacte (pour SummaryOptionsModal) */
@@ -50,8 +60,7 @@ export function ModelSelector({
     setProvider,
     setModel,
     hasKeyForProvider,
-    geminiKey,
-    perplexityKey,
+    keys,
     onClose,
     compact = false,
     fileCategory,
@@ -72,40 +81,31 @@ export function ModelSelector({
             {/* Sélection du provider */}
             <div>
                 <label className="block text-sm font-medium mb-2">{t('ai.model.engine')}</label>
-                <div className="grid grid-cols-2 gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setProvider('google')}
-                        disabled={!geminiKey}
-                        className={cn(
-                            'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px] touch-manipulation',
-                            provider === 'google'
-                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                : 'hover:bg-muted border-border',
-                            !geminiKey && 'opacity-40 cursor-not-allowed'
-                        )}
-                    >
-                        <Zap className="h-4 w-4 shrink-0" />
-                        <span>Google Gemini</span>
-                        {!geminiKey && <span className="text-xs opacity-70">({t('ai.key.missingShort')})</span>}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setProvider('perplexity')}
-                        disabled={!perplexityKey}
-                        className={cn(
-                            'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px] touch-manipulation',
-                            provider === 'perplexity'
-                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                : 'hover:bg-muted border-border',
-                            !perplexityKey && 'opacity-40 cursor-not-allowed'
-                        )}
-                    >
-                        <Globe className="h-4 w-4 shrink-0" />
-                        <span>Perplexity</span>
-                        {!perplexityKey && <span className="text-xs opacity-70">({t('ai.key.missingShort')})</span>}
-                    </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {AI_PROVIDERS.map(p => {
+                        const Icon = PROVIDER_ICONS[p]
+                        const hasKey = !!keys[p]
+                        return (
+                            <button
+                                key={p}
+                                type="button"
+                                onClick={() => setProvider(p)}
+                                disabled={!hasKey}
+                                aria-pressed={provider === p}
+                                className={cn(
+                                    'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all min-h-[44px] touch-manipulation',
+                                    provider === p
+                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                        : 'hover:bg-muted border-border',
+                                    !hasKey && 'opacity-40 cursor-not-allowed'
+                                )}
+                            >
+                                <Icon className="h-4 w-4 shrink-0" />
+                                <span>{PROVIDER_LABELS[p]}</span>
+                                {!hasKey && <span className="text-xs opacity-70">({t('ai.key.missingShort')})</span>}
+                            </button>
+                        )
+                    })}
                 </div>
 
                 {/* Clé manquante : message guidé (qu'est-ce qu'une clé, où l'obtenir, lien Paramètres) */}
@@ -113,7 +113,7 @@ export function ModelSelector({
                     <MissingApiKeyNotice
                         provider={provider}
                         onNavigate={onClose}
-                        compact={compact || !!geminiKey || !!perplexityKey}
+                        compact={compact || AI_PROVIDERS.some(p => !!keys[p])}
                         className="mt-2"
                     />
                 )}
@@ -154,6 +154,11 @@ export function ModelSelector({
                         {activeModelEntry.capabilities.reasoning && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
                                 <Brain className="h-3 w-3" /> {t('ai.model.reasoning')}
+                            </span>
+                        )}
+                        {activeModelEntry.preview && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                <FlaskConical className="h-3 w-3" /> {t('ai.model.preview')}
                             </span>
                         )}
                         {activeModelEntry.capabilities.webSearch && (

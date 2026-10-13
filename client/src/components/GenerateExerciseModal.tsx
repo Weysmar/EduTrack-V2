@@ -17,6 +17,7 @@ import { useProfileStore } from '@/store/profileStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { ModelSelector } from '@/components/ModelSelector'
 import { useAIProvider } from '@/hooks/useAIProvider'
+import { useProviderKeys } from '@/hooks/useProviderKeys'
 import { useAIText } from '@/components/ai/useAIText'
 import { GenerationProgress } from '@/components/ai/GenerationProgress'
 import { AIQuotaLine } from '@/components/ai/AIQuotaLine'
@@ -68,10 +69,9 @@ export function GenerateExerciseModal({
     const { t, language } = useAIText()
     const navigate = useNavigate()
     const queryClient = useQueryClient()
-    const { activeProfile, getApiKey } = useProfileStore()
-    const geminiKey = getApiKey('google_gemini_exercises') || getApiKey('google_gemini_summaries')
-    const perplexityKey = getApiKey('perplexity_exercises') || getApiKey('perplexity_summaries')
-    const ai = useAIProvider({ geminiKey, perplexityKey })
+    const { activeProfile } = useProfileStore()
+    const keys = useProviderKeys()
+    const ai = useAIProvider({ keys })
 
     const [mode, setMode] = useState<RevisionGenerationMode>(initialMode)
     const [isLoading, setIsLoading] = useState(false)
@@ -112,7 +112,7 @@ export function GenerateExerciseModal({
             setError(null)
             ai.reset()
         }
-    }, [isOpen, initialMode, geminiKey, perplexityKey])
+    }, [isOpen, initialMode, keys.google, keys.perplexity, keys.anthropic])
 
     // Annule la requête en cours si le modal est démonté
     useEffect(() => () => abortRef.current?.abort(), [])
@@ -668,8 +668,7 @@ export function GenerateExerciseModal({
                                             setProvider={ai.setProvider}
                                             setModel={ai.setModel}
                                             hasKeyForProvider={ai.hasKeyForProvider}
-                                            geminiKey={geminiKey}
-                                            perplexityKey={perplexityKey}
+                                            keys={keys}
                                             onClose={onClose}
                                             contentLength={sourceContent?.length}
                                             fileCategory={fileCategory}

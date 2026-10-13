@@ -1,18 +1,26 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { X, Calendar, Clock, BookOpen, ChevronRight, Sparkles, Folder, Brain, Zap } from 'lucide-react'
+import { X, Calendar, Clock, BookOpen, ChevronRight, Sparkles, Folder, Brain, Zap, Globe, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAIText } from '@/components/ai/useAIText'
 import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
 import { GenerationProgress } from '@/components/ai/GenerationProgress'
 import { AIQuotaLine } from '@/components/ai/AIQuotaLine'
 import { getAIErrorMessage } from '@/lib/ai/errors'
-import { CALENDAR_ROUTE } from '@/lib/ai/constants'
+import { CALENDAR_ROUTE, providerLabel } from '@/lib/ai/constants'
+import { AI_PROVIDERS, PROVIDER_LABELS, type AIProvider } from '@/config/aiModels'
+import { useProviderKeys } from '@/hooks/useProviderKeys'
+import { firstProviderWithKey } from '@/lib/ai/apiKeys'
 import { courseQueries, folderQueries, studyPlanQueries } from '@/lib/api/queries'
-import { useProfileStore } from '@/store/profileStore'
 import { useCalendarStore } from '@/store/calendarStore'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+
+const PLAN_PROVIDER_ICONS: Record<AIProvider, LucideIcon> = {
+    google: Brain,
+    perplexity: Globe,
+    anthropic: Sparkles,
+}
 
 interface RevisionProgramModalProps {
     isOpen: boolean
@@ -35,17 +43,16 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
     const [daysPerWeek, setDaysPerWeek] = useState<number>(5)
 
     // AI Provider
-    const [provider, setProvider] = useState<'google' | 'perplexity'>('google')
+    const providerKeys = useProviderKeys()
+    // Par défaut : Gemini si une clé existe, sinon le premier fournisseur configuré
+    const [provider, setProvider] = useState<AIProvider>(() => firstProviderWithKey(providerKeys, ['google', 'perplexity', 'anthropic']) ?? 'google')
 
     const [generatedPlan, setGeneratedPlan] = useState<any>(null)
     const [startedAt, setStartedAt] = useState<number | null>(null)
 
-    const { apiKeys } = useProfileStore()
     const { isConnected: isCalendarConnected } = useCalendarStore()
 
-    const apiKey = provider === 'google'
-        ? (apiKeys?.google_gemini_exercises || apiKeys?.google_gemini_summaries)
-        : (apiKeys?.perplexity_exercises || apiKeys?.perplexity_summaries);
+    const apiKey = providerKeys[provider];
 
     // Data Fetching
     const { data: coursesData } = useQuery({ 
@@ -77,7 +84,7 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
         if (step === 3) {
             // Validate API Key
             if (!apiKey) {
-                toast.error(t('settings.api.missing') + ` (${provider === 'google' ? 'Gemini' : 'Perplexity'})`);
+                toast.error(t('settings.api.missing') + ` (${providerLabel(provider)})`);
                 return;
             }
 
@@ -289,31 +296,26 @@ export function RevisionProgramModal({ isOpen, onClose }: RevisionProgramModalPr
 
                                         <div className="border-t pt-4">
                                             <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-3 block">{t('ai.plan.provider')}</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <button
-                                                    onClick={() => setProvider('google')}
-                                                    className={cn(
-                                                        "flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
-                                                        provider === 'google'
-                                                            ? "bg-background border-primary ring-1 ring-primary shadow-sm"
-                                                            : "bg-muted/50 border-transparent hover:bg-background"
-                                                    )}
-                                                >
-                                                    <Brain className={cn("w-4 h-4", provider === 'google' ? "text-primary" : "text-muted-foreground")} />
-                                                    <span className="font-medium text-sm">Google Gemini</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setProvider('perplexity')}
-                                                    className={cn(
-                                                        "flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
-                                                        provider === 'perplexity'
-                                                            ? "bg-background border-primary ring-1 ring-primary shadow-sm"
-                                                            : "bg-muted/50 border-transparent hover:bg-background"
-                                                    )}
-                                                >
-                                                    <Zap className={cn("w-4 h-4", provider === 'perplexity' ? "text-primary" : "text-muted-foreground")} />
-                                                    <span className="font-medium text-sm">Perplexity AI</span>
-                                                </button>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                {AI_PROVIDERS.map(p => {
+                                                    const Icon = PLAN_PROVIDER_ICONS[p]
+                                                    return (
+                                                        <button
+                                                            key={p}
+                                                            onClick={() => setProvider(p)}
+                                                            aria-pressed={provider === p}
+                                                            className={cn(
+                                                                "flex items-center justify-center gap-2 p-3 rounded-lg border transition-all",
+                                                                provider === p
+                                                                    ? "bg-background border-primary ring-1 ring-primary shadow-sm"
+                                                                    : "bg-muted/50 border-transparent hover:bg-background"
+                                                            )}
+                                                        >
+                                                            <Icon className={cn("w-4 h-4", provider === p ? "text-primary" : "text-muted-foreground")} />
+                                                            <span className="font-medium text-sm">{PROVIDER_LABELS[p]}</span>
+                                                        </button>
+                                                    )
+                                                })}
                                             </div>
 
                                             {!apiKey && (

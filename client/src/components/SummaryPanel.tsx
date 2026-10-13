@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useAIText } from '@/components/ai/useAIText'
 import { MissingApiKeyNotice } from '@/components/ai/MissingApiKeyNotice'
 import { GenerationProgress } from '@/components/ai/GenerationProgress'
-import { useProfileStore } from '@/store/profileStore'
+import { useProviderKeys } from '@/hooks/useProviderKeys'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -41,12 +41,9 @@ const formatDuration = (ms: number): string => {
 export function SummaryPanel({ summary, onRegenerate, onConfigure, onMaximize, onClose, isLoading, error, isFetching, generationStartedAt, onGenerate }: SummaryPanelProps) {
     const [copied, setCopied] = useState(false)
     const { t } = useAIText()
-    // Sélecteur sur apiKeys : re-rendu automatique quand une clé est ajoutée
-    const apiKeys = useProfileStore(state => state.apiKeys)
-    const hasAnyKey = !!(
-        apiKeys?.google_gemini_summaries || apiKeys?.google_gemini_exercises ||
-        apiKeys?.perplexity_summaries || apiKeys?.perplexity_exercises
-    )
+    // Réactif : re-rendu automatique quand une clé est ajoutée
+    const providerKeys = useProviderKeys()
+    const hasAnyKey = Object.values(providerKeys).some(Boolean)
 
     if (isLoading) {
         return (

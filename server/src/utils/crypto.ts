@@ -21,6 +21,11 @@ const IV_LENGTH = 12;
 
 /** Champs de Profile.settings contenant des secrets (clés API) à chiffrer au repos. */
 export const SENSITIVE_SETTINGS_KEYS = [
+    // Un emplacement par provider (depuis 2026-10)
+    'google_gemini_api_key',
+    'perplexity_api_key',
+    'anthropic_api_key',
+    // Anciens emplacements par usage, encore lus en repli
     'google_gemini_summaries',
     'google_gemini_exercises',
     'google_gemini_categorization',

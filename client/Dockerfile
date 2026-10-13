@@ -11,6 +11,8 @@ ARG VITE_GOOGLE_API_KEY
 ENV VITE_GOOGLE_API_KEY=$VITE_GOOGLE_API_KEY
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+# Tests unitaires avant le build : un test en échec arrête le déploiement
+RUN npm run test:ci
 RUN npm run build
 RUN cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs dist/pdf.worker.min.mjs || true
 

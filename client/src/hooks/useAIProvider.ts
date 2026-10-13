@@ -10,7 +10,8 @@
  *   provider='perplexity' — incohérence silencieuse envoyée au serveur.
  *
  * Usage :
- *   const { provider, model, setProvider, setModel, reset } = useAIProvider({ geminiKey, perplexityKey })
+ *   const keys = useProviderKeys()
+ *   const { provider, model, setProvider, setModel, reset } = useAIProvider({ keys })
  *
  *   - setProvider(p)  : change le provider ET remet le modèle au défaut du nouveau provider
  *   - setModel(m)     : refuse silencieusement si m n'appartient pas au provider courant
@@ -19,10 +20,13 @@
 
 import { useState, useCallback } from 'react'
 import { getDefaultModel, getModelsForProvider, normalizeModelId, type AIProvider } from '@/config/aiModels'
+import { firstProviderWithKey } from '@/lib/ai/apiKeys'
+
+export type ProviderKeys = Partial<Record<AIProvider, string | null | undefined>>
 
 interface UseAIProviderOptions {
-    geminiKey?: string | null
-    perplexityKey?: string | null
+    /** Clés disponibles par provider (voir useProviderKeys) */
+    keys: ProviderKeys
     /** Provider initial forcé (ignore les clés disponibles) */
     initialProvider?: AIProvider
     /** Modèle initial forcé */
@@ -42,17 +46,13 @@ interface AIProviderState {
     hasKeyForProvider: boolean
 }
 
-/** Calcule le provider par défaut en fonction des clés disponibles */
-const resolveDefaultProvider = (
-    geminiKey?: string | null,
-    perplexityKey?: string | null,
-    preferred?: AIProvider
-): AIProvider => {
+/**
+ * Calcule le provider par défaut en fonction des clés disponibles :
+ * Perplexity, puis Gemini, puis Claude (premier provider disposant d'une clé), Perplexity sinon.
+ */
+export const resolveDefaultProvider = (keys: ProviderKeys, preferred?: AIProvider): AIProvider => {
     if (preferred) return preferred
-    // Si on a Gemini mais pas Perplexity, utiliser Gemini
-    if (!perplexityKey && geminiKey) return 'google'
-    // Par défaut Perplexity
-    return 'perplexity'
+    return firstProviderWithKey({ google: keys.google ?? null, perplexity: keys.perplexity ?? null, anthropic: keys.anthropic ?? null }) ?? 'perplexity'
 }
 
 /** Modèle initial s'il appartient bien au provider, sinon le modèle recommandé du provider */
@@ -65,12 +65,11 @@ const resolveModel = (provider: AIProvider, savedModel?: string): string => {
 }
 
 export function useAIProvider({
-    geminiKey,
-    perplexityKey,
+    keys,
     initialProvider,
     initialModel,
 }: UseAIProviderOptions): AIProviderState {
-    const defaultProvider = resolveDefaultProvider(geminiKey, perplexityKey, initialProvider)
+    const defaultProvider = resolveDefaultProvider(keys, initialProvider)
 
     const [provider, setProviderRaw] = useState<AIProvider>(defaultProvider)
     const [model, setModelRaw] = useState<string>(
@@ -104,17 +103,19 @@ export function useAIProvider({
         })
     }, [])
 
+    const { google: googleKey, perplexity: perplexityKey, anthropic: anthropicKey } = keys
+
     /**
      * Réinitialise le provider et le modèle depuis les clés disponibles.
      * Appelé typiquement dans le useEffect d'ouverture du modal.
      */
     const reset = useCallback(() => {
-        const p = resolveDefaultProvider(geminiKey, perplexityKey, initialProvider)
+        const p = resolveDefaultProvider({ google: googleKey, perplexity: perplexityKey, anthropic: anthropicKey }, initialProvider)
         setProviderRaw(p)
         setModelRaw(resolveModel(p, initialModel))
-    }, [geminiKey, perplexityKey, initialProvider, initialModel])
+    }, [googleKey, perplexityKey, anthropicKey, initialProvider, initialModel])
 
-    const hasKeyForProvider = provider === 'google' ? !!geminiKey : !!perplexityKey
+    const hasKeyForProvider = !!keys[provider]
 
     return { provider, model, setProvider, setModel, reset, hasKeyForProvider }
 }

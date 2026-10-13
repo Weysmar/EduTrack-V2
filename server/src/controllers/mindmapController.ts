@@ -8,7 +8,7 @@ import { incrementAIGeneration } from './profileController';
 import { prisma } from '../lib/prisma';
 import { htmlToText, hasMeaningfulText } from '../utils/htmlToText';
 import { normalizeMindmapSource } from '../utils/mindmapSource';
-import { DEFAULT_GEMINI_MODEL } from '../config/aiModels';
+import { DEFAULT_GEMINI_MODEL, isAIProvider, modelForProvider, AIProvider } from '../config/aiModels';
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
 Output MUST be valid Mermaid mindmap syntax ONLY. Do not include explanations or markdown code blocks.
@@ -65,9 +65,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
         }
 
         // Resolve API Key using standardized service (supports explicit provider with robust registry detection fallback)
-        const provider = explicitProvider === 'perplexity' || explicitProvider === 'google'
-            ? explicitProvider
-            : detectProvider(model);
+        const provider: AIProvider = isAIProvider(explicitProvider) ? explicitProvider : detectProvider(model);
         const apiConfig = await getApiKey(profileId, provider, {
             requestApiKey: apiKey,
             purpose: 'summaries'
@@ -179,7 +177,7 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
 
         // Generate mind map using AI
         const prompt = MINDMAP_PROMPT.replace('{content}', combinedContent.substring(0, 50000)); // Limit total context
-        const mermaidContent = await aiService.generateText(prompt, '', model, effectiveApiKey, provider);
+        const mermaidContent = await aiService.generateText(prompt, '', modelForProvider(provider, model), effectiveApiKey, provider);
 
         // Clean up the response: fences/chatter removed and labels made renderable by Mermaid
         const cleanedContent = normalizeMindmapSource(mermaidContent);
