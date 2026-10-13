@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { apiClient } from './client'
 
 // Adapter answering 401 to every request, to exercise the response interceptor
@@ -10,12 +10,12 @@ const unauthorizedAdapter = async (config: any) => {
 }
 
 describe('apiClient 401 handling', () => {
-    let hrefSetter: ReturnType<typeof vi.fn>
+    let hrefSetter: Mock<(value: string) => void>
 
     beforeEach(() => {
         localStorage.clear()
         sessionStorage.clear()
-        hrefSetter = vi.fn()
+        hrefSetter = vi.fn<(value: string) => void>()
         Object.defineProperty(window, 'location', {
             configurable: true,
             value: {

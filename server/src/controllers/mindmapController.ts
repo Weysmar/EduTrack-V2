@@ -7,6 +7,7 @@ import { storageService } from '../services/storageService';
 import { incrementAIGeneration } from './profileController';
 import { prisma } from '../lib/prisma';
 import { htmlToText, hasMeaningfulText } from '../utils/htmlToText';
+import { normalizeMindmapSource } from '../utils/mindmapSource';
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
 Output MUST be valid Mermaid mindmap syntax ONLY. Do not include explanations or markdown code blocks.
@@ -22,11 +23,14 @@ mindmap
       Subbranch 2.2
 
 Requirements:
-- Use ((Main Topic)) for the root node
-- Create 3-5 main branches minimum
-- Each branch should have 2-4 subbranches
-- Keep labels concise (max 5 words)
-- Organize information hierarchically by importance and theme
+- Write every label in the SAME LANGUAGE as the content (French content => French labels)
+- Use ((Main Topic)) for the root node, with a short title for the whole subject
+- Create 4 to 7 main branches, ordered logically (definitions first, then concepts, methods, examples)
+- Each branch has 2 to 5 subbranches; go one level deeper only for key details (max 3 levels below the root)
+- Keep labels concise (max 6 words), informative, and never repeat the same idea twice
+- Do NOT use parentheses, brackets, braces or quotes inside labels (they break the Mermaid syntax);
+  write "Loi d'Ohm U = RI" rather than "Loi d'Ohm (U = RI)"
+- Indent with 2 spaces per level, one node per line
 
 Content to analyze:
 {content}
@@ -176,12 +180,13 @@ export const generateMindMap = async (req: AuthRequest, res: Response) => {
         const prompt = MINDMAP_PROMPT.replace('{content}', combinedContent.substring(0, 50000)); // Limit total context
         const mermaidContent = await aiService.generateText(prompt, '', model, effectiveApiKey, provider);
 
-        // Clean up response (remove any markdown code blocks)
-        let cleanedContent = mermaidContent.trim();
-        if (cleanedContent.startsWith('```mermaid')) {
-            cleanedContent = cleanedContent.replace(/```mermaid\n?/g, '').replace(/```\n?$/g, '');
-        } else if (cleanedContent.startsWith('```')) {
-            cleanedContent = cleanedContent.replace(/```\n?/g, '');
+        // Clean up the response: fences/chatter removed and labels made renderable by Mermaid
+        const cleanedContent = normalizeMindmapSource(mermaidContent);
+        if (cleanedContent.split('\n').length < 3) {
+            return res.status(502).json({
+                error: 'The AI did not return a usable mind map',
+                details: 'Empty or invalid mind map. Try again or pick another model.'
+            });
         }
 
         // Save mind map
