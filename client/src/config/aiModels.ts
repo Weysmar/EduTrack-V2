@@ -39,15 +39,44 @@ export interface AIModelEntry {
     deprecated?: boolean;
 }
 
+/** Modèle Gemini par défaut : à changer ici uniquement (miroir de DEFAULT_GEMINI_MODEL côté serveur) */
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+
+/**
+ * Anciens identifiants encore présents dans les réglages enregistrés → modèle actuel.
+ * gemini-3.7-flash est déprécié depuis le 2026-10-08 (Google redirige vers 3.8 Flash),
+ * gemini-3.5-flash est redirigé vers 3.6 Flash.
+ */
+const LEGACY_MODEL_IDS: Record<string, string> = {
+    'gemini-3.7-flash': DEFAULT_GEMINI_MODEL,
+    'gemini-3.7': DEFAULT_GEMINI_MODEL,
+    'gemini-3.7-pro': DEFAULT_GEMINI_MODEL,
+    'gemini-3.7-thinking': DEFAULT_GEMINI_MODEL,
+    'gemini-3.8': DEFAULT_GEMINI_MODEL,
+    'gemini-3.8-pro': DEFAULT_GEMINI_MODEL,
+    'gemini-3.5-flash': 'gemini-3.6-flash',
+};
+
+/** Convertit un identifiant enregistré (éventuellement déprécié) vers le modèle actuel */
+export const normalizeModelId = (id?: string | null): string | undefined =>
+    id ? (LEGACY_MODEL_IDS[id] ?? id) : undefined;
+
 export const AI_MODELS: AIModelEntry[] = [
     // ── Google Gemini ─────────────────────────────────────────────────────────
     {
-        id: 'gemini-3.7-flash',
-        displayName: '⚡ Gemini 3.7 Flash — Rapide & Performant',
+        id: 'gemini-3.8-flash',
+        displayName: '⚡ Gemini 3.8 Flash — Rapide & Performant',
         provider: 'google',
         maxTokens: 1_000_000,
         capabilities: { vision: true, webSearch: false, reasoning: false },
         recommended: true,
+    },
+    {
+        id: 'gemini-3.6-flash',
+        displayName: 'Gemini 3.6 Flash — Alternative',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: false },
     },
     {
         // NOTE (2026-09) : accès restreint chez Google aux clés API l'ayant déjà utilisée ;
@@ -105,7 +134,7 @@ export const getModelsForProvider = (provider: AIProvider): AIModelEntry[] =>
 /** Retourne le modèle recommandé par défaut pour un provider. */
 export const getDefaultModel = (provider: AIProvider): string => {
     const recommended = AI_MODELS.find(m => m.provider === provider && m.recommended && !m.deprecated);
-    return recommended?.id ?? (provider === 'google' ? 'gemini-3.7-flash' : 'sonar-pro');
+    return recommended?.id ?? (provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar-pro');
 };
 
 export const getModelById = (id: string): AIModelEntry | undefined =>

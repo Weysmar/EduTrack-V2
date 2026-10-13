@@ -1,3 +1,5 @@
+import { DEFAULT_GEMINI_MODEL } from '@/config/aiModels'
+
 export type AIProvider = 'perplexity' | 'google'
 export type SummaryType = 'note' | 'exercise' | 'course' | 'folder' | 'bulk' | 'resource' | 'drive-link'
 export type SummaryFormat = 'bullets' | 'paragraph' | 'timeline' | 'outline' | 'mindmap'
@@ -22,7 +24,7 @@ export interface SummaryOptions {
 
 export const DEFAULT_SUMMARY_OPTIONS: SummaryOptions = {
     provider: 'google',
-    model: 'gemini-3.7-flash',
+    model: DEFAULT_GEMINI_MODEL,
     compression: 0.4,
     format: 'bullets',
     preserveHeadings: true,

@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCompatibility, FileCategory } from '../config/aiModels';
+import { resolveModelId, getFallbackChain, checkContextFit, validateFileModelCompatibility, FileCategory, DEFAULT_GEMINI_MODEL } from '../config/aiModels';
 
 // Multi-user architecture: Each user provides their own API key (BYOK)
 // Keys are passed per-request from the user's saved profile settings.
@@ -86,7 +86,7 @@ export const aiService = {
     async generateText(
         prompt: string,
         systemPrompt?: string,
-        model: string = 'gemini-3.7-flash',
+        model: string = DEFAULT_GEMINI_MODEL,
         apiKey?: string,
         provider: 'google' | 'perplexity' = 'google',
         fileCategory?: FileCategory
@@ -214,7 +214,7 @@ export const aiService = {
     async generateJSON(
         prompt: string,
         systemPrompt?: string,
-        model: string = 'gemini-3.7-flash',
+        model: string = DEFAULT_GEMINI_MODEL,
         apiKey?: string,
         provider: 'google' | 'perplexity' = 'google',
         fileCategory?: FileCategory

@@ -8,6 +8,7 @@ import { incrementAIGeneration } from './profileController';
 import { prisma } from '../lib/prisma';
 import { htmlToText, hasMeaningfulText } from '../utils/htmlToText';
 import { normalizeMindmapSource } from '../utils/mindmapSource';
+import { DEFAULT_GEMINI_MODEL } from '../config/aiModels';
 
 const MINDMAP_PROMPT = `You are a mind mapping expert. Create a hierarchical mind map from the provided content.
 Output MUST be valid Mermaid mindmap syntax ONLY. Do not include explanations or markdown code blocks.
@@ -46,7 +47,7 @@ const _legacyExtractTextFromFile = async (buffer: Buffer, mimetype: string): Pro
 export const generateMindMap = async (req: AuthRequest, res: Response) => {
     try {
         // Updated to support direct content, or noteIds/fileItemIds
-        const { noteIds = [], fileItemIds = [], content, name, apiKey, model = 'gemini-3.7-flash', provider: explicitProvider, courseId } = req.body;
+        const { noteIds = [], fileItemIds = [], content, name, apiKey, model = DEFAULT_GEMINI_MODEL, provider: explicitProvider, courseId } = req.body;
         const profileId = req.user?.id;
 
         if (!profileId) {

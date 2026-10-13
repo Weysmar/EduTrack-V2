@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api/client";
 import { AIRequestError, toAIError } from "./errors";
 import { aiMessage } from "./messages";
 import { AI_REQUEST_TIMEOUT_MS } from "./constants";
+import { DEFAULT_GEMINI_MODEL } from "@/config/aiModels";
 
 const missingGeminiKeyError = () =>
     new AIRequestError(aiMessage('ai.error.missingKey', { provider: 'Google Gemini' }), 'missing_key');
@@ -87,7 +88,7 @@ INSTRUCTIONS DE CONTENU :
 -   Vérifie qu'aucun caractère Markdown brut (#, *) ne reste visible s'il n'est pas interprété par le rendu final.
 `;
 
-        const model = geminiOptions.model || 'gemini-3.7-flash';
+        const model = geminiOptions.model || DEFAULT_GEMINI_MODEL;
 
         try {
             const { data } = await apiClient.post('/ai/generate', {
@@ -123,7 +124,7 @@ export async function generateWithGoogle(prompt: string, systemPrompt?: string, 
             prompt: prompt,
             systemPrompt: systemPrompt,
             provider: 'google',
-            model: model || 'gemini-3.7-flash',
+            model: model || DEFAULT_GEMINI_MODEL,
             apiKey: API_KEY
         }, {
             timeout: AI_REQUEST_TIMEOUT_MS,

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { apiClient } from '@/lib/api/client'
+import { DEFAULT_GEMINI_MODEL } from '@/config/aiModels'
 
 interface Profile {
     id: string;
@@ -74,7 +75,7 @@ export const useProfileStore = create<ProfileState>()(
                 google_client_id: null,
                 google_drive_api_key: null,
                 finance_audit_provider: 'google',
-                finance_audit_model: 'gemini-3.7-flash'
+                finance_audit_model: DEFAULT_GEMINI_MODEL
             },
             isLoading: false,
 
@@ -93,7 +94,7 @@ export const useProfileStore = create<ProfileState>()(
                         google_client_id: null,
                         google_drive_api_key: null,
                         finance_audit_provider: 'google',
-                        finance_audit_model: 'gemini-3.7-flash'
+                        finance_audit_model: DEFAULT_GEMINI_MODEL
                     };
 
                     const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;
@@ -134,7 +135,7 @@ export const useProfileStore = create<ProfileState>()(
                         google_client_id: null,
                         google_drive_api_key: null,
                         finance_audit_provider: 'google',
-                        finance_audit_model: 'gemini-3.7-flash'
+                        finance_audit_model: DEFAULT_GEMINI_MODEL
                     }
                 });
             },
@@ -213,7 +214,7 @@ export const useProfileStore = create<ProfileState>()(
                         google_client_id: null,
                         google_drive_api_key: null,
                         finance_audit_provider: 'google',
-                        finance_audit_model: 'gemini-3.7-flash'
+                        finance_audit_model: DEFAULT_GEMINI_MODEL
                     };
 
                     const keys = profile.settings ? { ...defaultKeys, ...profile.settings } : defaultKeys;

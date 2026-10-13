@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { useProfileStore } from '@/store/profileStore'
-import { getModelsForProvider, getDefaultModel } from '@/config/aiModels'
+import { getModelsForProvider, getDefaultModel, DEFAULT_GEMINI_MODEL, normalizeModelId } from '@/config/aiModels'
 import { Eye, EyeOff, Save, AlertCircle, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
@@ -28,7 +28,7 @@ export function ApiKeySettings() {
         google_client_id: '',
         google_drive_api_key: '',
         finance_audit_provider: 'google',
-        finance_audit_model: 'gemini-3.7-flash'
+        finance_audit_model: DEFAULT_GEMINI_MODEL
     })
 
     const [showKey, setShowKey] = useState<Record<string, boolean>>({})
@@ -46,7 +46,7 @@ export function ApiKeySettings() {
                 google_client_id: getApiKey('google_client_id') || '',
                 google_drive_api_key: getApiKey('google_drive_api_key') || '',
                 finance_audit_provider: (getApiKey('finance_audit_provider') as any) || 'google',
-                finance_audit_model: getApiKey('finance_audit_model') || 'gemini-3.7-flash'
+                finance_audit_model: normalizeModelId(getApiKey('finance_audit_model')) || DEFAULT_GEMINI_MODEL
             })
         }
     }, [activeProfile?.id]) // Only update if profile changes, not on every refresh

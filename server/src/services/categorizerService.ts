@@ -1,6 +1,7 @@
 import { aiService } from './aiService';
 
 import { prisma } from '../lib/prisma';
+import { DEFAULT_GEMINI_MODEL } from '../config/aiModels';
 
 // Predefined categories to guide the AI
 const DEFAULT_CATEGORIES = [
@@ -32,7 +33,7 @@ export const categorizerService = {
         `;
 
         try {
-            const result = await aiService.generateJSON(prompt, "Expert comptable rigoureux.", 'gemini-3.7-flash', apiKey);
+            const result = await aiService.generateJSON(prompt, "Expert comptable rigoureux.", DEFAULT_GEMINI_MODEL, apiKey);
 
             // Map back to IDs or Indexes
             // Result ex: { "1": "Alimentation", "2": "Transport" }
@@ -61,7 +62,7 @@ export const categorizerService = {
     async predictCategory(description: string, amount: number, apiKey?: string): Promise<string> {
         const prompt = `Catégorise cette dépense : "${description}" (${amount}€). Catégories possibles : ${DEFAULT_CATEGORIES.join(', ')}. Réponds juste par la catégorie.`;
         try {
-            const text = await aiService.generateText(prompt, undefined, 'gemini-3.7-flash', apiKey);
+            const text = await aiService.generateText(prompt, undefined, DEFAULT_GEMINI_MODEL, apiKey);
             const category = text.trim().replace(/['"]/g, '');
             return DEFAULT_CATEGORIES.find(c => c.toLowerCase() === category.toLowerCase()) || "Autre";
         } catch (e) {

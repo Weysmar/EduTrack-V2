@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { prisma } from '../lib/prisma';
-import { resolveModelId, detectProvider } from '../config/aiModels';
+import { resolveModelId, detectProvider, DEFAULT_GEMINI_MODEL } from '../config/aiModels';
 import { decryptSecret } from '../utils/crypto';
 
 export type AIProvider = 'google' | 'perplexity';
@@ -57,7 +57,7 @@ export const getApiKey = async (
         return {
             provider,
             apiKey: requestApiKey,
-            model: provider === 'google' ? 'gemini-3.7-flash' : 'sonar',
+            model: provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar',
             source: 'request'
         };
     }
@@ -84,7 +84,7 @@ export const getApiKey = async (
                     return {
                         provider: 'google',
                         apiKey: key,
-                        model: settings.finance_audit_model || 'gemini-3.7-flash',
+                        model: settings.finance_audit_model || DEFAULT_GEMINI_MODEL,
                         source: 'profile_settings'
                     };
                 }
@@ -115,7 +115,7 @@ export const getApiKey = async (
             return {
                 provider: 'google',
                 apiKey: envKey,
-                model: 'gemini-3.7-flash',
+                model: DEFAULT_GEMINI_MODEL,
                 source: 'environment'
             };
         }
@@ -181,5 +181,5 @@ export const getDefaultModel = (provider: AIProvider, preferredModel?: string): 
     if (preferredModel) {
         return resolveModelId(preferredModel);
     }
-    return provider === 'google' ? 'gemini-3.7-flash' : 'sonar';
+    return provider === 'google' ? DEFAULT_GEMINI_MODEL : 'sonar';
 };

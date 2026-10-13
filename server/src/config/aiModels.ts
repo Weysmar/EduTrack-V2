@@ -45,24 +45,39 @@ export interface AIModelEntry {
     deprecated?: boolean;
 }
 
+/** Modèle Gemini par défaut (réglages vides, appels internes) : à changer ici uniquement */
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+
 export const AI_MODELS: AIModelEntry[] = [
     // ── Google Gemini ───────────────────────────────────────────────────────────────────────────
     {
-        id: 'gemini-3.7-flash',
-        displayName: '⚡ Gemini 3.7 Flash',
+        id: 'gemini-3.8-flash',
+        displayName: '⚡ Gemini 3.8 Flash',
         provider: 'google',
         maxTokens: 1_000_000,      // Fenêtre d'entrée officielle : 1M tokens
         capabilities: { vision: true, webSearch: false, reasoning: false },
         recommended: true,
-        // Anciens réglages utilisateurs → redirigés ici
-        aliases: ['gemini-3.7', 'gemini-3.7-pro', 'gemini-3.8', 'gemini-3.8-flash', 'gemini-3.8-pro']
+        // gemini-3.7-flash est déprécié depuis le 2026-10-08 (Google redirige ses appels vers 3.8 Flash) :
+        // les réglages enregistrés et anciens défauts sont résolus ici. Il n'existe ni 3.8 Pro ni
+        // 3.8 Flash-Lite texte dans l'API (vérifié sur ai.google.dev/gemini-api/docs/deprecations).
+        aliases: ['gemini-3.7-flash', 'gemini-3.7', 'gemini-3.7-pro', 'gemini-3.8', 'gemini-3.8-pro']
+    },
+    {
+        // Modèle courant non déprécié (2026-07) : premier repli si 3.8 Flash est indisponible ou saturé.
+        // gemini-3.5-flash (déprécié, redirigé par Google vers 3.6 Flash) est résolu ici.
+        id: 'gemini-3.6-flash',
+        displayName: 'Gemini 3.6 Flash',
+        provider: 'google',
+        maxTokens: 1_000_000,
+        capabilities: { vision: true, webSearch: false, reasoning: false },
+        aliases: ['gemini-3.5-flash', 'gemini-3.6']
     },
     {
         // NOTE (2026-09) : Google restreint désormais l'accès à la famille 2.5 aux clés API
         // l'ayant déjà utilisée par le passé ; ce n'est plus le choix recommandé pour une
         // clé toute neuve. On le garde comme dernier repli (pas comme filet universel) —
         // si l'appel échoue avec un modèle/accès non trouvé, c'est attendu pour les
-        // nouvelles clés API et l'utilisateur retombera sur gemini-3.7-flash.
+        // nouvelles clés API, qui passent d'abord par gemini-3.8-flash puis gemini-3.6-flash.
         id: 'gemini-2.5-flash',
         displayName: '🛡️ Gemini 2.5 Flash',
         provider: 'google',
@@ -227,12 +242,12 @@ export const validateFileModelCompatibility = (
  * Remplace les deux anciennes fonctions `mapModelName` dupliquées.
  *
  * @example
- * resolveModelId('gemini-3.8-pro') // → 'gemini-3.7-flash'
+ * resolveModelId('gemini-3.7-flash') // → 'gemini-3.8-flash' (déprécié, alias)
  * resolveModelId('sonar-pro')      // → 'sonar-pro'
  * resolveModelId('unknown')        // → 'unknown' (pass-through)
  */
 export const resolveModelId = (model: string): string => {
-    if (!model) return 'gemini-3.7-flash';
+    if (!model) return DEFAULT_GEMINI_MODEL;
     const entry = AI_MODELS.find(
         m => m.id === model || m.aliases?.includes(model)
     );

@@ -6,7 +6,7 @@
  * Problème résolu :
  *   Avant ce hook, `provider` et `model` étaient deux états indépendants
  *   dans chaque modal. Si l'initialisation ratait ou si on ajoutait un nouveau
- *   provider, on pouvait se retrouver avec model='gemini-3.7-flash' et
+ *   provider, on pouvait se retrouver avec model='gemini-3.8-flash' et
  *   provider='perplexity' — incohérence silencieuse envoyée au serveur.
  *
  * Usage :
@@ -18,7 +18,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { getDefaultModel, getModelsForProvider, type AIProvider } from '@/config/aiModels'
+import { getDefaultModel, getModelsForProvider, normalizeModelId, type AIProvider } from '@/config/aiModels'
 
 interface UseAIProviderOptions {
     geminiKey?: string | null
@@ -56,10 +56,13 @@ const resolveDefaultProvider = (
 }
 
 /** Modèle initial s'il appartient bien au provider, sinon le modèle recommandé du provider */
-const resolveModel = (provider: AIProvider, preferredModel?: string): string =>
-    preferredModel && getModelsForProvider(provider).some(m => m.id === preferredModel)
+const resolveModel = (provider: AIProvider, savedModel?: string): string => {
+    // Saved settings may hold a deprecated id (e.g. gemini-3.7-flash): map it to the current model first
+    const preferredModel = normalizeModelId(savedModel)
+    return preferredModel && getModelsForProvider(provider).some(m => m.id === preferredModel)
         ? preferredModel
         : getDefaultModel(provider)
+}
 
 export function useAIProvider({
     geminiKey,
@@ -90,7 +93,8 @@ export function useAIProvider({
      * Changer de modèle : refuse silencieusement si le modèle
      * n'appartient pas au provider courant (cohérence garantie).
      */
-    const setModel = useCallback((m: string) => {
+    const setModel = useCallback((requested: string) => {
+        const m = normalizeModelId(requested) ?? requested
         setProviderRaw(currentProvider => {
             const belongsToProvider = getModelsForProvider(currentProvider).some(entry => entry.id === m)
             if (belongsToProvider) {
