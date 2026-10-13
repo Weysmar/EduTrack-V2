@@ -24,6 +24,11 @@ export const generatePlan = async (req: AuthRequest, res: Response) => {
         const legacyHeaderKey = provider === 'perplexity' ? req.headers['x-perplexity-api-key'] : provider === 'google' ? req.headers['x-gemini-api-key'] : undefined;
         const apiKey = (req.headers['x-ai-api-key'] as string) || (legacyHeaderKey as string) || bodyApiKey;
 
+        const profileId = req.user?.id;
+        if (!profileId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         console.log(`[Planning] Generating plan for ${targetType} ${targetId}. Provider: ${provider}`);
 
         if (!targetId || !examDate) {
@@ -45,22 +50,25 @@ export const generatePlan = async (req: AuthRequest, res: Response) => {
         let items: any[] = [];
         let contextTitle = "";
 
+        // Sécurité : uniquement les cours/dossiers de l'utilisateur connecté (404 sinon, sans révéler leur existence)
         if (targetType === 'course') {
-            const course = await prisma.course.findUnique({
-                where: { id: targetId },
+            const course = await prisma.course.findFirst({
+                where: { id: targetId, profileId },
                 include: { items: true }
             });
             if (!course) return res.status(404).json({ message: 'Course not found' });
             items = course.items;
             contextTitle = course.title;
         } else if (targetType === 'folder') {
-            const folder = await prisma.folder.findUnique({
-                where: { id: targetId },
-                include: { courses: { include: { items: true } } }
+            const folder = await prisma.folder.findFirst({
+                where: { id: targetId, profileId },
+                include: { courses: { where: { profileId }, include: { items: true } } }
             });
             if (!folder) return res.status(404).json({ message: 'Folder not found' });
             contextTitle = folder.name;
             items = folder.courses.flatMap(c => c.items);
+        } else {
+            return res.status(400).json({ message: 'Invalid targetType (expected "course" or "folder")' });
         }
 
         console.log(`[Planning] Found ${items.length} items to include in plan context.`);
