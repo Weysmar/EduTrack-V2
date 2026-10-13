@@ -19,8 +19,16 @@ import './index.css'
 import 'katex/dist/katex.min.css'
 
 
-// Auto-reload on Vite chunk updates/deployments
+// Auto-reload on Vite chunk updates/deployments, at most once per 10 s: an asset that keeps failing
+// (network, proxy, stale cache) must not turn into an endless reload loop
 window.addEventListener('vite:preloadError', (event) => {
+    let lastReload = 0;
+    try { lastReload = Number(sessionStorage.getItem('preload_reload_at') || 0); } catch { /* storage unavailable */ }
+    if (Date.now() - lastReload < 10_000) {
+        console.error('Asset still failing after a reload, not reloading again', event);
+        return;
+    }
+    try { sessionStorage.setItem('preload_reload_at', String(Date.now())); } catch { /* storage unavailable */ }
     console.warn('New deployment detected (preload error), reloading to fetch latest assets...', event);
     window.location.reload();
 });

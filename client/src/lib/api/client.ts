@@ -37,15 +37,26 @@ apiClient.interceptors.response.use(
         const isCalendarProxy = !!error.config?.url?.includes('/calendar/proxy');
         const isCoreAuthError = error.response?.status === 401 && !isCalendarProxy;
 
-        if (isCoreAuthError) {
+        // Only an expired/invalid session (a token was actually sent) ends the session: a 401 on a request
+        // made without token must not redirect, otherwise any stray call on the public login page
+        // reloaded it forever (/auth redirects to "/", which fired the call again)
+        const sentToken = !!(error.config?.headers?.Authorization || error.config?.headers?.authorization);
+
+        if (isCoreAuthError && sentToken) {
             isSessionExpired = true;
             console.warn('[API Client] Unauthorized (401). Session expired, redirecting to login...');
 
-            // Clean up
+            // Clean up, and log the in-memory auth store out too (dynamic import: authStore imports this module)
             localStorage.removeItem('jwt_token');
+            import('@/store/authStore').then(({ useAuthStore }) => useAuthStore.getState().logout()).catch(() => {});
 
-            // Force reload if not already on auth page
-            if (!window.location.pathname.startsWith('/auth')) {
+            // Full reload to reset every store, except on public pages and at most once per 10 s
+            // (last-resort guard against any redirect loop)
+            const isPublicPage = ['/', '/auth', '/privacy', '/terms'].includes(window.location.pathname);
+            let lastRedirect = 0;
+            try { lastRedirect = Number(sessionStorage.getItem('auth_redirect_at') || 0); } catch { /* storage unavailable */ }
+            if (!isPublicPage && Date.now() - lastRedirect > 10_000) {
+                try { sessionStorage.setItem('auth_redirect_at', String(Date.now())); } catch { /* storage unavailable */ }
                 window.location.href = '/auth';
             }
         }
